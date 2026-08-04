@@ -759,7 +759,7 @@ export default function DashboardPage() {
                               aria-label="সম্পন্ন হিসেবে চিহ্নিত করুন"
                               onClick={() => toggleTask(task.id, task.status)}
                             ></button>
-                            <div className="task-main">
+                            <Link href={`/tasks?task=${task.id}`} className="task-main">
                               <div className="task-title">{task.title}</div>
                               <div className="task-meta">
                                 <span
@@ -772,7 +772,7 @@ export default function DashboardPage() {
                                   {task.projects?.name ?? "কোনো প্রজেক্ট নেই"}
                                 </span>
                               </div>
-                            </div>
+                            </Link>
                             <div
                               className={`task-due${due.cls ? ` ${due.cls}` : ""}`}
                             >

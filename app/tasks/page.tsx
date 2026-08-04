@@ -212,6 +212,53 @@ function TasksPageInner() {
     applyAssigneeParam();
   }, [searchParams]);
 
+  // ড্যাশবোর্ডের "My Tasks" থেকে ?task=<id> দিয়ে এলে সেই টাস্কটা এক্সপ্যান্ড করে দেখানো হয়
+  useEffect(() => {
+    const taskParam = searchParams.get('task');
+    if (!taskParam) return;
+
+    function run() {
+      setExpandedId(taskParam);
+      setExpandData((prev) => (prev[taskParam!] ? prev : { ...prev, [taskParam!]: { checklist: [], comments: [], attachments: [], activity: [], loading: true } }));
+
+      async function load() {
+        const [checklistRes, commentsRes, attachmentsRes, activityRes] = await Promise.all([
+          supabase.from('checklist_items').select('id, label, is_done, position').eq('task_id', taskParam!).order('position'),
+          supabase.from('comments').select('id, body, created_at, profiles(full_name)').eq('task_id', taskParam!).order('created_at'),
+          supabase.from('attachments').select('id, file_name, file_type, drive_url').eq('task_id', taskParam!).order('uploaded_at', { ascending: false }),
+          supabase
+            .from('activity_log')
+            .select('id, detail, created_at, profiles(full_name)')
+            .eq('entity_type', 'task')
+            .eq('entity_id', taskParam!)
+            .order('created_at', { ascending: false })
+            .limit(10),
+        ]);
+        setExpandData((prev) => ({
+          ...prev,
+          [taskParam!]: {
+            checklist: (checklistRes.data as ChecklistItem[]) ?? [],
+            comments: (commentsRes.data as unknown as CommentRow[]) ?? [],
+            attachments: (attachmentsRes.data as AttachmentRow[]) ?? [],
+            activity: (activityRes.data as unknown as TaskActivityRow[]) ?? [],
+            loading: false,
+          },
+        }));
+      }
+      load();
+    }
+    run();
+  }, [searchParams]);
+
+  // এক্সপ্যান্ড হওয়া রো-টা স্ক্রল করে দৃশ্যমান জায়গায় আনে (URL দিয়ে সরাসরি টাস্কে আসার সময় কাজে লাগে)
+  useEffect(() => {
+    if (!expandedId) return;
+    function run() {
+      document.getElementById(`task-row-${expandedId}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+    run();
+  }, [expandedId]);
+
   async function fetchTasksData(uid: string) {
     const [tasksRes, commentsRes, attachmentsRes, projectsRes, teamRes, profileRes] = await Promise.all([
       supabase.from('tasks').select(TASK_SELECT).order('updated_at', { ascending: false }),
@@ -419,6 +466,11 @@ function TasksPageInner() {
         loading: false,
       },
     }));
+  }
+
+  async function changeDescription(taskId: string, newDescription: string) {
+    const { error } = await supabase.from('tasks').update({ description: newDescription || null }).eq('id', taskId);
+    if (error) setError(error.message);
   }
 
   async function toggleChecklistItem(taskId: string, item: ChecklistItem) {
@@ -714,7 +766,7 @@ function TasksPageInner() {
 
                       return (
                         <Fragment key={task.id}>
-                          <tr className={`task-row${isExpanded ? ' expanded' : ''}${isSelected ? ' selected' : ''}`} onClick={() => toggleExpand(task.id)}>
+                          <tr id={`task-row-${task.id}`} className={`task-row${isExpanded ? ' expanded' : ''}${isSelected ? ' selected' : ''}`} onClick={() => toggleExpand(task.id)}>
                             <td onClick={(e) => e.stopPropagation()}>
                               <span className={`cb${isSelected ? ' checked' : ''}`} onClick={() => toggleSelect(task.id)}>
                                 {isSelected && <Icon name="tick" size={9} color="#fff" />}
@@ -803,7 +855,17 @@ function TasksPageInner() {
                                   <div className="expand-grid">
                                     <div>
                                       <div className="expand-label">Description</div>
-                                      <p className="expand-desc">{task.description || 'কোনো বিবরণ যোগ করা হয়নি।'}</p>
+                                      <textarea
+                                        className="field-input"
+                                        style={{ minHeight: 64, resize: 'vertical', marginBottom: 16 }}
+                                        placeholder="একটা বিবরণ যোগ করুন..."
+                                        value={task.description ?? ''}
+                                        onChange={(e) => {
+                                          const value = e.target.value;
+                                          setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, description: value } : t)));
+                                        }}
+                                        onBlur={(e) => changeDescription(task.id, e.target.value)}
+                                      />
 
                                       <div className="expand-label">
                                         Checklist{detail && detail.checklist.length > 0 ? ` · ${detail.checklist.filter((c) => c.is_done).length}/${detail.checklist.length}` : ''}
