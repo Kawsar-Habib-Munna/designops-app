@@ -173,6 +173,7 @@ export default function FilesPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const [showUpload, setShowUpload] = useState(false);
+  const [uploadMode, setUploadMode] = useState<'file' | 'link'>('file');
   const [newFileName, setNewFileName] = useState('');
   const [newDriveUrl, setNewDriveUrl] = useState('');
   const [newFileType, setNewFileType] = useState<string>('figma');
@@ -181,6 +182,9 @@ export default function FilesPage() {
   const [newClientId, setNewClientId] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -245,50 +249,130 @@ export default function FilesPage() {
     setSelectedId((cur) => (cur === id ? null : cur));
   }
 
-  async function handleUpload(e: FormEvent) {
-    e.preventDefault();
-    if (!newFileName.trim() || !newDriveUrl.trim() || !user) return;
-    setUploading(true);
-    setUploadError(null);
-
-    const { data, error } = await supabase
-      .from('attachments')
-      .insert({
-        file_name: newFileName.trim(),
-        drive_url: newDriveUrl.trim(),
-        file_type: newFileType,
-        task_id: attachMode === 'task' ? newTaskId || null : null,
-        client_id: attachMode === 'client' ? newClientId || null : null,
-        uploaded_by: user.id,
-      })
-      .select(ATTACHMENT_SELECT)
-      .single();
-
-    if (error) {
-      setUploadError(error.message);
-      setUploading(false);
-      return;
-    }
-
-    const row = data as unknown as AttachmentRow;
-    setAttachments((prev) => [row, ...prev]);
-    await supabase.from('activity_log').insert({
-      actor_id: user.id,
-      action: 'file_uploaded',
-      entity_type: 'attachment',
-      entity_id: row.id,
-      detail: `"${row.file_name}" যোগ করা হয়েছে`,
-    });
-    setActivity((prev) => [{ id: `${row.id}-local`, detail: `"${row.file_name}" যোগ করা হয়েছে`, created_at: new Date().toISOString(), profiles: profile ? { full_name: profile.full_name } : null }, ...prev]);
-
-    setUploading(false);
+  function closeUploadModal() {
+    setShowUpload(false);
+    setUploadMode('file');
     setNewFileName('');
     setNewDriveUrl('');
     setNewFileType('figma');
     setAttachMode('task');
     setNewTaskId('');
     setNewClientId('');
-    setShowUpload(false);
+    setSelectedFile(null);
+    setUploadProgress(0);
+    setUploadError(null);
+  }
+
+  function guessFileType(file: File): string {
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (ext === 'fig') return 'figma';
+    if (ext === 'pdf') return 'pdf';
+    if (file.type.startsWith('image/')) return 'image';
+    if (ext === 'zip' || ext === 'rar' || ext === '7z') return 'zip';
+    return 'other';
+  }
+
+  // dedicated Google অ্যাকাউন্টের সাথে OAuth দিয়ে কানেক্ট করা resumable upload —
+  // ফাইলের বাইট আমাদের সার্ভার দিয়ে যায় না, ব্রাউজার সরাসরি Google-কে পাঠায়
+  // (Vercel-এর ৪.৫MB body-size লিমিট এড়াতে), তাই real progress % পাওয়া যায়।
+  async function uploadFileToDrive(file: File, accessToken: string): Promise<{ id: string; webViewLink: string }> {
+    const initRes = await fetch('/api/drive-upload/init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ fileName: file.name, mimeType: file.type, fileSize: file.size }),
+    });
+    const initData = await initRes.json();
+    if (!initRes.ok) throw new Error(initData.error ?? 'আপলোড সেশন শুরু করা যায়নি।');
+
+    const uploadResult = await new Promise<{ id: string; webViewLink: string }>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', initData.uploadUrl, true);
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100));
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            resolve(JSON.parse(xhr.responseText));
+          } catch {
+            reject(new Error('Drive থেকে অপ্রত্যাশিত রেসপন্স এসেছে।'));
+          }
+        } else {
+          reject(new Error(`Drive আপলোড ব্যর্থ হয়েছে (status ${xhr.status})।`));
+        }
+      };
+      xhr.onerror = () => reject(new Error('নেটওয়ার্ক এরর — আপলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।'));
+      xhr.send(file);
+    });
+
+    const finalizeRes = await fetch('/api/drive-upload/finalize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ fileId: uploadResult.id }),
+    });
+    if (!finalizeRes.ok) {
+      const finalizeData = await finalizeRes.json().catch(() => ({}));
+      throw new Error(finalizeData.error ?? 'ফাইলের শেয়ারিং লিংক খোলা যায়নি।');
+    }
+
+    return uploadResult;
+  }
+
+  async function handleUpload(e: FormEvent) {
+    e.preventDefault();
+    if (!user) return;
+    setUploading(true);
+    setUploadError(null);
+    setUploadProgress(0);
+
+    try {
+      let fileName = newFileName.trim();
+      let driveUrl = newDriveUrl.trim();
+
+      if (uploadMode === 'file') {
+        if (!selectedFile) throw new Error('একটা ফাইল বেছে নিন।');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) throw new Error('সেশন পাওয়া যায়নি — আবার লগইন করুন।');
+        fileName = fileName || selectedFile.name;
+        const result = await uploadFileToDrive(selectedFile, session.access_token);
+        driveUrl = result.webViewLink;
+      }
+
+      if (!fileName || !driveUrl) throw new Error('ফাইলের নাম ও লিংক আবশ্যক।');
+
+      const { data, error } = await supabase
+        .from('attachments')
+        .insert({
+          file_name: fileName,
+          drive_url: driveUrl,
+          file_type: newFileType,
+          task_id: attachMode === 'task' ? newTaskId || null : null,
+          client_id: attachMode === 'client' ? newClientId || null : null,
+          uploaded_by: user.id,
+        })
+        .select(ATTACHMENT_SELECT)
+        .single();
+
+      if (error) throw new Error(error.message);
+
+      const row = data as unknown as AttachmentRow;
+      setAttachments((prev) => [row, ...prev]);
+      await supabase.from('activity_log').insert({
+        actor_id: user.id,
+        action: 'file_uploaded',
+        entity_type: 'attachment',
+        entity_id: row.id,
+        detail: `"${row.file_name}" যোগ করা হয়েছে`,
+      });
+      setActivity((prev) => [{ id: `${row.id}-local`, detail: `"${row.file_name}" যোগ করা হয়েছে`, created_at: new Date().toISOString(), profiles: profile ? { full_name: profile.full_name } : null }, ...prev]);
+
+      closeUploadModal();
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'আপলোড ব্যর্থ হয়েছে।');
+    } finally {
+      setUploading(false);
+    }
   }
 
   // ---- derived: project grouping ("folders"), progress stats, KPIs, filters ----
@@ -633,36 +717,83 @@ export default function FilesPage() {
 
       {/* UPLOAD MODAL */}
       {showUpload && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowUpload(false); }}>
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && !uploading) closeUploadModal(); }}>
           <div className="modal-box">
             <div className="modal-title">ফাইল যোগ করুন</div>
+            <div className="tab-row">
+              <button type="button" className={`tab-btn${uploadMode === 'file' ? ' active' : ''}`} onClick={() => setUploadMode('file')} disabled={uploading}>ফাইল আপলোড</button>
+              <button type="button" className={`tab-btn${uploadMode === 'link' ? ' active' : ''}`} onClick={() => setUploadMode('link')} disabled={uploading}>লিংক পেস্ট করুন</button>
+            </div>
             <form onSubmit={handleUpload}>
-              <label className="field-label">ফাইলের নাম</label>
-              <input className="field-input" type="text" value={newFileName} onChange={(e) => setNewFileName(e.target.value)} placeholder="যেমন: Homepage — Master File" autoFocus required />
+              {uploadMode === 'file' ? (
+                <>
+                  <div
+                    className={`dropzone${dragOver ? ' dragover' : ''}`}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragOver(false);
+                      const f = e.dataTransfer.files[0];
+                      if (f) { setSelectedFile(f); setNewFileType(guessFileType(f)); }
+                    }}
+                    onClick={() => document.getElementById('files-page-file-input')?.click()}
+                  >
+                    <input
+                      id="files-page-file-input"
+                      type="file"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0] ?? null;
+                        setSelectedFile(f);
+                        if (f) setNewFileType(guessFileType(f));
+                      }}
+                    />
+                    <div className="dropzone-icon"><Icon name="upload" size={16} /></div>
+                    <div className="dropzone-text">{selectedFile ? selectedFile.name : 'ফাইল টেনে আনুন বা ক্লিক করে বেছে নিন'}</div>
+                    <div className="dropzone-sub">{selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(1)} MB` : 'যেকোনো সাইজ — সরাসরি Google Drive-এ যাবে'}</div>
+                  </div>
 
-              <label className="field-label">Drive / Figma লিংক</label>
-              <input className="field-input" type="url" value={newDriveUrl} onChange={(e) => setNewDriveUrl(e.target.value)} placeholder="https://..." required />
+                  {uploading && (
+                    <div className="upload-progress-wrap">
+                      <div className="upload-progress-track"><div className="upload-progress-fill" style={{ width: `${uploadProgress}%` }}></div></div>
+                      <div className="upload-progress-label">{uploadProgress}% আপলোড হয়েছে</div>
+                    </div>
+                  )}
+
+                  <label className="field-label">ফাইলের নাম (ঐচ্ছিক)</label>
+                  <input className="field-input" type="text" value={newFileName} onChange={(e) => setNewFileName(e.target.value)} placeholder={selectedFile?.name ?? 'আসল ফাইলের নাম ব্যবহার হবে'} disabled={uploading} />
+                </>
+              ) : (
+                <>
+                  <label className="field-label">ফাইলের নাম</label>
+                  <input className="field-input" type="text" value={newFileName} onChange={(e) => setNewFileName(e.target.value)} placeholder="যেমন: Homepage — Master File" autoFocus required />
+
+                  <label className="field-label">Drive / Figma লিংক</label>
+                  <input className="field-input" type="url" value={newDriveUrl} onChange={(e) => setNewDriveUrl(e.target.value)} placeholder="https://..." required />
+                </>
+              )}
 
               <label className="field-label">ফাইলের ধরন</label>
-              <select className="field-input" value={newFileType} onChange={(e) => setNewFileType(e.target.value)}>
+              <select className="field-input" value={newFileType} onChange={(e) => setNewFileType(e.target.value)} disabled={uploading}>
                 {FILE_TYPES.map((t) => <option key={t} value={t}>{FILE_TYPE_META[t].label}</option>)}
               </select>
 
               <label className="field-label">যুক্ত করুন</label>
-              <select className="field-input" value={attachMode} onChange={(e) => setAttachMode(e.target.value as 'task' | 'client' | 'none')}>
+              <select className="field-input" value={attachMode} onChange={(e) => setAttachMode(e.target.value as 'task' | 'client' | 'none')} disabled={uploading}>
                 <option value="task">টাস্কের সাথে</option>
                 <option value="client">ক্লায়েন্টের সাথে</option>
                 <option value="none">কোনোটাই না</option>
               </select>
 
               {attachMode === 'task' && (
-                <select className="field-input" value={newTaskId} onChange={(e) => setNewTaskId(e.target.value)}>
+                <select className="field-input" value={newTaskId} onChange={(e) => setNewTaskId(e.target.value)} disabled={uploading}>
                   <option value="">টাস্ক বেছে নিন</option>
                   {taskOptions.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}
                 </select>
               )}
               {attachMode === 'client' && (
-                <select className="field-input" value={newClientId} onChange={(e) => setNewClientId(e.target.value)}>
+                <select className="field-input" value={newClientId} onChange={(e) => setNewClientId(e.target.value)} disabled={uploading}>
                   <option value="">ক্লায়েন্ট বেছে নিন</option>
                   {clientOptions.map((c) => <option key={c.id} value={c.id}>{c.company_name}</option>)}
                 </select>
@@ -671,8 +802,14 @@ export default function FilesPage() {
               {uploadError && <p style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 10 }}>{uploadError}</p>}
 
               <div className="modal-foot">
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowUpload(false)}>বাতিল</button>
-                <button type="submit" className="btn btn-accent btn-sm" disabled={uploading || !newFileName.trim() || !newDriveUrl.trim()}>{uploading ? 'যোগ হচ্ছে…' : 'যোগ করুন'}</button>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={closeUploadModal} disabled={uploading}>বাতিল</button>
+                <button
+                  type="submit"
+                  className="btn btn-accent btn-sm"
+                  disabled={uploading || (uploadMode === 'file' ? !selectedFile : !newFileName.trim() || !newDriveUrl.trim())}
+                >
+                  {uploading ? (uploadMode === 'file' ? `আপলোড হচ্ছে… ${uploadProgress}%` : 'যোগ হচ্ছে…') : 'যোগ করুন'}
+                </button>
               </div>
             </form>
           </div>

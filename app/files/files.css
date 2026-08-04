@@ -241,5 +241,21 @@
 .files-root .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .files-root .modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
 
+/* upload mode tabs + dropzone + real progress */
+.files-root .tab-row{display:flex;gap:4px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px;margin-bottom:16px;}
+.files-root .tab-btn{flex:1;font-size:12px;font-weight:600;padding:7px;border-radius:6px;color:var(--ink-soft);text-align:center;background:transparent;border:none;}
+.files-root .tab-btn.active{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-sm);}
+.files-root .dropzone{border:1.5px dashed var(--border);border-radius:var(--radius-md);padding:26px 16px;text-align:center;color:var(--ink-faint);margin-bottom:12px;transition:border-color .15s ease,background .15s ease;cursor:pointer;}
+.files-root .dropzone:hover,.files-root .dropzone.dragover{border-color:var(--accent);background:var(--accent-soft);}
+.files-root .dropzone-icon{width:34px;height:34px;border-radius:10px;background:var(--surface-muted);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 10px auto;color:var(--ink-faint);}
+.files-root .dropzone-text{font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:2px;word-break:break-all;}
+.files-root .dropzone-sub{font-size:11px;color:var(--ink-faint);}
+.files-root .or-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--ink-faint);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+.files-root .or-divider::before,.files-root .or-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.files-root .upload-progress-wrap{margin:2px 0 14px;}
+.files-root .upload-progress-track{height:6px;border-radius:999px;background:var(--border-soft);overflow:hidden;margin-bottom:6px;}
+.files-root .upload-progress-fill{height:100%;width:0%;border-radius:999px;background:var(--accent);transition:width .15s ease;}
+.files-root .upload-progress-label{font-size:11px;color:var(--ink-soft);font-weight:500;}
+
 @media (max-width:1200px){ .files-root .assets-layout{grid-template-columns:1fr;} .files-root .inspector{position:static;} .files-root .kpi-grid{grid-template-columns:repeat(3,1fr);} }
 @media (max-width:860px){ .files-root .sidebar{display:none;} .files-root .content{padding:20px;} .files-root .kpi-grid{grid-template-columns:repeat(2,1fr);} .files-root .search-box{display:none;} }
