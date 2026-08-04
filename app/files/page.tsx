@@ -275,7 +275,7 @@ export default function FilesPage() {
   // dedicated Google অ্যাকাউন্টের সাথে OAuth দিয়ে কানেক্ট করা resumable upload —
   // ফাইলের বাইট আমাদের সার্ভার দিয়ে যায় না, ব্রাউজার সরাসরি Google-কে পাঠায়
   // (Vercel-এর ৪.৫MB body-size লিমিট এড়াতে), তাই real progress % পাওয়া যায়।
-  async function uploadFileToDrive(file: File, accessToken: string): Promise<{ id: string; webViewLink: string }> {
+  async function uploadFileToDrive(file: File, accessToken: string): Promise<{ id: string; webViewLink: string; name?: string }> {
     const initRes = await fetch('/api/drive-upload/init', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
@@ -283,40 +283,35 @@ export default function FilesPage() {
     });
     const initData = await initRes.json();
     if (!initRes.ok) throw new Error(initData.error ?? 'আপলোড সেশন শুরু করা যায়নি।');
+    const uploadUrl: string = initData.uploadUrl;
 
-    const uploadResult = await new Promise<{ id: string; webViewLink: string }>((resolve, reject) => {
+    // ব্রাউজারের XHR PUT-এর নিজের রেসপন্স বিশ্বাস করা হয় না — CORS-এর কারণে Google
+    // আসলে ফাইল সফলভাবে সেভ করলেও ব্রাউজার মাঝে মাঝে সেই রেসপন্স পড়তে না পেরে
+    // "network error" দেখায়। তাই এখানে শুধু প্রোগ্রেস ট্র্যাক করা হয়; PUT শেষ হওয়ার
+    // পর (সফল হোক বা এরর দেখাক) সবসময় সার্ভারকে দিয়ে আসল অবস্থা যাচাই করানো হয়
+    // (নিচের finalize কল) — সেটাই এখানে ভরসাযোগ্য সোর্স অফ ট্রুথ।
+    await new Promise<void>((resolve) => {
       const xhr = new XMLHttpRequest();
-      xhr.open('PUT', initData.uploadUrl, true);
+      xhr.open('PUT', uploadUrl, true);
       xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100));
       };
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            resolve(JSON.parse(xhr.responseText));
-          } catch {
-            reject(new Error('Drive থেকে অপ্রত্যাশিত রেসপন্স এসেছে।'));
-          }
-        } else {
-          reject(new Error(`Drive আপলোড ব্যর্থ হয়েছে (status ${xhr.status})।`));
-        }
-      };
-      xhr.onerror = () => reject(new Error('নেটওয়ার্ক এরর — আপলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।'));
+      xhr.onload = () => resolve();
+      xhr.onerror = () => resolve();
       xhr.send(file);
     });
 
     const finalizeRes = await fetch('/api/drive-upload/finalize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify({ fileId: uploadResult.id }),
+      body: JSON.stringify({ uploadUrl }),
     });
-    if (!finalizeRes.ok) {
-      const finalizeData = await finalizeRes.json().catch(() => ({}));
-      throw new Error(finalizeData.error ?? 'ফাইলের শেয়ারিং লিংক খোলা যায়নি।');
-    }
+    const finalizeData = await finalizeRes.json();
+    if (!finalizeRes.ok) throw new Error(finalizeData.error ?? 'আপলোড সম্পন্ন করা যায়নি — আবার চেষ্টা করুন।');
 
-    return uploadResult;
+    setUploadProgress(100);
+    return { id: finalizeData.id, webViewLink: finalizeData.webViewLink, name: finalizeData.name };
   }
 
   async function handleUpload(e: FormEvent) {
@@ -590,10 +585,10 @@ export default function FilesPage() {
                               </div>
                               {chip && <span className={`review-chip ${chip.cls}`}>{chip.label}</span>}
                             </div>
-                            <div className="asset-hover-actions" onClick={(e) => e.stopPropagation()}>
+                            <div className="asset-hover-actions">
                               <a className="ah-btn" href={a.drive_url} target="_blank" rel="noopener noreferrer" title="লিংক খুলুন"><Icon name="link" size={14} /></a>
                               <button className="ah-btn" title={copiedId === a.id ? 'কপি হয়েছে!' : 'লিংক কপি করুন'} onClick={() => copyLink(a.drive_url, a.id)}><Icon name={copiedId === a.id ? 'check-circle' : 'link'} size={14} /></button>
-                              <button className="ah-btn" title="ডিলিট করুন" disabled={busyId === a.id} onClick={() => deleteAttachment(a.id)}><Icon name="trash" size={14} /></button>
+                              <button className="ah-btn" title="ডিলিট করুন" disabled={busyId === a.id} onClick={(e) => { e.stopPropagation(); deleteAttachment(a.id); }}><Icon name="trash" size={14} /></button>
                             </div>
                           </div>
                         );
