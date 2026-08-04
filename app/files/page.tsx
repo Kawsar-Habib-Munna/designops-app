@@ -688,10 +688,10 @@ export default function FilesPage() {
                   <div className="section-title-row"><span className="section-title">Google Drive</span></div>
                   <div className="integration-card">
                     <div className="integ-top">
-                      <div className="integ-icon" style={{ background: 'var(--warning-soft)', color: 'var(--warning)' }}><Icon name="archive" /></div>
-                      <div style={{ flex: 1 }}><div className="integ-name">Drive Links</div><div className="integ-status"><span className="status-dot"></span>কোনো OAuth কানেকশন নেই</div></div>
+                      <div className="integ-icon" style={{ background: 'var(--positive-soft)', color: 'var(--positive)' }}><Icon name="archive" /></div>
+                      <div style={{ flex: 1 }}><div className="integ-name">Studio Nine Drive</div><div className="integ-status"><span className="status-dot" style={{ background: 'var(--positive)' }}></span>Connected</div></div>
                     </div>
-                    <div className="integ-meta">এই অ্যাপ ফাইল হোস্ট করে না — Drive-এ আপলোড করা ফাইলের লিংক এখানে যোগ করুন, বাকিটা Drive-এই থাকে।</div>
+                    <div className="integ-meta">&ldquo;ফাইল যোগ করুন&rdquo; থেকে আপলোড করা ফাইল সরাসরি একটা dedicated Google অ্যাকাউন্টের Drive ফোল্ডারে জমা হয় — এই অ্যাপ নিজে কোনো ফাইল হোস্ট করে না, শুধু লিংক রাখে।</div>
                     <div className="integ-actions">
                       <button className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: 'center' }} disabled title="শীঘ্রই আসছে">Auto-Sync (শীঘ্রই)</button>
                     </div>
