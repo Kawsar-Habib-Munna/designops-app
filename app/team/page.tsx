@@ -11,7 +11,7 @@
 // সময়ভিত্তিক (দিন-অনুযায়ী ঘণ্টা) লগ টেবিল নেই, তাই ফেক শিডিউল/হিটম্যাপ
 // বসানো হয়নি। এগুলো চালু করতে একটা schedule/attendance টেবিল লাগবে।
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import './team.css';
 import { supabase } from '@/lib/supabaseClient';
@@ -98,7 +98,7 @@ function isThisWeek(dateStr: string) {
 
 const WEEKLY_CAPACITY_HOURS = 40;
 
-type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null };
+type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; is_admin?: boolean };
 
 type TeamTaskRow = {
   id: string;
@@ -119,6 +119,7 @@ type MemberStat = {
   name: string;
   role: string | null;
   avatar_color: string | null;
+  is_admin: boolean;
   activeTasks: number;
   projectIds: string[];
   estHours: number;
@@ -145,7 +146,7 @@ const TEAM_SELECT =
 
 async function fetchTeamData() {
   const [profilesRes, tasksRes, activityRes] = await Promise.all([
-    supabase.from('profiles').select('id, full_name, role, avatar_color').order('full_name'),
+    supabase.from('profiles').select('id, full_name, role, avatar_color, is_admin').order('full_name'),
     supabase.from('tasks').select(TEAM_SELECT),
     supabase.from('activity_log').select('id, detail, created_at, profiles(full_name)').order('created_at', { ascending: false }).limit(8),
   ]);
@@ -216,6 +217,7 @@ async function fetchTeamData() {
       name: p.full_name,
       role: p.role,
       avatar_color: p.avatar_color,
+      is_admin: !!p.is_admin,
       activeTasks,
       projectIds,
       estHours,
@@ -264,13 +266,29 @@ export default function TeamWorkloadPage() {
   const [error, setError] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('capacity');
 
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newRole, setNewRole] = useState('');
+  const [newIsAdmin, setNewIsAdmin] = useState(false);
+  const [addingMember, setAddingMember] = useState(false);
+  const [addMemberError, setAddMemberError] = useState<string | null>(null);
+
+  const [resetTarget, setResetTarget] = useState<{ id: string; name: string } | null>(null);
+  const [resetPassword, setResetPassword] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+
+  const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
+
   useEffect(() => {
     if (!user) return;
 
     async function run() {
       const [result, profileRes] = await Promise.all([
         fetchTeamData(),
-        supabase.from('profiles').select('id, full_name, role, avatar_color').eq('id', user!.id).single(),
+        supabase.from('profiles').select('id, full_name, role, avatar_color, is_admin').eq('id', user!.id).single(),
       ]);
       setError(result.errorMessage);
       setMembers(result.members);
@@ -293,6 +311,99 @@ export default function TeamWorkloadPage() {
     setActivity(result.activity);
     setCompletedThisWeek(result.completedThisWeek);
     setReloading(false);
+  }
+
+  async function handleAddMember(e: FormEvent) {
+    e.preventDefault();
+    setAddingMember(true);
+    setAddMemberError(null);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/api/team/create-member', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
+      body: JSON.stringify({ fullName: newName.trim(), email: newEmail.trim(), password: newPassword, role: newRole.trim(), isAdmin: newIsAdmin }),
+    });
+    const result = await res.json();
+    setAddingMember(false);
+
+    if (!res.ok) {
+      setAddMemberError(result.error ?? 'মেম্বার তৈরি করা যায়নি।');
+      return;
+    }
+
+    setNewName('');
+    setNewEmail('');
+    setNewPassword('');
+    setNewRole('');
+    setNewIsAdmin(false);
+    setShowAddMember(false);
+    handleReload();
+  }
+
+  async function handleRemoveMember(id: string, name: string) {
+    if (!window.confirm(`${name}-কে টিম থেকে রিমুভ করতে চান? এই অ্যাকশন ফেরানো যাবে না।`)) return;
+    setBusyMemberId(id);
+    setError(null);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/api/team/remove-member', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
+      body: JSON.stringify({ userId: id }),
+    });
+    const result = await res.json();
+    setBusyMemberId(null);
+
+    if (!res.ok) {
+      setError(result.error ?? 'মেম্বার রিমুভ করা যায়নি।');
+      return;
+    }
+    handleReload();
+  }
+
+  async function handleToggleAdmin(id: string, makeAdmin: boolean) {
+    setBusyMemberId(id);
+    setError(null);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/api/team/set-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
+      body: JSON.stringify({ userId: id, isAdmin: makeAdmin }),
+    });
+    const result = await res.json();
+    setBusyMemberId(null);
+
+    if (!res.ok) {
+      setError(result.error ?? 'এডমিন স্ট্যাটাস পরিবর্তন করা যায়নি।');
+      return;
+    }
+    handleReload();
+  }
+
+  async function handleResetPassword(e: FormEvent) {
+    e.preventDefault();
+    if (!resetTarget) return;
+    setResettingPassword(true);
+    setResetError(null);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/api/team/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
+      body: JSON.stringify({ userId: resetTarget.id, password: resetPassword }),
+    });
+    const result = await res.json();
+    setResettingPassword(false);
+
+    if (!res.ok) {
+      setResetError(result.error ?? 'পাসওয়ার্ড রিসেট করা যায়নি।');
+      return;
+    }
+
+    setResetPassword('');
+    setResetTarget(null);
   }
 
   const kpis = useMemo(() => {
@@ -393,7 +504,7 @@ export default function TeamWorkloadPage() {
                 <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="export" size={13} /> Export</button>
                 <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="bookmark" size={13} /> Saved Views</button>
                 <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="bar" size={13} /> Generate Report</button>
-                <button className="btn btn-accent" disabled title="শীঘ্রই আসছে"><Icon name="user-plus" /> Invite Member</button>
+                {profile?.is_admin && <button className="btn btn-accent" onClick={() => setShowAddMember(true)}><Icon name="user-plus" /> টিম মেম্বার যোগ করুন</button>}
               </div>
             </div>
 
@@ -429,8 +540,45 @@ export default function TeamWorkloadPage() {
                       <div className="member-card" key={m.id}>
                         <div className="member-top">
                           <div className="avatar" style={{ width: 38, height: 38, fontSize: 14, background: m.avatar_color ?? undefined }}>{Array.from(m.name)[0]}</div>
-                          <div><div className="member-name">{m.name}</div><div className="member-role">{m.role ?? 'Team Member'}</div></div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="member-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              {m.name}
+                              {m.is_admin && <span className="state-chip st-balanced" style={{ fontSize: 9.5 }}>Admin</span>}
+                            </div>
+                            <div className="member-role">{m.role ?? 'Team Member'}</div>
+                          </div>
                         </div>
+                        {profile?.is_admin && (
+                          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              style={{ flex: 1 }}
+                              disabled={busyMemberId === m.id}
+                              title="পাসওয়ার্ড রিসেট করুন"
+                              onClick={() => { setResetTarget({ id: m.id, name: m.name }); setResetPassword(''); setResetError(null); }}
+                            >
+                              পাসওয়ার্ড
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              style={{ flex: 1 }}
+                              disabled={busyMemberId === m.id || m.id === profile.id}
+                              title={m.id === profile.id ? 'নিজের এডমিন স্ট্যাটাস এখান থেকে বদলানো যাবে না' : ''}
+                              onClick={() => handleToggleAdmin(m.id, !m.is_admin)}
+                            >
+                              {m.is_admin ? 'এডমিন বাদ দিন' : 'এডমিন করুন'}
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              style={{ flex: 1, color: 'var(--danger)' }}
+                              disabled={busyMemberId === m.id || m.id === profile.id}
+                              title={m.id === profile.id ? 'নিজেকে রিমুভ করা যাবে না' : 'রিমুভ করুন'}
+                              onClick={() => handleRemoveMember(m.id, m.name)}
+                            >
+                              রিমুভ
+                            </button>
+                          </div>
+                        )}
                         <div className="capacity-row"><span className="capacity-pct tabular">{m.capacityPercent}%</span><span className={`state-chip ${state.cls}`}>{state.label}</span></div>
                         <div className="cap-track"><div className="cap-fill" style={{ width: `${m.capacityPercent}%`, background: state.color }}></div></div>
                         <div className="member-stat-grid">
@@ -601,7 +749,11 @@ export default function TeamWorkloadPage() {
                   <div className="qa-grid">
                     <Link className="qa-btn" href="/tasks"><div className="qa-icon"><Icon name="plus" size={14} /></div><span className="qa-label">টাস্ক তৈরি</span></Link>
                     <Link className="qa-btn" href="/projects"><div className="qa-icon"><Icon name="folder" size={14} /></div><span className="qa-label">প্রজেক্ট দেখুন</span></Link>
-                    <button className="qa-btn" disabled title="শীঘ্রই আসছে"><div className="qa-icon"><Icon name="user-plus" size={14} /></div><span className="qa-label">মেম্বার ইনভাইট</span></button>
+                    {profile?.is_admin ? (
+                      <button className="qa-btn" onClick={() => setShowAddMember(true)}><div className="qa-icon"><Icon name="user-plus" size={14} /></div><span className="qa-label">মেম্বার যোগ করুন</span></button>
+                    ) : (
+                      <button className="qa-btn" disabled title="শুধু এডমিনরা মেম্বার যোগ করতে পারবে"><div className="qa-icon"><Icon name="user-plus" size={14} /></div><span className="qa-label">মেম্বার যোগ করুন</span></button>
+                    )}
                     <button className="qa-btn" disabled title="শীঘ্রই আসছে"><div className="qa-icon"><Icon name="bar" size={14} /></div><span className="qa-label">রিপোর্ট বানান</span></button>
                   </div>
                 </section>
@@ -610,6 +762,50 @@ export default function TeamWorkloadPage() {
           </main>
         </div>
       </div>
+
+      {showAddMember && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowAddMember(false); }}>
+          <div className="modal-box">
+            <div className="modal-title">টিম মেম্বার যোগ করুন</div>
+            <form onSubmit={handleAddMember}>
+              <label className="field-label">নাম</label>
+              <input className="field-input" type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="যেমন: রাফি আহমেদ" autoFocus required />
+              <label className="field-label">ইমেইল</label>
+              <input className="field-input" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="you@studio.com" required />
+              <label className="field-label">পাসওয়ার্ড (কমপক্ষে ৮ ক্যারেক্টার)</label>
+              <input className="field-input" type="text" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="একটা অস্থায়ী পাসওয়ার্ড দিন" required minLength={8} />
+              <label className="field-label">রোল (ঐচ্ছিক)</label>
+              <input className="field-input" type="text" value={newRole} onChange={(e) => setNewRole(e.target.value)} placeholder="যেমন: UX Designer" />
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 14, cursor: 'pointer' }}>
+                <input type="checkbox" checked={newIsAdmin} onChange={(e) => setNewIsAdmin(e.target.checked)} />
+                এডমিন হিসেবে যোগ করুন (মেম্বার যোগ/রিমুভ করতে পারবে)
+              </label>
+              {addMemberError && <p style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 10 }}>{addMemberError}</p>}
+              <div className="modal-foot">
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowAddMember(false)}>বাতিল</button>
+                <button type="submit" className="btn btn-accent btn-sm" disabled={addingMember || !newName.trim() || !newEmail.trim() || newPassword.length < 8}>{addingMember ? 'তৈরি হচ্ছে…' : 'মেম্বার তৈরি করুন'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {resetTarget && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setResetTarget(null); }}>
+          <div className="modal-box">
+            <div className="modal-title">{resetTarget.name}-এর পাসওয়ার্ড রিসেট করুন</div>
+            <form onSubmit={handleResetPassword}>
+              <label className="field-label">নতুন পাসওয়ার্ড (কমপক্ষে ৮ ক্যারেক্টার)</label>
+              <input className="field-input" type="text" value={resetPassword} onChange={(e) => setResetPassword(e.target.value)} placeholder="নতুন পাসওয়ার্ড" autoFocus required minLength={8} />
+              {resetError && <p style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 10 }}>{resetError}</p>}
+              <div className="modal-foot">
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setResetTarget(null)}>বাতিল</button>
+                <button type="submit" className="btn btn-accent btn-sm" disabled={resettingPassword || resetPassword.length < 8}>{resettingPassword ? 'সেভ হচ্ছে…' : 'রিসেট করুন'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

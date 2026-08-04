@@ -19,6 +19,10 @@ export default function ProfileMenu({ profile, email, onUpdated }: { profile: Pr
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [newPassword, setNewPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
   const displayName = profile?.full_name?.trim() || email;
   const avatarInitial = Array.from(displayName)[0]?.toUpperCase() ?? '?';
 
@@ -26,6 +30,8 @@ export default function ProfileMenu({ profile, email, onUpdated }: { profile: Pr
     setName(profile?.full_name ?? '');
     setRole(profile?.role ?? '');
     setError(null);
+    setNewPassword('');
+    setPasswordMsg(null);
     setOpen(true);
   }
 
@@ -51,6 +57,23 @@ export default function ProfileMenu({ profile, email, onUpdated }: { profile: Pr
 
     onUpdated(data as Profile);
     setOpen(false);
+  }
+
+  async function handleChangePassword() {
+    if (newPassword.length < 8) {
+      setPasswordMsg({ text: 'পাসওয়ার্ড কমপক্ষে ৮ ক্যারেক্টার হতে হবে।', ok: false });
+      return;
+    }
+    setChangingPassword(true);
+    setPasswordMsg(null);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setChangingPassword(false);
+    if (error) {
+      setPasswordMsg({ text: error.message, ok: false });
+      return;
+    }
+    setNewPassword('');
+    setPasswordMsg({ text: 'পাসওয়ার্ড পরিবর্তন হয়েছে।', ok: true });
   }
 
   return (
@@ -93,6 +116,17 @@ export default function ProfileMenu({ profile, email, onUpdated }: { profile: Pr
                 </button>
               </div>
             </form>
+
+            <div style={{ borderTop: '1px solid var(--border)', marginTop: 16, paddingTop: 16 }}>
+              <label className="field-label">পাসওয়ার্ড পরিবর্তন করুন</label>
+              <input className="field-input" type="text" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="নতুন পাসওয়ার্ড (কমপক্ষে ৮ ক্যারেক্টার)" minLength={8} />
+              {passwordMsg && <p style={{ color: passwordMsg.ok ? 'var(--positive)' : 'var(--danger)', fontSize: 12, marginBottom: 10 }}>{passwordMsg.text}</p>}
+              <div className="modal-foot">
+                <button type="button" className="btn btn-ghost btn-sm" onClick={handleChangePassword} disabled={changingPassword || newPassword.length < 8}>
+                  {changingPassword ? 'পরিবর্তন হচ্ছে…' : 'পাসওয়ার্ড আপডেট করুন'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

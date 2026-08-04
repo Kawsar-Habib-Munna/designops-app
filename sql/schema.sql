@@ -259,3 +259,67 @@ alter table meetings add column if not exists meeting_link text;
 -- ঐচ্ছিক সময়সীমা — ক্যালেন্ডারে টাস্ক ডেডলাইনের জন্য শুধু তারিখ না, নির্দিষ্ট সময়ও
 -- (যেমন "বিকাল ৫টা") দেওয়ার অপশন। null রাখলে সারাদিনের ডেডলাইন হিসেবেই থাকবে।
 alter table tasks add column if not exists due_time time;
+
+-- ============================================
+-- এডমিন রোল
+-- শুধু is_admin=true প্রোফাইলরাই টিম মেম্বার যোগ/রিমুভ করতে বা অন্য কাউকে এডমিন
+-- বানাতে পারবে (দেখুন app/api/team/*)। যে অ্যাকাউন্টটা সবার আগে তৈরি হয়
+-- (profiles টেবিল তখনো খালি থাকে) সে স্বয়ংক্রিয়ভাবে এডমিন হয়ে যায়, যাতে
+-- কাউকে ম্যানুয়ালি SQL চালিয়ে নিজেকে এডমিন বানাতে না হয়।
+-- ============================================
+alter table profiles add column if not exists is_admin boolean default false;
+
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, full_name, is_admin)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'full_name', new.email),
+    (select count(*) from public.profiles) = 0
+  );
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- is_admin কলাম শুধু service_role (Admin API রুট) দিয়েই বদলানো যাবে — নাহলে
+-- "users can update own profile" পলিসির আওতায় (auth.uid() = id) যেকোনো লগইন
+-- করা ইউজার ব্রাউজার থেকে সরাসরি নিজেকেই এডমিন বানিয়ে ফেলতে পারত।
+create or replace function public.protect_admin_flag()
+returns trigger as $$
+begin
+  if new.is_admin is distinct from old.is_admin and auth.role() <> 'service_role' then
+    raise exception 'is_admin শুধু service_role (admin API) দিয়ে পরিবর্তন করা যায়।';
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists protect_admin_flag_trigger on profiles;
+create trigger protect_admin_flag_trigger
+  before update on profiles
+  for each row execute procedure public.protect_admin_flag();
+
+-- মেম্বার রিমুভ করলে (auth.users থেকে ডিলিট) তার করা টাস্ক/কমেন্ট/অ্যাক্টিভিটি
+-- যেন FK ভায়োলেশন এরর ছাড়াই "আনঅ্যাসাইনড" (NULL) হয়ে যায় — আগে এই ফরেন কী-গুলোর
+-- কোনো ON DELETE অ্যাকশন সেট করা ছিল না (ডিফল্ট NO ACTION)।
+alter table tasks drop constraint if exists tasks_assignee_id_fkey;
+alter table tasks add constraint tasks_assignee_id_fkey foreign key (assignee_id) references profiles(id) on delete set null;
+
+alter table tasks drop constraint if exists tasks_created_by_fkey;
+alter table tasks add constraint tasks_created_by_fkey foreign key (created_by) references profiles(id) on delete set null;
+
+alter table projects drop constraint if exists projects_project_manager_id_fkey;
+alter table projects add constraint projects_project_manager_id_fkey foreign key (project_manager_id) references profiles(id) on delete set null;
+
+alter table clients drop constraint if exists clients_account_manager_id_fkey;
+alter table clients add constraint clients_account_manager_id_fkey foreign key (account_manager_id) references profiles(id) on delete set null;
+
+alter table comments drop constraint if exists comments_author_id_fkey;
+alter table comments add constraint comments_author_id_fkey foreign key (author_id) references profiles(id) on delete set null;
+
+alter table attachments drop constraint if exists attachments_uploaded_by_fkey;
+alter table attachments add constraint attachments_uploaded_by_fkey foreign key (uploaded_by) references profiles(id) on delete set null;
+
+alter table activity_log drop constraint if exists activity_log_actor_id_fkey;
+alter table activity_log add constraint activity_log_actor_id_fkey foreign key (actor_id) references profiles(id) on delete set null;
