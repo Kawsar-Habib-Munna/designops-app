@@ -68,6 +68,7 @@ type ProjectRow = {
   status: string;
   progress: number | null;
   due_date: string | null;
+  description: string | null;
   clients: { company_name: string } | null;
 };
 
@@ -98,7 +99,7 @@ export default function ProjectsListPage() {
 
     async function run() {
       const [projectsRes, clientsRes, profileRes] = await Promise.all([
-        supabase.from('projects').select('id, name, status, progress, due_date, clients(company_name)').order('due_date', { ascending: true }),
+        supabase.from('projects').select('id, name, status, progress, due_date, description, clients(company_name)').order('due_date', { ascending: true }),
         supabase.from('clients').select('id, company_name').order('company_name'),
         supabase.from('profiles').select('id, full_name, role, avatar_color').eq('id', user!.id).single(),
       ]);
@@ -231,6 +232,7 @@ export default function ProjectsListPage() {
                         <div className="proj-card-icon">{p.name.charAt(0).toUpperCase()}</div>
                         <div><div className="proj-card-name">{p.name}</div><div className="proj-card-client">{p.clients?.company_name ?? '—'}</div></div>
                       </div>
+                      {p.description && <p className="proj-card-desc">{p.description}</p>}
                       <span className={`status-pill ${meta.cls}`}>{meta.label}</span>
                       <div className="progress-track"><div className="progress-fill" style={{ width: `${p.progress ?? 0}%` }}></div></div>
                       <div className="proj-card-foot"><span className="tabular">{p.progress ?? 0}% সম্পন্ন</span><span>ডেডলাইন: {formatBnDate(p.due_date) || '—'}</span></div>
