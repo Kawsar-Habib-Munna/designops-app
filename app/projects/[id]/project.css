@@ -134,6 +134,10 @@
 
 /* ---- summary card ---- */
 .projdetail-root .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:20px 22px;margin-bottom:20px;}
+.projdetail-root .desc-inline-input{width:100%;max-width:820px;display:block;border:none;border-bottom:1px solid transparent;background:transparent;font-size:13.5px;line-height:1.6;color:var(--ink-soft);font-family:inherit;padding:2px 0;margin-bottom:20px;outline:none;transition:border-color .15s ease;}
+.projdetail-root .desc-inline-input::placeholder{color:var(--ink-faint);}
+.projdetail-root .desc-inline-input:hover{border-bottom-color:var(--border);}
+.projdetail-root .desc-inline-input:focus{border-bottom-color:var(--accent);color:var(--ink);}
 .projdetail-root .summary-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:18px;align-items:start;}
 .projdetail-root .summary-stat-label{font-size:11px;color:var(--ink-faint);margin-bottom:5px;}
 .projdetail-root .summary-stat-value{font-size:15px;font-weight:600;letter-spacing:-0.01em;}

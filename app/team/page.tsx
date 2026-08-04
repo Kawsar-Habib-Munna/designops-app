@@ -232,10 +232,23 @@ async function fetchTeamData() {
   });
 
   // ---- project allocation ----
+  // প্রতিটা প্রজেক্টের progress এখন real টাস্ক completion থেকে হিসাব করা হয়
+  // (projects.progress কলাম সবসময় 0-ই থাকে, কোথাও আপডেট হয় না)।
+  const projectTaskStats = new Map<string, { done: number; total: number }>();
+  for (const t of tasks) {
+    if (!t.projects) continue;
+    const cur = projectTaskStats.get(t.projects.id) ?? { done: 0, total: 0 };
+    cur.total += 1;
+    if (t.status === 'done') cur.done += 1;
+    projectTaskStats.set(t.projects.id, cur);
+  }
+
   const allocMap = new Map<string, AllocProject>();
   for (const t of tasks) {
     if (!t.projects || t.status === 'done') continue;
-    const proj = allocMap.get(t.projects.id) ?? { id: t.projects.id, name: t.projects.name, status: t.projects.status, progress: t.projects.progress, due_date: t.projects.due_date, assignees: [] };
+    const stat = projectTaskStats.get(t.projects.id);
+    const progress = stat && stat.total > 0 ? Math.round((stat.done / stat.total) * 100) : 0;
+    const proj = allocMap.get(t.projects.id) ?? { id: t.projects.id, name: t.projects.name, status: t.projects.status, progress, due_date: t.projects.due_date, assignees: [] };
     if (t.assignee_id && !proj.assignees.some((a) => a.id === t.assignee_id)) {
       const profile = profileById.get(t.assignee_id);
       if (profile) proj.assignees.push({ id: profile.id, name: profile.full_name, avatar_color: profile.avatar_color });

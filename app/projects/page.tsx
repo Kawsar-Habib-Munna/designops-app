@@ -93,21 +93,33 @@ export default function ProjectsListPage() {
   const [newBudget, setNewBudget] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [creating, setCreating] = useState(false);
+  const [taskStats, setTaskStats] = useState<Record<string, { done: number; total: number }>>({});
 
   useEffect(() => {
     if (!user) return;
 
     async function run() {
-      const [projectsRes, clientsRes, profileRes] = await Promise.all([
+      const [projectsRes, clientsRes, profileRes, tasksRes] = await Promise.all([
         supabase.from('projects').select('id, name, status, progress, due_date, description, clients(company_name)').order('due_date', { ascending: true }),
         supabase.from('clients').select('id, company_name').order('company_name'),
         supabase.from('profiles').select('id, full_name, role, avatar_color').eq('id', user!.id).single(),
+        supabase.from('tasks').select('project_id, status').not('project_id', 'is', null),
       ]);
 
       if (projectsRes.error) setError(projectsRes.error.message);
       setProjects((projectsRes.data as unknown as ProjectRow[]) ?? []);
       setClientOptions((clientsRes.data as ClientOption[]) ?? []);
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);
+
+      const stats: Record<string, { done: number; total: number }> = {};
+      for (const t of (tasksRes.data as { project_id: string; status: string }[]) ?? []) {
+        const cur = stats[t.project_id] ?? { done: 0, total: 0 };
+        cur.total += 1;
+        if (t.status === 'done') cur.done += 1;
+        stats[t.project_id] = cur;
+      }
+      setTaskStats(stats);
+
       setLoading(false);
     }
 
@@ -226,6 +238,8 @@ export default function ProjectsListPage() {
               <div className="proj-grid">
                 {projects.map((p) => {
                   const meta = PROJECT_STATUS_META[p.status] ?? { label: p.status, cls: 's-todo' };
+                  const stat = taskStats[p.id];
+                  const progress = stat && stat.total > 0 ? Math.round((stat.done / stat.total) * 100) : 0;
                   return (
                     <Link className="proj-card" key={p.id} href={`/projects/${p.id}`}>
                       <div className="proj-card-top">
@@ -234,8 +248,8 @@ export default function ProjectsListPage() {
                       </div>
                       {p.description && <p className="proj-card-desc">{p.description}</p>}
                       <span className={`status-pill ${meta.cls}`}>{meta.label}</span>
-                      <div className="progress-track"><div className="progress-fill" style={{ width: `${p.progress ?? 0}%` }}></div></div>
-                      <div className="proj-card-foot"><span className="tabular">{p.progress ?? 0}% সম্পন্ন</span><span>ডেডলাইন: {formatBnDate(p.due_date) || '—'}</span></div>
+                      <div className="progress-track"><div className="progress-fill" style={{ width: `${progress}%` }}></div></div>
+                      <div className="proj-card-foot"><span className="tabular">{progress}% সম্পন্ন</span><span>ডেডলাইন: {formatBnDate(p.due_date) || '—'}</span></div>
                     </Link>
                   );
                 })}

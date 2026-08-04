@@ -297,11 +297,20 @@ export default function ProjectDetailPage() {
     if (error) setError(error.message);
   }
 
+  async function changeDescription(newDescription: string) {
+    const value = newDescription.trim() || null;
+    setProject((prev) => (prev ? { ...prev, description: value } : prev));
+    const { error } = await supabase.from('projects').update({ description: value }).eq('id', projectId);
+    if (error) setError(error.message);
+  }
+
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
 
   const displayName = profile?.full_name ?? user.email ?? 'ব্যবহারকারী';
   const avatarInitial = Array.from(displayName)[0]?.toUpperCase() ?? '?';
+  const doneTaskCount = tasks.filter((t) => t.status === 'done').length;
+  const computedProgress = tasks.length > 0 ? Math.round((doneTaskCount / tasks.length) * 100) : 0;
 
   if (loading) {
     return (
@@ -421,7 +430,7 @@ export default function ProjectDetailPage() {
                     {project.manager && <><span>PM: {project.manager.full_name}</span><span className="dividerdot"></span></>}
                     <span>ডেডলাইন: {formatBnDateLong(project.due_date) || '—'}</span>
                     <span className="dividerdot"></span>
-                    <span className="tabular" style={{ fontWeight: 600, color: 'var(--accent)' }}>{project.progress ?? 0}% সম্পন্ন</span>
+                    <span className="tabular" style={{ fontWeight: 600, color: 'var(--accent)' }}>{computedProgress}% সম্পন্ন</span>
                   </div>
                 </div>
               </div>
@@ -441,7 +450,14 @@ export default function ProjectDetailPage() {
 
             {/* summary card */}
             <div className="summary-card">
-              {project.description && <p style={{ fontSize: 13.5, lineHeight: 1.6, color: 'var(--ink-soft)', maxWidth: 820, marginBottom: 20 }}>{project.description}</p>}
+              <input
+                type="text"
+                className="desc-inline-input"
+                placeholder="একটা সংক্ষিপ্ত বিবরণ যোগ করুন..."
+                value={project.description ?? ''}
+                onChange={(e) => setProject((prev) => (prev ? { ...prev, description: e.target.value } : prev))}
+                onBlur={(e) => changeDescription(e.target.value)}
+              />
               <div className="summary-grid">
                 <div><div className="summary-stat-label">Start Date</div><div className="summary-stat-value">{formatBnDate(project.start_date) || '—'}</div></div>
                 <div><div className="summary-stat-label">Due Date</div><div className="summary-stat-value">{formatBnDate(project.due_date) || '—'}</div></div>
@@ -453,10 +469,10 @@ export default function ProjectDetailPage() {
                     <circle cx="22" cy="22" r="18" fill="none" stroke="var(--border-soft)" strokeWidth="5" />
                     <circle
                       cx="22" cy="22" r="18" fill="none" stroke="var(--accent)" strokeWidth="5" strokeLinecap="round"
-                      strokeDasharray="113" strokeDashoffset={113 - (113 * (project.progress ?? 0)) / 100}
+                      strokeDasharray="113" strokeDashoffset={113 - (113 * computedProgress) / 100}
                       transform="rotate(-90 22 22)"
                     />
-                    <text x="22" y="26" textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--ink)" fontFamily="Inter">{project.progress ?? 0}%</text>
+                    <text x="22" y="26" textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--ink)" fontFamily="Inter">{computedProgress}%</text>
                   </svg>
                   <span className="ring-label">Overall Progress</span>
                 </div>
@@ -481,7 +497,7 @@ export default function ProjectDetailPage() {
             <section className="block">
               <div className="section-title-row"><span className="section-title">Project Health</span></div>
               <div className="health-grid">
-                <div className="health-card"><div className="health-value tabular" style={{ color: 'var(--accent)' }}>{project.progress ?? 0}%</div><div className="health-label">Overall Progress</div></div>
+                <div className="health-card"><div className="health-value tabular" style={{ color: 'var(--accent)' }}>{computedProgress}%</div><div className="health-label">Overall Progress</div></div>
                 <div className="health-card"><div className="health-value tabular" style={{ color: 'var(--positive)' }}>{completed}</div><div className="health-label">Tasks Completed</div></div>
                 <div className="health-card"><div className="health-value tabular">{remaining}</div><div className="health-label">Tasks Remaining</div></div>
                 <div className="health-card"><div className="health-value tabular" style={{ color: 'var(--danger)' }}>{overdue}</div><div className="health-label">Overdue Tasks</div></div>

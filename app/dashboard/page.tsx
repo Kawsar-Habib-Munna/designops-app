@@ -252,6 +252,7 @@ export default function DashboardPage() {
         totalTasksRes,
         doneTasksRes,
         projectsRes,
+        projectTaskStatsRes,
         tasksRes,
         activityRes,
         workloadRes,
@@ -293,6 +294,7 @@ export default function DashboardPage() {
           )
           .order("due_date", { ascending: true })
           .limit(5),
+        supabase.from("tasks").select("project_id, status").not("project_id", "is", null),
         supabase
           .from("tasks")
           .select("id, title, status, priority, due_date, projects(name)")
@@ -329,6 +331,7 @@ export default function DashboardPage() {
         totalTasksRes,
         doneTasksRes,
         projectsRes,
+        projectTaskStatsRes,
         tasksRes,
         activityRes,
         workloadRes,
@@ -349,7 +352,18 @@ export default function DashboardPage() {
           : 0,
       });
 
-      setProjects((projectsRes.data as unknown as ProjectRow[]) ?? []);
+      const projectTaskStats = new Map<string, { done: number; total: number }>();
+      for (const row of (projectTaskStatsRes.data as { project_id: string; status: string }[]) ?? []) {
+        const cur = projectTaskStats.get(row.project_id) ?? { done: 0, total: 0 };
+        cur.total += 1;
+        if (row.status === "done") cur.done += 1;
+        projectTaskStats.set(row.project_id, cur);
+      }
+      const projectsWithProgress = ((projectsRes.data as unknown as ProjectRow[]) ?? []).map((p) => {
+        const stat = projectTaskStats.get(p.id);
+        return { ...p, progress: stat && stat.total > 0 ? Math.round((stat.done / stat.total) * 100) : 0 };
+      });
+      setProjects(projectsWithProgress);
       setTasks((tasksRes.data as unknown as DashTask[]) ?? []);
       setActivity((activityRes.data as unknown as ActivityRow[]) ?? []);
       setMeetings((meetingsRes.data as MeetingRow[]) ?? []);
