@@ -323,3 +323,11 @@ alter table attachments add constraint attachments_uploaded_by_fkey foreign key 
 
 alter table activity_log drop constraint if exists activity_log_actor_id_fkey;
 alter table activity_log add constraint activity_log_actor_id_fkey foreign key (actor_id) references profiles(id) on delete set null;
+
+-- ============================================
+-- FILES পেজ
+-- attachments টেবিলে আগে শুধু read/insert পলিসি ছিল — ফাইল রিমুভ করার কোনো
+-- উপায় ছিল না (delete পলিসি ছাড়া RLS চুপচাপ ব্লক করে দেয়)।
+-- ============================================
+drop policy if exists "team can write attachments" on attachments;
+create policy "team can write attachments" on attachments for all using (auth.role() = 'authenticated');

@@ -65,7 +65,7 @@ const NAV_ITEMS: { icon: IconName; label: string; href: string; active?: boolean
   { icon: 'calendar', label: 'Calendar', href: '/calendar' },
   { icon: 'users', label: 'Team', href: '/team', active: true },
   { icon: 'building', label: 'Clients', href: '#' },
-  { icon: 'file', label: 'Files', href: '#' },
+  { icon: 'file', label: 'Files', href: '/files' },
   { icon: 'bar', label: 'Reports', href: '#' },
 ];
 

@@ -92,7 +92,7 @@ const NAV_ITEMS: {
   { icon: "calendar", label: "Calendar", href: "/calendar" },
   { icon: "users", label: "Team", href: "/team" },
   { icon: "building", label: "Clients", href: "#" },
-  { icon: "file", label: "Files", href: "#" },
+  { icon: "file", label: "Files", href: "/files" },
   { icon: "bar", label: "Reports", href: "#" },
 ];
 
