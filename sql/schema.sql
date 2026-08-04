@@ -331,3 +331,22 @@ alter table activity_log add constraint activity_log_actor_id_fkey foreign key (
 -- ============================================
 drop policy if exists "team can write attachments" on attachments;
 create policy "team can write attachments" on attachments for all using (auth.role() = 'authenticated');
+
+-- আসল কাস্টম ফোল্ডার (আগে "Folders" শুধু প্রজেক্ট-ভিত্তিক অটো-গ্রুপিং ছিল,
+-- ম্যানুয়ালি ফোল্ডার তৈরি করার কোনো উপায় ছিল না) — এক লেভেল নেস্টিং সাপোর্ট করে
+-- (parent_id), মকআপের "New Folder" মোডালের "কোথায় রাখবেন" অপশনের সাথে মিলিয়ে।
+create table if not exists folders (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  parent_id uuid references folders(id) on delete cascade,
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz default now()
+);
+
+alter table folders enable row level security;
+create policy "team can read folders" on folders for select using (auth.role() = 'authenticated');
+create policy "team can write folders" on folders for all using (auth.role() = 'authenticated');
+
+create index if not exists idx_folders_parent on folders(parent_id);
+
+alter table attachments add column if not exists folder_id uuid references folders(id) on delete set null;

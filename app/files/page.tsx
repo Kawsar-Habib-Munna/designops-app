@@ -105,6 +105,7 @@ type ProfileRow = { id: string; full_name: string; role: string | null; avatar_c
 type TaskOption = { id: string; title: string; project_id: string | null; status: string };
 type ProjectOption = { id: string; name: string; due_date: string | null };
 type ClientOption = { id: string; company_name: string };
+type FolderRow = { id: string; name: string; parent_id: string | null };
 
 type AttachmentRow = {
   id: string;
@@ -114,27 +115,30 @@ type AttachmentRow = {
   uploaded_at: string;
   task_id: string | null;
   client_id: string | null;
+  folder_id: string | null;
   profiles: { full_name: string; avatar_color: string | null } | null;
   tasks: { id: string; title: string; workflow_stage: string; status: string; project_id: string | null; projects: { id: string; name: string; due_date: string | null } | null } | null;
   clients: { id: string; company_name: string } | null;
+  folders: { id: string; name: string } | null;
 };
 
 type ActivityRow = { id: string; detail: string | null; created_at: string; profiles: { full_name: string } | null };
 
 const ATTACHMENT_SELECT =
-  'id, file_name, file_type, drive_url, uploaded_at, task_id, client_id, profiles(full_name, avatar_color), tasks(id, title, workflow_stage, status, project_id, projects(id, name, due_date)), clients(id, company_name)';
+  'id, file_name, file_type, drive_url, uploaded_at, task_id, client_id, folder_id, profiles(full_name, avatar_color), tasks(id, title, workflow_stage, status, project_id, projects(id, name, due_date)), clients(id, company_name), folders(id, name)';
 
 async function fetchFilesData() {
-  const [attachmentsRes, projectsRes, tasksRes, clientsRes, teamRes, activityRes] = await Promise.all([
+  const [attachmentsRes, projectsRes, tasksRes, clientsRes, teamRes, activityRes, foldersRes] = await Promise.all([
     supabase.from('attachments').select(ATTACHMENT_SELECT).order('uploaded_at', { ascending: false }),
     supabase.from('projects').select('id, name, due_date').order('name'),
     supabase.from('tasks').select('id, title, project_id, status').order('title'),
     supabase.from('clients').select('id, company_name').order('company_name'),
     supabase.from('profiles').select('id, full_name, avatar_color').order('full_name'),
     supabase.from('activity_log').select('id, detail, created_at, profiles(full_name)').eq('entity_type', 'attachment').order('created_at', { ascending: false }).limit(8),
+    supabase.from('folders').select('id, name, parent_id').order('name'),
   ]);
 
-  const firstErrored = [attachmentsRes, projectsRes, tasksRes, clientsRes, teamRes, activityRes].find((r) => r.error);
+  const firstErrored = [attachmentsRes, projectsRes, tasksRes, clientsRes, teamRes, activityRes, foldersRes].find((r) => r.error);
 
   return {
     errorMessage: firstErrored?.error?.message ?? null,
@@ -144,6 +148,7 @@ async function fetchFilesData() {
     clientOptions: (clientsRes.data as ClientOption[]) ?? [],
     teamOptions: (teamRes.data as { id: string; full_name: string; avatar_color: string | null }[]) ?? [],
     activity: (activityRes.data as unknown as ActivityRow[]) ?? [],
+    folderOptions: (foldersRes.data as FolderRow[]) ?? [],
   };
 }
 
@@ -158,6 +163,7 @@ export default function FilesPage() {
   const [clientOptions, setClientOptions] = useState<ClientOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<{ id: string; full_name: string; avatar_color: string | null }[]>([]);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
+  const [folderOptions, setFolderOptions] = useState<FolderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [reloading, setReloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -180,11 +186,18 @@ export default function FilesPage() {
   const [attachMode, setAttachMode] = useState<'task' | 'client' | 'none'>('task');
   const [newTaskId, setNewTaskId] = useState('');
   const [newClientId, setNewClientId] = useState('');
+  const [uploadFolderId, setUploadFolderId] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
+
+  const [showNewFolder, setShowNewFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderParentId, setNewFolderParentId] = useState('');
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [newFolderError, setNewFolderError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -201,6 +214,7 @@ export default function FilesPage() {
       setClientOptions(result.clientOptions);
       setTeamOptions(result.teamOptions);
       setActivity(result.activity);
+      setFolderOptions(result.folderOptions);
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);
       setLoading(false);
     }
@@ -218,6 +232,7 @@ export default function FilesPage() {
     setClientOptions(result.clientOptions);
     setTeamOptions(result.teamOptions);
     setActivity(result.activity);
+    setFolderOptions(result.folderOptions);
     setReloading(false);
   }
 
@@ -258,9 +273,34 @@ export default function FilesPage() {
     setAttachMode('task');
     setNewTaskId('');
     setNewClientId('');
+    setUploadFolderId('');
     setSelectedFile(null);
     setUploadProgress(0);
     setUploadError(null);
+  }
+
+  async function handleCreateFolder(e: FormEvent) {
+    e.preventDefault();
+    if (!newFolderName.trim() || !user) return;
+    setCreatingFolder(true);
+    setNewFolderError(null);
+
+    const { data, error } = await supabase
+      .from('folders')
+      .insert({ name: newFolderName.trim(), parent_id: newFolderParentId || null, created_by: user.id })
+      .select('id, name, parent_id')
+      .single();
+
+    setCreatingFolder(false);
+    if (error) {
+      setNewFolderError(error.message);
+      return;
+    }
+
+    setFolderOptions((prev) => [...prev, data as FolderRow].sort((a, b) => a.name.localeCompare(b.name)));
+    setNewFolderName('');
+    setNewFolderParentId('');
+    setShowNewFolder(false);
   }
 
   function guessFileType(file: File): string {
@@ -344,6 +384,7 @@ export default function FilesPage() {
           file_type: newFileType,
           task_id: attachMode === 'task' ? newTaskId || null : null,
           client_id: attachMode === 'client' ? newClientId || null : null,
+          folder_id: uploadFolderId || null,
           uploaded_by: user.id,
         })
         .select(ATTACHMENT_SELECT)
@@ -385,30 +426,55 @@ export default function FilesPage() {
     return out;
   }, [taskOptions]);
 
+  // ফোল্ডার গ্রুপিং — একটা ফাইল কাস্টম ফোল্ডারে (ম্যানুয়ালি তৈরি) থাকলে সেটাই
+  // প্রাধান্য পায়, নাহলে লিংকড প্রজেক্ট/ক্লায়েন্ট থেকে অটো-বাকেট হয়।
   function groupKeyOf(a: AttachmentRow) {
-    if (a.tasks?.project_id) return a.tasks.project_id;
+    if (a.folder_id) return `folder:${a.folder_id}`;
+    if (a.tasks?.project_id) return `project:${a.tasks.project_id}`;
     if (a.client_id) return 'client';
     return 'other';
   }
 
-  const folders = useMemo(() => {
+  const folderCards = useMemo(() => {
     const counts = new Map<string, { count: number; lastAt: string }>();
     for (const a of attachments) {
       const key = groupKeyOf(a);
       const cur = counts.get(key);
-      if (!cur || a.uploaded_at > cur.lastAt) counts.set(key, { count: (cur?.count ?? 0) + 1, lastAt: cur ? (a.uploaded_at > cur.lastAt ? a.uploaded_at : cur.lastAt) : a.uploaded_at });
-      else counts.set(key, { ...cur, count: cur.count + 1 });
+      if (!cur) counts.set(key, { count: 1, lastAt: a.uploaded_at });
+      else counts.set(key, { count: cur.count + 1, lastAt: a.uploaded_at > cur.lastAt ? a.uploaded_at : cur.lastAt });
     }
+
     const projectById = new Map(projectOptions.map((p) => [p.id, p]));
-    const list = Array.from(counts.entries()).map(([key, stat]) => ({
-      key,
-      name: key === 'client' ? 'ক্লায়েন্ট ফাইল' : key === 'other' ? 'অন্যান্য' : projectById.get(key)?.name ?? 'অজানা প্রজেক্ট',
-      icon: (key === 'client' ? 'building' : key === 'other' ? 'file' : 'folder') as IconName,
-      count: stat.count,
-      lastAt: stat.lastAt,
-    }));
-    return list.sort((a, b) => b.count - a.count);
-  }, [attachments, projectOptions]);
+    const folderById = new Map(folderOptions.map((f) => [f.id, f]));
+
+    // কাস্টম ফোল্ডার — ফাইল না থাকলেও (count 0) দেখাবে, যেহেতু ইচ্ছাকৃতভাবে তৈরি করা
+    const customCards = folderOptions.map((f) => {
+      const stat = counts.get(`folder:${f.id}`);
+      const parentName = f.parent_id ? folderById.get(f.parent_id)?.name : null;
+      return {
+        key: `folder:${f.id}`,
+        name: f.name,
+        icon: 'folder' as IconName,
+        count: stat?.count ?? 0,
+        lastAt: stat?.lastAt ?? null,
+        parentName,
+      };
+    });
+
+    // প্রজেক্ট/ক্লায়েন্ট/অন্যান্য — অটো-ডিরাইভড, শুধু ফাইল থাকলেই দেখাবে
+    const autoCards = Array.from(counts.entries())
+      .filter(([key]) => !key.startsWith('folder:'))
+      .map(([key, stat]) => ({
+        key,
+        name: key === 'client' ? 'ক্লায়েন্ট ফাইল' : key === 'other' ? 'অন্যান্য' : projectById.get(key.replace('project:', ''))?.name ?? 'অজানা প্রজেক্ট',
+        icon: (key === 'client' ? 'building' : key === 'other' ? 'file' : 'folder') as IconName,
+        count: stat.count,
+        lastAt: stat.lastAt as string | null,
+        parentName: null as string | null,
+      }));
+
+    return [...customCards, ...autoCards].sort((a, b) => b.count - a.count);
+  }, [attachments, projectOptions, folderOptions]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -440,12 +506,12 @@ export default function FilesPage() {
     const stale = attachments.filter((a) => new Date(a.uploaded_at).getTime() < thirtyDaysAgoMs).length;
     if (stale > 0) list.push(`${stale}টা ফাইল ৩০+ দিন ধরে আপডেট হয়নি।`);
     if (kpis.pendingReview > 0) list.push(`${kpis.pendingReview}টা ফাইল রিভিউ-তে আটকে আছে।`);
-    const topFolder = folders.find((f) => f.key !== 'client' && f.key !== 'other');
+    const topFolder = folderCards.find((f) => f.key !== 'client' && f.key !== 'other' && f.count > 0);
     if (topFolder) list.push(`"${topFolder.name}"-এ সবচেয়ে বেশি (${topFolder.count}টা) ফাইল আছে।`);
     if (kpis.clientFiles > 0) list.push(`${kpis.clientFiles}টা ফাইল সরাসরি ক্লায়েন্টের সাথে যুক্ত।`);
     if (list.length === 0) list.push('এই মুহূর্তে ফাইল নিয়ে কোনো বিশেষ সতর্কতা নেই।');
     return list;
-  }, [attachments, kpis, folders]);
+  }, [attachments, kpis, folderCards]);
 
   const selected = attachments.find((a) => a.id === selectedId) ?? null;
 
@@ -492,6 +558,7 @@ export default function FilesPage() {
               </div>
               <div className="header-actions">
                 <button className="btn btn-ghost btn-sm" onClick={handleReload} disabled={reloading}><Icon name="refresh" size={13} /> {reloading ? 'রিলোড হচ্ছে…' : 'রিলোড'}</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setShowNewFolder(true)}><Icon name="folder" size={13} /> নতুন ফোল্ডার</button>
                 <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে">Figma-এর সাথে যুক্ত করুন</button>
               </div>
             </div>
@@ -528,15 +595,18 @@ export default function FilesPage() {
               </div>
             </div>
 
-            {/* folders (real project grouping) */}
-            {folders.length > 0 && (
+            {/* folders — কাস্টম ফোল্ডার (সবসময় দেখায়) + প্রজেক্ট/ক্লায়েন্ট অটো-বাকেট */}
+            {folderCards.length > 0 && (
               <section className="block">
-                <div className="section-title-row"><span className="section-title">প্রজেক্ট অনুযায়ী</span></div>
+                <div className="section-title-row"><span className="section-title">Folders</span></div>
                 <div className="folder-grid">
-                  {folders.map((f) => (
+                  {folderCards.map((f) => (
                     <button key={f.key} className={`folder-card${folderFilter === f.key ? ' active' : ''}`} onClick={() => setFolderFilter((cur) => (cur === f.key ? null : f.key))}>
                       <div className="folder-icon"><Icon name={f.icon} /></div>
-                      <div><div className="folder-name">{f.name}</div><div className="folder-meta">{f.count} · {relativeTimeBn(f.lastAt)}</div></div>
+                      <div>
+                        <div className="folder-name">{f.name}</div>
+                        <div className="folder-meta">{f.count} · {f.lastAt ? relativeTimeBn(f.lastAt) : 'কোনো ফাইল নেই'}{f.parentName ? ` · ${f.parentName}-এর ভেতরে` : ''}</div>
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -625,6 +695,7 @@ export default function FilesPage() {
                               <div><div className="insp-field-label">Uploaded</div><div className="insp-field-value">{formatBnDate(selected.uploaded_at) || '—'}</div></div>
                               <div><div className="insp-field-label">Uploader</div><div className="insp-field-value">{selected.profiles?.full_name ?? '—'}</div></div>
                               <div><div className="insp-field-label">Review Status</div><div className="insp-field-value" style={{ color: chip ? undefined : 'var(--ink-faint)' }}>{chip?.label ?? '—'}</div></div>
+                              <div><div className="insp-field-label">Folder</div><div className="insp-field-value" style={{ color: selected.folders ? undefined : 'var(--ink-faint)' }}>{selected.folders?.name ?? '—'}</div></div>
                             </div>
                           </div>
 
@@ -794,6 +865,12 @@ export default function FilesPage() {
                 </select>
               )}
 
+              <label className="field-label">ফোল্ডার (ঐচ্ছিক)</label>
+              <select className="field-input" value={uploadFolderId} onChange={(e) => setUploadFolderId(e.target.value)} disabled={uploading}>
+                <option value="">কোনো ফোল্ডারে না</option>
+                {folderOptions.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+              </select>
+
               {uploadError && <p style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 10 }}>{uploadError}</p>}
 
               <div className="modal-foot">
@@ -805,6 +882,32 @@ export default function FilesPage() {
                 >
                   {uploading ? (uploadMode === 'file' ? `আপলোড হচ্ছে… ${uploadProgress}%` : 'যোগ হচ্ছে…') : 'যোগ করুন'}
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* NEW FOLDER MODAL */}
+      {showNewFolder && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowNewFolder(false); }}>
+          <div className="modal-box">
+            <div className="modal-title">নতুন ফোল্ডার</div>
+            <form onSubmit={handleCreateFolder}>
+              <label className="field-label">ফোল্ডারের নাম</label>
+              <input className="field-input" type="text" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} placeholder="যেমন: Brand Assets" autoFocus required />
+
+              <label className="field-label">কোথায় রাখবেন (ঐচ্ছিক)</label>
+              <select className="field-input" value={newFolderParentId} onChange={(e) => setNewFolderParentId(e.target.value)}>
+                <option value="">রুট (সব ফোল্ডারের বাইরে)</option>
+                {folderOptions.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+              </select>
+
+              {newFolderError && <p style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 10 }}>{newFolderError}</p>}
+
+              <div className="modal-foot">
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowNewFolder(false)}>বাতিল</button>
+                <button type="submit" className="btn btn-accent btn-sm" disabled={creatingFolder || !newFolderName.trim()}>{creatingFolder ? 'তৈরি হচ্ছে…' : 'তৈরি করুন'}</button>
               </div>
             </form>
           </div>
