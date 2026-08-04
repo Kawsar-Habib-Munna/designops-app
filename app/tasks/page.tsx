@@ -192,6 +192,7 @@ function TasksPageInner() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandData, setExpandData] = useState<Record<string, ExpandData>>({});
   const [newComment, setNewComment] = useState<Record<string, string>>({});
+  const [newChecklistItem, setNewChecklistItem] = useState<Record<string, string>>({});
 
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -481,6 +482,30 @@ function TasksPageInner() {
       return { ...prev, [taskId]: { ...cur, checklist: cur.checklist.map((c) => (c.id === item.id ? { ...c, is_done: newDone } : c)) } };
     });
     await supabase.from('checklist_items').update({ is_done: newDone }).eq('id', item.id);
+  }
+
+  async function addChecklistItem(taskId: string) {
+    const label = (newChecklistItem[taskId] ?? '').trim();
+    if (!label) return;
+
+    const currentLength = expandData[taskId]?.checklist.length ?? 0;
+    const { data, error } = await supabase
+      .from('checklist_items')
+      .insert({ task_id: taskId, label, position: currentLength })
+      .select('id, label, is_done, position')
+      .single();
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    setExpandData((prev) => {
+      const cur = prev[taskId];
+      if (!cur) return prev;
+      return { ...prev, [taskId]: { ...cur, checklist: [...cur.checklist, data as ChecklistItem] } };
+    });
+    setNewChecklistItem((prev) => ({ ...prev, [taskId]: '' }));
   }
 
   async function submitComment(taskId: string) {
@@ -872,15 +897,31 @@ function TasksPageInner() {
                                       </div>
                                       {!detail || detail.loading ? (
                                         <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
-                                      ) : detail.checklist.length === 0 ? (
-                                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>কোনো চেকলিস্ট আইটেম নেই।</p>
                                       ) : (
-                                        detail.checklist.map((item) => (
-                                          <button key={item.id} className={`checklist-item${item.is_done ? ' done' : ''}`} onClick={() => toggleChecklistItem(task.id, item)}>
-                                            <span className="icb">{item.is_done && <Icon name="tick" size={8} color="#fff" />}</span>
-                                            {item.label}
-                                          </button>
-                                        ))
+                                        <>
+                                          {detail.checklist.length === 0 ? (
+                                            <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>কোনো চেকলিস্ট আইটেম নেই।</p>
+                                          ) : (
+                                            detail.checklist.map((item) => (
+                                              <button key={item.id} className={`checklist-item${item.is_done ? ' done' : ''}`} onClick={() => toggleChecklistItem(task.id, item)}>
+                                                <span className="icb">{item.is_done && <Icon name="tick" size={8} color="#fff" />}</span>
+                                                {item.label}
+                                              </button>
+                                            ))
+                                          )}
+                                          <div className="comment-form">
+                                            <input
+                                              type="text"
+                                              placeholder="নতুন আইটেম যোগ করুন..."
+                                              value={newChecklistItem[task.id] ?? ''}
+                                              onChange={(e) => setNewChecklistItem((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                                              onKeyDown={(e) => {
+                                                if (e.key === 'Enter') addChecklistItem(task.id);
+                                              }}
+                                            />
+                                            <button className="btn btn-ghost btn-sm" onClick={() => addChecklistItem(task.id)}>যোগ করুন</button>
+                                          </div>
+                                        </>
                                       )}
                                     </div>
 
