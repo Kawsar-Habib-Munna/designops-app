@@ -450,9 +450,9 @@ export default function ProjectDetailPage() {
 
             {/* summary card */}
             <div className="summary-card">
-              <input
-                type="text"
+              <textarea
                 className="desc-inline-input"
+                rows={2}
                 placeholder="একটা সংক্ষিপ্ত বিবরণ যোগ করুন..."
                 value={project.description ?? ''}
                 onChange={(e) => setProject((prev) => (prev ? { ...prev, description: e.target.value } : prev))}
