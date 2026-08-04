@@ -297,13 +297,6 @@ export default function ProjectDetailPage() {
     if (error) setError(error.message);
   }
 
-  async function changeDescription(newDescription: string) {
-    const value = newDescription.trim() || null;
-    setProject((prev) => (prev ? { ...prev, description: value } : prev));
-    const { error } = await supabase.from('projects').update({ description: value }).eq('id', projectId);
-    if (error) setError(error.message);
-  }
-
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
 
@@ -450,14 +443,7 @@ export default function ProjectDetailPage() {
 
             {/* summary card */}
             <div className="summary-card">
-              <textarea
-                className="desc-inline-input"
-                rows={2}
-                placeholder="একটা সংক্ষিপ্ত বিবরণ যোগ করুন..."
-                value={project.description ?? ''}
-                onChange={(e) => setProject((prev) => (prev ? { ...prev, description: e.target.value } : prev))}
-                onBlur={(e) => changeDescription(e.target.value)}
-              />
+              {project.description && <p className="proj-description">{project.description}</p>}
               <div className="summary-grid">
                 <div><div className="summary-stat-label">Start Date</div><div className="summary-stat-value">{formatBnDate(project.start_date) || '—'}</div></div>
                 <div><div className="summary-stat-label">Due Date</div><div className="summary-stat-value">{formatBnDate(project.due_date) || '—'}</div></div>
