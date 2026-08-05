@@ -231,6 +231,9 @@
 .files-root .empty-title{font-size:13.5px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;}
 .files-root .empty-sub{font-size:12px;max-width:280px;line-height:1.6;margin-bottom:14px;}
 
+.files-root .pagination-row{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:18px;}
+.files-root .pagination-label{font-size:12.5px;color:var(--ink-soft);font-weight:500;}
+
 /* ---- modals (shared pattern with other pages) ---- */
 .files-root .modal-overlay{position:fixed;inset:0;background:rgba(14,14,18,0.45);display:flex;align-items:flex-start;justify-content:center;padding-top:10vh;z-index:100;overflow-y:auto;}
 .files-root .modal-box{width:100%;max-width:440px;background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow-lg);padding:20px;margin-bottom:40px;}

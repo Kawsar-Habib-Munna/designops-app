@@ -350,3 +350,6 @@ create policy "team can write folders" on folders for all using (auth.role() = '
 create index if not exists idx_folders_parent on folders(parent_id);
 
 alter table attachments add column if not exists folder_id uuid references folders(id) on delete set null;
+
+-- ফোল্ডার তৈরির সময় ঐচ্ছিকভাবে কোন প্রজেক্টের সাথে সম্পর্কিত তা ট্যাগ করা যায়
+alter table folders add column if not exists project_id uuid references projects(id) on delete set null;

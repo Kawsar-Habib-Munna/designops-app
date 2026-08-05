@@ -78,6 +78,8 @@ const NAV_ITEMS_BOTTOM: { icon: IconName; label: string; href: string }[] = [
   { icon: 'settings', label: 'Settings', href: '#' },
 ];
 
+const ASSETS_PAGE_SIZE = 6;
+
 const FILE_TYPES = ['figma', 'pdf', 'image', 'zip', 'other'] as const;
 const FILE_TYPE_META: Record<string, { icon: IconName; label: string; bg: string; color: string }> = {
   figma: { icon: 'figma', label: 'Figma', bg: 'linear-gradient(135deg,var(--accent-soft),var(--accent-soft-2))', color: 'var(--accent)' },
@@ -105,7 +107,7 @@ type ProfileRow = { id: string; full_name: string; role: string | null; avatar_c
 type TaskOption = { id: string; title: string; project_id: string | null; status: string };
 type ProjectOption = { id: string; name: string; due_date: string | null };
 type ClientOption = { id: string; company_name: string };
-type FolderRow = { id: string; name: string; parent_id: string | null };
+type FolderRow = { id: string; name: string; parent_id: string | null; project_id: string | null };
 
 type AttachmentRow = {
   id: string;
@@ -122,23 +124,20 @@ type AttachmentRow = {
   folders: { id: string; name: string } | null;
 };
 
-type ActivityRow = { id: string; detail: string | null; created_at: string; profiles: { full_name: string } | null };
-
 const ATTACHMENT_SELECT =
   'id, file_name, file_type, drive_url, uploaded_at, task_id, client_id, folder_id, profiles(full_name, avatar_color), tasks(id, title, workflow_stage, status, project_id, projects(id, name, due_date)), clients(id, company_name), folders(id, name)';
 
 async function fetchFilesData() {
-  const [attachmentsRes, projectsRes, tasksRes, clientsRes, teamRes, activityRes, foldersRes] = await Promise.all([
+  const [attachmentsRes, projectsRes, tasksRes, clientsRes, teamRes, foldersRes] = await Promise.all([
     supabase.from('attachments').select(ATTACHMENT_SELECT).order('uploaded_at', { ascending: false }),
     supabase.from('projects').select('id, name, due_date').order('name'),
     supabase.from('tasks').select('id, title, project_id, status').order('title'),
     supabase.from('clients').select('id, company_name').order('company_name'),
     supabase.from('profiles').select('id, full_name, avatar_color').order('full_name'),
-    supabase.from('activity_log').select('id, detail, created_at, profiles(full_name)').eq('entity_type', 'attachment').order('created_at', { ascending: false }).limit(8),
-    supabase.from('folders').select('id, name, parent_id').order('name'),
+    supabase.from('folders').select('id, name, parent_id, project_id').order('name'),
   ]);
 
-  const firstErrored = [attachmentsRes, projectsRes, tasksRes, clientsRes, teamRes, activityRes, foldersRes].find((r) => r.error);
+  const firstErrored = [attachmentsRes, projectsRes, tasksRes, clientsRes, teamRes, foldersRes].find((r) => r.error);
 
   return {
     errorMessage: firstErrored?.error?.message ?? null,
@@ -147,7 +146,6 @@ async function fetchFilesData() {
     taskOptions: (tasksRes.data as TaskOption[]) ?? [],
     clientOptions: (clientsRes.data as ClientOption[]) ?? [],
     teamOptions: (teamRes.data as { id: string; full_name: string; avatar_color: string | null }[]) ?? [],
-    activity: (activityRes.data as unknown as ActivityRow[]) ?? [],
     folderOptions: (foldersRes.data as FolderRow[]) ?? [],
   };
 }
@@ -162,7 +160,6 @@ export default function FilesPage() {
   const [taskOptions, setTaskOptions] = useState<TaskOption[]>([]);
   const [clientOptions, setClientOptions] = useState<ClientOption[]>([]);
   const [teamOptions, setTeamOptions] = useState<{ id: string; full_name: string; avatar_color: string | null }[]>([]);
-  const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [folderOptions, setFolderOptions] = useState<FolderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [reloading, setReloading] = useState(false);
@@ -172,6 +169,7 @@ export default function FilesPage() {
   const [typeFilter, setTypeFilter] = useState('');
   const [uploaderFilter, setUploaderFilter] = useState('');
   const [folderFilter, setFolderFilter] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -196,6 +194,7 @@ export default function FilesPage() {
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderParentId, setNewFolderParentId] = useState('');
+  const [newFolderProjectId, setNewFolderProjectId] = useState('');
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderError, setNewFolderError] = useState<string | null>(null);
 
@@ -213,7 +212,6 @@ export default function FilesPage() {
       setTaskOptions(result.taskOptions);
       setClientOptions(result.clientOptions);
       setTeamOptions(result.teamOptions);
-      setActivity(result.activity);
       setFolderOptions(result.folderOptions);
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);
       setLoading(false);
@@ -231,7 +229,6 @@ export default function FilesPage() {
     setTaskOptions(result.taskOptions);
     setClientOptions(result.clientOptions);
     setTeamOptions(result.teamOptions);
-    setActivity(result.activity);
     setFolderOptions(result.folderOptions);
     setReloading(false);
   }
@@ -254,10 +251,17 @@ export default function FilesPage() {
   async function deleteAttachment(id: string) {
     if (!window.confirm('এই ফাইলটা লিস্ট থেকে সরাতে চান? (আসল ফাইল Drive-এ থেকে যাবে, শুধু লিংক রিমুভ হবে)')) return;
     setBusyId(id);
-    const { error } = await supabase.from('attachments').delete().eq('id', id);
+    // .select() যোগ করা আছে যাতে RLS delete পলিসি না থাকলে (০ রো ডিলিট হয়ে চুপচাপ
+    // পাস হয়ে যাওয়া) সেটা ধরা যায় — নাহলে UI থেকে অপটিমিস্টিকালি সরিয়ে ফেললেও
+    // আসলে ডাটাবেজে থেকে যেত, আর রিফ্রেশ করলে ফাইলটা আবার ফিরে আসত।
+    const { data, error } = await supabase.from('attachments').delete().eq('id', id).select('id');
     setBusyId(null);
     if (error) {
       setError(error.message);
+      return;
+    }
+    if (!data || data.length === 0) {
+      setError('ফাইলটা ডিলিট করা যায়নি — পারমিশন সমস্যা হতে পারে (attachments-এর RLS delete পলিসি চেক করুন)।');
       return;
     }
     setAttachments((prev) => prev.filter((a) => a.id !== id));
@@ -279,6 +283,21 @@ export default function FilesPage() {
     setUploadError(null);
   }
 
+  // কোনো ফোল্ডার সিলেক্ট করা অবস্থায় (যেমন খালি ফোল্ডার থেকে) "ফাইল যোগ করুন" চাপলে
+  // সেই ফোল্ডারটাই মোডালে আগে থেকে বেছে রাখে।
+  function openUploadModal() {
+    if (folderFilter?.startsWith('folder:')) setUploadFolderId(folderFilter.replace('folder:', ''));
+    setShowUpload(true);
+  }
+
+  function closeNewFolderModal() {
+    setShowNewFolder(false);
+    setNewFolderName('');
+    setNewFolderParentId('');
+    setNewFolderProjectId('');
+    setNewFolderError(null);
+  }
+
   async function handleCreateFolder(e: FormEvent) {
     e.preventDefault();
     if (!newFolderName.trim() || !user) return;
@@ -287,8 +306,8 @@ export default function FilesPage() {
 
     const { data, error } = await supabase
       .from('folders')
-      .insert({ name: newFolderName.trim(), parent_id: newFolderParentId || null, created_by: user.id })
-      .select('id, name, parent_id')
+      .insert({ name: newFolderName.trim(), parent_id: newFolderParentId || null, project_id: newFolderProjectId || null, created_by: user.id })
+      .select('id, name, parent_id, project_id')
       .single();
 
     setCreatingFolder(false);
@@ -298,9 +317,7 @@ export default function FilesPage() {
     }
 
     setFolderOptions((prev) => [...prev, data as FolderRow].sort((a, b) => a.name.localeCompare(b.name)));
-    setNewFolderName('');
-    setNewFolderParentId('');
-    setShowNewFolder(false);
+    closeNewFolderModal();
   }
 
   function guessFileType(file: File): string {
@@ -401,7 +418,6 @@ export default function FilesPage() {
         entity_id: row.id,
         detail: `"${row.file_name}" যোগ করা হয়েছে`,
       });
-      setActivity((prev) => [{ id: `${row.id}-local`, detail: `"${row.file_name}" যোগ করা হয়েছে`, created_at: new Date().toISOString(), profiles: profile ? { full_name: profile.full_name } : null }, ...prev]);
 
       closeUploadModal();
     } catch (err) {
@@ -451,6 +467,7 @@ export default function FilesPage() {
     const customCards = folderOptions.map((f) => {
       const stat = counts.get(`folder:${f.id}`);
       const parentName = f.parent_id ? folderById.get(f.parent_id)?.name : null;
+      const projectName = f.project_id ? projectById.get(f.project_id)?.name : null;
       return {
         key: `folder:${f.id}`,
         name: f.name,
@@ -458,6 +475,7 @@ export default function FilesPage() {
         count: stat?.count ?? 0,
         lastAt: stat?.lastAt ?? null,
         parentName,
+        projectName,
       };
     });
 
@@ -471,6 +489,7 @@ export default function FilesPage() {
         count: stat.count,
         lastAt: stat.lastAt as string | null,
         parentName: null as string | null,
+        projectName: null as string | null,
       }));
 
     return [...customCards, ...autoCards].sort((a, b) => b.count - a.count);
@@ -490,6 +509,10 @@ export default function FilesPage() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attachments, search, typeFilter, uploaderFilter, folderFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ASSETS_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedAssets = filtered.slice((currentPage - 1) * ASSETS_PAGE_SIZE, currentPage * ASSETS_PAGE_SIZE);
 
   const kpis = useMemo(() => {
     const sevenDaysAgoMs = msSinceDaysAgo(7);
@@ -546,7 +569,6 @@ export default function FilesPage() {
           <header className="topbar">
             <button className="search-box"><Icon name="search" /><span style={{ flex: 1, textAlign: 'left' }}>খুঁজুন — ফাইল, প্রজেক্ট...</span></button>
             <div className="topbar-spacer"></div>
-            <button className="btn btn-accent" onClick={() => setShowUpload(true)}><Icon name="upload" /> ফাইল যোগ করুন</button>
             <button className="icon-btn" onClick={() => setDark((d) => !d)} aria-label="থিম"><Icon name={dark ? 'moon' : 'sun'} /></button>
           </header>
 
@@ -559,6 +581,7 @@ export default function FilesPage() {
               <div className="header-actions">
                 <button className="btn btn-ghost btn-sm" onClick={handleReload} disabled={reloading}><Icon name="refresh" size={13} /> {reloading ? 'রিলোড হচ্ছে…' : 'রিলোড'}</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => setShowNewFolder(true)}><Icon name="folder" size={13} /> নতুন ফোল্ডার</button>
+                <button className="btn btn-accent btn-sm" onClick={openUploadModal}><Icon name="upload" size={13} /> ফাইল যোগ করুন</button>
                 <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে">Figma-এর সাথে যুক্ত করুন</button>
               </div>
             </div>
@@ -576,17 +599,17 @@ export default function FilesPage() {
 
             {/* toolbar */}
             <div className="toolbar">
-              <div className="toolbar-search"><Icon name="search" size={13} /><input placeholder="ফাইলের নাম..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>
-              <select className="filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+              <div className="toolbar-search"><Icon name="search" size={13} /><input placeholder="ফাইলের নাম..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} /></div>
+              <select className="filter-select" value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}>
                 <option value="">সব টাইপ</option>
                 {FILE_TYPES.map((t) => <option key={t} value={t}>{FILE_TYPE_META[t].label}</option>)}
               </select>
-              <select className="filter-select" value={uploaderFilter} onChange={(e) => setUploaderFilter(e.target.value)}>
+              <select className="filter-select" value={uploaderFilter} onChange={(e) => { setUploaderFilter(e.target.value); setPage(1); }}>
                 <option value="">সব আপলোডার</option>
                 {teamOptions.map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
               </select>
               {(search || typeFilter || uploaderFilter || folderFilter) && (
-                <button className="filter-chip" onClick={() => { setSearch(''); setTypeFilter(''); setUploaderFilter(''); setFolderFilter(null); }}><Icon name="close" size={12} /> Clear Filters</button>
+                <button className="filter-chip" onClick={() => { setSearch(''); setTypeFilter(''); setUploaderFilter(''); setFolderFilter(null); setPage(1); }}><Icon name="close" size={12} /> Clear Filters</button>
               )}
               <div className="toolbar-spacer"></div>
               <div className="view-toggle">
@@ -601,11 +624,11 @@ export default function FilesPage() {
                 <div className="section-title-row"><span className="section-title">Folders</span></div>
                 <div className="folder-grid">
                   {folderCards.map((f) => (
-                    <button key={f.key} className={`folder-card${folderFilter === f.key ? ' active' : ''}`} onClick={() => setFolderFilter((cur) => (cur === f.key ? null : f.key))}>
+                    <button key={f.key} className={`folder-card${folderFilter === f.key ? ' active' : ''}`} onClick={() => { setFolderFilter((cur) => (cur === f.key ? null : f.key)); setPage(1); }}>
                       <div className="folder-icon"><Icon name={f.icon} /></div>
                       <div>
                         <div className="folder-name">{f.name}</div>
-                        <div className="folder-meta">{f.count} · {f.lastAt ? relativeTimeBn(f.lastAt) : 'কোনো ফাইল নেই'}{f.parentName ? ` · ${f.parentName}-এর ভেতরে` : ''}</div>
+                        <div className="folder-meta">{f.count} · {f.lastAt ? relativeTimeBn(f.lastAt) : 'কোনো ফাইল নেই'}{f.parentName ? ` · ${f.parentName}-এর ভেতরে` : ''}{f.projectName ? ` · ${f.projectName}` : ''}</div>
                       </div>
                     </button>
                   ))}
@@ -625,12 +648,16 @@ export default function FilesPage() {
                     <div className="empty-state">
                       <div className="empty-icon"><Icon name="file" /></div>
                       <div className="empty-title">কোনো ফাইল পাওয়া যায়নি</div>
-                      <div className="empty-sub">এই ফিল্টারে কোনো অ্যাসেট নেই, অথবা এখনো কোনো ফাইল যোগ করা হয়নি।</div>
-                      <button className="btn btn-accent btn-sm" onClick={() => setShowUpload(true)}><Icon name="upload" size={13} /> ফাইল যোগ করুন</button>
+                      <div className="empty-sub">
+                        {folderFilter?.startsWith('folder:')
+                          ? 'এই ফোল্ডারে এখনো কোনো ফাইল নেই — এখান থেকেই একটা যোগ করুন।'
+                          : 'এই ফিল্টারে কোনো অ্যাসেট নেই, অথবা এখনো কোনো ফাইল যোগ করা হয়নি।'}
+                      </div>
+                      <button className="btn btn-accent btn-sm" onClick={openUploadModal}><Icon name="upload" size={13} /> ফাইল যোগ করুন</button>
                     </div>
                   ) : (
                     <div className={`asset-grid${viewMode === 'list' ? ' list-view' : ''}`}>
-                      {filtered.map((a) => {
+                      {paginatedAssets.map((a) => {
                         const meta = fileTypeMeta(a.file_type);
                         const chip = fileReviewChip(a.tasks?.workflow_stage);
                         const isFav = favorites.has(a.id);
@@ -663,6 +690,14 @@ export default function FilesPage() {
                           </div>
                         );
                       })}
+                    </div>
+                  )}
+
+                  {!loading && filtered.length > ASSETS_PAGE_SIZE && (
+                    <div className="pagination-row">
+                      <button className="btn btn-ghost btn-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={currentPage <= 1}>আগের</button>
+                      <span className="pagination-label tabular">পেজ {currentPage} / {totalPages}</span>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>পরের</button>
                     </div>
                   )}
                 </section>
@@ -735,47 +770,28 @@ export default function FilesPage() {
               </aside>
             </div>
 
-            {/* Recent Activity + Google Drive + AI Insights */}
-            <div className="assets-layout" style={{ marginTop: 6 }}>
-              <div>
-                <section className="block">
-                  <div className="section-title-row"><span className="section-title">Recent Activity</span></div>
-                  <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '6px 0', boxShadow: 'var(--shadow-sm)' }}>
-                    {activity.length === 0 ? (
-                      <p style={{ padding: 16, fontSize: 13, color: 'var(--ink-faint)' }}>এখনো কোনো ফাইল-সংক্রান্ত অ্যাক্টিভিটি নেই।</p>
-                    ) : (
-                      activity.map((a) => (
-                        <div className="activity-row" key={a.id}>
-                          <div className="activity-icon"><Icon name="upload" size={13} /></div>
-                          <div><div className="activity-text"><b>{a.profiles?.full_name ?? 'কেউ একজন'}</b> {a.detail}</div><div className="activity-time">{relativeTimeBn(a.created_at)}</div></div>
-                        </div>
-                      ))
-                    )}
+            {/* Google Drive + AI Insights */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 6 }}>
+              <section className="block">
+                <div className="section-title-row"><span className="section-title">Google Drive</span></div>
+                <div className="integration-card">
+                  <div className="integ-top">
+                    <div className="integ-icon" style={{ background: 'var(--positive-soft)', color: 'var(--positive)' }}><Icon name="archive" /></div>
+                    <div style={{ flex: 1 }}><div className="integ-name">Studio Nine Drive</div><div className="integ-status"><span className="status-dot" style={{ background: 'var(--positive)' }}></span>Connected</div></div>
                   </div>
-                </section>
-              </div>
-              <div>
-                <section className="block">
-                  <div className="section-title-row"><span className="section-title">Google Drive</span></div>
-                  <div className="integration-card">
-                    <div className="integ-top">
-                      <div className="integ-icon" style={{ background: 'var(--positive-soft)', color: 'var(--positive)' }}><Icon name="archive" /></div>
-                      <div style={{ flex: 1 }}><div className="integ-name">Studio Nine Drive</div><div className="integ-status"><span className="status-dot" style={{ background: 'var(--positive)' }}></span>Connected</div></div>
-                    </div>
-                    <div className="integ-meta">&ldquo;ফাইল যোগ করুন&rdquo; থেকে আপলোড করা ফাইল সরাসরি একটা dedicated Google অ্যাকাউন্টের Drive ফোল্ডারে জমা হয় — এই অ্যাপ নিজে কোনো ফাইল হোস্ট করে না, শুধু লিংক রাখে।</div>
-                    <div className="integ-actions">
-                      <button className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: 'center' }} disabled title="শীঘ্রই আসছে">Auto-Sync (শীঘ্রই)</button>
-                    </div>
+                  <div className="integ-meta">&ldquo;ফাইল যোগ করুন&rdquo; থেকে আপলোড করা ফাইল সরাসরি একটা dedicated Google অ্যাকাউন্টের Drive ফোল্ডারে জমা হয় — এই অ্যাপ নিজে কোনো ফাইল হোস্ট করে না, শুধু লিংক রাখে।</div>
+                  <div className="integ-actions">
+                    <button className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: 'center' }} disabled title="শীঘ্রই আসছে">Auto-Sync (শীঘ্রই)</button>
                   </div>
-                </section>
+                </div>
+              </section>
 
-                <section className="block">
-                  <div className="section-title-row"><span className="section-title">AI Asset Insights</span></div>
-                  <div className="ai-card-mini">
-                    {insights.map((text, i) => (<div className="ai-item-mini" key={i}><span className="dot"></span> {text}</div>))}
-                  </div>
-                </section>
-              </div>
+              <section className="block">
+                <div className="section-title-row"><span className="section-title">AI Asset Insights</span></div>
+                <div className="ai-card-mini">
+                  {insights.map((text, i) => (<div className="ai-item-mini" key={i}><span className="dot"></span> {text}</div>))}
+                </div>
+              </section>
             </div>
           </main>
         </div>
@@ -890,23 +906,30 @@ export default function FilesPage() {
 
       {/* NEW FOLDER MODAL */}
       {showNewFolder && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowNewFolder(false); }}>
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) closeNewFolderModal(); }}>
           <div className="modal-box">
             <div className="modal-title">নতুন ফোল্ডার</div>
             <form onSubmit={handleCreateFolder}>
               <label className="field-label">ফোল্ডারের নাম</label>
               <input className="field-input" type="text" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} placeholder="যেমন: Brand Assets" autoFocus required />
 
+              <label className="field-label">প্রজেক্ট (ঐচ্ছিক)</label>
+              <select className="field-input" value={newFolderProjectId} onChange={(e) => setNewFolderProjectId(e.target.value)}>
+                <option value="">কোনো প্রজেক্টের সাথে না</option>
+                {projectOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+
               <label className="field-label">কোথায় রাখবেন (ঐচ্ছিক)</label>
               <select className="field-input" value={newFolderParentId} onChange={(e) => setNewFolderParentId(e.target.value)}>
                 <option value="">রুট (সব ফোল্ডারের বাইরে)</option>
                 {folderOptions.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
               </select>
+              <p style={{ fontSize: 11, color: 'var(--ink-faint)', marginTop: -6, marginBottom: 12 }}>একটা ফোল্ডার বেছে নিলে নতুনটা তার ভেতরে নেস্টেড হবে, নাহলে আলাদা টপ-লেভেল ফোল্ডার হবে।</p>
 
               {newFolderError && <p style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 10 }}>{newFolderError}</p>}
 
               <div className="modal-foot">
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowNewFolder(false)}>বাতিল</button>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={closeNewFolderModal}>বাতিল</button>
                 <button type="submit" className="btn btn-accent btn-sm" disabled={creatingFolder || !newFolderName.trim()}>{creatingFolder ? 'তৈরি হচ্ছে…' : 'তৈরি করুন'}</button>
               </div>
             </form>
