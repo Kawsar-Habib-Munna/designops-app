@@ -120,9 +120,16 @@ type ReactionRow = { id: string; reply_id: string; profile_id: string; emoji: st
 type DiscussionAttachmentRow = { id: string; discussion_id: string; file_name: string; file_type: string | null; url: string };
 type MentionRow = { discussion_id: string; profile_id: string };
 
-const DISCUSSION_SELECT = 'id, title, description, category, tags, project_id, author_id, status, is_pinned, is_draft, is_archived, created_at, profiles(full_name, role, avatar_color), projects(id, name)';
-const VOTE_SELECT = 'id, title, description, project_id, author_id, allow_multiple, is_anonymous, ends_at, status, is_pinned, is_draft, is_archived, created_at, profiles(full_name, role, avatar_color), projects(id, name)';
-const REPLY_SELECT = 'id, discussion_id, author_id, body, created_at, updated_at, profiles(full_name, role, avatar_color)';
+// discussion_mentions টেবিলটাও discussions<->profiles-এর মধ্যে একটা many-to-many
+// পথ তৈরি করে ফেলে (discussion_id + profile_id), তাই author_id-এর FK embed
+// করার সময় "!author_id" হিন্ট না দিলে PostgREST দুটো সম্পর্কের মধ্যে confuse
+// হয়ে "more than one relationship was found" এরর দেয়।
+const DISCUSSION_SELECT = 'id, title, description, category, tags, project_id, author_id, status, is_pinned, is_draft, is_archived, created_at, profiles!author_id(full_name, role, avatar_color), projects(id, name)';
+// একই কারণে vote_responses (votes<->profiles) আর reply_reactions
+// (discussion_replies<->profiles) নিজেরাও many-to-many পথ তৈরি করে, তাই এখানেও
+// "!author_id" হিন্ট দরকার।
+const VOTE_SELECT = 'id, title, description, project_id, author_id, allow_multiple, is_anonymous, ends_at, status, is_pinned, is_draft, is_archived, created_at, profiles!author_id(full_name, role, avatar_color), projects(id, name)';
+const REPLY_SELECT = 'id, discussion_id, author_id, body, created_at, updated_at, profiles!author_id(full_name, role, avatar_color)';
 
 async function fetchDiscussionsData() {
   const [discRes, voteRes, optRes, respRes, replyRes, reactRes, discAttRes, replyAttRes, mentionRes, teamRes, projectsRes, tasksRes] = await Promise.all([
