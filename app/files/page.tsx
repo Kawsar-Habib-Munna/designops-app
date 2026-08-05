@@ -48,6 +48,7 @@ const ICON_PATHS: Record<string, string> = {
   archive: '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/>',
   eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
   link: '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>',
+  copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   upload: '<path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
   star: '<path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/>',
   spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
@@ -684,7 +685,7 @@ export default function FilesPage() {
                             </div>
                             <div className="asset-hover-actions">
                               <a className="ah-btn" href={a.drive_url} target="_blank" rel="noopener noreferrer" title="লিংক খুলুন"><Icon name="link" size={14} /></a>
-                              <button className="ah-btn" title={copiedId === a.id ? 'কপি হয়েছে!' : 'লিংক কপি করুন'} onClick={() => copyLink(a.drive_url, a.id)}><Icon name={copiedId === a.id ? 'check-circle' : 'link'} size={14} /></button>
+                              <button className="ah-btn" title={copiedId === a.id ? 'কপি হয়েছে!' : 'লিংক কপি করুন'} onClick={() => copyLink(a.drive_url, a.id)}><Icon name={copiedId === a.id ? 'check-circle' : 'copy'} size={14} /></button>
                               <button className="ah-btn" title="ডিলিট করুন" disabled={busyId === a.id} onClick={(e) => { e.stopPropagation(); deleteAttachment(a.id); }}><Icon name="trash" size={14} /></button>
                             </div>
                           </div>
