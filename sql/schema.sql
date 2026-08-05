@@ -353,3 +353,141 @@ alter table attachments add column if not exists folder_id uuid references folde
 
 -- ফোল্ডার তৈরির সময় ঐচ্ছিকভাবে কোন প্রজেক্টের সাথে সম্পর্কিত তা ট্যাগ করা যায়
 alter table folders add column if not exists project_id uuid references projects(id) on delete set null;
+
+-- ============================================
+-- DISCUSSIONS & VOTING পেজ
+-- টিম আলোচনা (থ্রেড + রিপ্লাই + রিঅ্যাকশন) এবং ভোট (অপশন + রেসপন্স) —
+-- বাকি টেবিলগুলোর মতোই: ৯ জনের ইন্টারনাল টুল, যেকোনো authenticated ইউজার
+-- পড়তে/লিখতে পারবে।
+-- ============================================
+create table if not exists discussions (
+  id uuid default gen_random_uuid() primary key,
+  title text not null,
+  description text,
+  category text,
+  tags text,
+  project_id uuid references projects(id) on delete set null,
+  author_id uuid references profiles(id) on delete set null,
+  status text default 'open',          -- open | resolved | closed
+  is_pinned boolean default false,
+  is_draft boolean default false,
+  is_archived boolean default false,
+  created_at timestamptz default now()
+);
+
+create table if not exists discussion_mentions (
+  discussion_id uuid references discussions(id) on delete cascade,
+  profile_id uuid references profiles(id) on delete cascade,
+  primary key (discussion_id, profile_id)
+);
+
+create table if not exists discussion_attachments (
+  id uuid default gen_random_uuid() primary key,
+  discussion_id uuid references discussions(id) on delete cascade,
+  file_name text not null,
+  file_type text,
+  url text not null,
+  created_at timestamptz default now()
+);
+
+create table if not exists discussion_replies (
+  id uuid default gen_random_uuid() primary key,
+  discussion_id uuid references discussions(id) on delete cascade,
+  author_id uuid references profiles(id) on delete set null,
+  body text not null,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists reply_attachments (
+  id uuid default gen_random_uuid() primary key,
+  reply_id uuid references discussion_replies(id) on delete cascade,
+  file_name text not null,
+  file_type text,
+  url text not null
+);
+
+create table if not exists reply_reactions (
+  id uuid default gen_random_uuid() primary key,
+  reply_id uuid references discussion_replies(id) on delete cascade,
+  profile_id uuid references profiles(id) on delete cascade,
+  emoji text not null,
+  created_at timestamptz default now(),
+  unique (reply_id, profile_id, emoji)
+);
+
+create table if not exists votes (
+  id uuid default gen_random_uuid() primary key,
+  title text not null,
+  description text,
+  project_id uuid references projects(id) on delete set null,
+  author_id uuid references profiles(id) on delete set null,
+  allow_multiple boolean default false,
+  is_anonymous boolean default false,
+  ends_at timestamptz,
+  status text default 'open',          -- open | closed
+  is_pinned boolean default false,
+  is_draft boolean default false,
+  is_archived boolean default false,
+  created_at timestamptz default now()
+);
+
+create table if not exists vote_options (
+  id uuid default gen_random_uuid() primary key,
+  vote_id uuid references votes(id) on delete cascade,
+  label text not null,
+  position int default 0
+);
+
+create table if not exists vote_responses (
+  id uuid default gen_random_uuid() primary key,
+  vote_id uuid references votes(id) on delete cascade,
+  option_id uuid references vote_options(id) on delete cascade,
+  voter_id uuid references profiles(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique (vote_id, voter_id, option_id)
+);
+
+alter table discussions enable row level security;
+alter table discussion_mentions enable row level security;
+alter table discussion_attachments enable row level security;
+alter table discussion_replies enable row level security;
+alter table reply_attachments enable row level security;
+alter table reply_reactions enable row level security;
+alter table votes enable row level security;
+alter table vote_options enable row level security;
+alter table vote_responses enable row level security;
+
+create policy "team can read discussions" on discussions for select using (auth.role() = 'authenticated');
+create policy "team can write discussions" on discussions for all using (auth.role() = 'authenticated');
+
+create policy "team can read discussion_mentions" on discussion_mentions for select using (auth.role() = 'authenticated');
+create policy "team can write discussion_mentions" on discussion_mentions for all using (auth.role() = 'authenticated');
+
+create policy "team can read discussion_attachments" on discussion_attachments for select using (auth.role() = 'authenticated');
+create policy "team can write discussion_attachments" on discussion_attachments for all using (auth.role() = 'authenticated');
+
+create policy "team can read discussion_replies" on discussion_replies for select using (auth.role() = 'authenticated');
+create policy "team can write discussion_replies" on discussion_replies for all using (auth.role() = 'authenticated');
+
+create policy "team can read reply_attachments" on reply_attachments for select using (auth.role() = 'authenticated');
+create policy "team can write reply_attachments" on reply_attachments for all using (auth.role() = 'authenticated');
+
+create policy "team can read reply_reactions" on reply_reactions for select using (auth.role() = 'authenticated');
+create policy "team can write reply_reactions" on reply_reactions for all using (auth.role() = 'authenticated');
+
+create policy "team can read votes" on votes for select using (auth.role() = 'authenticated');
+create policy "team can write votes" on votes for all using (auth.role() = 'authenticated');
+
+create policy "team can read vote_options" on vote_options for select using (auth.role() = 'authenticated');
+create policy "team can write vote_options" on vote_options for all using (auth.role() = 'authenticated');
+
+create policy "team can read vote_responses" on vote_responses for select using (auth.role() = 'authenticated');
+create policy "team can write vote_responses" on vote_responses for all using (auth.role() = 'authenticated');
+
+create index if not exists idx_discussions_project on discussions(project_id);
+create index if not exists idx_discussion_replies_discussion on discussion_replies(discussion_id);
+create index if not exists idx_reply_reactions_reply on reply_reactions(reply_id);
+create index if not exists idx_vote_options_vote on vote_options(vote_id);
+create index if not exists idx_vote_responses_vote on vote_responses(vote_id);
+create index if not exists idx_vote_responses_voter on vote_responses(voter_id);

@@ -93,6 +93,7 @@ const NAV_ITEMS: {
   { icon: "users", label: "Team", href: "/team" },
   { icon: "building", label: "Clients", href: "#" },
   { icon: "file", label: "Files", href: "/files" },
+  { icon: "message", label: "Discussions", href: "/discussions" },
   { icon: "bar", label: "Reports", href: "#" },
 ];
 
