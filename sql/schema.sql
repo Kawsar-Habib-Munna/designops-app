@@ -491,3 +491,21 @@ create index if not exists idx_reply_reactions_reply on reply_reactions(reply_id
 create index if not exists idx_vote_options_vote on vote_options(vote_id);
 create index if not exists idx_vote_responses_vote on vote_responses(vote_id);
 create index if not exists idx_vote_responses_voter on vote_responses(voter_id);
+
+-- ============================================
+-- ভোটেও এখন ডিসকাশনের মতোই অ্যাটাচমেন্ট (ফাইল আপলোড / Drive লিংক) যোগ করা যায়
+-- ============================================
+create table if not exists vote_attachments (
+  id uuid default gen_random_uuid() primary key,
+  vote_id uuid references votes(id) on delete cascade,
+  file_name text not null,
+  file_type text,
+  url text not null,
+  created_at timestamptz default now()
+);
+
+alter table vote_attachments enable row level security;
+create policy "team can read vote_attachments" on vote_attachments for select using (auth.role() = 'authenticated');
+create policy "team can write vote_attachments" on vote_attachments for all using (auth.role() = 'authenticated');
+
+create index if not exists idx_vote_attachments_vote on vote_attachments(vote_id);

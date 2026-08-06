@@ -121,6 +121,7 @@ type ReplyRow = { id: string; discussion_id: string; author_id: string | null; b
 type ReplyAttachmentRow = { id: string; reply_id: string; file_name: string; file_type: string | null; url: string };
 type ReactionRow = { id: string; reply_id: string; profile_id: string; emoji: string };
 type DiscussionAttachmentRow = { id: string; discussion_id: string; file_name: string; file_type: string | null; url: string };
+type VoteAttachmentRow = { id: string; vote_id: string; file_name: string; file_type: string | null; url: string };
 type MentionRow = { discussion_id: string; profile_id: string };
 
 // discussion_mentions টেবিলটাও discussions<->profiles-এর মধ্যে একটা many-to-many
@@ -135,7 +136,7 @@ const VOTE_SELECT = 'id, title, description, project_id, author_id, allow_multip
 const REPLY_SELECT = 'id, discussion_id, author_id, body, created_at, updated_at, profiles!author_id(full_name, role, avatar_color)';
 
 async function fetchDiscussionsData() {
-  const [discRes, voteRes, optRes, respRes, replyRes, reactRes, discAttRes, replyAttRes, mentionRes, teamRes, projectsRes, tasksRes] = await Promise.all([
+  const [discRes, voteRes, optRes, respRes, replyRes, reactRes, discAttRes, replyAttRes, voteAttRes, mentionRes, teamRes, projectsRes, tasksRes] = await Promise.all([
     supabase.from('discussions').select(DISCUSSION_SELECT).order('created_at', { ascending: false }),
     supabase.from('votes').select(VOTE_SELECT).order('created_at', { ascending: false }),
     supabase.from('vote_options').select('id, vote_id, label, position').order('position'),
@@ -144,13 +145,14 @@ async function fetchDiscussionsData() {
     supabase.from('reply_reactions').select('id, reply_id, profile_id, emoji'),
     supabase.from('discussion_attachments').select('id, discussion_id, file_name, file_type, url'),
     supabase.from('reply_attachments').select('id, reply_id, file_name, file_type, url'),
+    supabase.from('vote_attachments').select('id, vote_id, file_name, file_type, url'),
     supabase.from('discussion_mentions').select('discussion_id, profile_id'),
     supabase.from('profiles').select('id, full_name, role, avatar_color').order('full_name'),
     supabase.from('projects').select('id, name').order('name'),
     supabase.from('tasks').select('id, project_id, status'),
   ]);
 
-  const firstErrored = [discRes, voteRes, optRes, respRes, replyRes, reactRes, discAttRes, replyAttRes, mentionRes, teamRes, projectsRes, tasksRes].find((r) => r.error);
+  const firstErrored = [discRes, voteRes, optRes, respRes, replyRes, reactRes, discAttRes, replyAttRes, voteAttRes, mentionRes, teamRes, projectsRes, tasksRes].find((r) => r.error);
 
   return {
     errorMessage: firstErrored?.error?.message ?? null,
@@ -162,6 +164,7 @@ async function fetchDiscussionsData() {
     reactions: (reactRes.data as ReactionRow[]) ?? [],
     discAttachments: (discAttRes.data as DiscussionAttachmentRow[]) ?? [],
     replyAttachments: (replyAttRes.data as ReplyAttachmentRow[]) ?? [],
+    voteAttachments: (voteAttRes.data as VoteAttachmentRow[]) ?? [],
     mentions: (mentionRes.data as MentionRow[]) ?? [],
     teamOptions: (teamRes.data as ProfileRow[]) ?? [],
     projectOptions: (projectsRes.data as ProjectOption[]) ?? [],
@@ -227,6 +230,7 @@ export default function DiscussionsPage() {
   const [reactions, setReactions] = useState<ReactionRow[]>([]);
   const [discAttachments, setDiscAttachments] = useState<DiscussionAttachmentRow[]>([]);
   const [replyAttachments, setReplyAttachments] = useState<ReplyAttachmentRow[]>([]);
+  const [voteAttachments, setVoteAttachments] = useState<VoteAttachmentRow[]>([]);
   const [mentions, setMentions] = useState<MentionRow[]>([]);
   const [teamOptions, setTeamOptions] = useState<ProfileRow[]>([]);
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
@@ -282,6 +286,11 @@ export default function DiscussionsPage() {
   const [vAnonymous, setVAnonymous] = useState(false);
   const [vEndsAt, setVEndsAt] = useState('');
   const [vProjectId, setVProjectId] = useState('');
+  const [vAttachments, setVAttachments] = useState<{ name: string; url: string }[]>([]);
+  const [vAttachName, setVAttachName] = useState('');
+  const [vAttachUrl, setVAttachUrl] = useState('');
+  const [vUploading, setVUploading] = useState(false);
+  const [vUploadProgress, setVUploadProgress] = useState(0);
   const [savingVote, setSavingVote] = useState(false);
   const [voteError, setVoteError] = useState<string | null>(null);
 
@@ -295,6 +304,7 @@ export default function DiscussionsPage() {
     setReactions(result.reactions);
     setDiscAttachments(result.discAttachments);
     setReplyAttachments(result.replyAttachments);
+    setVoteAttachments(result.voteAttachments);
     setMentions(result.mentions);
     setTeamOptions(result.teamOptions);
     setProjectOptions(result.projectOptions);
@@ -579,7 +589,34 @@ export default function DiscussionsPage() {
     setVAnonymous(false);
     setVEndsAt('');
     setVProjectId('');
+    setVAttachments([]);
+    setVAttachName('');
+    setVAttachUrl('');
+    setVUploading(false);
+    setVUploadProgress(0);
     setVoteError(null);
+  }
+  function addVoteAttachment() {
+    if (!vAttachName.trim() || !vAttachUrl.trim()) return;
+    setVAttachments((prev) => [...prev, { name: vAttachName.trim(), url: vAttachUrl.trim() }]);
+    setVAttachName('');
+    setVAttachUrl('');
+  }
+  async function handleVoteFileUpload(file: File) {
+    setVUploading(true);
+    setVUploadProgress(0);
+    setVoteError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('সেশন পাওয়া যায়নি — আবার লগইন করুন।');
+      const result = await uploadFileToDrive(file, session.access_token, setVUploadProgress);
+      setVAttachments((prev) => [...prev, { name: result.name ?? file.name, url: result.webViewLink }]);
+    } catch (err) {
+      setVoteError(err instanceof Error ? err.message : 'আপলোড ব্যর্থ হয়েছে।');
+    } finally {
+      setVUploading(false);
+      setVUploadProgress(0);
+    }
   }
   async function submitVote(asDraft: boolean) {
     const labels = vOptions.map((o) => o.trim()).filter(Boolean);
@@ -599,6 +636,9 @@ export default function DiscussionsPage() {
     const voteId = (data as { id: string }).id;
     const { error: optErr } = await supabase.from('vote_options').insert(labels.map((label, i) => ({ vote_id: voteId, label, position: i })));
     if (optErr) { setVoteError(optErr.message); setSavingVote(false); return; }
+    if (vAttachments.length > 0) {
+      await supabase.from('vote_attachments').insert(vAttachments.map((a) => ({ vote_id: voteId, file_name: a.name, file_type: guessLinkType(a.url), url: a.url })));
+    }
     await handleReload();
     setSavingVote(false);
     closeVoteModal();
@@ -713,6 +753,7 @@ export default function DiscussionsPage() {
   // ---------------- discussion detail derived ----------------
   const discussionReplies = activeDiscussion ? replies.filter((r) => r.discussion_id === activeDiscussion.id) : [];
   const discussionAttachmentsForActive = activeDiscussion ? discAttachments.filter((a) => a.discussion_id === activeDiscussion.id) : [];
+  const voteAttachmentsForActive = activeVote ? voteAttachments.filter((a) => a.vote_id === activeVote.id) : [];
   const mentionedForActive = activeDiscussion ? mentions.filter((m) => m.discussion_id === activeDiscussion.id) : [];
   const participants = useMemo(() => {
     if (!activeDiscussion) return [];
@@ -777,6 +818,7 @@ export default function DiscussionsPage() {
   function renderVoteCard(v: VoteRow) {
     const stats = voteStats(v.id);
     const closed = voteIsClosed(v);
+    const attCount = voteAttachments.filter((a) => a.vote_id === v.id).length;
     return (
       <button key={`v-${v.id}`} className="fcard" onClick={() => openVote(v.id)}>
         {v.is_pinned && (
@@ -799,6 +841,7 @@ export default function DiscussionsPage() {
         <div className="fcard-foot">
           {v.projects && <span className="proj-tag">{v.projects.name}</span>}
           <span className="fcard-meta-item"><Icon name="user" size={12} /> {stats.distinctVoters}/{teamOptions.length} ভোট দিয়েছে</span>
+          {attCount > 0 && <span className="fcard-meta-item"><Icon name="paperclip" size={12} /> {attCount}</span>}
           <span className={`status-chip ${closed ? 'st-closed' : 'st-open'}`}>{closed ? 'Closed' : 'Open'}</span>
         </div>
       </button>
@@ -1043,6 +1086,13 @@ export default function DiscussionsPage() {
                       <span>{activeVote.ends_at ? `শেষ হবে ${formatBnDate(activeVote.ends_at)}` : 'কোনো নির্ধারিত সময় নেই'}</span>
                     </div>
                     {activeVote.description && <p className="detail-desc">{activeVote.description}</p>}
+                    {voteAttachmentsForActive.length > 0 && (
+                      <div className="detail-attach-row">
+                        {voteAttachmentsForActive.map((a) => (
+                          <a key={a.id} className="attach-chip" href={a.url} target="_blank" rel="noopener noreferrer"><Icon name={attachTypeIcon(a.file_type)} size={13} /> {a.file_name}</a>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {!showVoteResults ? (
@@ -1201,6 +1251,14 @@ export default function DiscussionsPage() {
                       )}
                     </div>
                   </div>
+                  {voteAttachmentsForActive.length > 0 && (
+                    <div className="rp-section">
+                      <div className="rp-title">Related Files</div>
+                      {voteAttachmentsForActive.map((a) => (
+                        <a key={a.id} className="attach-chip" style={{ marginBottom: 6, display: 'flex' }} href={a.url} target="_blank" rel="noopener noreferrer"><Icon name={attachTypeIcon(a.file_type)} size={13} /> {a.file_name}</a>
+                      ))}
+                    </div>
+                  )}
                   {activeVote.projects && (
                     <div className="rp-section">
                       <div className="rp-title">Linked Project</div>
@@ -1314,12 +1372,32 @@ export default function DiscussionsPage() {
                   {projectOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
+              <div className="modal-field">
+                <label className="modal-label">অ্যাটাচমেন্ট (ঐচ্ছিক)</label>
+                {vAttachments.map((a, i) => (
+                  <div key={i} className="attach-chip" style={{ marginBottom: 6, justifyContent: 'space-between' }}>
+                    <span>{a.name}</span>
+                    <button type="button" onClick={() => setVAttachments((prev) => prev.filter((_, idx) => idx !== i))}><Icon name="close" size={12} /></button>
+                  </div>
+                ))}
+                <div className="option-input-row">
+                  <button type="button" className="btn btn-ghost btn-sm" disabled={vUploading} onClick={() => document.getElementById('vote-file-input')?.click()}>
+                    <Icon name="upload" size={13} /> {vUploading ? `আপলোড হচ্ছে… ${vUploadProgress}%` : 'ফাইল আপলোড করুন'}
+                  </button>
+                </div>
+                <input id="vote-file-input" type="file" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleVoteFileUpload(f); e.target.value = ''; }} />
+                <div className="option-input-row">
+                  <input className="modal-input" value={vAttachName} onChange={(e) => setVAttachName(e.target.value)} placeholder="অথবা ফাইলের নাম" disabled={vUploading} />
+                  <input className="modal-input" value={vAttachUrl} onChange={(e) => setVAttachUrl(e.target.value)} placeholder="Drive/Figma লিংক পেস্ট করুন" disabled={vUploading} />
+                  <button type="button" className="option-remove" onClick={addVoteAttachment} title="যোগ করুন" disabled={vUploading}><Icon name="plus" size={14} /></button>
+                </div>
+              </div>
               {voteError && <p style={{ color: 'var(--danger)', fontSize: 12 }}>{voteError}</p>}
             </div>
             <div className="modal-foot">
               <button className="btn btn-ghost btn-sm" onClick={closeVoteModal} disabled={savingVote}>বাতিল</button>
-              <button className="btn btn-ghost btn-sm" onClick={() => submitVote(true)} disabled={savingVote || !vTitle.trim()}>Save Draft</button>
-              <button className="btn btn-accent btn-sm" onClick={() => submitVote(false)} disabled={savingVote || !vTitle.trim()}>{savingVote ? 'পাবলিশ হচ্ছে…' : 'Publish Vote'}</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => submitVote(true)} disabled={savingVote || vUploading || !vTitle.trim()}>Save Draft</button>
+              <button className="btn btn-accent btn-sm" onClick={() => submitVote(false)} disabled={savingVote || vUploading || !vTitle.trim()}>{savingVote ? 'পাবলিশ হচ্ছে…' : 'Publish Vote'}</button>
             </div>
           </div>
         </div>
