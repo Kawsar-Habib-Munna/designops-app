@@ -7,8 +7,9 @@
 //   - "Pinned Note" ও "Related Discussions" প্যানেল — কোনো আলাদা স্কিমা নেই,
 //     fabricate না করে সরিয়ে দেওয়া হয়েছে।
 //   - ক্রিয়েট মোডালের "অ্যাটাচমেন্ট" গ্রিড (ছবি/ভিডিও/PDF/Figma বাটন) মকআপেও
-//     কোনো আসল আপলোড হ্যান্ডলার ছিল না — বদলে Files পেজের "লিংক পেস্ট করুন"
-//     প্যাটার্নের মতো Drive/Figma লিংক যোগ করার সত্যিকারের ফিল্ড রাখা হয়েছে।
+//     কোনো আসল আপলোড হ্যান্ডলার ছিল না — এখন Files পেজের মতোই আসল Google Drive
+//     আপলোড (lib/driveUpload.ts, শেয়ার্ড) অথবা সরাসরি Drive/Figma লিংক পেস্ট —
+//     দুটো অপশনই আছে।
 //   - "Generate Summary" বাটন কোনো আসল AI কল করে না (Files পেজের Figma-connect
 //     বাটনের মতোই honest "শীঘ্রই আসছে" প্লেসহোল্ডার); AI Insights অংশটুকু
 //     Files পেজের মতোই লোকাল ডেটা থেকে হিসাব করা টেক্সট, fake claim নয়।
@@ -23,6 +24,7 @@ import { useSession } from '@/lib/useSession';
 import { relativeTimeBn, formatBnDate } from '@/lib/format';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
+import { uploadFileToDrive } from '@/lib/driveUpload';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -48,6 +50,7 @@ const ICON_PATHS: Record<string, string> = {
   edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/>',
   'chevron-left': '<path d="M15 6l-6 6 6 6"/>',
   paperclip: '<path d="M21 11.5l-9.2 9.2a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8.2-8.2"/>',
+  upload: '<path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
   figma: '<circle cx="12" cy="8" r="3"/><rect x="7" y="11" width="10" height="10" rx="2"/>',
   video: '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/>',
@@ -247,6 +250,8 @@ export default function DiscussionsPage() {
   const [showReplyAttach, setShowReplyAttach] = useState(false);
   const [replyAttachName, setReplyAttachName] = useState('');
   const [replyAttachUrl, setReplyAttachUrl] = useState('');
+  const [replyUploading, setReplyUploading] = useState(false);
+  const [replyUploadProgress, setReplyUploadProgress] = useState(0);
   const [postingReply, setPostingReply] = useState(false);
   const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState('');
@@ -264,6 +269,8 @@ export default function DiscussionsPage() {
   const [dAttachments, setDAttachments] = useState<{ name: string; url: string }[]>([]);
   const [dAttachName, setDAttachName] = useState('');
   const [dAttachUrl, setDAttachUrl] = useState('');
+  const [dUploading, setDUploading] = useState(false);
+  const [dUploadProgress, setDUploadProgress] = useState(0);
   const [savingDiscussion, setSavingDiscussion] = useState(false);
   const [discussionError, setDiscussionError] = useState<string | null>(null);
 
@@ -447,6 +454,24 @@ export default function DiscussionsPage() {
     replyInputRef.current?.focus();
   }
 
+  async function handleReplyFileUpload(file: File) {
+    setReplyUploading(true);
+    setReplyUploadProgress(0);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('সেশন পাওয়া যায়নি — আবার লগইন করুন।');
+      const result = await uploadFileToDrive(file, session.access_token, setReplyUploadProgress);
+      setReplyAttachName(result.name ?? file.name);
+      setReplyAttachUrl(result.webViewLink);
+      setShowReplyAttach(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'আপলোড ব্যর্থ হয়েছে।');
+    } finally {
+      setReplyUploading(false);
+      setReplyUploadProgress(0);
+    }
+  }
+
   async function saveReplyEdit(id: string) {
     if (!editBody.trim()) return;
     const nowIso = new Date().toISOString();
@@ -493,6 +518,8 @@ export default function DiscussionsPage() {
     setDAttachments([]);
     setDAttachName('');
     setDAttachUrl('');
+    setDUploading(false);
+    setDUploadProgress(0);
     setDiscussionError(null);
   }
   function addDiscussionAttachment() {
@@ -500,6 +527,22 @@ export default function DiscussionsPage() {
     setDAttachments((prev) => [...prev, { name: dAttachName.trim(), url: dAttachUrl.trim() }]);
     setDAttachName('');
     setDAttachUrl('');
+  }
+  async function handleDiscussionFileUpload(file: File) {
+    setDUploading(true);
+    setDUploadProgress(0);
+    setDiscussionError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('সেশন পাওয়া যায়নি — আবার লগইন করুন।');
+      const result = await uploadFileToDrive(file, session.access_token, setDUploadProgress);
+      setDAttachments((prev) => [...prev, { name: result.name ?? file.name, url: result.webViewLink }]);
+    } catch (err) {
+      setDiscussionError(err instanceof Error ? err.message : 'আপলোড ব্যর্থ হয়েছে।');
+    } finally {
+      setDUploading(false);
+      setDUploadProgress(0);
+    }
   }
   async function submitDiscussion(asDraft: boolean) {
     if (!dTitle.trim() || !user) return;
@@ -910,14 +953,18 @@ export default function DiscussionsPage() {
                     <textarea ref={replyInputRef} className="composer-input" placeholder="একটা রিপ্লাই লিখুন..." value={replyBody} onChange={(e) => setReplyBody(e.target.value)} />
                     {showReplyAttach && (
                       <div className="composer-attach-row">
-                        <input placeholder="ফাইলের নাম" value={replyAttachName} onChange={(e) => setReplyAttachName(e.target.value)} />
-                        <input placeholder="Drive/Figma লিংক" value={replyAttachUrl} onChange={(e) => setReplyAttachUrl(e.target.value)} style={{ flex: 1 }} />
+                        <button type="button" className="btn btn-ghost btn-sm" disabled={replyUploading} onClick={() => document.getElementById('reply-file-input')?.click()}>
+                          <Icon name="upload" size={12} /> {replyUploading ? `আপলোড হচ্ছে… ${replyUploadProgress}%` : 'ফাইল আপলোড করুন'}
+                        </button>
+                        <input id="reply-file-input" type="file" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleReplyFileUpload(f); e.target.value = ''; }} />
+                        <input placeholder="অথবা ফাইলের নাম" value={replyAttachName} onChange={(e) => setReplyAttachName(e.target.value)} disabled={replyUploading} />
+                        <input placeholder="Drive/Figma লিংক পেস্ট করুন" value={replyAttachUrl} onChange={(e) => setReplyAttachUrl(e.target.value)} style={{ flex: 1 }} disabled={replyUploading} />
                       </div>
                     )}
                     <div className="composer-foot">
                       <button className="icon-btn" title="Attach" onClick={() => setShowReplyAttach((s) => !s)}><Icon name="paperclip" size={15} /></button>
                       <div className="toolbar-spacer"></div>
-                      <button className="btn btn-accent btn-sm" disabled={!replyBody.trim() || postingReply} onClick={postReply}>{postingReply ? 'পোস্ট হচ্ছে…' : 'রিপ্লাই দিন'}</button>
+                      <button className="btn btn-accent btn-sm" disabled={!replyBody.trim() || postingReply || replyUploading} onClick={postReply}>{postingReply ? 'পোস্ট হচ্ছে…' : 'রিপ্লাই দিন'}</button>
                     </div>
                   </div>
 
@@ -1206,7 +1253,7 @@ export default function DiscussionsPage() {
                 </div>
               </div>
               <div className="modal-field">
-                <label className="modal-label">অ্যাটাচমেন্ট লিংক (ঐচ্ছিক)</label>
+                <label className="modal-label">অ্যাটাচমেন্ট (ঐচ্ছিক)</label>
                 {dAttachments.map((a, i) => (
                   <div key={i} className="attach-chip" style={{ marginBottom: 6, justifyContent: 'space-between' }}>
                     <span>{a.name}</span>
@@ -1214,17 +1261,23 @@ export default function DiscussionsPage() {
                   </div>
                 ))}
                 <div className="option-input-row">
-                  <input className="modal-input" value={dAttachName} onChange={(e) => setDAttachName(e.target.value)} placeholder="ফাইলের নাম" />
-                  <input className="modal-input" value={dAttachUrl} onChange={(e) => setDAttachUrl(e.target.value)} placeholder="Drive/Figma লিংক" />
-                  <button type="button" className="option-remove" onClick={addDiscussionAttachment} title="যোগ করুন"><Icon name="plus" size={14} /></button>
+                  <button type="button" className="btn btn-ghost btn-sm" disabled={dUploading} onClick={() => document.getElementById('discussion-file-input')?.click()}>
+                    <Icon name="upload" size={13} /> {dUploading ? `আপলোড হচ্ছে… ${dUploadProgress}%` : 'ফাইল আপলোড করুন'}
+                  </button>
+                </div>
+                <input id="discussion-file-input" type="file" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleDiscussionFileUpload(f); e.target.value = ''; }} />
+                <div className="option-input-row">
+                  <input className="modal-input" value={dAttachName} onChange={(e) => setDAttachName(e.target.value)} placeholder="অথবা ফাইলের নাম" disabled={dUploading} />
+                  <input className="modal-input" value={dAttachUrl} onChange={(e) => setDAttachUrl(e.target.value)} placeholder="Drive/Figma লিংক পেস্ট করুন" disabled={dUploading} />
+                  <button type="button" className="option-remove" onClick={addDiscussionAttachment} title="যোগ করুন" disabled={dUploading}><Icon name="plus" size={14} /></button>
                 </div>
               </div>
               {discussionError && <p style={{ color: 'var(--danger)', fontSize: 12 }}>{discussionError}</p>}
             </div>
             <div className="modal-foot">
               <button className="btn btn-ghost btn-sm" onClick={closeDiscussionModal} disabled={savingDiscussion}>বাতিল</button>
-              <button className="btn btn-ghost btn-sm" onClick={() => submitDiscussion(true)} disabled={savingDiscussion || !dTitle.trim()}>Save Draft</button>
-              <button className="btn btn-accent btn-sm" onClick={() => submitDiscussion(false)} disabled={savingDiscussion || !dTitle.trim()}>{savingDiscussion ? 'পাবলিশ হচ্ছে…' : 'Publish Discussion'}</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => submitDiscussion(true)} disabled={savingDiscussion || dUploading || !dTitle.trim()}>Save Draft</button>
+              <button className="btn btn-accent btn-sm" onClick={() => submitDiscussion(false)} disabled={savingDiscussion || dUploading || !dTitle.trim()}>{savingDiscussion ? 'পাবলিশ হচ্ছে…' : 'Publish Discussion'}</button>
             </div>
           </div>
         </div>
