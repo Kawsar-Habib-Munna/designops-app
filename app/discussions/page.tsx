@@ -16,7 +16,7 @@
 //   - Toast নোটিফিকেশন সিস্টেম বাদ — বাকি পেজগুলোর প্যাটার্নের মতোই ইনলাইন
 //     error ব্যানার/বাটন-লেবেল ব্যবহার হয়েছে।
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import './discussions.css';
 import { supabase } from '@/lib/supabaseClient';
@@ -185,6 +185,28 @@ function attachTypeIcon(t: string | null): IconName {
   if (t === 'image') return 'image';
   if (t === 'video') return 'video';
   return 'file';
+}
+// আপলোড করা ফাইলের drive_url আসলে Google-এর "webViewLink" (viewer পেজ, রঞ ইমেজ
+// না) — তাই ছবি সরাসরি <img>-এ দেখাতে লিংক থেকে Drive file id বের করে
+// thumbnail এন্ডপয়েন্টে কনভার্ট করা হয়। আপলোডের সময় ফাইলে "anyone: reader"
+// পারমিশন দেওয়া হয় (দেখুন app/api/drive-upload/finalize), তাই এই এন্ডপয়েন্ট
+// লগইন ছাড়াই কাজ করে। Drive না হওয়া সরাসরি ইমেজ লিংক (পেস্ট করা) অপরিবর্তিত থাকে।
+function driveThumbnailUrl(url: string): string {
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) ?? url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000` : url;
+}
+function AttachmentPreview({ name, url, fileType, style }: { name: string; url: string; fileType: string | null; style?: CSSProperties }) {
+  if (fileType === 'image') {
+    return (
+      <a className="attach-image" href={url} target="_blank" rel="noopener noreferrer" title={name} style={style}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={driveThumbnailUrl(url)} alt={name} />
+      </a>
+    );
+  }
+  return (
+    <a className="attach-chip" href={url} target="_blank" rel="noopener noreferrer" style={style}><Icon name={attachTypeIcon(fileType)} size={13} /> {name}</a>
+  );
 }
 function daysSince(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
@@ -976,7 +998,7 @@ export default function DiscussionsPage() {
                     {discussionAttachmentsForActive.length > 0 && (
                       <div className="detail-attach-row">
                         {discussionAttachmentsForActive.map((a) => (
-                          <a key={a.id} className="attach-chip" href={a.url} target="_blank" rel="noopener noreferrer"><Icon name={attachTypeIcon(a.file_type)} size={13} /> {a.file_name}</a>
+                          <AttachmentPreview key={a.id} name={a.file_name} url={a.url} fileType={a.file_type} />
                         ))}
                       </div>
                     )}
@@ -1037,7 +1059,7 @@ export default function DiscussionsPage() {
                           )}
                           {atts.length > 0 && (
                             <div className="reply-attach">
-                              {atts.map((a) => <a key={a.id} className="attach-chip" href={a.url} target="_blank" rel="noopener noreferrer"><Icon name={attachTypeIcon(a.file_type)} size={13} /> {a.file_name}</a>)}
+                              {atts.map((a) => <AttachmentPreview key={a.id} name={a.file_name} url={a.url} fileType={a.file_type} />)}
                             </div>
                           )}
                           <div className="reply-actions">
@@ -1089,7 +1111,7 @@ export default function DiscussionsPage() {
                     {voteAttachmentsForActive.length > 0 && (
                       <div className="detail-attach-row">
                         {voteAttachmentsForActive.map((a) => (
-                          <a key={a.id} className="attach-chip" href={a.url} target="_blank" rel="noopener noreferrer"><Icon name={attachTypeIcon(a.file_type)} size={13} /> {a.file_name}</a>
+                          <AttachmentPreview key={a.id} name={a.file_name} url={a.url} fileType={a.file_type} />
                         ))}
                       </div>
                     )}
@@ -1209,7 +1231,7 @@ export default function DiscussionsPage() {
                     <div className="rp-section">
                       <div className="rp-title">Related Files</div>
                       {discussionAttachmentsForActive.map((a) => (
-                        <a key={a.id} className="attach-chip" style={{ marginBottom: 6, display: 'flex' }} href={a.url} target="_blank" rel="noopener noreferrer"><Icon name={attachTypeIcon(a.file_type)} size={13} /> {a.file_name}</a>
+                        <AttachmentPreview key={a.id} name={a.file_name} url={a.url} fileType={a.file_type} style={{ marginBottom: 6 }} />
                       ))}
                     </div>
                   )}
@@ -1255,7 +1277,7 @@ export default function DiscussionsPage() {
                     <div className="rp-section">
                       <div className="rp-title">Related Files</div>
                       {voteAttachmentsForActive.map((a) => (
-                        <a key={a.id} className="attach-chip" style={{ marginBottom: 6, display: 'flex' }} href={a.url} target="_blank" rel="noopener noreferrer"><Icon name={attachTypeIcon(a.file_type)} size={13} /> {a.file_name}</a>
+                        <AttachmentPreview key={a.id} name={a.file_name} url={a.url} fileType={a.file_type} style={{ marginBottom: 6 }} />
                       ))}
                     </div>
                   )}
@@ -1312,12 +1334,23 @@ export default function DiscussionsPage() {
               </div>
               <div className="modal-field">
                 <label className="modal-label">অ্যাটাচমেন্ট (ঐচ্ছিক)</label>
-                {dAttachments.map((a, i) => (
-                  <div key={i} className="attach-chip" style={{ marginBottom: 6, justifyContent: 'space-between' }}>
-                    <span>{a.name}</span>
-                    <button type="button" onClick={() => setDAttachments((prev) => prev.filter((_, idx) => idx !== i))}><Icon name="close" size={12} /></button>
-                  </div>
-                ))}
+                {dAttachments.map((a, i) => {
+                  const type = guessLinkType(a.url);
+                  return (
+                    <div key={i} className="attach-chip" style={{ marginBottom: 6, justifyContent: 'space-between' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                        {type === 'image' ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={driveThumbnailUrl(a.url)} alt={a.name} style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }} />
+                        ) : (
+                          <Icon name={attachTypeIcon(type)} size={13} />
+                        )}
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
+                      </span>
+                      <button type="button" onClick={() => setDAttachments((prev) => prev.filter((_, idx) => idx !== i))}><Icon name="close" size={12} /></button>
+                    </div>
+                  );
+                })}
                 <div className="option-input-row">
                   <button type="button" className="btn btn-ghost btn-sm" disabled={dUploading} onClick={() => document.getElementById('discussion-file-input')?.click()}>
                     <Icon name="upload" size={13} /> {dUploading ? `আপলোড হচ্ছে… ${dUploadProgress}%` : 'ফাইল আপলোড করুন'}
@@ -1374,12 +1407,23 @@ export default function DiscussionsPage() {
               </div>
               <div className="modal-field">
                 <label className="modal-label">অ্যাটাচমেন্ট (ঐচ্ছিক)</label>
-                {vAttachments.map((a, i) => (
+                {vAttachments.map((a, i) => {
+                  const type = guessLinkType(a.url);
+                  return (
                   <div key={i} className="attach-chip" style={{ marginBottom: 6, justifyContent: 'space-between' }}>
-                    <span>{a.name}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                      {type === 'image' ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={driveThumbnailUrl(a.url)} alt={a.name} style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }} />
+                      ) : (
+                        <Icon name={attachTypeIcon(type)} size={13} />
+                      )}
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
+                    </span>
                     <button type="button" onClick={() => setVAttachments((prev) => prev.filter((_, idx) => idx !== i))}><Icon name="close" size={12} /></button>
                   </div>
-                ))}
+                  );
+                })}
                 <div className="option-input-row">
                   <button type="button" className="btn btn-ghost btn-sm" disabled={vUploading} onClick={() => document.getElementById('vote-file-input')?.click()}>
                     <Icon name="upload" size={13} /> {vUploading ? `আপলোড হচ্ছে… ${vUploadProgress}%` : 'ফাইল আপলোড করুন'}
