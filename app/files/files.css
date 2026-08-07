@@ -138,10 +138,11 @@
 .files-root .section-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .files-root .section-title{font-size:14px;font-weight:600;letter-spacing:-0.01em;}
 
-/* project → folder → file tree */
-.files-root .folder-tree{display:flex;flex-direction:column;gap:18px;}
-.files-root .folder-tree-section-title{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px;padding:0 2px;}
-.files-root .folder-tree-row{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:8px 10px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border);margin-bottom:6px;transition:border-color .15s ease,background .15s ease;}
+/* project → folder → file tree — প্রতিটা প্রজেক্ট পাশাপাশি একটা কলামে বসে */
+.files-root .folder-tree{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;align-items:start;}
+.files-root .folder-tree-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;box-shadow:var(--shadow-sm);}
+.files-root .folder-tree-section-title{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;margin-bottom:10px;padding:0 2px;}
+.files-root .folder-tree-row{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:8px 10px;border-radius:var(--radius-sm);background:var(--surface-muted);border:1px solid var(--border-soft);margin-bottom:6px;transition:border-color .15s ease,background .15s ease;}
 .files-root .folder-tree-row:hover{border-color:var(--accent-soft-2);background:var(--surface-muted);}
 .files-root .folder-tree-row.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
 .files-root .folder-tree-chevron{display:flex;align-items:center;justify-content:center;color:var(--ink-faint);transition:transform .15s ease;flex-shrink:0;}

@@ -609,7 +609,7 @@ export default function FilesPage() {
                 <div className="section-title-row"><span className="section-title">Folders</span></div>
                 <div className="folder-tree">
                   {folderTree.map((section) => (
-                    <div key={section.key}>
+                    <div key={section.key} className="folder-tree-section">
                       <div className="folder-tree-section-title"><Icon name="folder" size={13} /> {section.title}</div>
                       {section.folders.map((f) => {
                         const expanded = expandedFolders.has(f.key);
