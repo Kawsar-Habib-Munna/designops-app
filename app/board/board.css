@@ -69,11 +69,8 @@
 
 /* ---- sidebar ---- */
 .kanban-root .sidebar{width:248px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:space-between;padding:20px 14px;}
-.kanban-root .brand{display:flex;align-items:center;gap:10px;padding:6px 10px 22px 10px;}
-.kanban-root .brand-mark{width:28px;height:28px;border-radius:8px;background:var(--ink);display:flex;align-items:center;justify-content:center;color:var(--bg);font-weight:700;font-size:13px;flex-shrink:0;}
-.kanban-root.dark .brand-mark{background:var(--accent);color:#0E0E12;}
-.kanban-root .brand-name{font-size:14px;font-weight:600;letter-spacing:-0.01em;}
-.kanban-root .brand-sub{font-size:11px;color:var(--ink-faint);}
+.kanban-root .brand{display:flex;align-items:center;padding:8px 4px 20px 4px;}
+.kanban-root .brand-logo{display:block;width:100%;aspect-ratio:987/431;background-image:url('/flow53-logo.png');background-size:132.97% 174.48%;background-position:center;background-repeat:no-repeat;border-radius:14px;}
 .kanban-root .nav-group{display:flex;flex-direction:column;gap:2px;}
 .kanban-root .nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-sm);font-size:13.5px;color:var(--ink-soft);font-weight:500;transition:background .15s ease,color .15s ease;}
 .kanban-root .nav-item:hover{background:var(--surface-muted);color:var(--ink);}
