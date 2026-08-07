@@ -138,14 +138,23 @@
 .files-root .section-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .files-root .section-title{font-size:14px;font-weight:600;letter-spacing:-0.01em;}
 
-/* project (folder) grid */
-.files-root .folder-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;}
-.files-root .folder-card{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px;box-shadow:var(--shadow-sm);transition:box-shadow .15s ease,border-color .15s ease;text-align:left;width:100%;}
-.files-root .folder-card:hover{box-shadow:var(--shadow-md);border-color:var(--accent-soft-2);cursor:pointer;}
-.files-root .folder-card.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft-2);}
-.files-root .folder-icon{width:36px;height:36px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.files-root .folder-name{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.files-root .folder-meta{font-size:10.5px;color:var(--ink-faint);}
+/* project → folder → file tree */
+.files-root .folder-tree{display:flex;flex-direction:column;gap:18px;}
+.files-root .folder-tree-section-title{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px;padding:0 2px;}
+.files-root .folder-tree-row{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:8px 10px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border);margin-bottom:6px;transition:border-color .15s ease,background .15s ease;}
+.files-root .folder-tree-row:hover{border-color:var(--accent-soft-2);background:var(--surface-muted);}
+.files-root .folder-tree-row.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+.files-root .folder-tree-chevron{display:flex;align-items:center;justify-content:center;color:var(--ink-faint);transition:transform .15s ease;flex-shrink:0;}
+.files-root .folder-tree-chevron.open{transform:rotate(90deg);}
+.files-root .folder-tree-name{font-size:12.5px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.files-root .folder-tree-count{font-size:11px;color:var(--ink-faint);flex-shrink:0;}
+.files-root .folder-tree-row.active .folder-tree-count{color:var(--accent);}
+.files-root .folder-tree-files{display:flex;flex-direction:column;gap:2px;margin:0 0 8px 30px;padding-left:12px;border-left:1.5px solid var(--border-soft);}
+.files-root .folder-tree-file{display:flex;align-items:center;gap:7px;width:100%;text-align:left;padding:6px 8px;border-radius:6px;color:var(--ink-soft);}
+.files-root .folder-tree-file:hover{background:var(--surface-muted);color:var(--ink);}
+.files-root .folder-tree-file.selected{background:var(--accent-soft);color:var(--accent);}
+.files-root .folder-tree-file-name{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.files-root .folder-tree-empty{font-size:11.5px;color:var(--ink-faint);font-style:italic;padding:6px 8px;}
 
 /* asset grid + layout with right panel */
 .files-root .assets-layout{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;}

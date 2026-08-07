@@ -60,6 +60,7 @@ const ICON_PATHS: Record<string, string> = {
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   video: '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/>',
   play: '<path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/>',
+  chevron: '<path d="M9 6l6 6-6 6"/>',
 };
 
 type IconName = keyof typeof ICON_PATHS;
@@ -176,6 +177,7 @@ export default function FilesPage() {
   const [typeFilter, setTypeFilter] = useState('');
   const [uploaderFilter, setUploaderFilter] = useState('');
   const [folderFilter, setFolderFilter] = useState<string | null>(null);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -407,48 +409,72 @@ export default function FilesPage() {
     return 'other';
   }
 
-  const folderCards = useMemo(() => {
-    const counts = new Map<string, { count: number; lastAt: string }>();
+  // Project → Folder → File — প্রতিটা ফাইল খুঁজে পাওয়ার জন্য গাছ-আকৃতির গঠন।
+  // ফোল্ডারের "key" ইচ্ছাকৃতভাবে groupKeyOf()-এর সাথে মিলিয়ে রাখা হয়েছে
+  // (folder:id / project:id / client / other), যাতে ফোল্ডারে ক্লিক করলে নিচের
+  // "সব অ্যাসেট" গ্রিডে একই ফিল্টার লজিক দিয়ে সঠিক ফাইলগুলোই বাছাই হয়।
+  type TreeFolderNode = { key: string; name: string; icon: IconName; files: AttachmentRow[] };
+  type TreeSection = { key: string; title: string; folders: TreeFolderNode[] };
+
+  const folderTree = useMemo<TreeSection[]>(() => {
+    const filesByFolder = new Map<string, AttachmentRow[]>();
+    const looseByProject = new Map<string, AttachmentRow[]>();
+    const clientFiles: AttachmentRow[] = [];
+    const otherFiles: AttachmentRow[] = [];
+
     for (const a of attachments) {
-      const key = groupKeyOf(a);
-      const cur = counts.get(key);
-      if (!cur) counts.set(key, { count: 1, lastAt: a.uploaded_at });
-      else counts.set(key, { count: cur.count + 1, lastAt: a.uploaded_at > cur.lastAt ? a.uploaded_at : cur.lastAt });
+      if (a.folder_id) {
+        const list = filesByFolder.get(a.folder_id) ?? [];
+        list.push(a);
+        filesByFolder.set(a.folder_id, list);
+      } else if (a.tasks?.project_id) {
+        const list = looseByProject.get(a.tasks.project_id) ?? [];
+        list.push(a);
+        looseByProject.set(a.tasks.project_id, list);
+      } else if (a.client_id) {
+        clientFiles.push(a);
+      } else {
+        otherFiles.push(a);
+      }
     }
 
-    const projectById = new Map(projectOptions.map((p) => [p.id, p]));
-    const folderById = new Map(folderOptions.map((f) => [f.id, f]));
+    const foldersByProjectKey = new Map<string, FolderRow[]>();
+    for (const f of folderOptions) {
+      const key = f.project_id ?? 'none';
+      const list = foldersByProjectKey.get(key) ?? [];
+      list.push(f);
+      foldersByProjectKey.set(key, list);
+    }
 
-    // কাস্টম ফোল্ডার — ফাইল না থাকলেও (count 0) দেখাবে, যেহেতু ইচ্ছাকৃতভাবে তৈরি করা
-    const customCards = folderOptions.map((f) => {
-      const stat = counts.get(`folder:${f.id}`);
-      const parentName = f.parent_id ? folderById.get(f.parent_id)?.name : null;
-      const projectName = f.project_id ? projectById.get(f.project_id)?.name : null;
-      return {
+    const sections: TreeSection[] = [];
+
+    for (const p of projectOptions) {
+      const realFolders: TreeFolderNode[] = (foldersByProjectKey.get(p.id) ?? []).map((f) => ({
         key: `folder:${f.id}`,
         name: f.name,
-        icon: 'folder' as IconName,
-        count: stat?.count ?? 0,
-        lastAt: stat?.lastAt ?? null,
-        parentName,
-        projectName,
-      };
-    });
-
-    // প্রজেক্ট/ক্লায়েন্ট/অন্যান্য — অটো-ডিরাইভড, শুধু ফাইল থাকলেই দেখাবে
-    const autoCards = Array.from(counts.entries())
-      .filter(([key]) => !key.startsWith('folder:'))
-      .map(([key, stat]) => ({
-        key,
-        name: key === 'client' ? 'ক্লায়েন্ট ফাইল' : key === 'other' ? 'অন্যান্য' : projectById.get(key.replace('project:', ''))?.name ?? 'অজানা প্রজেক্ট',
-        icon: (key === 'client' ? 'building' : key === 'other' ? 'file' : 'folder') as IconName,
-        count: stat.count,
-        lastAt: stat.lastAt as string | null,
-        parentName: null as string | null,
-        projectName: null as string | null,
+        icon: 'folder',
+        files: filesByFolder.get(f.id) ?? [],
       }));
+      const loose = looseByProject.get(p.id) ?? [];
+      const folders = loose.length > 0
+        ? [...realFolders, { key: `project:${p.id}`, name: 'সাধারণ ফাইল (কোনো ফোল্ডারে নেই)', icon: 'file' as IconName, files: loose }]
+        : realFolders;
+      if (folders.length > 0) sections.push({ key: `project:${p.id}`, title: p.name, folders });
+    }
 
-    return [...customCards, ...autoCards].sort((a, b) => b.count - a.count);
+    const noProjectFolders: TreeFolderNode[] = (foldersByProjectKey.get('none') ?? []).map((f) => ({
+      key: `folder:${f.id}`,
+      name: f.name,
+      icon: 'folder',
+      files: filesByFolder.get(f.id) ?? [],
+    }));
+    const extras: TreeFolderNode[] = [];
+    if (clientFiles.length > 0) extras.push({ key: 'client', name: 'ক্লায়েন্ট ফাইল', icon: 'building', files: clientFiles });
+    if (otherFiles.length > 0) extras.push({ key: 'other', name: 'অন্যান্য', icon: 'file', files: otherFiles });
+    const noneFolders = [...noProjectFolders, ...extras];
+    if (noneFolders.length > 0) sections.push({ key: 'none', title: 'কোনো প্রজেক্টে নেই', folders: noneFolders });
+
+    return sections;
   }, [attachments, projectOptions, folderOptions]);
 
   const filtered = useMemo(() => {
@@ -485,12 +511,15 @@ export default function FilesPage() {
     const stale = attachments.filter((a) => new Date(a.uploaded_at).getTime() < thirtyDaysAgoMs).length;
     if (stale > 0) list.push(`${stale}টা ফাইল ৩০+ দিন ধরে আপডেট হয়নি।`);
     if (kpis.pendingReview > 0) list.push(`${kpis.pendingReview}টা ফাইল রিভিউ-তে আটকে আছে।`);
-    const topFolder = folderCards.find((f) => f.key !== 'client' && f.key !== 'other' && f.count > 0);
-    if (topFolder) list.push(`"${topFolder.name}"-এ সবচেয়ে বেশি (${topFolder.count}টা) ফাইল আছে।`);
+    const topFolder = folderTree
+      .flatMap((s) => s.folders)
+      .filter((f) => f.key.startsWith('folder:'))
+      .sort((a, b) => b.files.length - a.files.length)[0];
+    if (topFolder && topFolder.files.length > 0) list.push(`"${topFolder.name}"-এ সবচেয়ে বেশি (${topFolder.files.length}টা) ফাইল আছে।`);
     if (kpis.clientFiles > 0) list.push(`${kpis.clientFiles}টা ফাইল সরাসরি ক্লায়েন্টের সাথে যুক্ত।`);
     if (list.length === 0) list.push('এই মুহূর্তে ফাইল নিয়ে কোনো বিশেষ সতর্কতা নেই।');
     return list;
-  }, [attachments, kpis, folderCards]);
+  }, [attachments, kpis, folderTree]);
 
   const selected = attachments.find((a) => a.id === selectedId) ?? null;
 
@@ -574,19 +603,61 @@ export default function FilesPage() {
               </div>
             </div>
 
-            {/* folders — কাস্টম ফোল্ডার (সবসময় দেখায়) + প্রজেক্ট/ক্লায়েন্ট অটো-বাকেট */}
-            {folderCards.length > 0 && (
+            {/* folders — প্রজেক্ট অনুযায়ী গ্রুপ করা ফোল্ডার-ফাইল ট্রি */}
+            {folderTree.length > 0 && (
               <section className="block">
                 <div className="section-title-row"><span className="section-title">Folders</span></div>
-                <div className="folder-grid">
-                  {folderCards.map((f) => (
-                    <button key={f.key} className={`folder-card${folderFilter === f.key ? ' active' : ''}`} onClick={() => { setFolderFilter((cur) => (cur === f.key ? null : f.key)); setPage(1); }}>
-                      <div className="folder-icon"><Icon name={f.icon} /></div>
-                      <div>
-                        <div className="folder-name">{f.name}</div>
-                        <div className="folder-meta">{f.count} · {f.lastAt ? relativeTimeBn(f.lastAt) : 'কোনো ফাইল নেই'}{f.parentName ? ` · ${f.parentName}-এর ভেতরে` : ''}{f.projectName ? ` · ${f.projectName}` : ''}</div>
-                      </div>
-                    </button>
+                <div className="folder-tree">
+                  {folderTree.map((section) => (
+                    <div key={section.key}>
+                      <div className="folder-tree-section-title"><Icon name="folder" size={13} /> {section.title}</div>
+                      {section.folders.map((f) => {
+                        const expanded = expandedFolders.has(f.key);
+                        const isActive = folderFilter === f.key;
+                        return (
+                          <div key={f.key}>
+                            <button
+                              type="button"
+                              className={`folder-tree-row${isActive ? ' active' : ''}`}
+                              onClick={() => {
+                                setExpandedFolders((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(f.key)) next.delete(f.key);
+                                  else next.add(f.key);
+                                  return next;
+                                });
+                                setFolderFilter((cur) => (cur === f.key ? null : f.key));
+                                setPage(1);
+                              }}
+                            >
+                              <span className={`folder-tree-chevron${expanded ? ' open' : ''}`}><Icon name="chevron" size={12} /></span>
+                              <Icon name={f.icon} size={14} />
+                              <span className="folder-tree-name">{f.name}</span>
+                              <span className="folder-tree-count tabular">{f.files.length}</span>
+                            </button>
+                            {expanded && (
+                              <div className="folder-tree-files">
+                                {f.files.length === 0 ? (
+                                  <div className="folder-tree-empty">কোনো ফাইল নেই</div>
+                                ) : (
+                                  f.files.map((file) => (
+                                    <button
+                                      type="button"
+                                      key={file.id}
+                                      className={`folder-tree-file${selectedId === file.id ? ' selected' : ''}`}
+                                      onClick={(e) => { e.stopPropagation(); setSelectedId(file.id); }}
+                                    >
+                                      <Icon name={fileTypeMeta(file.file_type).icon} size={12} />
+                                      <span className="folder-tree-file-name">{file.file_name}</span>
+                                    </button>
+                                  ))
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   ))}
                 </div>
               </section>
