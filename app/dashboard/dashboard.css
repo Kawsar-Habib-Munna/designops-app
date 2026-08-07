@@ -104,17 +104,26 @@
 .dashboard-root .brand {
   display: flex;
   align-items: center;
-  padding: 8px 4px 20px 4px;
+  gap: 10px;
+  padding: 6px 10px 22px 10px;
 }
-.dashboard-root .brand-logo {
-  display: block;
-  width: 100%;
-  aspect-ratio: 987 / 431;
+.dashboard-root .brand-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   background-image: url('/flow53-logo.png');
-  background-size: 132.97% 174.48%;
+  background-size: cover;
   background-position: center;
-  background-repeat: no-repeat;
-  border-radius: 14px;
+  flex-shrink: 0;
+}
+.dashboard-root .brand-name {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.dashboard-root .brand-sub {
+  font-size: 11px;
+  color: var(--ink-faint);
 }
 
 .dashboard-root .nav-group {

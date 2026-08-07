@@ -594,7 +594,8 @@ function TasksPageInner() {
         <aside className="sidebar" aria-label="প্রধান নেভিগেশন">
           <div>
             <div className="brand">
-              <div className="brand-logo" role="img" aria-label="FLOW 53"></div>
+              <div className="brand-mark"></div>
+              <div><div className="brand-name">FLOW 53</div><div className="brand-sub">Studio Nine</div></div>
             </div>
             <nav className="nav-group" aria-label="Sidebar">
               {NAV_ITEMS.map((item) => (
