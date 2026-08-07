@@ -24,7 +24,7 @@ import { useSession } from '@/lib/useSession';
 import { relativeTimeBn, formatBnDate } from '@/lib/format';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
-import { guessFileType, uploadFileToDrive } from '@/lib/driveUpload';
+import { driveThumbnailUrl, guessFileType, uploadFileToDrive } from '@/lib/driveUpload';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -185,15 +185,6 @@ function attachTypeIcon(t: string | null): IconName {
   if (t === 'image') return 'image';
   if (t === 'video') return 'video';
   return 'file';
-}
-// আপলোড করা ফাইলের drive_url আসলে Google-এর "webViewLink" (viewer পেজ, রঞ ইমেজ
-// না) — তাই ছবি সরাসরি <img>-এ দেখাতে লিংক থেকে Drive file id বের করে
-// thumbnail এন্ডপয়েন্টে কনভার্ট করা হয়। আপলোডের সময় ফাইলে "anyone: reader"
-// পারমিশন দেওয়া হয় (দেখুন app/api/drive-upload/finalize), তাই এই এন্ডপয়েন্ট
-// লগইন ছাড়াই কাজ করে। Drive না হওয়া সরাসরি ইমেজ লিংক (পেস্ট করা) অপরিবর্তিত থাকে।
-function driveThumbnailUrl(url: string): string {
-  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) ?? url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000` : url;
 }
 function AttachmentPreview({ name, url, fileType, style }: { name: string; url: string; fileType: string | null; style?: CSSProperties }) {
   if (fileType === 'image') {

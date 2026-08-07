@@ -22,7 +22,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
 import { formatBnDate, relativeTimeBn } from '@/lib/format';
 import { STAGE_LABEL } from '@/lib/taskMeta';
-import { guessFileType, uploadFileToDrive } from '@/lib/driveUpload';
+import { driveThumbnailUrl, guessFileType, uploadFileToDrive } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
 
@@ -616,8 +616,13 @@ export default function FilesPage() {
                         const isFav = favorites.has(a.id);
                         return (
                           <div key={a.id} className={`asset-card${selectedId === a.id ? ' selected' : ''}`} onClick={() => setSelectedId(a.id)}>
-                            <div className="asset-thumb" style={{ background: meta.bg }}>
-                              <Icon name={meta.icon} size={viewMode === 'list' ? 18 : 26} />
+                            <div className="asset-thumb" style={a.file_type === 'image' ? undefined : { background: meta.bg }}>
+                              {a.file_type === 'image' ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img className="asset-thumb-img" src={driveThumbnailUrl(a.drive_url)} alt={a.file_name} />
+                              ) : (
+                                <Icon name={meta.icon} size={viewMode === 'list' ? 18 : 26} />
+                              )}
                               <button className={`asset-fav${isFav ? ' active' : ''}`} title="লোকাল ফেভারিট — সেভ হয় না" onClick={(e) => { e.stopPropagation(); toggleFavorite(a.id); }}>
                                 <Icon name="star" size={13} />
                               </button>
@@ -673,7 +678,14 @@ export default function FilesPage() {
                       const progress = linkedProject ? projectProgress.get(linkedProject.id) ?? 0 : 0;
                       return (
                         <>
-                          <div className="insp-preview" style={{ background: meta.bg }}><Icon name={meta.icon} size={36} /></div>
+                          <div className="insp-preview" style={selected.file_type === 'image' ? undefined : { background: meta.bg }}>
+                            {selected.file_type === 'image' ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img className="insp-preview-img" src={driveThumbnailUrl(selected.drive_url)} alt={selected.file_name} />
+                            ) : (
+                              <Icon name={meta.icon} size={36} />
+                            )}
+                          </div>
                           <div className="insp-title">{selected.file_name}</div>
                           <div className="insp-project">{selected.tasks?.projects?.name ?? selected.clients?.company_name ?? 'কোনো প্রজেক্ট নেই'} · {selected.profiles?.full_name ?? 'অজানা'}</div>
 

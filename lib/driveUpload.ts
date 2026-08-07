@@ -4,6 +4,16 @@
 // ফাইলের বাইট আমাদের সার্ভার দিয়ে যায় না, ব্রাউজার সরাসরি Google-কে পাঠায়
 // (Vercel-এর ৪.৫MB body-size লিমিট এড়াতে), তাই real progress % পাওয়া যায়।
 
+// আপলোড করা ফাইলের drive_url আসলে Google-এর "webViewLink" (viewer পেজ, কাঁচা
+// ইমেজ ডেটা না) — তাই ছবি সরাসরি <img>-এ দেখাতে লিংক থেকে Drive file id বের করে
+// thumbnail এন্ডপয়েন্টে কনভার্ট করা হয়। আপলোডের সময় ফাইলে "anyone: reader"
+// পারমিশন দেওয়া হয় (দেখুন app/api/drive-upload/finalize), তাই এই এন্ডপয়েন্ট
+// লগইন ছাড়াই কাজ করে। Drive না হওয়া সরাসরি ইমেজ লিংক অপরিবর্তিত থাকে।
+export function driveThumbnailUrl(url: string): string {
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) ?? url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000` : url;
+}
+
 export function guessFileType(file: File): string {
   const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
   if (ext === 'fig') return 'figma';
