@@ -33,6 +33,7 @@ export function guessFileType(file: File): string {
   if (ext === 'fig') return 'figma';
   if (ext === 'pdf') return 'pdf';
   if (file.type.startsWith('image/')) return 'image';
+  if (file.type.startsWith('video/')) return 'video';
   if (ext === 'zip' || ext === 'rar' || ext === '7z') return 'zip';
   return 'other';
 }

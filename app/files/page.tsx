@@ -58,6 +58,8 @@ const ICON_PATHS: Record<string, string> = {
   close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  video: '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/>',
+  play: '<path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/>',
 };
 
 type IconName = keyof typeof ICON_PATHS;
@@ -84,11 +86,12 @@ const NAV_ITEMS_BOTTOM: { icon: IconName; label: string; href: string }[] = [
 
 const ASSETS_PAGE_SIZE = 6;
 
-const FILE_TYPES = ['figma', 'pdf', 'image', 'zip', 'other'] as const;
+const FILE_TYPES = ['figma', 'pdf', 'image', 'video', 'zip', 'other'] as const;
 const FILE_TYPE_META: Record<string, { icon: IconName; label: string; bg: string; color: string }> = {
   figma: { icon: 'figma', label: 'Figma', bg: 'linear-gradient(135deg,var(--accent-soft),var(--accent-soft-2))', color: 'var(--accent)' },
   pdf: { icon: 'file', label: 'PDF', bg: 'linear-gradient(135deg,var(--danger-soft),var(--surface-muted))', color: 'var(--danger)' },
   image: { icon: 'image', label: 'Image', bg: 'linear-gradient(135deg,var(--accent-soft-2),var(--surface-muted))', color: 'var(--accent)' },
+  video: { icon: 'video', label: 'Video', bg: 'linear-gradient(135deg,var(--positive-soft),var(--surface-muted))', color: 'var(--positive)' },
   zip: { icon: 'archive', label: 'ZIP', bg: 'linear-gradient(135deg,var(--warning-soft),var(--surface-muted))', color: 'var(--warning)' },
   other: { icon: 'file', label: 'File', bg: 'linear-gradient(135deg,var(--surface-muted),var(--border-soft))', color: 'var(--ink-faint)' },
 };
@@ -618,8 +621,11 @@ export default function FilesPage() {
                           <div key={a.id} className={`asset-card${selectedId === a.id ? ' selected' : ''}`} onClick={() => setSelectedId(a.id)}>
                             <div className="asset-thumb" style={canPreviewInline(a.file_type, a.drive_url) ? undefined : { background: meta.bg }}>
                               {canPreviewInline(a.file_type, a.drive_url) ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img className="asset-thumb-img" src={driveThumbnailUrl(a.drive_url)} alt={a.file_name} />
+                                <>
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img className="asset-thumb-img" src={driveThumbnailUrl(a.drive_url)} alt={a.file_name} />
+                                  {a.file_type === 'video' && <span className="asset-play-badge"><Icon name="play" size={16} /></span>}
+                                </>
                               ) : (
                                 <Icon name={meta.icon} size={viewMode === 'list' ? 18 : 26} />
                               )}
@@ -680,8 +686,11 @@ export default function FilesPage() {
                         <>
                           <div className="insp-preview" style={canPreviewInline(selected.file_type, selected.drive_url) ? undefined : { background: meta.bg }}>
                             {canPreviewInline(selected.file_type, selected.drive_url) ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img className="insp-preview-img" src={driveThumbnailUrl(selected.drive_url)} alt={selected.file_name} />
+                              <>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img className="insp-preview-img" src={driveThumbnailUrl(selected.drive_url)} alt={selected.file_name} />
+                                {selected.file_type === 'video' && <span className="asset-play-badge"><Icon name="play" size={20} /></span>}
+                              </>
                             ) : (
                               <Icon name={meta.icon} size={36} />
                             )}
