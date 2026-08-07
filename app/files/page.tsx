@@ -22,7 +22,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
 import { formatBnDate, relativeTimeBn } from '@/lib/format';
 import { STAGE_LABEL } from '@/lib/taskMeta';
-import { driveThumbnailUrl, guessFileType, uploadFileToDrive } from '@/lib/driveUpload';
+import { canPreviewInline, driveThumbnailUrl, guessFileType, uploadFileToDrive } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
 
@@ -616,8 +616,8 @@ export default function FilesPage() {
                         const isFav = favorites.has(a.id);
                         return (
                           <div key={a.id} className={`asset-card${selectedId === a.id ? ' selected' : ''}`} onClick={() => setSelectedId(a.id)}>
-                            <div className="asset-thumb" style={a.file_type === 'image' ? undefined : { background: meta.bg }}>
-                              {a.file_type === 'image' ? (
+                            <div className="asset-thumb" style={canPreviewInline(a.file_type, a.drive_url) ? undefined : { background: meta.bg }}>
+                              {canPreviewInline(a.file_type, a.drive_url) ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img className="asset-thumb-img" src={driveThumbnailUrl(a.drive_url)} alt={a.file_name} />
                               ) : (
@@ -678,8 +678,8 @@ export default function FilesPage() {
                       const progress = linkedProject ? projectProgress.get(linkedProject.id) ?? 0 : 0;
                       return (
                         <>
-                          <div className="insp-preview" style={selected.file_type === 'image' ? undefined : { background: meta.bg }}>
-                            {selected.file_type === 'image' ? (
+                          <div className="insp-preview" style={canPreviewInline(selected.file_type, selected.drive_url) ? undefined : { background: meta.bg }}>
+                            {canPreviewInline(selected.file_type, selected.drive_url) ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img className="insp-preview-img" src={driveThumbnailUrl(selected.drive_url)} alt={selected.file_name} />
                             ) : (

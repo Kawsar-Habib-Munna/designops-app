@@ -9,9 +9,23 @@
 // thumbnail এন্ডপয়েন্টে কনভার্ট করা হয়। আপলোডের সময় ফাইলে "anyone: reader"
 // পারমিশন দেওয়া হয় (দেখুন app/api/drive-upload/finalize), তাই এই এন্ডপয়েন্ট
 // লগইন ছাড়াই কাজ করে। Drive না হওয়া সরাসরি ইমেজ লিংক অপরিবর্তিত থাকে।
-export function driveThumbnailUrl(url: string): string {
+function driveFileId(url: string): string | null {
   const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) ?? url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000` : url;
+  return m ? m[1] : null;
+}
+export function driveThumbnailUrl(url: string): string {
+  const id = driveFileId(url);
+  return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1000` : url;
+}
+
+// Drive-এর thumbnail এন্ডপয়েন্ট ইমেজের পাশাপাশি ভিডিও আর PDF-এরও একটা স্ট্যাটিক
+// প্রিভিউ জেনারেট করে দেয়, কিন্তু শুধু Drive-এ হোস্ট করা ফাইলের জন্যই — পেস্ট করা
+// কোনো বহিরাগত (non-Drive) ভিডিও/PDF লিংকের জন্য এই এন্ডপয়েন্ট কাজ করবে না।
+// সরাসরি ইমেজ লিংক ব্যতিক্রম, কারণ raw ইমেজ URL এমনিতেই <img src>-এ কাজ করে।
+export function canPreviewInline(fileType: string | null, url: string): boolean {
+  if (fileType === 'image') return true;
+  if (fileType === 'video' || fileType === 'pdf') return driveFileId(url) !== null;
+  return false;
 }
 
 export function guessFileType(file: File): string {
