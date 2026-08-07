@@ -24,7 +24,7 @@ import { useSession } from '@/lib/useSession';
 import { relativeTimeBn, formatBnDate } from '@/lib/format';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
-import { uploadFileToDrive } from '@/lib/driveUpload';
+import { guessFileType, uploadFileToDrive } from '@/lib/driveUpload';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -276,6 +276,7 @@ export default function DiscussionsPage() {
   const [showReplyAttach, setShowReplyAttach] = useState(false);
   const [replyAttachName, setReplyAttachName] = useState('');
   const [replyAttachUrl, setReplyAttachUrl] = useState('');
+  const [replyAttachType, setReplyAttachType] = useState('');
   const [replyUploading, setReplyUploading] = useState(false);
   const [replyUploadProgress, setReplyUploadProgress] = useState(0);
   const [postingReply, setPostingReply] = useState(false);
@@ -292,7 +293,7 @@ export default function DiscussionsPage() {
   const [dTags, setDTags] = useState('');
   const [dProjectId, setDProjectId] = useState('');
   const [dMentionIds, setDMentionIds] = useState<Set<string>>(new Set());
-  const [dAttachments, setDAttachments] = useState<{ name: string; url: string }[]>([]);
+  const [dAttachments, setDAttachments] = useState<{ name: string; url: string; type: string }[]>([]);
   const [dAttachName, setDAttachName] = useState('');
   const [dAttachUrl, setDAttachUrl] = useState('');
   const [dUploading, setDUploading] = useState(false);
@@ -308,7 +309,7 @@ export default function DiscussionsPage() {
   const [vAnonymous, setVAnonymous] = useState(false);
   const [vEndsAt, setVEndsAt] = useState('');
   const [vProjectId, setVProjectId] = useState('');
-  const [vAttachments, setVAttachments] = useState<{ name: string; url: string }[]>([]);
+  const [vAttachments, setVAttachments] = useState<{ name: string; url: string; type: string }[]>([]);
   const [vAttachName, setVAttachName] = useState('');
   const [vAttachUrl, setVAttachUrl] = useState('');
   const [vUploading, setVUploading] = useState(false);
@@ -467,7 +468,7 @@ export default function DiscussionsPage() {
     if (replyAttachName.trim() && replyAttachUrl.trim()) {
       const { data: attData } = await supabase
         .from('reply_attachments')
-        .insert({ reply_id: row.id, file_name: replyAttachName.trim(), file_type: guessLinkType(replyAttachUrl), url: replyAttachUrl.trim() })
+        .insert({ reply_id: row.id, file_name: replyAttachName.trim(), file_type: replyAttachType || guessLinkType(replyAttachUrl), url: replyAttachUrl.trim() })
         .select('id, reply_id, file_name, file_type, url')
         .single();
       if (attData) newAttachment = attData as ReplyAttachmentRow;
@@ -477,6 +478,7 @@ export default function DiscussionsPage() {
     setReplyBody('');
     setReplyAttachName('');
     setReplyAttachUrl('');
+    setReplyAttachType('');
     setShowReplyAttach(false);
     setPostingReply(false);
   }
@@ -495,6 +497,7 @@ export default function DiscussionsPage() {
       const result = await uploadFileToDrive(file, session.access_token, setReplyUploadProgress);
       setReplyAttachName(result.name ?? file.name);
       setReplyAttachUrl(result.webViewLink);
+      setReplyAttachType(guessFileType(file));
       setShowReplyAttach(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'আপলোড ব্যর্থ হয়েছে।');
@@ -556,7 +559,7 @@ export default function DiscussionsPage() {
   }
   function addDiscussionAttachment() {
     if (!dAttachName.trim() || !dAttachUrl.trim()) return;
-    setDAttachments((prev) => [...prev, { name: dAttachName.trim(), url: dAttachUrl.trim() }]);
+    setDAttachments((prev) => [...prev, { name: dAttachName.trim(), url: dAttachUrl.trim(), type: guessLinkType(dAttachUrl.trim()) }]);
     setDAttachName('');
     setDAttachUrl('');
   }
@@ -568,7 +571,10 @@ export default function DiscussionsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('সেশন পাওয়া যায়নি — আবার লগইন করুন।');
       const result = await uploadFileToDrive(file, session.access_token, setDUploadProgress);
-      setDAttachments((prev) => [...prev, { name: result.name ?? file.name, url: result.webViewLink }]);
+      // আপলোড হওয়া webViewLink (Drive viewer পেজ) কোনো ইমেজ এক্সটেনশনে শেষ হয়
+      // না, তাই টাইপ আসল ফাইল থেকেই ঠিক করা হচ্ছে — URL থেকে অনুমান করলে "ছবি"
+      // ধরা পড়ত না।
+      setDAttachments((prev) => [...prev, { name: result.name ?? file.name, url: result.webViewLink, type: guessFileType(file) }]);
     } catch (err) {
       setDiscussionError(err instanceof Error ? err.message : 'আপলোড ব্যর্থ হয়েছে।');
     } finally {
@@ -594,7 +600,7 @@ export default function DiscussionsPage() {
       await supabase.from('discussion_mentions').insert(Array.from(dMentionIds).map((pid) => ({ discussion_id: discussionId, profile_id: pid })));
     }
     if (dAttachments.length > 0) {
-      await supabase.from('discussion_attachments').insert(dAttachments.map((a) => ({ discussion_id: discussionId, file_name: a.name, file_type: guessLinkType(a.url), url: a.url })));
+      await supabase.from('discussion_attachments').insert(dAttachments.map((a) => ({ discussion_id: discussionId, file_name: a.name, file_type: a.type, url: a.url })));
     }
     await handleReload();
     setSavingDiscussion(false);
@@ -620,7 +626,7 @@ export default function DiscussionsPage() {
   }
   function addVoteAttachment() {
     if (!vAttachName.trim() || !vAttachUrl.trim()) return;
-    setVAttachments((prev) => [...prev, { name: vAttachName.trim(), url: vAttachUrl.trim() }]);
+    setVAttachments((prev) => [...prev, { name: vAttachName.trim(), url: vAttachUrl.trim(), type: guessLinkType(vAttachUrl.trim()) }]);
     setVAttachName('');
     setVAttachUrl('');
   }
@@ -632,7 +638,7 @@ export default function DiscussionsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('সেশন পাওয়া যায়নি — আবার লগইন করুন।');
       const result = await uploadFileToDrive(file, session.access_token, setVUploadProgress);
-      setVAttachments((prev) => [...prev, { name: result.name ?? file.name, url: result.webViewLink }]);
+      setVAttachments((prev) => [...prev, { name: result.name ?? file.name, url: result.webViewLink, type: guessFileType(file) }]);
     } catch (err) {
       setVoteError(err instanceof Error ? err.message : 'আপলোড ব্যর্থ হয়েছে।');
     } finally {
@@ -659,7 +665,7 @@ export default function DiscussionsPage() {
     const { error: optErr } = await supabase.from('vote_options').insert(labels.map((label, i) => ({ vote_id: voteId, label, position: i })));
     if (optErr) { setVoteError(optErr.message); setSavingVote(false); return; }
     if (vAttachments.length > 0) {
-      await supabase.from('vote_attachments').insert(vAttachments.map((a) => ({ vote_id: voteId, file_name: a.name, file_type: guessLinkType(a.url), url: a.url })));
+      await supabase.from('vote_attachments').insert(vAttachments.map((a) => ({ vote_id: voteId, file_name: a.name, file_type: a.type, url: a.url })));
     }
     await handleReload();
     setSavingVote(false);
@@ -1023,7 +1029,7 @@ export default function DiscussionsPage() {
                         </button>
                         <input id="reply-file-input" type="file" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleReplyFileUpload(f); e.target.value = ''; }} />
                         <input placeholder="অথবা ফাইলের নাম" value={replyAttachName} onChange={(e) => setReplyAttachName(e.target.value)} disabled={replyUploading} />
-                        <input placeholder="Drive/Figma লিংক পেস্ট করুন" value={replyAttachUrl} onChange={(e) => setReplyAttachUrl(e.target.value)} style={{ flex: 1 }} disabled={replyUploading} />
+                        <input placeholder="Drive/Figma লিংক পেস্ট করুন" value={replyAttachUrl} onChange={(e) => { setReplyAttachUrl(e.target.value); setReplyAttachType(guessLinkType(e.target.value)); }} style={{ flex: 1 }} disabled={replyUploading} />
                       </div>
                     )}
                     <div className="composer-foot">
@@ -1335,15 +1341,14 @@ export default function DiscussionsPage() {
               <div className="modal-field">
                 <label className="modal-label">অ্যাটাচমেন্ট (ঐচ্ছিক)</label>
                 {dAttachments.map((a, i) => {
-                  const type = guessLinkType(a.url);
                   return (
                     <div key={i} className="attach-chip" style={{ marginBottom: 6, justifyContent: 'space-between' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                        {type === 'image' ? (
+                        {a.type === 'image' ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={driveThumbnailUrl(a.url)} alt={a.name} style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }} />
                         ) : (
-                          <Icon name={attachTypeIcon(type)} size={13} />
+                          <Icon name={attachTypeIcon(a.type)} size={13} />
                         )}
                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
                       </span>
@@ -1408,15 +1413,14 @@ export default function DiscussionsPage() {
               <div className="modal-field">
                 <label className="modal-label">অ্যাটাচমেন্ট (ঐচ্ছিক)</label>
                 {vAttachments.map((a, i) => {
-                  const type = guessLinkType(a.url);
                   return (
                   <div key={i} className="attach-chip" style={{ marginBottom: 6, justifyContent: 'space-between' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                      {type === 'image' ? (
+                      {a.type === 'image' ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={driveThumbnailUrl(a.url)} alt={a.name} style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }} />
                       ) : (
-                        <Icon name={attachTypeIcon(type)} size={13} />
+                        <Icon name={attachTypeIcon(a.type)} size={13} />
                       )}
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
                     </span>
