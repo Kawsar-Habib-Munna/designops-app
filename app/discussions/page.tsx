@@ -880,7 +880,7 @@ export default function DiscussionsPage() {
           <div>
             <div className="brand">
               <div className="brand-mark"></div>
-              <div><div className="brand-name">FLOW 53</div><div className="brand-sub">Studio Nine</div></div>
+              <div><div className="brand-name">FLOW 53</div><div className="brand-sub">Innovate · Design · Elevate</div></div>
             </div>
             <nav className="nav-group" aria-label="Sidebar">
               {NAV_ITEMS.map((item) => (

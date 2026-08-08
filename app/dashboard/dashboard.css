@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Gugi&display=swap");
 
 /* Scoped to .dashboard-root so this stylesheet never leaks into other routes. */
 
@@ -105,18 +106,23 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 10px 22px 10px;
+  padding: 10px 10px 10px 10px;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
 }
 .dashboard-root .brand-mark {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-  background-image: url('/flow53-logo.png');
-  background-size: cover;
+  width: 12px;
+  height: 12px;
+  border-radius: 0px;
+  background-image: url('/flow53-logo.svg');
+  background-size: contain;
   background-position: center;
+  background-repeat: no-repeat;
+  padding: 22px;
   flex-shrink: 0;
 }
 .dashboard-root .brand-name {
+  font-family: 'Gugi', sans-serif;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.01em;
