@@ -98,7 +98,7 @@ const LOCAL_NAV_ITEMS: { key: LocalView; icon: IconName; label: string }[] = [
 const CATEGORY_OPTIONS = ['ডিজাইন ফিডব্যাক', 'UX রিভিউ', 'ব্র্যান্ডিং', 'ফিচার আইডিয়া', 'প্রজেক্ট ডিসিশন'];
 const REACTION_EMOJIS = ['👍', '❤️'];
 
-type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null };
+type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; is_admin?: boolean };
 type ProjectOption = { id: string; name: string };
 type TaskOption = { id: string; project_id: string | null; status: string };
 type AuthorRef = { full_name: string; role: string | null; avatar_color: string | null } | null;
@@ -336,7 +336,7 @@ export default function DiscussionsPage() {
     async function run() {
       const [result, profileRes] = await Promise.all([
         fetchDiscussionsData(),
-        supabase.from('profiles').select('id, full_name, role, avatar_color').eq('id', user!.id).single(),
+        supabase.from('profiles').select('id, full_name, role, avatar_color, is_admin').eq('id', user!.id).single(),
       ]);
       applyResult(result);
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);
@@ -794,7 +794,11 @@ export default function DiscussionsPage() {
   const activeVoteStats = activeVote ? voteStats(activeVote.id) : null;
   const myVoteResponses = activeVote && profile ? voteResponses.filter((r) => r.vote_id === activeVote.id && r.voter_id === profile.id) : [];
   const hasVoted = myVoteResponses.length > 0;
-  const showVoteResults = activeVote ? hasVoted || voteIsClosed(activeVote) : false;
+  const voteClosed = activeVote ? voteIsClosed(activeVote) : false;
+  // ভোট না দেওয়া পর্যন্ত সাধারণ মেম্বাররা ফলাফল দেখতে পারবেন না (bias এড়াতে) —
+  // শুধু is_admin প্রোফাইলরাই ভোট দেওয়ার আগে ফলাফল দেখতে পারবেন।
+  const canVote = !hasVoted && !voteClosed;
+  const canSeeResults = hasVoted || voteClosed || !!profile?.is_admin;
 
   const emptyCopy: Record<LocalView, { title: string; sub: string }> = {
     all: { title: 'এখনো কোনো আলোচনা বা ভোট নেই', sub: 'নতুন আলোচনা শুরু করুন বা একটা ভোট তৈরি করুন।' },
@@ -894,7 +898,7 @@ export default function DiscussionsPage() {
               ))}
             </nav>
           </div>
-          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={setProfile} />
+          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={(p) => setProfile((prev) => (prev ? { ...prev, ...p } : p))} />
         </aside>
 
         <div className="main">
@@ -1120,7 +1124,7 @@ export default function DiscussionsPage() {
                     )}
                   </div>
 
-                  {!showVoteResults ? (
+                  {canVote && (
                     <div>
                       <div className="rp-title" style={{ marginBottom: 12 }}>অপশন বেছে নিন{activeVote.allow_multiple ? ' (একাধিক সিলেক্ট করা যাবে)' : ''}</div>
                       {activeVoteStats.options.map((o) => {
@@ -1145,8 +1149,14 @@ export default function DiscussionsPage() {
                       })}
                       <button className="btn btn-accent" style={{ marginTop: 6 }} disabled={pendingOptionIds.size === 0 || submittingVote} onClick={submitVoteResponse}>{submittingVote ? 'সাবমিট হচ্ছে…' : 'Submit Vote'}</button>
                     </div>
-                  ) : (
-                    <div>
+                  )}
+                  {canSeeResults && (
+                    <div style={canVote ? { marginTop: 22, paddingTop: 18, borderTop: '1px solid var(--border-soft)' } : undefined}>
+                      {canVote && (
+                        <div className="rp-title" style={{ marginBottom: 12 }}>
+                          ফলাফল <span style={{ fontWeight: 500, textTransform: 'none', letterSpacing: 0, color: 'var(--ink-faint)' }}>(শুধু Admin হিসেবে আপনি ভোট দেওয়ার আগেই দেখতে পাচ্ছেন)</span>
+                        </div>
+                      )}
                       <p style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 12 }}>
                         {activeVote.is_anonymous ? 'Anonymous Voting চালু আছে — তাই কে কোন অপশনে ভোট দিয়েছেন তা দেখানো হচ্ছে না।' : 'Anonymous Voting বন্ধ আছে — তাই কে কোন অপশনে ভোট দিয়েছেন তা নিচে দেখা যাচ্ছে।'}
                       </p>
