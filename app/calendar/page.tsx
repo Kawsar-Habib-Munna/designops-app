@@ -18,6 +18,7 @@ import Link from 'next/link';
 import './calendar.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
+import { useUnreadCount } from '@/lib/useUnreadCount';
 import { formatBnDateLong, formatTimeBn, todayISO } from '@/lib/format';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
@@ -70,7 +71,7 @@ const NAV_ITEMS: { icon: IconName; label: string; href: string; active?: boolean
   { icon: 'bar', label: 'Reports', href: '#' },
 ];
 const NAV_ITEMS_BOTTOM: { icon: IconName; label: string; href: string }[] = [
-  { icon: 'bell', label: 'Notifications', href: '#' },
+  { icon: 'bell', label: 'Notifications', href: '/notifications' },
   { icon: 'settings', label: 'Settings', href: '#' },
 ];
 
@@ -184,6 +185,7 @@ const NOTES_KEY_PREFIX = 'designops-calendar-notes-';
 
 export default function CalendarPage() {
   const { user, loading: sessionLoading } = useSession();
+  const unreadCount = useUnreadCount(user);
 
   const [dark, setDark] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -607,7 +609,10 @@ export default function CalendarPage() {
               ))}
               <div className="nav-divider"></div>
               {NAV_ITEMS_BOTTOM.map((item) => (
-                <a key={item.label} href={item.href} className="nav-item"><Icon name={item.icon} /> {item.label}</a>
+                <Link key={item.label} href={item.href} className="nav-item">
+                  <Icon name={item.icon} /> {item.label}
+                  {item.label === 'Notifications' && unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+                </Link>
               ))}
             </nav>
           </div>

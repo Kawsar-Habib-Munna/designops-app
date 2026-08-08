@@ -19,6 +19,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import './board.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
+import { useUnreadCount } from '@/lib/useUnreadCount';
 import { formatBnDateLong, relativeTimeBn, todayISO } from '@/lib/format';
 import { STATUS_META, PRIORITY_META, STAGE_LABEL, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
 import SignInScreen from '@/app/components/SignInScreen';
@@ -78,7 +79,7 @@ const NAV_ITEMS: { icon: IconName; label: string; href: string; active?: boolean
 ];
 
 const NAV_ITEMS_BOTTOM: { icon: IconName; label: string; href: string }[] = [
-  { icon: 'bell', label: 'Notifications', href: '#' },
+  { icon: 'bell', label: 'Notifications', href: '/notifications' },
   { icon: 'settings', label: 'Settings', href: '#' },
 ];
 
@@ -194,6 +195,7 @@ async function fetchBoardData() {
 
 export default function BoardPage() {
   const { user, loading: sessionLoading } = useSession();
+  const unreadCount = useUnreadCount(user);
 
   const [dark, setDark] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -548,7 +550,10 @@ export default function BoardPage() {
               ))}
               <div className="nav-divider"></div>
               {NAV_ITEMS_BOTTOM.map((item) => (
-                <a key={item.label} href={item.href} className="nav-item"><Icon name={item.icon} /> {item.label}</a>
+                <a key={item.label} href={item.href} className="nav-item">
+                  <Icon name={item.icon} /> {item.label}
+                  {item.label === 'Notifications' && unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+                </a>
               ))}
             </nav>
           </div>

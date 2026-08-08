@@ -83,6 +83,7 @@
 .files-root .nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-sm);font-size:13.5px;color:var(--ink-soft);font-weight:500;transition:background .15s ease,color .15s ease;}
 .files-root .nav-item:hover{background:var(--surface-muted);color:var(--ink);}
 .files-root .nav-item.active{background:var(--accent-soft);color:var(--accent);}
+.files-root .nav-item .badge{margin-left:auto;font-size:10.5px;background:var(--danger);color:#fff;padding:1px 6px;border-radius:999px;font-weight:600;}
 .files-root .nav-divider{height:1px;background:var(--border-soft);margin:12px 4px;}
 .files-root .profile-card{display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface-muted);cursor:pointer;width:100%;text-align:left;}
 .files-root .profile-card:hover{background:var(--border-soft);}

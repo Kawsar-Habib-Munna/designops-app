@@ -509,3 +509,47 @@ create policy "team can read vote_attachments" on vote_attachments for select us
 create policy "team can write vote_attachments" on vote_attachments for all using (auth.role() = 'authenticated');
 
 create index if not exists idx_vote_attachments_vote on vote_attachments(vote_id);
+
+-- ============================================
+-- NOTIFICATIONS পেজ
+-- in-app নোটিফিকেশন ফিড — recipient_id নিজের নোটিফিকেশনই দেখতে/আপডেট/ডিলিট
+-- করতে পারবে (এটা ব্যক্তিগত ডেটা, তাই বাকি টেবিলগুলোর মতো broad "team can
+-- read all" পলিসি না দিয়ে recipient_id = auth.uid() দিয়ে রেস্ট্রিক্ট করা
+-- হয়েছে)। insert broad রাখা হয়েছে যেহেতু কেউ অন্য কারো জন্য নোটিফিকেশন
+-- তৈরি করে (যেমন টাস্ক অ্যাসাইন করলে assignee-র জন্য)।
+-- ============================================
+create table if not exists notifications (
+  id uuid default gen_random_uuid() primary key,
+  recipient_id uuid references profiles(id) on delete cascade,
+  actor_id uuid references profiles(id) on delete set null,
+  type text not null,                  -- task_assigned | discussion_created | discussion_mention | discussion_reply | vote_created
+  title text not null,
+  subtitle text,
+  meta text,
+  entity_type text,
+  entity_id uuid,
+  link text,
+  is_read boolean default false,
+  created_at timestamptz default now()
+);
+
+alter table notifications enable row level security;
+create policy "recipient can read own notifications" on notifications for select using (recipient_id = auth.uid());
+create policy "team can insert notifications" on notifications for insert with check (auth.role() = 'authenticated');
+create policy "recipient can update own notifications" on notifications for update using (recipient_id = auth.uid());
+create policy "recipient can delete own notifications" on notifications for delete using (recipient_id = auth.uid());
+
+create index if not exists idx_notifications_recipient on notifications(recipient_id, created_at desc);
+
+-- ইমেইল/হোয়াটসঅ্যাপ নোটিফিকেশনের জন্য প্রোফাইলে দরকারি কলাম — শুধু
+-- Discussions ও Votes-এর জন্যই এই দুই চ্যানেল সেট করা আছে (এই দুইটাই একমাত্র
+-- ইভেন্ট যা আসলে বাইরের চ্যানেলে পাঠানো হয়), বাকি সব ইন-অ্যাপ ফিডেই সীমাবদ্ধ।
+alter table profiles add column if not exists whatsapp_number text;
+alter table profiles add column if not exists notify_email_discussions boolean default true;
+alter table profiles add column if not exists notify_email_votes boolean default true;
+alter table profiles add column if not exists notify_whatsapp_discussions boolean default false;
+alter table profiles add column if not exists notify_whatsapp_votes boolean default false;
+
+-- বেল আইকনের আনরিড কাউন্ট লাইভ আপডেট হওয়ার জন্য (নতুন নোটিফিকেশন এলে রিফ্রেশ
+-- ছাড়াই ব্যাজ বদলাবে) — tasks টেবিলের মতোই realtime publication-এ যোগ করা।
+alter publication supabase_realtime add table notifications;

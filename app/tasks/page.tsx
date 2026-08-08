@@ -16,8 +16,10 @@ import Link from 'next/link';
 import './tasks.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
+import { useUnreadCount } from '@/lib/useUnreadCount';
 import { dueMeta, relativeTimeBn, todayISO } from '@/lib/format';
 import { STATUS_META, PRIORITY_META, STAGE_LABEL, reviewChip, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
+import { sendNotifications } from '@/lib/notify';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
 
@@ -118,7 +120,7 @@ const NAV_ITEMS: { icon: IconName; label: string; href: string; active?: boolean
 ];
 
 const NAV_ITEMS_BOTTOM: { icon: IconName; label: string; href: string }[] = [
-  { icon: 'bell', label: 'Notifications', href: '#' },
+  { icon: 'bell', label: 'Notifications', href: '/notifications' },
   { icon: 'settings', label: 'Settings', href: '#' },
 ];
 
@@ -175,6 +177,7 @@ export default function TasksPage() {
 
 function TasksPageInner() {
   const { user, loading: sessionLoading } = useSession();
+  const unreadCount = useUnreadCount(user);
   const searchParams = useSearchParams();
 
   const [dark, setDark] = useState(false);
@@ -435,6 +438,18 @@ function TasksPageInner() {
       entity_id: taskId,
       detail: assignee ? `"${assignee.full_name}"-কে অ্যাসাইন করা হয়েছে` : 'অ্যাসাইনি সরানো হয়েছে',
     });
+
+    if (newAssigneeId) {
+      const task = tasks.find((t) => t.id === taskId);
+      sendNotifications([{
+        recipient_id: newAssigneeId,
+        actor_id: user.id,
+        type: 'task_assigned',
+        title: `${profile?.full_name?.trim() || user.email || 'কেউ একজন'} আপনাকে একটা টাস্ক অ্যাসাইন করেছে`,
+        subtitle: task?.title ?? null,
+        link: '/tasks',
+      }]);
+    }
   }
 
   async function toggleExpand(taskId: string) {
@@ -571,6 +586,17 @@ function TasksPageInner() {
         entity_id: row.id,
         detail: `"${row.title}" তৈরি করা হয়েছে`,
       });
+
+      if (newAssigneeId) {
+        sendNotifications([{
+          recipient_id: newAssigneeId,
+          actor_id: user.id,
+          type: 'task_assigned',
+          title: `${profile?.full_name?.trim() || user.email || 'কেউ একজন'} আপনাকে একটা টাস্ক অ্যাসাইন করেছে`,
+          subtitle: row.title,
+          link: '/tasks',
+        }]);
+      }
     }
 
     setNewTitle('');
@@ -610,9 +636,10 @@ function TasksPageInner() {
               ))}
               <div className="nav-divider"></div>
               {NAV_ITEMS_BOTTOM.map((item) => (
-                <a key={item.label} href={item.href} className="nav-item">
+                <Link key={item.label} href={item.href} className="nav-item">
                   <Icon name={item.icon} /> {item.label}
-                </a>
+                  {item.label === 'Notifications' && unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+                </Link>
               ))}
             </nav>
           </div>
@@ -633,10 +660,10 @@ function TasksPageInner() {
             <button className="btn btn-accent" onClick={() => setShowCreate(true)}>
               <Icon name="plus" /> নতুন তৈরি করুন
             </button>
-            <button className="icon-btn" aria-label="নোটিফিকেশন">
+            <Link className="icon-btn" href="/notifications" aria-label="নোটিফিকেশন">
               <Icon name="bell" />
-              <span className="dot-indicator"></span>
-            </button>
+              {unreadCount > 0 && <span className="bell-count">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+            </Link>
             <button className="icon-btn" aria-label="থিম পরিবর্তন" onClick={() => setDark((d) => !d)}>
               <Icon name={dark ? 'moon' : 'sun'} />
             </button>

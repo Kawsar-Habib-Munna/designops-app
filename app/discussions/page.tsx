@@ -21,10 +21,12 @@ import Link from 'next/link';
 import './discussions.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
+import { useUnreadCount } from '@/lib/useUnreadCount';
 import { relativeTimeBn, formatBnDate } from '@/lib/format';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
 import { canPreviewInline, driveThumbnailUrl, guessFileType, uploadFileToDrive } from '@/lib/driveUpload';
+import { sendNotifications } from '@/lib/notify';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -82,7 +84,7 @@ const NAV_ITEMS: { icon: IconName; label: string; href: string; active?: boolean
   { icon: 'bar', label: 'Reports', href: '#' },
 ];
 const NAV_ITEMS_BOTTOM: { icon: IconName; label: string; href: string }[] = [
-  { icon: 'bell', label: 'Notifications', href: '#' },
+  { icon: 'bell', label: 'Notifications', href: '/notifications' },
   { icon: 'settings', label: 'Settings', href: '#' },
 ];
 
@@ -239,6 +241,7 @@ const DISCUSSION_STATUS_META: Record<string, { label: string; cls: string }> = {
 
 export default function DiscussionsPage() {
   const { user, loading: sessionLoading } = useSession();
+  const unreadCount = useUnreadCount(user);
 
   const [dark, setDark] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -480,6 +483,18 @@ export default function DiscussionsPage() {
     setReplyAttachType('');
     setShowReplyAttach(false);
     setPostingReply(false);
+
+    const parentDiscussion = discussions.find((d) => d.id === activeDiscussionId);
+    if (parentDiscussion?.author_id) {
+      sendNotifications([{
+        recipient_id: parentDiscussion.author_id,
+        actor_id: user.id,
+        type: 'discussion_reply',
+        title: `${profile?.full_name?.trim() || user.email || 'কেউ একজন'} আপনার আলোচনায় রিপ্লাই করেছে`,
+        subtitle: parentDiscussion.title,
+        link: '/discussions',
+      }]);
+    }
   }
 
   function quoteReply(authorName: string) {
@@ -601,6 +616,17 @@ export default function DiscussionsPage() {
     if (dAttachments.length > 0) {
       await supabase.from('discussion_attachments').insert(dAttachments.map((a) => ({ discussion_id: discussionId, file_name: a.name, file_type: a.type, url: a.url })));
     }
+    if (!asDraft && dMentionIds.size > 0) {
+      const actorName = profile?.full_name?.trim() || user.email || 'কেউ একজন';
+      sendNotifications(Array.from(dMentionIds).map((pid) => ({
+        recipient_id: pid,
+        actor_id: user.id,
+        type: 'discussion_mention' as const,
+        title: `${actorName} একটা আলোচনায় আপনাকে মেনশন করেছে`,
+        subtitle: dTitle.trim(),
+        link: '/discussions',
+      })));
+    }
     await handleReload();
     setSavingDiscussion(false);
     closeDiscussionModal();
@@ -665,6 +691,21 @@ export default function DiscussionsPage() {
     if (optErr) { setVoteError(optErr.message); setSavingVote(false); return; }
     if (vAttachments.length > 0) {
       await supabase.from('vote_attachments').insert(vAttachments.map((a) => ({ vote_id: voteId, file_name: a.name, file_type: a.type, url: a.url })));
+    }
+    if (!asDraft) {
+      const actorName = profile?.full_name?.trim() || user.email || 'কেউ একজন';
+      sendNotifications(
+        teamOptions
+          .filter((p) => p.id !== user.id)
+          .map((p) => ({
+            recipient_id: p.id,
+            actor_id: user.id,
+            type: 'vote_created' as const,
+            title: `${actorName} একটা নতুন ভোট শুরু করেছে`,
+            subtitle: vTitle.trim(),
+            link: '/discussions',
+          }))
+      );
     }
     await handleReload();
     setSavingVote(false);
@@ -898,7 +939,10 @@ export default function DiscussionsPage() {
               ))}
               <div className="nav-divider"></div>
               {NAV_ITEMS_BOTTOM.map((item) => (
-                <a key={item.label} href={item.href} className="nav-item"><Icon name={item.icon} /> {item.label}</a>
+                <Link key={item.label} href={item.href} className="nav-item">
+                  <Icon name={item.icon} /> {item.label}
+                  {item.label === 'Notifications' && unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+                </Link>
               ))}
             </nav>
           </div>

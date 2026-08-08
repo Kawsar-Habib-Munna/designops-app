@@ -16,6 +16,7 @@ import Link from 'next/link';
 import './project.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
+import { useUnreadCount } from '@/lib/useUnreadCount';
 import { formatBnDate, formatBnDateLong, formatTimeBn, relativeTimeBn, todayISO } from '@/lib/format';
 import { STATUS_META, PRIORITY_META, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
 import SignInScreen from '@/app/components/SignInScreen';
@@ -76,7 +77,7 @@ const NAV_ITEMS: { icon: IconName; label: string; href: string; active?: boolean
 ];
 
 const NAV_ITEMS_BOTTOM: { icon: IconName; label: string; href: string }[] = [
-  { icon: 'bell', label: 'Notifications', href: '#' },
+  { icon: 'bell', label: 'Notifications', href: '/notifications' },
   { icon: 'settings', label: 'Settings', href: '#' },
 ];
 
@@ -227,6 +228,7 @@ export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
   const projectId = params.id;
   const { user, loading: sessionLoading } = useSession();
+  const unreadCount = useUnreadCount(user);
 
   const [dark, setDark] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -381,7 +383,10 @@ export default function ProjectDetailPage() {
               ))}
               <div className="nav-divider"></div>
               {NAV_ITEMS_BOTTOM.map((item) => (
-                <a key={item.label} href={item.href} className="nav-item"><Icon name={item.icon} /> {item.label}</a>
+                <Link key={item.label} href={item.href} className="nav-item">
+                  <Icon name={item.icon} /> {item.label}
+                  {item.label === 'Notifications' && unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+                </Link>
               ))}
             </nav>
           </div>
@@ -399,7 +404,10 @@ export default function ProjectDetailPage() {
             </button>
             <div className="topbar-spacer"></div>
             <Link className="btn btn-accent" href="/tasks"><Icon name="plus" /> নতুন তৈরি করুন</Link>
-            <button className="icon-btn" aria-label="নোটিফিকেশন"><Icon name="bell" /><span className="dot-indicator"></span></button>
+            <Link className="icon-btn" href="/notifications" aria-label="নোটিফিকেশন">
+              <Icon name="bell" />
+              {unreadCount > 0 && <span className="bell-count">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+            </Link>
             <button className="icon-btn" aria-label="থিম পরিবর্তন" onClick={() => setDark((d) => !d)}><Icon name={dark ? 'moon' : 'sun'} /></button>
             <div className="avatar" style={{ width: 30, height: 30, fontSize: 12, background: profile?.avatar_color ?? undefined }}>{avatarInitial}</div>
           </header>
