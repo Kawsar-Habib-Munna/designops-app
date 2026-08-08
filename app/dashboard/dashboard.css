@@ -66,6 +66,7 @@
 
   margin: 0;
   min-height: 100vh;
+  overflow-x: hidden;
   background: var(--bg);
   color: var(--ink);
   font-family: "Inter", sans-serif;
@@ -1108,5 +1109,16 @@
   }
   .dashboard-root .modal-box {
     max-width: 100%;
+  }
+  /* .project-progress-wrap-এর fixed 130px (+ icon/chip/date/avatar-এর
+     flex-shrink:0) মিলে রো-টার নূন্যতম প্রস্থ ফোনের ভিউপোর্টের চেয়েও বেশি
+     হয়ে যাচ্ছিল, যার ফলে পুরো পেজটাই হরাইজন্টালি ওভারফ্লো করে শিফট হয়ে
+     যাচ্ছিল। flex-wrap দিয়ে বাড়তি অংশ পরের লাইনে নামিয়ে দেওয়া হলো। */
+  .dashboard-root .project-row {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .dashboard-root .project-progress-wrap {
+    width: 120px;
   }
 }
