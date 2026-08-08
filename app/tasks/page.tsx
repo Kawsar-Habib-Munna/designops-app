@@ -37,6 +37,7 @@ const ICON_PATHS: Record<string, string> = {
   plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
+  menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
   refresh: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v6h-6"/>',
   import: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/>',
   export: '<path d="M12 15V3"/><path d="M7 8l5-5 5 5"/><path d="M4 19h16"/>',
@@ -177,6 +178,7 @@ function TasksPageInner() {
   const searchParams = useSearchParams();
 
   const [dark, setDark] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
@@ -590,14 +592,16 @@ function TasksPageInner() {
   return (
     <div className={`tasklist-root${dark ? ' dark' : ''}`}>
       <div className="shell">
+        <div className={`mobile-backdrop${mobileNavOpen ? ' open' : ''}`} onClick={() => setMobileNavOpen(false)}></div>
         {/* ============ SIDEBAR ============ */}
-        <aside className="sidebar" aria-label="প্রধান নেভিগেশন">
+        <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`} aria-label="প্রধান নেভিগেশন">
           <div>
             <div className="brand">
               <div className="brand-mark"></div>
               <div><div className="brand-name">FLOW 53</div><div className="brand-sub">Innovate · Design · Elevate</div></div>
+              <button className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন"><Icon name="close" size={16} /></button>
             </div>
-            <nav className="nav-group" aria-label="Sidebar">
+            <nav className="nav-group" aria-label="Sidebar" onClick={() => setMobileNavOpen(false)}>
               {NAV_ITEMS.map((item) => (
                 <a key={item.label} href={item.href} className={`nav-item${item.active ? ' active' : ''}`} aria-current={item.active ? 'page' : undefined}>
                   <Icon name={item.icon} /> {item.label}
@@ -619,6 +623,7 @@ function TasksPageInner() {
         {/* ============ MAIN ============ */}
         <div className="main">
           <header className="topbar">
+            <button className="menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="মেনু খুলুন"><Icon name="menu" /></button>
             <button className="search-box">
               <Icon name="search" />
               <span style={{ flex: 1, textAlign: 'left' }}>খুঁজুন — প্রজেক্ট, টাস্ক, মানুষ...</span>

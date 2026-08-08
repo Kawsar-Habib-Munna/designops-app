@@ -70,7 +70,12 @@
 
 /* ---- sidebar ---- */
 .tasklist-root .sidebar{width:248px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:space-between;padding:20px 14px;position:sticky;top:0;height:100vh;}
-.tasklist-root .brand{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 10px;border:1px solid var(--border);margin-bottom:12px;}
+.tasklist-root .brand{position:relative;display:flex;align-items:center;gap:10px;padding:10px 10px 10px 10px;border:1px solid var(--border);margin-bottom:12px;}
+.tasklist-root .sidebar-close-btn{display:none;position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:7px;align-items:center;justify-content:center;color:var(--ink-faint);background:transparent;border:none;}
+.tasklist-root .sidebar-close-btn:hover{background:var(--surface-muted);color:var(--ink);}
+.tasklist-root .menu-btn{display:none;width:34px;height:34px;border-radius:var(--radius-sm);border:1px solid transparent;background:transparent;align-items:center;justify-content:center;color:var(--ink-soft);flex-shrink:0;}
+.tasklist-root .menu-btn:hover{background:var(--surface-muted);border-color:var(--border);color:var(--ink);}
+.tasklist-root .mobile-backdrop{display:none;}
 .tasklist-root .brand-mark{width:12px;height:12px;border-radius:0px;background-image:url('/flow53-logo.svg');background-size:contain;background-position:center;background-repeat:no-repeat;padding:22px;flex-shrink:0;}
 .tasklist-root .brand-name{font-family:'Gugi',sans-serif;font-size:14px;font-weight:600;letter-spacing:-0.01em;}
 .tasklist-root .brand-sub{font-size:11px;color:var(--ink-faint);}
@@ -252,9 +257,18 @@
 @keyframes tl-shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
 
 @media (max-width:860px){
-  .tasklist-root .sidebar{display:none;}
+  .tasklist-root .menu-btn{display:flex;}
+  .tasklist-root .sidebar-close-btn{display:flex;}
   .tasklist-root .content{padding:20px;}
   .tasklist-root .kpi-grid{grid-template-columns:repeat(3,1fr);}
   .tasklist-root .search-box{display:none;}
   .tasklist-root .expand-grid{grid-template-columns:1fr;}
+  .tasklist-root .sidebar{position:fixed;top:0;left:0;height:100vh;z-index:200;transform:translateX(-100%);transition:transform .2s ease;box-shadow:var(--shadow-lg);}
+  .tasklist-root .sidebar.open{transform:translateX(0);}
+  .tasklist-root .mobile-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:190;opacity:0;pointer-events:none;transition:opacity .2s ease;}
+  .tasklist-root .mobile-backdrop.open{opacity:1;pointer-events:auto;}
+}
+@media (max-width:600px){
+  .tasklist-root .kpi-grid{grid-template-columns:1fr 1fr;}
+  .tasklist-root .modal-box{max-width:100%;}
 }

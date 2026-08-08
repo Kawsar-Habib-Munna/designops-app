@@ -92,12 +92,51 @@
   height: 100vh;
 }
 .projectslist-root .brand {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 10px 10px 10px;
   border: 1px solid var(--border);
   margin-bottom: 12px;
+}
+.projectslist-root .sidebar-close-btn {
+  display: none;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-faint);
+  background: transparent;
+  border: none;
+}
+.projectslist-root .sidebar-close-btn:hover {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+.projectslist-root .menu-btn {
+  display: none;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+}
+.projectslist-root .menu-btn:hover {
+  background: var(--surface-muted);
+  border-color: var(--border);
+  color: var(--ink);
+}
+.projectslist-root .mobile-backdrop {
+  display: none;
 }
 .projectslist-root .brand-mark {
   width: 12px;
@@ -521,13 +560,48 @@
 }
 
 @media (max-width: 860px) {
-  .projectslist-root .sidebar {
-    display: none;
+  .projectslist-root .menu-btn {
+    display: flex;
+  }
+  .projectslist-root .sidebar-close-btn {
+    display: flex;
   }
   .projectslist-root .content {
     padding: 20px;
   }
   .projectslist-root .search-box {
     display: none;
+  }
+  .projectslist-root .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: var(--shadow-lg);
+  }
+  .projectslist-root .sidebar.open {
+    transform: translateX(0);
+  }
+  .projectslist-root .mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 190;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .projectslist-root .mobile-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+@media (max-width: 600px) {
+  .projectslist-root .modal-box {
+    max-width: 100%;
   }
 }

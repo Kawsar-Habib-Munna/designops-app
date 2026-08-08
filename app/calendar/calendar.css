@@ -70,7 +70,12 @@
 
 /* ---- sidebar ---- */
 .calendar-root .sidebar{width:230px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:space-between;padding:20px 14px;}
-.calendar-root .brand{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 10px;border:1px solid var(--border);margin-bottom:12px;}
+.calendar-root .brand{position:relative;display:flex;align-items:center;gap:10px;padding:10px 10px 10px 10px;border:1px solid var(--border);margin-bottom:12px;}
+.calendar-root .sidebar-close-btn{display:none;position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:7px;align-items:center;justify-content:center;color:var(--ink-faint);background:transparent;border:none;}
+.calendar-root .sidebar-close-btn:hover{background:var(--surface-muted);color:var(--ink);}
+.calendar-root .menu-btn{display:none;width:34px;height:34px;border-radius:var(--radius-sm);border:1px solid transparent;background:transparent;align-items:center;justify-content:center;color:var(--ink-soft);flex-shrink:0;}
+.calendar-root .menu-btn:hover{background:var(--surface-muted);border-color:var(--border);color:var(--ink);}
+.calendar-root .mobile-backdrop{display:none;}
 .calendar-root .brand-mark{width:12px;height:12px;border-radius:0px;background-image:url('/flow53-logo.svg');background-size:contain;background-position:center;background-repeat:no-repeat;padding:22px;flex-shrink:0;}
 .calendar-root .brand-name{font-family:'Gugi',sans-serif;font-size:14px;font-weight:600;letter-spacing:-0.01em;}
 .calendar-root .brand-sub{font-size:11px;color:var(--ink-faint);}
@@ -249,4 +254,14 @@
 .calendar-root .modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
 
 @media (max-width:1100px){ .calendar-root .right-panel{display:none;} }
-@media (max-width:860px){ .calendar-root .sidebar{display:none;} .calendar-root .search-mini{display:none;} }
+@media (max-width:860px){
+  .calendar-root .menu-btn{display:flex;}
+  .calendar-root .sidebar-close-btn{display:flex;}
+  .calendar-root .search-mini{display:none;}
+  .calendar-root .sidebar{position:fixed;top:0;left:0;height:100vh;z-index:200;transform:translateX(-100%);transition:transform .2s ease;box-shadow:var(--shadow-lg);}
+  .calendar-root .sidebar.open{transform:translateX(0);}
+  .calendar-root .mobile-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:190;opacity:0;pointer-events:none;transition:opacity .2s ease;}
+  .calendar-root .mobile-backdrop.open{opacity:1;pointer-events:auto;}
+  .calendar-root .cal-scroll{overflow-x:auto;}
+  .calendar-root .modal-box{max-width:100%;}
+}

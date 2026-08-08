@@ -61,6 +61,7 @@ const ICON_PATHS: Record<string, string> = {
   video: '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/>',
   play: '<path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/>',
   chevron: '<path d="M9 6l6 6-6 6"/>',
+  menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
 };
 
 type IconName = keyof typeof ICON_PATHS;
@@ -162,6 +163,7 @@ export default function FilesPage() {
   const { user, loading: sessionLoading } = useSession();
 
   const [dark, setDark] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [attachments, setAttachments] = useState<AttachmentRow[]>([]);
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
@@ -529,13 +531,15 @@ export default function FilesPage() {
   return (
     <div className={`files-root${dark ? ' dark' : ''}`}>
       <div className="shell">
-        <aside className="sidebar" aria-label="প্রধান নেভিগেশন">
+        <div className={`mobile-backdrop${mobileNavOpen ? ' open' : ''}`} onClick={() => setMobileNavOpen(false)}></div>
+        <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`} aria-label="প্রধান নেভিগেশন">
           <div>
             <div className="brand">
               <div className="brand-mark"></div>
               <div><div className="brand-name">FLOW 53</div><div className="brand-sub">Innovate · Design · Elevate</div></div>
+              <button className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন"><Icon name="close" size={16} /></button>
             </div>
-            <nav className="nav-group" aria-label="Sidebar">
+            <nav className="nav-group" aria-label="Sidebar" onClick={() => setMobileNavOpen(false)}>
               {NAV_ITEMS.map((item) => (
                 <Link key={item.label} href={item.href} className={`nav-item${item.active ? ' active' : ''}`} aria-current={item.active ? 'page' : undefined}>
                   <Icon name={item.icon} /> {item.label}
@@ -552,6 +556,7 @@ export default function FilesPage() {
 
         <div className="main">
           <header className="topbar">
+            <button className="menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="মেনু খুলুন"><Icon name="menu" /></button>
             <button className="search-box"><Icon name="search" /><span style={{ flex: 1, textAlign: 'left' }}>খুঁজুন — ফাইল, প্রজেক্ট...</span></button>
             <div className="topbar-spacer"></div>
             <button className="icon-btn" onClick={() => setDark((d) => !d)} aria-label="থিম"><Icon name={dark ? 'moon' : 'sun'} /></button>

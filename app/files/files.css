@@ -69,7 +69,12 @@
 
 /* ---- sidebar ---- */
 .files-root .sidebar{width:248px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:space-between;padding:20px 14px;position:sticky;top:0;height:100vh;}
-.files-root .brand{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 10px;border:1px solid var(--border);margin-bottom:12px;}
+.files-root .brand{position:relative;display:flex;align-items:center;gap:10px;padding:10px 10px 10px 10px;border:1px solid var(--border);margin-bottom:12px;}
+.files-root .sidebar-close-btn{display:none;position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:7px;align-items:center;justify-content:center;color:var(--ink-faint);background:transparent;border:none;}
+.files-root .sidebar-close-btn:hover{background:var(--surface-muted);color:var(--ink);}
+.files-root .menu-btn{display:none;width:34px;height:34px;border-radius:var(--radius-sm);border:1px solid transparent;background:transparent;align-items:center;justify-content:center;color:var(--ink-soft);flex-shrink:0;}
+.files-root .menu-btn:hover{background:var(--surface-muted);border-color:var(--border);color:var(--ink);}
+.files-root .mobile-backdrop{display:none;}
 .files-root .brand-mark{width:12px;height:12px;border-radius:0px;background-image:url('/flow53-logo.svg');background-size:contain;background-position:center;background-repeat:no-repeat;padding:22px;flex-shrink:0;}
 .files-root .brand-name{font-family:'Gugi',sans-serif;font-size:14px;font-weight:600;letter-spacing:-0.01em;}
 .files-root .brand-sub{font-size:11px;color:var(--ink-faint);}
@@ -274,4 +279,22 @@
 .files-root .upload-progress-label{font-size:11px;color:var(--ink-soft);font-weight:500;}
 
 @media (max-width:1200px){ .files-root .assets-layout{grid-template-columns:1fr;} .files-root .inspector{position:static;} .files-root .kpi-grid{grid-template-columns:repeat(3,1fr);} }
-@media (max-width:860px){ .files-root .sidebar{display:none;} .files-root .content{padding:20px;} .files-root .kpi-grid{grid-template-columns:repeat(2,1fr);} .files-root .search-box{display:none;} }
+@media (max-width:860px){
+  .files-root .menu-btn{display:flex;}
+  .files-root .sidebar-close-btn{display:flex;}
+  .files-root .content{padding:20px;}
+  .files-root .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .files-root .search-box{display:none;}
+  .files-root .sidebar{position:fixed;top:0;left:0;height:100vh;z-index:200;transform:translateX(-100%);transition:transform .2s ease;box-shadow:var(--shadow-lg);}
+  .files-root .sidebar.open{transform:translateX(0);}
+  .files-root .mobile-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:190;opacity:0;pointer-events:none;transition:opacity .2s ease;}
+  .files-root .mobile-backdrop.open{opacity:1;pointer-events:auto;}
+}
+@media (max-width:600px){
+  .files-root .content{padding:14px;}
+  .files-root .kpi-grid{grid-template-columns:1fr 1fr;}
+  .files-root .folder-tree{grid-template-columns:1fr;}
+  .files-root .asset-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
+  .files-root .toolbar{flex-wrap:wrap;}
+  .files-root .modal-box{max-width:100%;}
+}

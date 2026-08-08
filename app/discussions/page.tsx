@@ -49,6 +49,7 @@ const ICON_PATHS: Record<string, string> = {
   archive: '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/>',
   edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/>',
   'chevron-left': '<path d="M15 6l-6 6 6 6"/>',
+  menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
   paperclip: '<path d="M21 11.5l-9.2 9.2a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8.2-8.2"/>',
   upload: '<path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
@@ -240,6 +241,7 @@ export default function DiscussionsPage() {
   const { user, loading: sessionLoading } = useSession();
 
   const [dark, setDark] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [discussions, setDiscussions] = useState<DiscussionRow[]>([]);
   const [votes, setVotes] = useState<VoteRow[]>([]);
@@ -880,13 +882,15 @@ export default function DiscussionsPage() {
   return (
     <div className={`discussions-root${dark ? ' dark' : ''}`}>
       <div className="shell">
-        <aside className="sidebar" aria-label="প্রধান নেভিগেশন">
+        <div className={`mobile-backdrop${mobileNavOpen ? ' open' : ''}`} onClick={() => setMobileNavOpen(false)}></div>
+        <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`} aria-label="প্রধান নেভিগেশন">
           <div>
             <div className="brand">
               <div className="brand-mark"></div>
               <div><div className="brand-name">FLOW 53</div><div className="brand-sub">Innovate · Design · Elevate</div></div>
+              <button className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন"><Icon name="close" size={16} /></button>
             </div>
-            <nav className="nav-group" aria-label="Sidebar">
+            <nav className="nav-group" aria-label="Sidebar" onClick={() => setMobileNavOpen(false)}>
               {NAV_ITEMS.map((item) => (
                 <Link key={item.label} href={item.href} className={`nav-item${item.active ? ' active' : ''}`} aria-current={item.active ? 'page' : undefined}>
                   <Icon name={item.icon} /> {item.label}
@@ -903,6 +907,7 @@ export default function DiscussionsPage() {
 
         <div className="main">
           <header className="topbar">
+            <button className="menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="মেনু খুলুন"><Icon name="menu" /></button>
             <button className="search-box"><Icon name="search" /><span style={{ flex: 1, textAlign: 'left' }}>খুঁজুন — আলোচনা, ভোট...</span></button>
             <div className="topbar-spacer"></div>
             <button className="icon-btn" onClick={handleReload} disabled={reloading} aria-label="রিলোড"><Icon name="refresh" /></button>

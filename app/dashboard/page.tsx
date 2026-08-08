@@ -39,6 +39,8 @@ const ICON_PATHS: Record<string, string> = {
   tick: '<path d="M20 6L9 17l-5-5"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
+  menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
+  close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   upload:
     '<path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
   "check-circle": '<circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/>',
@@ -203,6 +205,7 @@ export default function DashboardPage() {
   const { user, loading: sessionLoading } = useSession();
 
   const [dark, setDark] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [cmdkOpen, setCmdkOpen] = useState(false);
 
   const [profile, setProfile] = useState<ProfileRow | null>(null);
@@ -473,15 +476,17 @@ export default function DashboardPage() {
   return (
     <div className={`dashboard-root${dark ? " dark" : ""}`}>
       <div className="shell">
+        <div className={`mobile-backdrop${mobileNavOpen ? " open" : ""}`} onClick={() => setMobileNavOpen(false)}></div>
         {/* ============ SIDEBAR ============ */}
-        <aside className="sidebar" aria-label="প্রধান নেভিগেশন">
+        <aside className={`sidebar${mobileNavOpen ? " open" : ""}`} aria-label="প্রধান নেভিগেশন">
           <div>
             <div className="brand">
               <div className="brand-mark"></div>
               <div><div className="brand-name">FLOW 53</div><div className="brand-sub">Innovate · Design · Elevate</div></div>
+              <button className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন"><Icon name="close" size={16} /></button>
             </div>
 
-            <nav className="nav-group" aria-label="Sidebar">
+            <nav className="nav-group" aria-label="Sidebar" onClick={() => setMobileNavOpen(false)}>
               {NAV_ITEMS.map((item) => (
                 <a
                   key={item.label}
@@ -518,6 +523,7 @@ export default function DashboardPage() {
         <div className="main">
           {/* ---- TOPBAR ---- */}
           <header className="topbar">
+            <button className="menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="মেনু খুলুন"><Icon name="menu" /></button>
             <button
               className="search-box"
               onClick={() => setCmdkOpen(true)}

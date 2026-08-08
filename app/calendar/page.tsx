@@ -48,6 +48,7 @@ const ICON_PATHS: Record<string, string> = {
   close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
+  menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
   spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
 };
 
@@ -185,6 +186,7 @@ export default function CalendarPage() {
   const { user, loading: sessionLoading } = useSession();
 
   const [dark, setDark] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
   const [clientOptions, setClientOptions] = useState<ClientOption[]>([]);
@@ -526,7 +528,10 @@ export default function CalendarPage() {
     return map;
   }, [milestones]);
 
-  const gridCols = `56px repeat(${visibleDays.length}, 1fr)`;
+  // মিনিমাম কলাম-প্রস্থ (minmax) দেওয়া আছে যাতে ছোট স্ক্রিনে কলাম একদম চেপে না
+  // যায় — .cal-scroll তখন হরাইজন্টালি স্ক্রল করে (দেখুন calendar.css-এর
+  // ৮৬০px মিডিয়া কোয়েরি)।
+  const gridCols = `56px repeat(${visibleDays.length}, minmax(90px, 1fr))`;
 
   const weekLabel = useMemo(() => {
     if (visibleDays.length === 0) return '';
@@ -586,13 +591,15 @@ export default function CalendarPage() {
   return (
     <div className={`calendar-root${dark ? ' dark' : ''}`}>
       <div className="shell">
-        <aside className="sidebar" aria-label="প্রধান নেভিগেশন">
+        <div className={`mobile-backdrop${mobileNavOpen ? ' open' : ''}`} onClick={() => setMobileNavOpen(false)}></div>
+        <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`} aria-label="প্রধান নেভিগেশন">
           <div>
             <div className="brand">
               <div className="brand-mark"></div>
               <div><div className="brand-name">FLOW 53</div><div className="brand-sub">Innovate · Design · Elevate</div></div>
+              <button className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন"><Icon name="close" size={16} /></button>
             </div>
-            <nav className="nav-group" aria-label="Sidebar">
+            <nav className="nav-group" aria-label="Sidebar" onClick={() => setMobileNavOpen(false)}>
               {NAV_ITEMS.map((item) => (
                 <Link key={item.label} href={item.href} className={`nav-item${item.active ? ' active' : ''}`} aria-current={item.active ? 'page' : undefined}>
                   <Icon name={item.icon} /> {item.label}
@@ -609,6 +616,7 @@ export default function CalendarPage() {
 
         <div className="main">
           <header className="topbar">
+            <button className="menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="মেনু খুলুন"><Icon name="menu" /></button>
             <div className="page-title-block">
               <div className="page-title">Calendar</div>
               <div className="page-sub">প্রজেক্ট প্ল্যান করুন, ডেডলাইন সামলান, টিমকে সিঙ্কড রাখুন।</div>
