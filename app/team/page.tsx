@@ -542,12 +542,19 @@ export default function TeamWorkloadPage() {
 
             {/* KPI overview */}
             <div className="kpi-grid">
-              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon"><Icon name="users" /></div></div><div className="kpi-value tabular">{loading ? '—' : kpis.total}</div><div className="kpi-label">Total Team Members</div></div>
-              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--positive-soft)', color: 'var(--positive)' }}><Icon name="activity" /></div></div><div className="kpi-value tabular">{loading ? '—' : kpis.active}</div><div className="kpi-label">Active Members</div></div>
-              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--positive-soft)', color: 'var(--positive)' }}><Icon name="check-circle" /></div></div><div className="kpi-value tabular">{loading ? '—' : kpis.available}</div><div className="kpi-label">Available Members</div></div>
-              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}><Icon name="alert" /></div></div><div className="kpi-value tabular">{loading ? '—' : kpis.overloaded}</div><div className="kpi-label">Overloaded Members</div></div>
-              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon"><Icon name="gauge" /></div></div><div className="kpi-value tabular">{loading ? '—' : `${kpis.avgCapacity}%`}</div><div className="kpi-label">Average Capacity</div></div>
-              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--positive-soft)', color: 'var(--positive)' }}><Icon name="check" /></div></div><div className="kpi-value tabular">{loading ? '—' : completedThisWeek}</div><div className="kpi-label">Completed This Week</div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon"><Icon name="users" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--accent)' }}>{loading ? '—' : kpis.total}</div><div className="kpi-label">Total Team Members</div><div className="kpi-deco"><Icon name="users" size={56} /></div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--positive-soft)', color: 'var(--positive)' }}><Icon name="activity" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--positive)' }}>{loading ? '—' : kpis.active}</div><div className="kpi-label">Active Members</div><div className="kpi-deco" style={{ color: 'var(--positive)' }}><Icon name="activity" size={56} /></div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--positive-soft)', color: 'var(--positive)' }}><Icon name="check-circle" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--positive)' }}>{loading ? '—' : kpis.available}</div><div className="kpi-label">Available Members</div><div className="kpi-deco" style={{ color: 'var(--positive)' }}><Icon name="check-circle" size={56} /></div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}><Icon name="alert" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--danger)' }}>{loading ? '—' : kpis.overloaded}</div><div className="kpi-label">Overloaded Members</div><div className="kpi-deco" style={{ color: 'var(--danger)' }}><Icon name="alert" size={56} /></div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon"><Icon name="gauge" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--accent)' }}>{loading ? '—' : `${kpis.avgCapacity}%`}</div><div className="kpi-label">Average Capacity</div>{!loading && (
+                <div className="kpi-ring-wrap">
+                  <svg width={40} height={40} viewBox="0 0 40 40">
+                    <circle cx={20} cy={20} r={16} fill="none" stroke="var(--border-soft)" strokeWidth={4} />
+                    <circle cx={20} cy={20} r={16} fill="none" stroke="var(--accent)" strokeWidth={4} strokeLinecap="round" strokeDasharray={100.5} strokeDashoffset={100.5 - (Math.min(kpis.avgCapacity, 100) / 100) * 100.5} />
+                  </svg>
+                </div>
+              )}</div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--positive-soft)', color: 'var(--positive)' }}><Icon name="check" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--positive)' }}>{loading ? '—' : completedThisWeek}</div><div className="kpi-label">Completed This Week</div><div className="kpi-deco" style={{ color: 'var(--positive)' }}><Icon name="check" size={56} /></div></div>
             </div>
 
             {/* Team Capacity Overview */}

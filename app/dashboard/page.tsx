@@ -55,6 +55,8 @@ const ICON_PATHS: Record<string, string> = {
     '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/><path d="M12 11v4"/><path d="M10 13h4"/>',
   video:
     '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/>',
+  "more-horizontal":
+    '<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
 };
 
 type IconName = keyof typeof ICON_PATHS;
@@ -491,31 +493,61 @@ export default function DashboardPage() {
 
   const kpiCards: {
     icon: IconName;
-    iconTone?: "danger" | "positive";
+    iconTone?: "danger" | "positive" | "warning" | "info";
     value: string;
     label: string;
+    href: string;
+    percent?: number;
   }[] = [
     {
       icon: "folder",
       value: String(kpis.activeProjects),
       label: "Active Projects",
+      href: "/projects",
     },
-    { icon: "check", value: String(kpis.pendingTasks), label: "Pending Tasks" },
-    { icon: "clock", value: String(kpis.dueToday), label: "Due Today" },
+    {
+      icon: "check",
+      iconTone: "info",
+      value: String(kpis.pendingTasks),
+      label: "Pending Tasks",
+      href: "/tasks",
+    },
+    {
+      icon: "clock",
+      iconTone: "warning",
+      value: String(kpis.dueToday),
+      label: "Due Today",
+      href: "/tasks",
+    },
     {
       icon: "alert",
       iconTone: "danger",
       value: String(kpis.overdue),
       label: "Overdue Tasks",
+      href: "/tasks",
     },
     {
       icon: "users",
       iconTone: "positive",
       value: String(kpis.teamCount),
       label: "Team Members",
+      href: "/team",
     },
-    { icon: "bar", value: `${kpis.completion}%`, label: "Completion Rate" },
+    {
+      icon: "bar",
+      value: `${kpis.completion}%`,
+      label: "Completion Rate",
+      href: "/tasks",
+      percent: kpis.completion,
+    },
   ];
+
+  const KPI_TONE_STYLE: Record<string, { bg: string; fg: string }> = {
+    danger: { bg: "var(--danger-soft)", fg: "var(--danger)" },
+    positive: { bg: "var(--positive-soft)", fg: "var(--positive)" },
+    warning: { bg: "var(--warning-soft)", fg: "var(--warning)" },
+    info: dark ? { bg: "#1E293B", fg: "#60A5FA" } : { bg: "#EFF6FF", fg: "#3B82F6" },
+  };
 
   const cmdkItems: { icon: IconName; label: string }[] = [
     { icon: "plus", label: "নতুন টাস্ক তৈরি করুন" },
@@ -661,34 +693,50 @@ export default function DashboardPage() {
 
             {/* KPI GRID */}
             <section className="kpi-grid" aria-label="মূল সূচক">
-              {kpiCards.map((card) => (
-                <div className="kpi-card" key={card.label}>
-                  <div className="kpi-top">
-                    <div
-                      className="kpi-icon"
-                      style={
-                        card.iconTone === "danger"
-                          ? {
-                              background: "var(--danger-soft)",
-                              color: "var(--danger)",
-                            }
-                          : card.iconTone === "positive"
-                            ? {
-                                background: "var(--positive-soft)",
-                                color: "var(--positive)",
-                              }
-                            : undefined
-                      }
-                    >
-                      <Icon name={card.icon} />
+              {kpiCards.map((card) => {
+                const tone = card.iconTone ? KPI_TONE_STYLE[card.iconTone] : null;
+                return (
+                  <div className="kpi-card" key={card.label}>
+                    <div className="kpi-top">
+                      <div
+                        className="kpi-icon"
+                        style={tone ? { background: tone.bg, color: tone.fg } : undefined}
+                      >
+                        <Icon name={card.icon} />
+                      </div>
+                      <Link className="kpi-menu-link" href={card.href} aria-label={`${card.label} বিস্তারিত`}>
+                        <Icon name="more-horizontal" size={15} />
+                      </Link>
                     </div>
+                    <div className="kpi-value tabular" style={tone ? { color: tone.fg } : { color: "var(--accent)" }}>
+                      {dataLoading ? "—" : card.value}
+                    </div>
+                    <div className="kpi-label">{card.label}</div>
+                    {card.percent !== undefined ? (
+                      <div className="kpi-ring-wrap">
+                        <svg width={48} height={48} viewBox="0 0 48 48">
+                          <circle cx={24} cy={24} r={20} fill="none" stroke="var(--border-soft)" strokeWidth={4} />
+                          <circle
+                            cx={24}
+                            cy={24}
+                            r={20}
+                            fill="none"
+                            stroke="var(--accent)"
+                            strokeWidth={4}
+                            strokeLinecap="round"
+                            strokeDasharray={125.66}
+                            strokeDashoffset={125.66 - (Math.min(card.percent, 100) / 100) * 125.66}
+                          />
+                        </svg>
+                      </div>
+                    ) : (
+                      <div className="kpi-deco" style={tone ? { color: tone.fg } : undefined}>
+                        <Icon name={card.icon} size={70} />
+                      </div>
+                    )}
                   </div>
-                  <div className="kpi-value tabular">
-                    {dataLoading ? "—" : card.value}
-                  </div>
-                  <div className="kpi-label">{card.label}</div>
-                </div>
-              ))}
+                );
+              })}
             </section>
 
             {/* TWO COLUMN LAYOUT */}

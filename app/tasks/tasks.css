@@ -126,9 +126,12 @@
 
 /* ---- summary kpis ---- */
 .tasklist-root .kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px;}
-.tasklist-root .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;box-shadow:var(--shadow-sm);}
-.tasklist-root .kpi-value{font-size:21px;font-weight:700;letter-spacing:-0.01em;line-height:1;}
-.tasklist-root .kpi-label{font-size:11px;color:var(--ink-soft);margin-top:6px;}
+.tasklist-root .kpi-card{position:relative;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;box-shadow:var(--shadow-sm);}
+.tasklist-root .kpi-top{display:flex;align-items:center;margin-bottom:10px;position:relative;z-index:1;}
+.tasklist-root .kpi-icon{width:28px;height:28px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tasklist-root .kpi-value{font-size:21px;font-weight:800;letter-spacing:-0.01em;line-height:1;position:relative;z-index:1;}
+.tasklist-root .kpi-label{font-size:11px;color:var(--ink-soft);margin-top:6px;position:relative;z-index:1;}
+.tasklist-root .kpi-deco{position:absolute;right:-8px;bottom:-8px;opacity:0.1;pointer-events:none;color:var(--accent);}
 
 /* ---- smart views ---- */
 .tasklist-root .views-row{display:flex;align-items:center;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px;}

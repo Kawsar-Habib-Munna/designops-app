@@ -54,6 +54,11 @@ const ICON_PATHS: Record<string, string> = {
   'chevron-right': '<path d="M9 6l6 6-6 6"/>',
   tick: '<path d="M20 6L9 17l-5-5"/>',
   figma: '<path d="M9 2h6a4 4 0 0 1 0 8H9z"/><path d="M9 10h6a4 4 0 0 1 0 8 4 4 0 0 1-8 0v-4a4 4 0 0 1 4-4z"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  alert: '<path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/>',
+  eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  'check-circle': '<circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/>',
+  list: '<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
 };
 
 type IconName = keyof typeof ICON_PATHS;
@@ -700,12 +705,12 @@ function TasksPageInner() {
 
             {/* KPI summary */}
             <div className="kpi-grid">
-              <div className="kpi-card"><div className="kpi-value tabular">{loading ? '—' : kpis.total}</div><div className="kpi-label">Total Tasks</div></div>
-              <div className="kpi-card"><div className="kpi-value tabular" style={{ color: 'var(--accent)' }}>{loading ? '—' : kpis.mine}</div><div className="kpi-label">My Tasks</div></div>
-              <div className="kpi-card"><div className="kpi-value tabular" style={{ color: 'var(--warning)' }}>{loading ? '—' : kpis.dueToday}</div><div className="kpi-label">Due Today</div></div>
-              <div className="kpi-card"><div className="kpi-value tabular" style={{ color: 'var(--danger)' }}>{loading ? '—' : kpis.overdue}</div><div className="kpi-label">Overdue</div></div>
-              <div className="kpi-card"><div className="kpi-value tabular">{loading ? '—' : kpis.review}</div><div className="kpi-label">Waiting for Review</div></div>
-              <div className="kpi-card"><div className="kpi-value tabular" style={{ color: 'var(--positive)' }}>{loading ? '—' : kpis.completedThisWeek}</div><div className="kpi-label">Completed This Week</div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon"><Icon name="list" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--accent)' }}>{loading ? '—' : kpis.total}</div><div className="kpi-label">Total Tasks</div><div className="kpi-deco"><Icon name="list" size={56} /></div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon"><Icon name="check" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--accent)' }}>{loading ? '—' : kpis.mine}</div><div className="kpi-label">My Tasks</div><div className="kpi-deco"><Icon name="check" size={56} /></div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--warning-soft)', color: 'var(--warning)' }}><Icon name="clock" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--warning)' }}>{loading ? '—' : kpis.dueToday}</div><div className="kpi-label">Due Today</div><div className="kpi-deco" style={{ color: 'var(--warning)' }}><Icon name="clock" size={56} /></div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}><Icon name="alert" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--danger)' }}>{loading ? '—' : kpis.overdue}</div><div className="kpi-label">Overdue</div><div className="kpi-deco" style={{ color: 'var(--danger)' }}><Icon name="alert" size={56} /></div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon"><Icon name="eye" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--accent)' }}>{loading ? '—' : kpis.review}</div><div className="kpi-label">Waiting for Review</div><div className="kpi-deco"><Icon name="eye" size={56} /></div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--positive-soft)', color: 'var(--positive)' }}><Icon name="check-circle" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--positive)' }}>{loading ? '—' : kpis.completedThisWeek}</div><div className="kpi-label">Completed This Week</div><div className="kpi-deco" style={{ color: 'var(--positive)' }}><Icon name="check-circle" size={56} /></div></div>
             </div>
 
             {/* smart views */}
