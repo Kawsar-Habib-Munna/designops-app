@@ -258,10 +258,17 @@
   .calendar-root .menu-btn{display:flex;}
   .calendar-root .sidebar-close-btn{display:flex;}
   .calendar-root .search-mini{display:none;}
+  .calendar-root .page-sub{display:none;}
   .calendar-root .sidebar{position:fixed;top:0;left:0;height:100vh;z-index:200;transform:translateX(-100%);transition:transform .2s ease;box-shadow:var(--shadow-lg);}
   .calendar-root .sidebar.open{transform:translateX(0);}
   .calendar-root .mobile-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:190;opacity:0;pointer-events:none;transition:opacity .2s ease;}
   .calendar-root .mobile-backdrop.open{opacity:1;pointer-events:auto;}
   .calendar-root .cal-scroll{overflow-x:auto;}
   .calendar-root .modal-box{max-width:100%;}
+}
+@media (max-width:600px){
+  .calendar-root .topbar{gap:6px;padding:0 12px;}
+  .calendar-root .page-title-block{display:none;}
+  .calendar-root .topbar .btn-label{display:none;}
+  .calendar-root .topbar .btn{padding:7px 9px;}
 }

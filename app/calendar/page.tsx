@@ -627,9 +627,9 @@ export default function CalendarPage() {
               <div className="page-sub">প্রজেক্ট প্ল্যান করুন, ডেডলাইন সামলান, টিমকে সিঙ্কড রাখুন।</div>
             </div>
             <div className="topbar-spacer"></div>
-            <button className="btn btn-ghost" onClick={goToday}><Icon name="target" size={13} /> আজ</button>
-            <button className="btn btn-ghost" onClick={() => openMeetingModal()}><Icon name="plus" size={13} /> Meeting</button>
-            <button className="btn btn-accent" onClick={() => setShowCreateTask(true)}><Icon name="plus" size={13} /> Task</button>
+            <button className="btn btn-ghost" onClick={goToday}><Icon name="target" size={13} /> <span className="btn-label">আজ</span></button>
+            <button className="btn btn-ghost" onClick={() => openMeetingModal()}><Icon name="plus" size={13} /> <span className="btn-label">Meeting</span></button>
+            <button className="btn btn-accent" onClick={() => setShowCreateTask(true)}><Icon name="plus" size={13} /> <span className="btn-label">Task</span></button>
             <button className="icon-btn" onClick={() => setDark((d) => !d)} aria-label="থিম"><Icon name={dark ? 'moon' : 'sun'} /></button>
           </header>
 
