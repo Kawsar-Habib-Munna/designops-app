@@ -4,7 +4,7 @@
 // প্রতিটা কার্ড /projects/[id]-এ নিয়ে যায় (Project Details পেজ)। নতুন প্রজেক্ট
 // তৈরি করার মডালও এখানেই — এটা ছাড়া প্রজেক্ট টেবিলে ডেটা ঢোকানোর কোনো উপায় ছিল না।
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import "./projects.css";
 import { supabase } from "@/lib/supabaseClient";
@@ -101,6 +101,10 @@ type ProjectRow = {
   due_date: string | null;
   description: string | null;
   clients: { company_name: string } | null;
+  taskCount: number;
+  discussionCount: number;
+  fileCount: number;
+  avatars: { full_name: string; avatar_color: string | null }[];
 };
 
 type ClientOption = { id: string; company_name: string };
@@ -115,6 +119,9 @@ export default function ProjectsListPage() {
   const [clientOptions, setClientOptions] = useState<ClientOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"due_date" | "name" | "progress">("due_date");
 
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
@@ -134,8 +141,8 @@ export default function ProjectsListPage() {
     if (!user) return;
 
     async function run() {
-      const [projectsRes, clientsRes, profileRes, tasksRes] = await Promise.all(
-        [
+      const [projectsRes, clientsRes, profileRes, tasksRes, discussionsRes, attachmentsRes] =
+        await Promise.all([
           supabase
             .from("projects")
             .select(
@@ -153,27 +160,61 @@ export default function ProjectsListPage() {
             .single(),
           supabase
             .from("tasks")
-            .select("project_id, status")
+            .select("project_id, status, assignee_id, profiles!assignee_id(full_name, avatar_color)")
             .not("project_id", "is", null),
-        ],
-      );
+          supabase.from("discussions").select("project_id").not("project_id", "is", null),
+          supabase.from("attachments").select("task_id, folder_id, tasks(project_id), folders(project_id)"),
+        ]);
 
       if (projectsRes.error) setError(projectsRes.error.message);
-      setProjects((projectsRes.data as unknown as ProjectRow[]) ?? []);
       setClientOptions((clientsRes.data as ClientOption[]) ?? []);
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);
 
       const stats: Record<string, { done: number; total: number }> = {};
-      for (const t of (tasksRes.data as {
+      const avatarsByProject = new Map<string, Map<string, { full_name: string; avatar_color: string | null }>>();
+      for (const t of (tasksRes.data as unknown as {
         project_id: string;
         status: string;
+        assignee_id: string | null;
+        profiles: { full_name: string; avatar_color: string | null } | null;
       }[]) ?? []) {
         const cur = stats[t.project_id] ?? { done: 0, total: 0 };
         cur.total += 1;
         if (t.status === "done") cur.done += 1;
         stats[t.project_id] = cur;
+
+        if (t.assignee_id && t.profiles) {
+          const avatars = avatarsByProject.get(t.project_id) ?? new Map();
+          avatars.set(t.assignee_id, t.profiles);
+          avatarsByProject.set(t.project_id, avatars);
+        }
       }
       setTaskStats(stats);
+
+      const discussionCounts = new Map<string, number>();
+      for (const row of (discussionsRes.data as { project_id: string }[]) ?? []) {
+        discussionCounts.set(row.project_id, (discussionCounts.get(row.project_id) ?? 0) + 1);
+      }
+
+      const fileCounts = new Map<string, number>();
+      for (const row of (attachmentsRes.data as unknown as {
+        task_id: string | null;
+        folder_id: string | null;
+        tasks: { project_id: string | null } | null;
+        folders: { project_id: string | null } | null;
+      }[]) ?? []) {
+        const projectId = row.tasks?.project_id ?? row.folders?.project_id ?? null;
+        if (projectId) fileCounts.set(projectId, (fileCounts.get(projectId) ?? 0) + 1);
+      }
+
+      const projectsWithStats = ((projectsRes.data as unknown as ProjectRow[]) ?? []).map((p) => ({
+        ...p,
+        taskCount: stats[p.id]?.total ?? 0,
+        discussionCount: discussionCounts.get(p.id) ?? 0,
+        fileCount: fileCounts.get(p.id) ?? 0,
+        avatars: Array.from((avatarsByProject.get(p.id) ?? new Map()).values()),
+      }));
+      setProjects(projectsWithStats);
 
       setLoading(false);
     }
@@ -210,7 +251,14 @@ export default function ProjectsListPage() {
     }
 
     if (data) {
-      const row = data as unknown as ProjectRow;
+      const row: ProjectRow = {
+        ...(data as unknown as Omit<ProjectRow, "taskCount" | "discussionCount" | "fileCount" | "avatars">),
+        description: newDescription.trim() || null,
+        taskCount: 0,
+        discussionCount: 0,
+        fileCount: 0,
+        avatars: [],
+      };
       setProjects((prev) =>
         [...prev, row].sort((a, b) =>
           (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"),
@@ -236,6 +284,26 @@ export default function ProjectsListPage() {
     setCreating(false);
     setShowCreate(false);
   }
+
+  const visibleProjects = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const filtered = q
+      ? projects.filter(
+          (p) =>
+            p.name.toLowerCase().includes(q) ||
+            (p.clients?.company_name ?? "").toLowerCase().includes(q),
+        )
+      : projects;
+    const sorted = [...filtered];
+    if (sortBy === "name") {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === "progress") {
+      sorted.sort((a, b) => (b.progress ?? 0) - (a.progress ?? 0));
+    } else {
+      sorted.sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"));
+    }
+    return sorted;
+  }, [projects, search, sortBy]);
 
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
@@ -320,6 +388,26 @@ export default function ProjectsListPage() {
               করুন।
             </p>
 
+            <div className="list-toolbar">
+              <div className="toolbar-search">
+                <Icon name="search" size={13} />
+                <input
+                  placeholder="প্রজেক্ট খুঁজুন..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <select
+                className="filter-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as "due_date" | "name" | "progress")}
+              >
+                <option value="due_date">সর্বশেষ</option>
+                <option value="name">নাম</option>
+                <option value="progress">অগ্রগতি</option>
+              </select>
+            </div>
+
             {error && (
               <div
                 style={{
@@ -359,9 +447,13 @@ export default function ProjectsListPage() {
                   + প্রথম প্রজেক্ট তৈরি করুন
                 </button>
               </div>
+            ) : visibleProjects.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-title">&quot;{search}&quot;-এর সাথে মিলে এমন কোনো প্রজেক্ট নেই</div>
+              </div>
             ) : (
               <div className="proj-grid">
-                {projects.map((p) => {
+                {visibleProjects.map((p) => {
                   const meta = PROJECT_STATUS_META[p.status] ?? {
                     label: p.status,
                     cls: "s-todo",
@@ -371,6 +463,8 @@ export default function ProjectsListPage() {
                     stat && stat.total > 0
                       ? Math.round((stat.done / stat.total) * 100)
                       : 0;
+                  const visibleAvatars = p.avatars.slice(0, 3);
+                  const extraAvatars = p.avatars.length - visibleAvatars.length;
                   return (
                     <Link
                       className="proj-card"
@@ -383,17 +477,43 @@ export default function ProjectsListPage() {
                         </div>
                         <div>
                           <div className="proj-card-name">{p.name}</div>
-                          <div className="proj-card-client">
-                            {p.clients?.company_name ?? "—"}
-                          </div>
+                          <span className={`status-pill ${meta.cls}`}>
+                            {meta.label}
+                          </span>
                         </div>
                       </div>
                       {p.description && (
                         <p className="proj-card-desc">{p.description}</p>
                       )}
-                      <span className={`status-pill ${meta.cls}`}>
-                        {meta.label}
-                      </span>
+                      <div className="proj-card-stats">
+                        <span className="proj-card-stat">
+                          <Icon name="check" size={12} /> <b className="tabular">{p.taskCount}</b> Tasks
+                        </span>
+                        <span className="proj-card-stat">
+                          <Icon name="message" size={12} /> <b className="tabular">{p.discussionCount}</b> Discussions
+                        </span>
+                        <span className="proj-card-stat">
+                          <Icon name="file" size={12} /> <b className="tabular">{p.fileCount}</b> Files
+                        </span>
+                        {visibleAvatars.length > 0 && (
+                          <div className="avatar-stack">
+                            {visibleAvatars.map((a, i) => (
+                              <div
+                                key={i}
+                                className="avatar"
+                                style={{ width: 22, height: 22, fontSize: 9, background: a.avatar_color ?? undefined }}
+                              >
+                                {a.full_name.charAt(0)}
+                              </div>
+                            ))}
+                            {extraAvatars > 0 && (
+                              <div className="avatar avatar-more" style={{ width: 22, height: 22, fontSize: 9 }}>
+                                +{extraAvatars}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                       <div className="progress-track">
                         <div
                           className="progress-fill"
@@ -402,7 +522,9 @@ export default function ProjectsListPage() {
                       </div>
                       <div className="proj-card-foot">
                         <span className="tabular">{progress}% সম্পন্ন</span>
-                        <span>ডেডলাইন: {formatBnDate(p.due_date) || "—"}</span>
+                        <span>
+                          <Icon name="calendar" size={12} /> {formatBnDate(p.due_date) || "—"}
+                        </span>
                       </div>
                     </Link>
                   );

@@ -143,6 +143,10 @@ type ProjectRow = {
   due_date: string | null;
   clients: { company_name: string } | null;
   manager: { full_name: string; avatar_color: string | null } | null;
+  taskCount: number;
+  discussionCount: number;
+  fileCount: number;
+  avatars: { full_name: string; avatar_color: string | null }[];
 };
 
 type DashTask = {
@@ -259,6 +263,8 @@ export default function DashboardPage() {
         doneTasksRes,
         projectsRes,
         projectTaskStatsRes,
+        projectDiscussionsRes,
+        projectAttachmentsRes,
         tasksRes,
         activityRes,
         workloadRes,
@@ -300,7 +306,14 @@ export default function DashboardPage() {
           )
           .order("due_date", { ascending: true })
           .limit(5),
-        supabase.from("tasks").select("project_id, status").not("project_id", "is", null),
+        supabase
+          .from("tasks")
+          .select("project_id, status, assignee_id, profiles!assignee_id(full_name, avatar_color)")
+          .not("project_id", "is", null),
+        supabase.from("discussions").select("project_id").not("project_id", "is", null),
+        supabase
+          .from("attachments")
+          .select("task_id, folder_id, tasks(project_id), folders(project_id)"),
         supabase
           .from("tasks")
           .select("id, title, status, priority, due_date, projects(name)")
@@ -338,6 +351,8 @@ export default function DashboardPage() {
         doneTasksRes,
         projectsRes,
         projectTaskStatsRes,
+        projectDiscussionsRes,
+        projectAttachmentsRes,
         tasksRes,
         activityRes,
         workloadRes,
@@ -359,15 +374,51 @@ export default function DashboardPage() {
       });
 
       const projectTaskStats = new Map<string, { done: number; total: number }>();
-      for (const row of (projectTaskStatsRes.data as { project_id: string; status: string }[]) ?? []) {
+      const projectAvatars = new Map<string, Map<string, { full_name: string; avatar_color: string | null }>>();
+      for (const row of (projectTaskStatsRes.data as unknown as {
+        project_id: string;
+        status: string;
+        assignee_id: string | null;
+        profiles: { full_name: string; avatar_color: string | null } | null;
+      }[]) ?? []) {
         const cur = projectTaskStats.get(row.project_id) ?? { done: 0, total: 0 };
         cur.total += 1;
         if (row.status === "done") cur.done += 1;
         projectTaskStats.set(row.project_id, cur);
+
+        if (row.assignee_id && row.profiles) {
+          const avatars = projectAvatars.get(row.project_id) ?? new Map();
+          avatars.set(row.assignee_id, row.profiles);
+          projectAvatars.set(row.project_id, avatars);
+        }
       }
+
+      const projectDiscussionCounts = new Map<string, number>();
+      for (const row of (projectDiscussionsRes.data as { project_id: string }[]) ?? []) {
+        projectDiscussionCounts.set(row.project_id, (projectDiscussionCounts.get(row.project_id) ?? 0) + 1);
+      }
+
+      const projectFileCounts = new Map<string, number>();
+      for (const row of (projectAttachmentsRes.data as unknown as {
+        task_id: string | null;
+        folder_id: string | null;
+        tasks: { project_id: string | null } | null;
+        folders: { project_id: string | null } | null;
+      }[]) ?? []) {
+        const projectId = row.tasks?.project_id ?? row.folders?.project_id ?? null;
+        if (projectId) projectFileCounts.set(projectId, (projectFileCounts.get(projectId) ?? 0) + 1);
+      }
+
       const projectsWithProgress = ((projectsRes.data as unknown as ProjectRow[]) ?? []).map((p) => {
         const stat = projectTaskStats.get(p.id);
-        return { ...p, progress: stat && stat.total > 0 ? Math.round((stat.done / stat.total) * 100) : 0 };
+        return {
+          ...p,
+          progress: stat && stat.total > 0 ? Math.round((stat.done / stat.total) * 100) : 0,
+          taskCount: stat?.total ?? 0,
+          discussionCount: projectDiscussionCounts.get(p.id) ?? 0,
+          fileCount: projectFileCounts.get(p.id) ?? 0,
+          avatars: Array.from((projectAvatars.get(p.id) ?? new Map()).values()),
+        };
       });
       setProjects(projectsWithProgress);
       setTasks((tasksRes.data as unknown as DashTask[]) ?? []);
@@ -647,12 +698,18 @@ export default function DashboardPage() {
                 {/* Project Overview */}
                 <section className="panel">
                   <div className="panel-head">
-                    <span className="panel-title">
-                      Project Overview{" "}
-                      <span className="count">
-                        · {kpis.activeProjects} active
+                    <span className="panel-title-row">
+                      <span className="panel-icon">
+                        <Icon name="folder" size={14} />
+                      </span>
+                      <span className="panel-title">Project Overview</span>
+                      <span className="panel-count-pill tabular">
+                        {kpis.activeProjects} active
                       </span>
                     </span>
+                    <Link className="panel-link" href="/projects">
+                      View all <Icon name="chevron-right" />
+                    </Link>
                   </div>
                   <div className="panel-body">
                     {dataLoading ? (
@@ -681,57 +738,76 @@ export default function DashboardPage() {
                           cls: "chip-progress",
                           label: p.status,
                         };
+                        const avatars = p.avatars.length > 0
+                          ? p.avatars
+                          : p.manager
+                            ? [p.manager]
+                            : [];
+                        const visibleAvatars = avatars.slice(0, 4);
+                        const extraAvatars = avatars.length - visibleAvatars.length;
                         return (
-                          <Link
-                            href={`/projects/${p.id}`}
-                            className="project-row"
-                            key={p.id}
-                          >
-                            <div className="project-icon">
-                              {p.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="project-main">
-                              <div className="project-name">{p.name}</div>
-                              <div className="project-client">
-                                {p.clients?.company_name ?? "—"}
+                          <Link href={`/projects/${p.id}`} className="pcard" key={p.id}>
+                            <div className="pcard-head">
+                              <div className="project-icon">
+                                {p.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="pcard-title">
+                                <div className="project-name">{p.name}</div>
+                                <span className={`status-dot-pill ${chip.cls}`}>
+                                  <span className="status-dot"></span>
+                                  {chip.label}
+                                </span>
+                              </div>
+                              <div className="pcard-progress-label">
+                                <span>Progress</span>
+                                <span className="pcard-progress-pct tabular">{p.progress ?? 0}%</span>
                               </div>
                             </div>
-                            <span className={`chip ${chip.cls}`}>
-                              {chip.label}
-                            </span>
-                            <div className="project-progress-wrap">
-                              <div className="progress-track">
-                                <div
-                                  className="progress-fill"
-                                  style={{
-                                    width: `${p.progress ?? 0}%`,
-                                    ...(chip.cls === "chip-overdue"
-                                      ? { background: "var(--danger)" }
-                                      : {}),
-                                  }}
-                                ></div>
-                              </div>
-                              <div className="progress-num tabular">
-                                {p.progress ?? 0}%
-                              </div>
+                            <div className="progress-track">
+                              <div
+                                className="progress-fill"
+                                style={{
+                                  width: `${p.progress ?? 0}%`,
+                                  ...(chip.cls === "chip-overdue" ? { background: "var(--danger)" } : {}),
+                                }}
+                              ></div>
                             </div>
-                            <div className="project-deadline">
-                              {formatBnDate(p.due_date)}
-                            </div>
-                            {p.manager && (
-                              <div className="avatar-stack">
-                                <div
-                                  className="avatar"
-                                  style={{
-                                    width: 24,
-                                    height: 24,
-                                    fontSize: 10,
-                                    background:
-                                      p.manager.avatar_color ?? undefined,
-                                  }}
-                                >
-                                  {p.manager.full_name.charAt(0)}
+                            <div className="pcard-mid">
+                              {visibleAvatars.length > 0 ? (
+                                <div className="avatar-stack">
+                                  {visibleAvatars.map((a, i) => (
+                                    <div
+                                      key={i}
+                                      className="avatar"
+                                      style={{ width: 24, height: 24, fontSize: 10, background: a.avatar_color ?? undefined }}
+                                    >
+                                      {a.full_name.charAt(0)}
+                                    </div>
+                                  ))}
+                                  {extraAvatars > 0 && (
+                                    <div className="avatar avatar-more" style={{ width: 24, height: 24, fontSize: 10 }}>
+                                      +{extraAvatars}
+                                    </div>
+                                  )}
                                 </div>
+                              ) : (
+                                <span></span>
+                              )}
+                              <div className="pcard-stats">
+                                <span className="pcard-stat">
+                                  <Icon name="check" size={12} /> <b className="tabular">{p.taskCount}</b> Tasks
+                                </span>
+                                <span className="pcard-stat">
+                                  <Icon name="message" size={12} /> <b className="tabular">{p.discussionCount}</b> Discussions
+                                </span>
+                                <span className="pcard-stat">
+                                  <Icon name="file" size={12} /> <b className="tabular">{p.fileCount}</b> Files
+                                </span>
+                              </div>
+                            </div>
+                            {p.due_date && (
+                              <div className="pcard-foot">
+                                <Icon name="calendar" size={12} /> {formatBnDate(p.due_date)}
                               </div>
                             )}
                           </Link>
