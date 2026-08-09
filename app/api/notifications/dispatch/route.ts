@@ -111,7 +111,9 @@ export async function POST(request: NextRequest) {
           results.sent.push(`${n.id}:email`);
         }
       } catch (err) {
-        results.errors.push(`${n.id}:email:${err instanceof Error ? err.message : 'unknown'}`);
+        const msg = err instanceof Error ? err.message : 'unknown';
+        results.errors.push(`${n.id}:email:${msg}`);
+        console.error(`[notifications/dispatch] email failed for notification ${n.id} (recipient ${n.recipient_id}):`, msg);
       }
     }
 
@@ -120,7 +122,9 @@ export async function POST(request: NextRequest) {
         await sendWhatsApp(profile.whatsapp_number, plainMessage);
         results.sent.push(`${n.id}:whatsapp`);
       } catch (err) {
-        results.errors.push(`${n.id}:whatsapp:${err instanceof Error ? err.message : 'unknown'}`);
+        const msg = err instanceof Error ? err.message : 'unknown';
+        results.errors.push(`${n.id}:whatsapp:${msg}`);
+        console.error(`[notifications/dispatch] whatsapp failed for notification ${n.id} (recipient ${n.recipient_id}):`, msg);
       }
     }
   }
