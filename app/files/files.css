@@ -31,7 +31,6 @@
 
   margin: 0;
   min-height: 100vh;
-  overflow-x: hidden;
   background: var(--bg);
   color: var(--ink);
   font-family: 'Inter', sans-serif;
@@ -93,7 +92,7 @@
 
 .files-root .avatar{border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0;color:#fff;background:var(--accent);}
 
-.files-root .main{flex:1;min-width:0;display:flex;flex-direction:column;}
+.files-root .main{flex:1;min-width:0;overflow-x:hidden;display:flex;flex-direction:column;}
 
 .files-root .topbar{height:64px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:12px;padding:0 24px;position:sticky;top:0;z-index:20;}
 .files-root .search-box{flex:1;max-width:420px;display:flex;align-items:center;gap:8px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;color:var(--ink-faint);font-size:13px;}
