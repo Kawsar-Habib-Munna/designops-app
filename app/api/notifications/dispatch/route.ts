@@ -3,22 +3,23 @@ import { getSupabaseAdmin, getCallerProfile } from '@/lib/supabaseAdmin';
 import { sendEmail } from '@/lib/email';
 import { sendWhatsApp } from '@/lib/whatsapp';
 
-// discussion/vote নোটিফিকেশন তৈরি হওয়ার পর ক্লায়েন্ট থেকে fire-and-forget
-// কল করা হয় — এই রুট প্রতিটা নোটিফিকেশনের প্রাপকের প্রোফাইল দেখে (তাদের
-// email/WhatsApp টগল আর whatsapp_number অনুযায়ী) বাইরের চ্যানেলে পাঠায়।
-// task_assigned/discussion বাদে অন্য টাইপ (এখনো) এখানে হ্যান্ডেল হয় না —
-// শুধু discussion_* আর vote_* টাইপই আসলে ইমেইল/WhatsApp পাঠায়, বাকিগুলো
-// শুধু in-app ফিডেই থাকে (ব্যবহারকারীর সুনির্দিষ্ট অনুরোধ অনুযায়ী)।
+// Tasks/Discussions পেজ থেকে lib/notify.ts যেটা fire-and-forget কল করে —
+// এই রুট service role দিয়ে notifications insert করে (ক্লায়েন্ট থেকে সরাসরি
+// insert করলে RETURNING-এর জন্য recipient-এর SELECT RLS policy চেক হয়ে
+// actor-এর insert ব্যর্থ হয়ে যেত, তাই insert-টাই এখানে সরানো হয়েছে) এবং
+// discussion/vote টাইপের জন্য প্রাপকের টগল অনুযায়ী ইমেইল/WhatsApp পাঠায়।
+// task_assigned ইত্যাদি বাদে বাকি টাইপ শুধু in-app ফিডেই থাকে।
 
-type NotificationRow = {
-  id: string;
+type NotificationInput = {
   recipient_id: string;
   actor_id: string | null;
   type: string;
   title: string;
-  subtitle: string | null;
-  meta: string | null;
-  link: string | null;
+  subtitle?: string | null;
+  meta?: string | null;
+  entity_type?: string | null;
+  entity_id?: string | null;
+  link?: string | null;
 };
 
 function appUrl() {
@@ -43,18 +44,38 @@ export async function POST(request: NextRequest) {
   if (!caller) return Response.json({ error: 'সেশন যাচাই করা যায়নি — আবার লগইন করুন।' }, { status: 401 });
 
   const body = await request.json();
-  const notificationIds: string[] = Array.isArray(body.notificationIds) ? body.notificationIds : [];
-  if (notificationIds.length === 0) return Response.json({ sent: [], skipped: [], errors: [] });
+  const inputs: NotificationInput[] = Array.isArray(body.notifications) ? body.notifications : [];
+  if (inputs.length === 0) return Response.json({ inserted: 0, sent: [], skipped: [], errors: [] });
 
-  const { data: rows } = await supabaseAdmin
+  // actor_id ক্লায়েন্ট থেকে যাই আসুক, caller-এর নিজের id দিয়ে ওভাররাইট করা হচ্ছে —
+  // কেউ যেন অন্য কারো নামে নোটিফিকেশন না পাঠাতে পারে (spoofing প্রতিরোধ)।
+  const rows = inputs
+    .filter((n) => n.recipient_id && n.recipient_id !== caller.userId)
+    .map((n) => ({
+      recipient_id: n.recipient_id,
+      actor_id: caller.userId,
+      type: n.type,
+      title: n.title,
+      subtitle: n.subtitle ?? null,
+      meta: n.meta ?? null,
+      entity_type: n.entity_type ?? null,
+      entity_id: n.entity_id ?? null,
+      link: n.link ?? null,
+    }));
+  if (rows.length === 0) return Response.json({ inserted: 0, sent: [], skipped: [], errors: [] });
+
+  const { data: inserted, error: insertErr } = await supabaseAdmin
     .from('notifications')
-    .select('id, recipient_id, actor_id, type, title, subtitle, meta, link')
-    .in('id', notificationIds);
+    .insert(rows)
+    .select('id, recipient_id, actor_id, type, title, subtitle, meta, link');
+  if (insertErr || !inserted) {
+    return Response.json({ error: insertErr?.message ?? 'নোটিফিকেশন তৈরি করা যায়নি।' }, { status: 500 });
+  }
 
   const results = { sent: [] as string[], skipped: [] as string[], errors: [] as string[] };
   const base = appUrl();
 
-  for (const n of (rows as NotificationRow[]) ?? []) {
+  for (const n of inserted) {
     const isDiscussion = n.type.startsWith('discussion');
     const isVote = n.type.startsWith('vote');
     if (!isDiscussion && !isVote) { results.skipped.push(n.id); continue; }
@@ -104,5 +125,5 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return Response.json(results);
+  return Response.json({ inserted: inserted.length, ...results });
 }
