@@ -81,16 +81,6 @@ export default async function Home() {
           </div>
 
           <div className="project-grid reveal" id="work">
-            <div className="project-card">
-              <div className="project-photo teaser-photo">
-                <div className="teaser-ring"><div className="teaser-ring-inner"></div></div>
-              </div>
-              <div className="project-info project-info-row">
-                <span className="teaser-text">Got a project<br />in mind?</span>
-                <a href="#contact" className="arrow-circle" aria-label="যোগাযোগ করুন">→</a>
-              </div>
-            </div>
-
             {caseStudies.map((p) => {
               const cover = p.cover_image ? driveThumbnailUrl(p.cover_image) : null;
               return (
