@@ -3,16 +3,37 @@ import { notFound } from 'next/navigation';
 import '../../home.css';
 import '../work.css';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
-import { driveThumbnailUrl } from '@/lib/driveUpload';
+import { driveThumbnailUrl, driveEmbedUrl } from '@/lib/driveUpload';
 
 // পাবলিক কেস স্টাডি পেজ — /portfolio (app-এর ভেতরের admin পেজ) থেকে টিম যেই
-// কেস স্টাডি publish করে, সেটাই এখানে ওয়্যারফ্রেম → প্রোটোটাইপ → ফাইনাল UI
-// ক্রমে দেখানো হয়। published না থাকলে বা slug না মিললে 404।
+// কেস স্টাডি publish করে, সেটাই এখানে Overview থেকে Team পর্যন্ত ১৬টা সেকশন
+// ক্রমে দেখানো হয় — প্রতিটা সেকশনে লেখা + ছবি/ভিডিও/লিংক মিডিয়া। published
+// না থাকলে বা slug না মিললে 404।
 export const dynamic = 'force-dynamic';
 
-type Section = 'wireframe' | 'prototype' | 'final_ui';
-const SECTION_ORDER: Section[] = ['wireframe', 'prototype', 'final_ui'];
-const SECTION_LABEL: Record<Section, string> = { wireframe: 'Wireframes', prototype: 'Prototype', final_ui: 'Final UI' };
+type SectionKey =
+  | 'overview' | 'problem_solution' | 'user_persona' | 'empathy_map' | 'competitive_analysis'
+  | 'moscow' | 'kano' | 'ia_sitemap' | 'user_flow' | 'wireframe' | 'screens_brief' | 'mockups'
+  | 'prototype' | 'usability_testing' | 'ai_help' | 'team';
+
+const SECTIONS: { key: SectionKey; label: string }[] = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'problem_solution', label: 'Problem & Solution' },
+  { key: 'user_persona', label: 'User Persona' },
+  { key: 'empathy_map', label: 'Empathy Map' },
+  { key: 'competitive_analysis', label: 'Competitive Analysis' },
+  { key: 'moscow', label: 'MoSCoW Model' },
+  { key: 'kano', label: 'Kano Model' },
+  { key: 'ia_sitemap', label: 'Information Architecture / Site Map' },
+  { key: 'user_flow', label: 'User Flow' },
+  { key: 'wireframe', label: 'Wireframe' },
+  { key: 'screens_brief', label: 'Screens Brief' },
+  { key: 'mockups', label: 'Mockups' },
+  { key: 'prototype', label: 'Prototype' },
+  { key: 'usability_testing', label: 'Usability Testing' },
+  { key: 'ai_help', label: 'AI Help' },
+  { key: 'team', label: 'Team' },
+];
 
 type CaseStudy = {
   id: string;
@@ -25,7 +46,16 @@ type CaseStudy = {
   figma_prototype_url: string | null;
 };
 
-type CSImage = { id: string; section: Section; image_url: string; caption: string | null; order_index: number };
+type CSSection = { section_key: SectionKey; content: string | null };
+type CSMedia = { id: string; section_key: SectionKey; media_type: 'image' | 'video' | 'link'; url: string; caption: string | null; order_index: number };
+
+function linkLabel(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
 
 async function fetchCaseStudy(slug: string) {
   try {
@@ -38,13 +68,12 @@ async function fetchCaseStudy(slug: string) {
       .maybeSingle();
     if (!cs) return null;
 
-    const { data: images } = await admin
-      .from('case_study_images')
-      .select('id, section, image_url, caption, order_index')
-      .eq('case_study_id', (cs as CaseStudy).id)
-      .order('order_index');
+    const [{ data: sections }, { data: media }] = await Promise.all([
+      admin.from('case_study_sections').select('section_key, content').eq('case_study_id', (cs as CaseStudy).id),
+      admin.from('case_study_media').select('id, section_key, media_type, url, caption, order_index').eq('case_study_id', (cs as CaseStudy).id).order('order_index'),
+    ]);
 
-    return { caseStudy: cs as CaseStudy, images: (images as CSImage[]) ?? [] };
+    return { caseStudy: cs as CaseStudy, sections: (sections as CSSection[]) ?? [], media: (media as CSMedia[]) ?? [] };
   } catch {
     return null;
   }
@@ -64,10 +93,24 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
   const { slug } = await params;
   const result = await fetchCaseStudy(slug);
   if (!result) notFound();
-  const { caseStudy, images } = result;
+  const { caseStudy, sections, media } = result;
 
   const cover = caseStudy.cover_image ? driveThumbnailUrl(caseStudy.cover_image) : null;
   const embedUrl = caseStudy.figma_prototype_url ? `https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(caseStudy.figma_prototype_url)}` : null;
+
+  const contentByKey = new Map(sections.map((s) => [s.section_key, s.content] as const));
+  const mediaByKey = new Map<SectionKey, CSMedia[]>();
+  for (const m of media) {
+    const arr = mediaByKey.get(m.section_key) ?? [];
+    arr.push(m);
+    mediaByKey.set(m.section_key, arr);
+  }
+
+  const visibleSections = SECTIONS.filter((sec) => {
+    const content = contentByKey.get(sec.key);
+    const hasMedia = (mediaByKey.get(sec.key) ?? []).length > 0;
+    return (content && content.trim()) || hasMedia;
+  });
 
   return (
     <div className="home-root">
@@ -110,23 +153,39 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
             </section>
           )}
 
-          {SECTION_ORDER.map((section) => {
-            const sectionImages = images.filter((i) => i.section === section);
-            if (sectionImages.length === 0) return null;
+          {visibleSections.map((sec) => {
+            const content = contentByKey.get(sec.key);
+            const items = (mediaByKey.get(sec.key) ?? []).sort((a, b) => a.order_index - b.order_index);
             return (
-              <section className="work-section" key={section}>
-                <div className="work-section-title">{SECTION_LABEL[section]}</div>
-                <div className="work-gallery">
-                  {sectionImages.map((img) => (
-                    <img className="work-gallery-img" key={img.id} src={driveThumbnailUrl(img.image_url)} alt={img.caption ?? caseStudy.title} />
-                  ))}
-                </div>
+              <section className="work-section" key={sec.key}>
+                <div className="work-section-title">{sec.label}</div>
+                {content && content.trim() && <p className="work-section-text">{content}</p>}
+                {items.length > 0 && (
+                  <div className="work-gallery">
+                    {items.map((m) => {
+                      if (m.media_type === 'image') {
+                        return <img className="work-gallery-img" key={m.id} src={driveThumbnailUrl(m.url)} alt={m.caption ?? sec.label} />;
+                      }
+                      if (m.media_type === 'video') {
+                        const embed = driveEmbedUrl(m.url);
+                        return embed ? (
+                          <div className="work-video-frame" key={m.id}><iframe src={embed} allowFullScreen title={m.caption ?? sec.label} /></div>
+                        ) : (
+                          <a className="work-link-chip" key={m.id} href={m.url} target="_blank" rel="noopener noreferrer">▶ {m.caption ?? linkLabel(m.url)}</a>
+                        );
+                      }
+                      return (
+                        <a className="work-link-chip" key={m.id} href={m.url} target="_blank" rel="noopener noreferrer">🔗 {m.caption ?? linkLabel(m.url)}</a>
+                      );
+                    })}
+                  </div>
+                )}
               </section>
             );
           })}
 
-          {!embedUrl && images.length === 0 && (
-            <p className="work-empty">এই কেস স্টাডিতে এখনো কোনো ছবি যোগ করা হয়নি।</p>
+          {!embedUrl && visibleSections.length === 0 && (
+            <p className="work-empty">এই কেস স্টাডিতে এখনো কোনো কনটেন্ট যোগ করা হয়নি।</p>
           )}
         </div>
       </main>

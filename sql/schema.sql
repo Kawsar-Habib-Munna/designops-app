@@ -631,3 +631,63 @@ drop trigger if exists case_studies_updated_at on case_studies;
 create trigger case_studies_updated_at
   before update on case_studies
   for each row execute procedure public.set_updated_at();
+
+-- ============================================
+-- কেস স্টাডি — ফুল case study কাঠামো (Overview থেকে Team পর্যন্ত ১৬টা সেকশন)
+-- আগের case_study_images টেবিল মাত্র ৩টা সেকশন (wireframe/prototype/final_ui)
+-- আর শুধু ছবি সাপোর্ট করত। এখনো কোনো real ডেটা এতে সেভ হয়নি (আপলোড বাগের
+-- কারণে) — তাই এটা বাদ দিয়ে দুইটা নতুন, বেশি ফ্লেক্সিবল টেবিল দিয়ে বদলানো হলো:
+--   case_study_sections → প্রতিটা সেকশনের লেখা (content) — এক কেস স্টাডিতে
+--     প্রতিটা section_key-এর জন্য সর্বোচ্চ একটা রো (upsert করে সেভ হয়)।
+--   case_study_media → প্রতিটা সেকশনের একাধিক মিডিয়া — ছবি/ভিডিও (Drive-এ
+--     আপলোড হয়) অথবা লিংক (বাইরের যেকোনো URL, যেমন Figma/YouTube)।
+-- ============================================
+drop table if exists case_study_images;
+
+create table if not exists case_study_sections (
+  id uuid default gen_random_uuid() primary key,
+  case_study_id uuid references case_studies(id) on delete cascade,
+  section_key text not null check (section_key in (
+    'overview', 'problem_solution', 'user_persona', 'empathy_map', 'competitive_analysis',
+    'moscow', 'kano', 'ia_sitemap', 'user_flow', 'wireframe', 'screens_brief', 'mockups',
+    'prototype', 'usability_testing', 'ai_help', 'team'
+  )),
+  content text,
+  updated_at timestamptz default now(),
+  unique (case_study_id, section_key)
+);
+
+create table if not exists case_study_media (
+  id uuid default gen_random_uuid() primary key,
+  case_study_id uuid references case_studies(id) on delete cascade,
+  section_key text not null check (section_key in (
+    'overview', 'problem_solution', 'user_persona', 'empathy_map', 'competitive_analysis',
+    'moscow', 'kano', 'ia_sitemap', 'user_flow', 'wireframe', 'screens_brief', 'mockups',
+    'prototype', 'usability_testing', 'ai_help', 'team'
+  )),
+  media_type text not null check (media_type in ('image', 'video', 'link')),
+  url text not null,
+  caption text,
+  order_index int default 0,
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_case_study_sections_cs on case_study_sections(case_study_id);
+create index if not exists idx_case_study_media_cs on case_study_media(case_study_id);
+
+alter table case_study_sections enable row level security;
+alter table case_study_media enable row level security;
+
+drop policy if exists "team can read case study sections" on case_study_sections;
+drop policy if exists "team can write case study sections" on case_study_sections;
+drop policy if exists "team can update case study sections" on case_study_sections;
+create policy "team can read case study sections" on case_study_sections for select using (auth.role() = 'authenticated');
+create policy "team can write case study sections" on case_study_sections for insert with check (auth.role() = 'authenticated');
+create policy "team can update case study sections" on case_study_sections for update using (auth.role() = 'authenticated');
+
+drop policy if exists "team can read case study media" on case_study_media;
+drop policy if exists "team can write case study media" on case_study_media;
+drop policy if exists "team can delete case study media" on case_study_media;
+create policy "team can read case study media" on case_study_media for select using (auth.role() = 'authenticated');
+create policy "team can write case study media" on case_study_media for insert with check (auth.role() = 'authenticated');
+create policy "team can delete case study media" on case_study_media for delete using (auth.role() = 'authenticated');

@@ -18,6 +18,16 @@ export function driveThumbnailUrl(url: string): string {
   return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1000` : url;
 }
 
+// ভিডিও প্লে করার জন্য Drive-এর "preview" এন্ডপয়েন্ট — একটা <iframe>-এ বসালে
+// নিজস্ব প্লেয়ার (play/pause/fullscreen) দেখায়, লগইন ছাড়াই কাজ করে যেহেতু
+// আপলোডের সময় ফাইলে "anyone: reader" পারমিশন দেওয়া হয়। Drive না হওয়া লিংকের
+// জন্য (পেস্ট করা YouTube/external ভিডিও লিংক) কাজ করবে না — সেগুলো plain
+// লিংক হিসেবেই দেখানো উচিত।
+export function driveEmbedUrl(url: string): string | null {
+  const id = driveFileId(url);
+  return id ? `https://drive.google.com/file/d/${id}/preview` : null;
+}
+
 // Drive-এর thumbnail এন্ডপয়েন্ট ইমেজের পাশাপাশি ভিডিও আর PDF-এরও একটা স্ট্যাটিক
 // প্রিভিউ জেনারেট করে দেয়, কিন্তু শুধু Drive-এ হোস্ট করা ফাইলের জন্যই — পেস্ট করা
 // কোনো বহিরাগত (non-Drive) ভিডিও/PDF লিংকের জন্য এই এন্ডপয়েন্ট কাজ করবে না।

@@ -1,10 +1,12 @@
 'use client';
 
 // Portfolio — পাবলিক ল্যান্ডিং পেজের Work সেকশনে দেখানো কেস স্টাডিগুলো আগে
-// app/page.tsx-এ হার্ডকোড করা ছিল (Aarambho/Nilkantha/Prantik Bank placeholder)।
-// এখন টিম এই পেজ থেকে নিজেই real কেস স্টাডি (wireframe/prototype/final UI
-// ছবি + Figma prototype লিংক) যোগ/এডিট/ডিলিট/পাবলিশ করতে পারবে — কোনো কোড
-// পরিবর্তন ছাড়াই। published না করা পর্যন্ত পাবলিক সাইটে দেখা যায় না।
+// app/page.tsx-এ হার্ডকোড করা ছিল। এখন টিম এই পেজ থেকে নিজেই real কেস স্টাডি
+// যোগ/এডিট/ডিলিট/পাবলিশ করতে পারবে — কোনো কোড পরিবর্তন ছাড়াই। প্রতিটা কেস
+// স্টাডিতে ১৬টা নির্দিষ্ট সেকশন থাকে (Overview থেকে Team পর্যন্ত), প্রতিটা
+// সেকশনে নিজস্ব লেখা + একাধিক মিডিয়া (ছবি/ভিডিও Drive-এ আপলোড, অথবা বাইরের
+// যেকোনো লিংক — Figma/YouTube ইত্যাদি) থাকতে পারে। published না করা পর্যন্ত
+// পাবলিক সাইটে দেখা যায় না।
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import Link from 'next/link';
@@ -44,6 +46,8 @@ const ICON_PATHS: Record<string, string> = {
   trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
   up: '<path d="M12 19V5"/><path d="M5 12l7-7 7 7"/>',
   down: '<path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/>',
+  video: '<path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>',
+  'chevron-down': '<path d="M6 9l6 6 6-6"/>',
 };
 
 type IconName = keyof typeof ICON_PATHS;
@@ -74,10 +78,31 @@ const NAV_ITEMS_BOTTOM: { icon: IconName; label: string; href: string }[] = [
 
 type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null };
 
-type Section = 'wireframe' | 'prototype' | 'final_ui';
+type SectionKey =
+  | 'overview' | 'problem_solution' | 'user_persona' | 'empathy_map' | 'competitive_analysis'
+  | 'moscow' | 'kano' | 'ia_sitemap' | 'user_flow' | 'wireframe' | 'screens_brief' | 'mockups'
+  | 'prototype' | 'usability_testing' | 'ai_help' | 'team';
 
-const SECTION_ORDER: Section[] = ['wireframe', 'prototype', 'final_ui'];
-const SECTION_LABEL: Record<Section, string> = { wireframe: 'ওয়্যারফ্রেম', prototype: 'প্রোটোটাইপ', final_ui: 'ফাইনাল UI' };
+const SECTIONS: { key: SectionKey; label: string }[] = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'problem_solution', label: 'Problem & Solution' },
+  { key: 'user_persona', label: 'User Persona' },
+  { key: 'empathy_map', label: 'Empathy Map' },
+  { key: 'competitive_analysis', label: 'Competitive Analysis' },
+  { key: 'moscow', label: 'MoSCoW Model' },
+  { key: 'kano', label: 'Kano Model' },
+  { key: 'ia_sitemap', label: 'Information Architecture / Site Map' },
+  { key: 'user_flow', label: 'User Flow' },
+  { key: 'wireframe', label: 'Wireframe' },
+  { key: 'screens_brief', label: 'Screens Brief' },
+  { key: 'mockups', label: 'Mockups' },
+  { key: 'prototype', label: 'Prototype' },
+  { key: 'usability_testing', label: 'Usability Testing' },
+  { key: 'ai_help', label: 'AI Help' },
+  { key: 'team', label: 'Team' },
+];
+
+type MediaType = 'image' | 'video' | 'link';
 
 type CaseStudy = {
   id: string;
@@ -92,7 +117,8 @@ type CaseStudy = {
   published: boolean;
 };
 
-type CSImage = { id: string; case_study_id: string; section: Section; image_url: string; caption: string | null; order_index: number };
+type CSSection = { id: string; case_study_id: string; section_key: SectionKey; content: string | null };
+type CSMedia = { id: string; case_study_id: string; section_key: SectionKey; media_type: MediaType; url: string; caption: string | null; order_index: number };
 
 function slugify(text: string) {
   return text
@@ -102,15 +128,25 @@ function slugify(text: string) {
     .replace(/^-+|-+$/g, '');
 }
 
+function linkLabel(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return 'লিংক';
+  }
+}
+
 async function fetchAll() {
-  const [csRes, imgRes] = await Promise.all([
+  const [csRes, secRes, medRes] = await Promise.all([
     supabase.from('case_studies').select('id, slug, title, client_name, summary, tags, cover_image, figma_prototype_url, order_index, published').order('order_index'),
-    supabase.from('case_study_images').select('id, case_study_id, section, image_url, caption, order_index').order('order_index'),
+    supabase.from('case_study_sections').select('id, case_study_id, section_key, content'),
+    supabase.from('case_study_media').select('id, case_study_id, section_key, media_type, url, caption, order_index').order('order_index'),
   ]);
   return {
-    errorMessage: csRes.error?.message ?? imgRes.error?.message ?? null,
+    errorMessage: csRes.error?.message ?? secRes.error?.message ?? medRes.error?.message ?? null,
     caseStudies: (csRes.data as CaseStudy[]) ?? [],
-    images: (imgRes.data as CSImage[]) ?? [],
+    sections: (secRes.data as CSSection[]) ?? [],
+    media: (medRes.data as CSMedia[]) ?? [],
   };
 }
 
@@ -122,7 +158,8 @@ export default function PortfolioPage() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
-  const [images, setImages] = useState<CSImage[]>([]);
+  const [sections, setSections] = useState<CSSection[]>([]);
+  const [media, setMedia] = useState<CSMedia[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -144,15 +181,21 @@ export default function PortfolioPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverProgress, setCoverProgress] = useState(0);
-  const [uploadingSection, setUploadingSection] = useState<Section | null>(null);
-  const [uploadInfo, setUploadInfo] = useState('');
   const [deleting, setDeleting] = useState(false);
+
+  const [openSection, setOpenSection] = useState<SectionKey | null>(null);
+  const [sectionDraft, setSectionDraft] = useState<Record<string, string>>({});
+  const [savingSection, setSavingSection] = useState<SectionKey | null>(null);
+  const [uploadingSection, setUploadingSection] = useState<SectionKey | null>(null);
+  const [uploadInfo, setUploadInfo] = useState('');
+  const [newLinkUrl, setNewLinkUrl] = useState('');
 
   async function reload() {
     const result = await fetchAll();
     setError(result.errorMessage);
     setCaseStudies(result.caseStudies);
-    setImages(result.images);
+    setSections(result.sections);
+    setMedia(result.media);
   }
 
   useEffect(() => {
@@ -164,7 +207,8 @@ export default function PortfolioPage() {
       ]);
       setError(result.errorMessage);
       setCaseStudies(result.caseStudies);
-      setImages(result.images);
+      setSections(result.sections);
+      setMedia(result.media);
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);
       setLoading(false);
     }
@@ -175,22 +219,36 @@ export default function PortfolioPage() {
     total: caseStudies.length,
     published: caseStudies.filter((c) => c.published).length,
     draft: caseStudies.filter((c) => !c.published).length,
-    images: images.length,
-  }), [caseStudies, images]);
+    media: media.length,
+  }), [caseStudies, media]);
 
-  const imagesByCS = useMemo(() => {
-    const map = new Map<string, CSImage[]>();
-    for (const img of images) {
-      const arr = map.get(img.case_study_id) ?? [];
-      arr.push(img);
-      map.set(img.case_study_id, arr);
+  const sectionsByCS = useMemo(() => {
+    const map = new Map<string, CSSection[]>();
+    for (const s of sections) {
+      const arr = map.get(s.case_study_id) ?? [];
+      arr.push(s);
+      map.set(s.case_study_id, arr);
     }
     return map;
-  }, [images]);
+  }, [sections]);
 
-  function sectionCountsText(csId: string) {
-    const imgs = imagesByCS.get(csId) ?? [];
-    return SECTION_ORDER.map((s) => `${imgs.filter((i) => i.section === s).length} ${SECTION_LABEL[s]}`).join(' · ');
+  const mediaByCS = useMemo(() => {
+    const map = new Map<string, CSMedia[]>();
+    for (const m of media) {
+      const arr = map.get(m.case_study_id) ?? [];
+      arr.push(m);
+      map.set(m.case_study_id, arr);
+    }
+    return map;
+  }, [media]);
+
+  function csStatsText(csId: string) {
+    const secRows = sectionsByCS.get(csId) ?? [];
+    const medRows = mediaByCS.get(csId) ?? [];
+    const filledKeys = new Set<string>();
+    for (const s of secRows) if (s.content && s.content.trim()) filledKeys.add(s.section_key);
+    for (const m of medRows) filledKeys.add(m.section_key);
+    return `${filledKeys.size}/${SECTIONS.length} সেকশন পূরণ · ${medRows.length}টা মিডিয়া`;
   }
 
   async function handleCreate(e: FormEvent) {
@@ -232,10 +290,24 @@ export default function PortfolioPage() {
     setEPublished(cs.published);
     setECover(cs.cover_image);
     setSaveError(null);
+    setOpenSection(null);
+    setNewLinkUrl('');
+
+    const draft: Record<string, string> = {};
+    for (const sec of SECTIONS) {
+      const row = sections.find((s) => s.case_study_id === cs.id && s.section_key === sec.key);
+      draft[sec.key] = row?.content ?? '';
+    }
+    setSectionDraft(draft);
   }
 
   function closeEditor() {
     setEditingId(null);
+  }
+
+  function toggleSection(key: SectionKey) {
+    setOpenSection((prev) => (prev === key ? null : key));
+    setNewLinkUrl('');
   }
 
   async function handleSaveMeta(e: FormEvent) {
@@ -314,17 +386,36 @@ export default function PortfolioPage() {
     setCaseStudies((prev) => prev.map((c) => (c.id === editingId ? (data as CaseStudy) : c)));
   }
 
-  async function handleAddImages(section: Section, files: FileList | null) {
+  async function handleSaveSectionContent(key: SectionKey) {
+    if (!editingId) return;
+    setSavingSection(key);
+    setSaveError(null);
+    const { data, error: err } = await supabase
+      .from('case_study_sections')
+      .upsert({ case_study_id: editingId, section_key: key, content: sectionDraft[key]?.trim() || null }, { onConflict: 'case_study_id,section_key' })
+      .select('id, case_study_id, section_key, content')
+      .single();
+    setSavingSection(null);
+
+    if (err || !data) {
+      setSaveError(err?.message ?? 'সেকশনের লেখা সেভ করা যায়নি।');
+      return;
+    }
+    setSections((prev) => {
+      const row = data as CSSection;
+      return prev.some((s) => s.id === row.id) ? prev.map((s) => (s.id === row.id ? row : s)) : [...prev, row];
+    });
+  }
+
+  async function handleAddMedia(key: SectionKey, files: FileList | null) {
     if (!editingId || !files || files.length === 0) return;
     // input-এর value পরে রিসেট করা হয় (একই ফাইল আবার বাছাই করা যায় সেজন্য) —
     // FileList টা লাইভ, input.value='' করলেই এটাও খালি হয়ে যায়। তাই await-এর
-    // আগেই, সিঙ্ক্রোনাসলি একটা আসল কপি (File[]) বানিয়ে রাখা হচ্ছে, নাহলে নিচের
-    // await শেষ হওয়ার আগেই caller-এর input.value='' চলে ফাইলগুলো হারিয়ে যেত
-    // (upload নীরবে কিছুই না করেই শেষ হয়ে যেত)।
+    // আগেই, সিঙ্ক্রোনাসলি একটা আসল কপি (File[]) বানিয়ে রাখা হচ্ছে।
     const fileArr = Array.from(files);
-    setUploadingSection(section);
+    setUploadingSection(key);
     setSaveError(null);
-    const existing = images.filter((i) => i.case_study_id === editingId && i.section === section);
+    const existing = media.filter((m) => m.case_study_id === editingId && m.section_key === key);
     let nextOrder = existing.reduce((m, i) => Math.max(m, i.order_index), -1) + 1;
 
     const { data: { session } } = await supabase.auth.getSession();
@@ -338,40 +429,63 @@ export default function PortfolioPage() {
       setUploadInfo(`আপলোড হচ্ছে (${i + 1}/${fileArr.length})…`);
       try {
         const result = await uploadFileToDrive(fileArr[i], session.access_token);
+        const mediaType: MediaType = fileArr[i].type.startsWith('video/') ? 'video' : 'image';
         const { data, error: err } = await supabase
-          .from('case_study_images')
-          .insert({ case_study_id: editingId, section, image_url: result.webViewLink, order_index: nextOrder })
-          .select('id, case_study_id, section, image_url, caption, order_index')
+          .from('case_study_media')
+          .insert({ case_study_id: editingId, section_key: key, media_type: mediaType, url: result.webViewLink, order_index: nextOrder })
+          .select('id, case_study_id, section_key, media_type, url, caption, order_index')
           .single();
-        if (err || !data) throw new Error(err?.message ?? 'ছবি সেভ করা যায়নি।');
-        setImages((prev) => [...prev, data as CSImage]);
+        if (err || !data) throw new Error(err?.message ?? 'মিডিয়া সেভ করা যায়নি।');
+        setMedia((prev) => [...prev, data as CSMedia]);
         nextOrder += 1;
       } catch (err) {
-        setSaveError(err instanceof Error ? `"${fileArr[i].name}" সেভ করা যায়নি: ${err.message}` : 'একটা ছবি আপলোড ব্যর্থ হয়েছে।');
+        setSaveError(err instanceof Error ? `"${fileArr[i].name}" সেভ করা যায়নি: ${err.message}` : 'একটা ফাইল আপলোড ব্যর্থ হয়েছে।');
       }
     }
     setUploadingSection(null);
     setUploadInfo('');
   }
 
-  async function handleRemoveImage(id: string) {
-    const { error: err } = await supabase.from('case_study_images').delete().eq('id', id);
-    if (err) return;
-    setImages((prev) => prev.filter((i) => i.id !== id));
+  async function handleAddLink(key: SectionKey) {
+    if (!editingId) return;
+    const raw = newLinkUrl.trim();
+    if (!raw) return;
+    const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    const existing = media.filter((m) => m.case_study_id === editingId && m.section_key === key);
+    const nextOrder = existing.reduce((m, i) => Math.max(m, i.order_index), -1) + 1;
+
+    const { data, error: err } = await supabase
+      .from('case_study_media')
+      .insert({ case_study_id: editingId, section_key: key, media_type: 'link', url, order_index: nextOrder })
+      .select('id, case_study_id, section_key, media_type, url, caption, order_index')
+      .single();
+
+    if (err || !data) {
+      setSaveError(err?.message ?? 'লিংক সেভ করা যায়নি।');
+      return;
+    }
+    setMedia((prev) => [...prev, data as CSMedia]);
+    setNewLinkUrl('');
   }
 
-  async function handleMoveImage(section: Section, id: string, dir: -1 | 1) {
+  async function handleRemoveMedia(id: string) {
+    const { error: err } = await supabase.from('case_study_media').delete().eq('id', id);
+    if (err) return;
+    setMedia((prev) => prev.filter((m) => m.id !== id));
+  }
+
+  async function handleMoveMedia(key: SectionKey, id: string, dir: -1 | 1) {
     if (!editingId) return;
-    const list = images.filter((i) => i.case_study_id === editingId && i.section === section).sort((a, b) => a.order_index - b.order_index);
-    const idx = list.findIndex((i) => i.id === id);
+    const list = media.filter((m) => m.case_study_id === editingId && m.section_key === key).sort((a, b) => a.order_index - b.order_index);
+    const idx = list.findIndex((m) => m.id === id);
     const swapIdx = idx + dir;
     if (idx < 0 || swapIdx < 0 || swapIdx >= list.length) return;
     const a = list[idx];
     const b = list[swapIdx];
-    setImages((prev) => prev.map((i) => (i.id === a.id ? { ...i, order_index: b.order_index } : i.id === b.id ? { ...i, order_index: a.order_index } : i)));
+    setMedia((prev) => prev.map((m) => (m.id === a.id ? { ...m, order_index: b.order_index } : m.id === b.id ? { ...m, order_index: a.order_index } : m)));
     await Promise.all([
-      supabase.from('case_study_images').update({ order_index: b.order_index }).eq('id', a.id),
-      supabase.from('case_study_images').update({ order_index: a.order_index }).eq('id', b.id),
+      supabase.from('case_study_media').update({ order_index: b.order_index }).eq('id', a.id),
+      supabase.from('case_study_media').update({ order_index: a.order_index }).eq('id', b.id),
     ]);
   }
 
@@ -390,7 +504,7 @@ export default function PortfolioPage() {
   }
 
   async function handleDeleteCaseStudy(id: string, title: string) {
-    if (!window.confirm(`"${title}" কেস স্টাডিটা মুছে ফেলতে চান? এর সব ছবিও মুছে যাবে — এই অ্যাকশন ফেরানো যাবে না।`)) return;
+    if (!window.confirm(`"${title}" কেস স্টাডিটা মুছে ফেলতে চান? এর সব সেকশন ও মিডিয়াও মুছে যাবে — এই অ্যাকশন ফেরানো যাবে না।`)) return;
     setDeleting(true);
     const { error: err } = await supabase.from('case_studies').delete().eq('id', id);
     setDeleting(false);
@@ -399,7 +513,8 @@ export default function PortfolioPage() {
       return;
     }
     setCaseStudies((prev) => prev.filter((c) => c.id !== id));
-    setImages((prev) => prev.filter((i) => i.case_study_id !== id));
+    setSections((prev) => prev.filter((s) => s.case_study_id !== id));
+    setMedia((prev) => prev.filter((m) => m.case_study_id !== id));
     if (editingId === id) closeEditor();
   }
 
@@ -478,7 +593,7 @@ export default function PortfolioPage() {
               <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon"><Icon name="layers" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--accent)' }}>{loading ? '—' : kpis.total}</div><div className="kpi-label">Total Case Studies</div><div className="kpi-deco"><Icon name="layers" size={56} /></div></div>
               <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--positive-soft)', color: 'var(--positive)' }}><Icon name="globe" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--positive)' }}>{loading ? '—' : kpis.published}</div><div className="kpi-label">Published</div><div className="kpi-deco" style={{ color: 'var(--positive)' }}><Icon name="globe" size={56} /></div></div>
               <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--warning-soft)', color: 'var(--warning)' }}><Icon name="edit" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--warning)' }}>{loading ? '—' : kpis.draft}</div><div className="kpi-label">Draft</div><div className="kpi-deco" style={{ color: 'var(--warning)' }}><Icon name="edit" size={56} /></div></div>
-              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon"><Icon name="image" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--accent)' }}>{loading ? '—' : kpis.images}</div><div className="kpi-label">Total Images</div><div className="kpi-deco"><Icon name="image" size={56} /></div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon"><Icon name="image" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--accent)' }}>{loading ? '—' : kpis.media}</div><div className="kpi-label">Total Media</div><div className="kpi-deco"><Icon name="image" size={56} /></div></div>
             </div>
 
             <section className="block">
@@ -508,7 +623,7 @@ export default function PortfolioPage() {
                           {cs.tags && cs.tags.length > 0 && (
                             <div className="cs-tags">{cs.tags.map((t) => <span className="cs-tag" key={t}>{t}</span>)}</div>
                           )}
-                          <div className="cs-section-counts">{sectionCountsText(cs.id)}</div>
+                          <div className="cs-section-counts">{csStatsText(cs.id)}</div>
                           <div className="cs-actions">
                             <button className="btn btn-ghost btn-sm" onClick={() => openEditor(cs)}><Icon name="edit" size={13} /> এডিট</button>
                             {cs.published && <a className="btn btn-ghost btn-sm" href={`/work/${cs.slug}`} target="_blank" rel="noopener noreferrer"><Icon name="globe" size={13} /> দেখুন</a>}
@@ -532,7 +647,7 @@ export default function PortfolioPage() {
             <form onSubmit={handleCreate}>
               <label className="field-label">টাইটেল</label>
               <input className="field-input" type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="যেমন: Aarambho" autoFocus required />
-              <p className="field-hint">তৈরি হওয়ার পর ডিটেইলস (স্লাগ, ছবি, ট্যাগ ইত্যাদি) এডিট করতে পারবেন।</p>
+              <p className="field-hint">তৈরি হওয়ার পর ডিটেইলস (স্লাগ, ছবি, ট্যাগ, সব সেকশন) এডিট করতে পারবেন।</p>
               {createError && <p style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 10 }}>{createError}</p>}
               <div className="modal-foot" style={{ justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowCreate(false)}>বাতিল</button>
@@ -586,7 +701,7 @@ export default function PortfolioPage() {
               <label className="field-label">ট্যাগ (কমা দিয়ে আলাদা করুন)</label>
               <input className="field-input" type="text" value={eTags} onChange={(e) => setETags(e.target.value)} placeholder="UI/UX design, Mobile App" />
 
-              <label className="field-label">Figma প্রোটোটাইপ লিংক (ঐচ্ছিক)</label>
+              <label className="field-label">Figma প্রোটোটাইপ লিংক (ঐচ্ছিক — /work পেজে উপরে লাইভ embed হিসেবে দেখাবে)</label>
               <input className="field-input" type="url" value={eFigma} onChange={(e) => setEFigma(e.target.value)} placeholder="https://www.figma.com/proto/..." />
 
               <label className="field-check-row">
@@ -607,31 +722,88 @@ export default function PortfolioPage() {
 
             {saveError && <p style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 14, padding: '8px 10px', background: 'var(--danger-soft)', borderRadius: 'var(--radius-sm)' }}>{saveError}</p>}
 
-            {SECTION_ORDER.map((section) => {
-              const sectionImages = images.filter((i) => i.case_study_id === editing.id && i.section === section).sort((a, b) => a.order_index - b.order_index);
-              return (
-                <div key={section}>
-                  <div className="modal-section-title"><Icon name="image" size={14} /> {SECTION_LABEL[section]} ({sectionImages.length})</div>
-                  <div className="img-thumb-grid">
-                    {sectionImages.map((img, i) => (
-                      <div className="img-thumb" key={img.id}>
-                        <img src={driveThumbnailUrl(img.image_url)} alt="" />
-                        <button className="img-thumb-remove" onClick={() => handleRemoveImage(img.id)} aria-label="মুছে ফেলুন">✕</button>
-                        <div className="img-thumb-move">
-                          <button onClick={() => handleMoveImage(section, img.id, -1)} disabled={i === 0} aria-label="আগে সরান">◀</button>
-                          <button onClick={() => handleMoveImage(section, img.id, 1)} disabled={i === sectionImages.length - 1} aria-label="পরে সরান">▶</button>
+            <div className="modal-section-title"><Icon name="layers" size={14} /> কেস স্টাডি সেকশন ({SECTIONS.length})</div>
+
+            <div className="acc-list">
+              {SECTIONS.map((sec) => {
+                const isOpen = openSection === sec.key;
+                const sectionMedia = media.filter((m) => m.case_study_id === editing.id && m.section_key === sec.key).sort((a, b) => a.order_index - b.order_index);
+                const hasContent = !!(sectionDraft[sec.key] && sectionDraft[sec.key].trim());
+                return (
+                  <div className={`acc-item${isOpen ? ' open' : ''}`} key={sec.key}>
+                    <button type="button" className="acc-head" onClick={() => toggleSection(sec.key)}>
+                      <span className="acc-head-label">{sec.label}</span>
+                      <span className="acc-head-meta">
+                        {hasContent && <span className="acc-dot" title="লেখা যোগ করা হয়েছে"></span>}
+                        {sectionMedia.length > 0 && <span className="acc-count">{sectionMedia.length}</span>}
+                        <span className="acc-chevron"><Icon name="chevron-down" size={14} /></span>
+                      </span>
+                    </button>
+                    {isOpen && (
+                      <div className="acc-body">
+                        <textarea
+                          className="field-input"
+                          rows={4}
+                          value={sectionDraft[sec.key] ?? ''}
+                          onChange={(e) => setSectionDraft((prev) => ({ ...prev, [sec.key]: e.target.value }))}
+                          placeholder={`${sec.label} নিয়ে লিখুন...`}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                          <button type="button" className="btn btn-accent btn-xs" disabled={savingSection === sec.key} onClick={() => handleSaveSectionContent(sec.key)}>
+                            {savingSection === sec.key ? 'সেভ হচ্ছে…' : 'লেখা সেভ করুন'}
+                          </button>
+                        </div>
+
+                        <div className="img-thumb-grid">
+                          {sectionMedia.map((m, i) => (
+                            <div className="img-thumb" key={m.id}>
+                              {m.media_type === 'link' ? (
+                                <a href={m.url} target="_blank" rel="noopener noreferrer" className="media-link-tile">
+                                  <Icon name="link" size={16} />
+                                  <span>{linkLabel(m.url)}</span>
+                                </a>
+                              ) : (
+                                <img src={driveThumbnailUrl(m.url)} alt="" />
+                              )}
+                              {m.media_type === 'video' && <span className="media-type-badge"><Icon name="video" size={11} color="#fff" /></span>}
+                              <button className="img-thumb-remove" onClick={() => handleRemoveMedia(m.id)} aria-label="মুছে ফেলুন">✕</button>
+                              <div className="img-thumb-move">
+                                <button onClick={() => handleMoveMedia(sec.key, m.id, -1)} disabled={i === 0} aria-label="আগে সরান">◀</button>
+                                <button onClick={() => handleMoveMedia(sec.key, m.id, 1)} disabled={i === sectionMedia.length - 1} aria-label="পরে সরান">▶</button>
+                              </div>
+                            </div>
+                          ))}
+                          <input
+                            id={`media-input-${sec.key}`}
+                            type="file"
+                            accept="image/*,video/*"
+                            multiple
+                            style={{ display: 'none' }}
+                            onChange={(e) => { handleAddMedia(sec.key, e.target.files); e.target.value = ''; }}
+                          />
+                          <button type="button" className="img-add-tile" disabled={uploadingSection === sec.key} onClick={() => document.getElementById(`media-input-${sec.key}`)?.click()}>
+                            <Icon name="plus" size={16} />
+                            {uploadingSection === sec.key ? uploadInfo : 'ছবি/ভিডিও যোগ করুন'}
+                          </button>
+                        </div>
+
+                        <div className="link-add-row">
+                          <input
+                            className="field-input"
+                            style={{ marginBottom: 0 }}
+                            type="url"
+                            placeholder="https://... (Figma/YouTube/অন্য যেকোনো লিংক পেস্ট করুন)"
+                            value={newLinkUrl}
+                            onChange={(e) => setNewLinkUrl(e.target.value)}
+                          />
+                          <button type="button" className="btn btn-ghost btn-sm" disabled={!newLinkUrl.trim()} onClick={() => handleAddLink(sec.key)}>লিংক যোগ করুন</button>
                         </div>
                       </div>
-                    ))}
-                    <input id={`img-input-${section}`} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => { handleAddImages(section, e.target.files); e.target.value = ''; }} />
-                    <button type="button" className="img-add-tile" disabled={uploadingSection === section} onClick={() => document.getElementById(`img-input-${section}`)?.click()}>
-                      <Icon name="plus" size={16} />
-                      {uploadingSection === section ? uploadInfo : 'ছবি যোগ করুন'}
-                    </button>
+                    )}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
