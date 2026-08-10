@@ -264,6 +264,8 @@
   border: 1px solid var(--border);
   background: var(--surface-muted);
   cursor: pointer;
+  width: 100%;
+  text-align: left;
 }
 .dashboard-root .profile-card:hover {
   background: var(--border-soft);
