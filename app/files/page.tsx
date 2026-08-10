@@ -26,6 +26,7 @@ import { STAGE_LABEL } from '@/lib/taskMeta';
 import { canPreviewInline, driveThumbnailUrl, guessFileType, uploadFileToDrive } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
+import Avatar from '@/app/components/Avatar';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -128,14 +129,14 @@ type AttachmentRow = {
   task_id: string | null;
   client_id: string | null;
   folder_id: string | null;
-  profiles: { full_name: string; avatar_color: string | null } | null;
+  profiles: { full_name: string; avatar_color: string | null; avatar_url: string | null } | null;
   tasks: { id: string; title: string; workflow_stage: string; status: string; project_id: string | null; projects: { id: string; name: string; due_date: string | null } | null } | null;
   clients: { id: string; company_name: string } | null;
   folders: { id: string; name: string } | null;
 };
 
 const ATTACHMENT_SELECT =
-  'id, file_name, file_type, drive_url, uploaded_at, task_id, client_id, folder_id, profiles(full_name, avatar_color), tasks(id, title, workflow_stage, status, project_id, projects(id, name, due_date)), clients(id, company_name), folders(id, name)';
+  'id, file_name, file_type, drive_url, uploaded_at, task_id, client_id, folder_id, profiles(full_name, avatar_color, avatar_url), tasks(id, title, workflow_stage, status, project_id, projects(id, name, due_date)), clients(id, company_name), folders(id, name)';
 
 async function fetchFilesData() {
   const [attachmentsRes, projectsRes, tasksRes, clientsRes, teamRes, foldersRes] = await Promise.all([
@@ -720,7 +721,7 @@ export default function FilesPage() {
                               <div className="asset-project">{a.tasks?.projects?.name ?? a.clients?.company_name ?? 'কোনো প্রজেক্ট নেই'}</div>
                               <div className="asset-meta-row">
                                 <div className="asset-owner">
-                                  <div className="avatar" style={{ width: 18, height: 18, fontSize: 8, background: a.profiles?.avatar_color ?? undefined }}>{Array.from(a.profiles?.full_name ?? '?')[0]}</div>
+                                  <Avatar person={a.profiles} size={18} />
                                   <span className="asset-size">{a.profiles?.full_name ?? 'অজানা'}</span>
                                 </div>
                                 <span className="asset-size">{relativeTimeBn(a.uploaded_at)}</span>

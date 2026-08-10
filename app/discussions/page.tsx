@@ -25,6 +25,7 @@ import { useUnreadCount } from '@/lib/useUnreadCount';
 import { relativeTimeBn, formatBnDate } from '@/lib/format';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
+import Avatar from '@/app/components/Avatar';
 import { canPreviewInline, driveThumbnailUrl, guessFileType, uploadFileToDrive } from '@/lib/driveUpload';
 import { sendNotifications } from '@/lib/notify';
 
@@ -104,7 +105,7 @@ const REACTION_EMOJIS = ['👍', '❤️'];
 type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null; is_admin?: boolean };
 type ProjectOption = { id: string; name: string };
 type TaskOption = { id: string; project_id: string | null; status: string };
-type AuthorRef = { full_name: string; role: string | null; avatar_color: string | null } | null;
+type AuthorRef = { full_name: string; role: string | null; avatar_color: string | null; avatar_url: string | null } | null;
 type ProjectRef = { id: string; name: string } | null;
 
 type DiscussionRow = {
@@ -132,12 +133,12 @@ type MentionRow = { discussion_id: string; profile_id: string };
 // পথ তৈরি করে ফেলে (discussion_id + profile_id), তাই author_id-এর FK embed
 // করার সময় "!author_id" হিন্ট না দিলে PostgREST দুটো সম্পর্কের মধ্যে confuse
 // হয়ে "more than one relationship was found" এরর দেয়।
-const DISCUSSION_SELECT = 'id, title, description, category, tags, project_id, author_id, status, is_pinned, is_draft, is_archived, created_at, profiles!author_id(full_name, role, avatar_color), projects(id, name)';
+const DISCUSSION_SELECT = 'id, title, description, category, tags, project_id, author_id, status, is_pinned, is_draft, is_archived, created_at, profiles!author_id(full_name, role, avatar_color, avatar_url), projects(id, name)';
 // একই কারণে vote_responses (votes<->profiles) আর reply_reactions
 // (discussion_replies<->profiles) নিজেরাও many-to-many পথ তৈরি করে, তাই এখানেও
 // "!author_id" হিন্ট দরকার।
-const VOTE_SELECT = 'id, title, description, project_id, author_id, allow_multiple, is_anonymous, ends_at, status, is_pinned, is_draft, is_archived, created_at, profiles!author_id(full_name, role, avatar_color), projects(id, name)';
-const REPLY_SELECT = 'id, discussion_id, author_id, body, created_at, updated_at, profiles!author_id(full_name, role, avatar_color)';
+const VOTE_SELECT = 'id, title, description, project_id, author_id, allow_multiple, is_anonymous, ends_at, status, is_pinned, is_draft, is_archived, created_at, profiles!author_id(full_name, role, avatar_color, avatar_url), projects(id, name)';
+const REPLY_SELECT = 'id, discussion_id, author_id, body, created_at, updated_at, profiles!author_id(full_name, role, avatar_color, avatar_url)';
 
 async function fetchDiscussionsData() {
   const [discRes, voteRes, optRes, respRes, replyRes, reactRes, discAttRes, replyAttRes, voteAttRes, mentionRes, teamRes, projectsRes, tasksRes] = await Promise.all([
@@ -151,7 +152,7 @@ async function fetchDiscussionsData() {
     supabase.from('reply_attachments').select('id, reply_id, file_name, file_type, url'),
     supabase.from('vote_attachments').select('id, vote_id, file_name, file_type, url'),
     supabase.from('discussion_mentions').select('discussion_id, profile_id'),
-    supabase.from('profiles').select('id, full_name, role, avatar_color').order('full_name'),
+    supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url').order('full_name'),
     supabase.from('projects').select('id, name').order('name'),
     supabase.from('tasks').select('id, project_id, status'),
   ]);
@@ -867,7 +868,7 @@ export default function DiscussionsPage() {
           <span className="pin-badge" title="Pinned"><Icon name="pin" size={15} /></span>
         )}
         <div className="fcard-top">
-          <div className="avatar" style={{ width: 32, height: 32, fontSize: 12, background: d.profiles?.avatar_color ?? undefined }}>{Array.from(d.profiles?.full_name ?? '?')[0]}</div>
+          <Avatar person={d.profiles} size={32} />
           <div className="fcard-author">
             <div className="fcard-name-row"><span className="fcard-name">{d.profiles?.full_name ?? 'অজানা'}</span></div>
             <span className="fcard-role">{d.profiles?.role ?? ''}</span>
@@ -897,7 +898,7 @@ export default function DiscussionsPage() {
           <span className="pin-badge" title="Pinned"><Icon name="pin" size={15} /></span>
         )}
         <div className="fcard-top">
-          <div className="avatar" style={{ width: 32, height: 32, fontSize: 12, background: v.profiles?.avatar_color ?? undefined }}>{Array.from(v.profiles?.full_name ?? '?')[0]}</div>
+          <Avatar person={v.profiles} size={32} />
           <div className="fcard-author">
             <div className="fcard-name-row"><span className="fcard-name">{v.profiles?.full_name ?? 'অজানা'}</span><span className="vote-badge">Vote</span></div>
             <span className="fcard-role">{v.profiles?.role ?? ''}</span>
@@ -1040,7 +1041,7 @@ export default function DiscussionsPage() {
                       </div>
                     </div>
                     <div className="detail-meta-row">
-                      <div className="avatar" style={{ width: 20, height: 20, fontSize: 9, background: activeDiscussion.profiles?.avatar_color ?? undefined }}>{Array.from(activeDiscussion.profiles?.full_name ?? '?')[0]}</div>
+                      <Avatar person={activeDiscussion.profiles} size={20} />
                       <span>{activeDiscussion.profiles?.full_name ?? 'অজানা'}</span><span className="sep"></span>
                       {activeDiscussion.projects && (<><span className="proj-tag">{activeDiscussion.projects.name}</span><span className="sep"></span></>)}
                       <span>{formatBnDate(activeDiscussion.created_at)} তৈরি</span>
@@ -1064,7 +1065,7 @@ export default function DiscussionsPage() {
                         {mentionedForActive.map((m) => {
                           const p = profileById.get(m.profile_id);
                           if (!p) return null;
-                          return <div key={m.profile_id} className="avatar" title={p.full_name} style={{ width: 20, height: 20, fontSize: 9, background: p.avatar_color ?? undefined }}>{Array.from(p.full_name)[0]}</div>;
+                          return <Avatar key={m.profile_id} person={p} size={20} title={p.full_name} />;
                         })}
                       </div>
                     )}
@@ -1097,7 +1098,7 @@ export default function DiscussionsPage() {
                       return (
                         <div className="reply-card" key={r.id}>
                           <div className="reply-top">
-                            <div className="avatar" style={{ width: 28, height: 28, fontSize: 11, background: r.profiles?.avatar_color ?? undefined }}>{Array.from(r.profiles?.full_name ?? '?')[0]}</div>
+                            <Avatar person={r.profiles} size={28} />
                             <span className="reply-name">{r.profiles?.full_name ?? 'অজানা'}</span>
                             <span className="reply-role">{r.profiles?.role ?? ''}</span>
                             <span className="reply-time">{relativeTimeBn(r.created_at)}{r.updated_at !== r.created_at ? ' · এডিট করা হয়েছে' : ''}</span>
@@ -1158,7 +1159,7 @@ export default function DiscussionsPage() {
                       </div>
                     </div>
                     <div className="detail-meta-row">
-                      <div className="avatar" style={{ width: 20, height: 20, fontSize: 9, background: activeVote.profiles?.avatar_color ?? undefined }}>{Array.from(activeVote.profiles?.full_name ?? '?')[0]}</div>
+                      <Avatar person={activeVote.profiles} size={20} />
                       <span>{activeVote.profiles?.full_name ?? 'অজানা'}</span><span className="sep"></span>
                       {activeVote.projects && (<><span className="proj-tag">{activeVote.projects.name}</span><span className="sep"></span></>)}
                       <span>{activeVote.ends_at ? `শেষ হবে ${formatBnDate(activeVote.ends_at)}` : 'কোনো নির্ধারিত সময় নেই'}</span>
@@ -1225,7 +1226,7 @@ export default function DiscussionsPage() {
                             <div className="result-count tabular">{count} ভোট</div>
                             {!activeVote.is_anonymous && (voters.length > 0 ? (
                               <div className="voter-stack" title="যারা ভোট দিয়েছেন">
-                                {voters.map((p) => <div key={p.id} className="avatar" title={p.full_name} style={{ background: p.avatar_color ?? undefined }}>{Array.from(p.full_name)[0]}</div>)}
+                                {voters.map((p) => <Avatar key={p.id} person={p} size={22} title={p.full_name} />)}
                               </div>
                             ) : (
                               <div className="voter-stack-empty">কেউ এখনো ভোট দেননি</div>
@@ -1273,7 +1274,7 @@ export default function DiscussionsPage() {
                     <div className="rp-title">Members Participating</div>
                     {participants.map((p) => (
                       <div className="rp-member-row" key={p.profile.id}>
-                        <div className="avatar" style={{ width: 24, height: 24, fontSize: 10, background: p.profile.avatar_color ?? undefined }}>{Array.from(p.profile.full_name)[0]}</div>
+                        <Avatar person={p.profile} size={24} />
                         <span className="rp-member-name">{p.profile.full_name}</span>
                         <span className="rp-status-dot" style={{ background: p.active ? 'var(--positive)' : 'var(--ink-faint)' }}></span>
                       </div>
@@ -1389,7 +1390,7 @@ export default function DiscussionsPage() {
                 <div className="mention-grid">
                   {teamOptions.map((t) => (
                     <button key={t.id} type="button" className={`mention-pill${dMentionIds.has(t.id) ? ' selected' : ''}`} onClick={() => setDMentionIds((prev) => { const next = new Set(prev); if (next.has(t.id)) next.delete(t.id); else next.add(t.id); return next; })}>
-                      <div className="avatar" style={{ width: 18, height: 18, fontSize: 8, background: t.avatar_color ?? undefined }}>{Array.from(t.full_name)[0]}</div> {t.full_name}
+                      <Avatar person={t} size={18} /> {t.full_name}
                     </button>
                   ))}
                 </div>

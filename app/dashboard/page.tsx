@@ -11,9 +11,9 @@ import { supabase } from "@/lib/supabaseClient";
 import { useSession } from "@/lib/useSession";
 import { useUnreadCount } from "@/lib/useUnreadCount";
 import { formatBnDate, formatTimeBn, dueMeta, todayISO } from "@/lib/format";
-import { driveThumbnailUrl } from "@/lib/driveUpload";
 import SignInScreen from "@/app/components/SignInScreen";
 import ProfileMenu from "@/app/components/ProfileMenu";
+import Avatar from "@/app/components/Avatar";
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -146,11 +146,11 @@ type ProjectRow = {
   progress: number | null;
   due_date: string | null;
   clients: { company_name: string } | null;
-  manager: { full_name: string; avatar_color: string | null } | null;
+  manager: { full_name: string; avatar_color: string | null; avatar_url: string | null } | null;
   taskCount: number;
   discussionCount: number;
   fileCount: number;
-  avatars: { full_name: string; avatar_color: string | null }[];
+  avatars: { full_name: string; avatar_color: string | null; avatar_url: string | null }[];
 };
 
 type DashTask = {
@@ -306,13 +306,13 @@ export default function DashboardPage() {
         supabase
           .from("projects")
           .select(
-            "id, name, status, progress, due_date, clients(company_name), manager:profiles!project_manager_id(full_name, avatar_color)",
+            "id, name, status, progress, due_date, clients(company_name), manager:profiles!project_manager_id(full_name, avatar_color, avatar_url)",
           )
           .order("due_date", { ascending: true })
           .limit(5),
         supabase
           .from("tasks")
-          .select("project_id, status, assignee_id, profiles!assignee_id(full_name, avatar_color)")
+          .select("project_id, status, assignee_id, profiles!assignee_id(full_name, avatar_color, avatar_url)")
           .not("project_id", "is", null),
         supabase.from("discussions").select("project_id").not("project_id", "is", null),
         supabase
@@ -378,12 +378,12 @@ export default function DashboardPage() {
       });
 
       const projectTaskStats = new Map<string, { done: number; total: number }>();
-      const projectAvatars = new Map<string, Map<string, { full_name: string; avatar_color: string | null }>>();
+      const projectAvatars = new Map<string, Map<string, { full_name: string; avatar_color: string | null; avatar_url: string | null }>>();
       for (const row of (projectTaskStatsRes.data as unknown as {
         project_id: string;
         status: string;
         assignee_id: string | null;
-        profiles: { full_name: string; avatar_color: string | null } | null;
+        profiles: { full_name: string; avatar_color: string | null; avatar_url: string | null } | null;
       }[]) ?? []) {
         const cur = projectTaskStats.get(row.project_id) ?? { done: 0, total: 0 };
         cur.total += 1;
@@ -490,8 +490,6 @@ export default function DashboardPage() {
 
   const displayName = profile?.full_name ?? user.email ?? "ব্যবহারকারী";
   const firstName = displayName.split(" ")[0];
-  const avatarInitial = Array.from(firstName)[0]?.toUpperCase() ?? "?";
-  const avatarImg = profile?.avatar_url ? driveThumbnailUrl(profile.avatar_url) : null;
   const insights = buildInsights(kpis.overdue, workload, projects);
 
   const kpiCards: {
@@ -646,24 +644,7 @@ export default function DashboardPage() {
               <Icon name={dark ? "moon" : "sun"} />
             </button>
 
-            <div
-              className="avatar"
-              style={{
-                width: 30,
-                height: 30,
-                fontSize: 12,
-                background: avatarImg ? undefined : (profile?.avatar_color ?? undefined),
-                overflow: "hidden",
-                padding: 0,
-              }}
-            >
-              {avatarImg ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                avatarInitial
-              )}
-            </div>
+            <Avatar person={profile} size={30} />
           </header>
 
           {/* ---- CONTENT ---- */}
@@ -835,13 +816,7 @@ export default function DashboardPage() {
                               {visibleAvatars.length > 0 ? (
                                 <div className="avatar-stack">
                                   {visibleAvatars.map((a, i) => (
-                                    <div
-                                      key={i}
-                                      className="avatar"
-                                      style={{ width: 24, height: 24, fontSize: 10, background: a.avatar_color ?? undefined }}
-                                    >
-                                      {a.full_name.charAt(0)}
-                                    </div>
+                                    <Avatar key={i} person={a} size={24} />
                                   ))}
                                   {extraAvatars > 0 && (
                                     <div className="avatar avatar-more" style={{ width: 24, height: 24, fontSize: 10 }}>

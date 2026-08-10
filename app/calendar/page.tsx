@@ -22,6 +22,7 @@ import { useUnreadCount } from '@/lib/useUnreadCount';
 import { formatBnDateLong, formatTimeBn, todayISO } from '@/lib/format';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
+import Avatar from '@/app/components/Avatar';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -112,7 +113,7 @@ type ViewMode = 'day' | 'week' | 'month' | 'timeline' | 'agenda';
 type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null };
 type ProjectOption = { id: string; name: string };
 type ClientOption = { id: string; company_name: string };
-type AssigneeOption = { id: string; full_name: string; avatar_color: string | null };
+type AssigneeOption = { id: string; full_name: string; avatar_color: string | null; avatar_url: string | null };
 
 type DeadlineItem = { kind: 'task' | 'project'; id: string; title: string; date: string; time: string | null; projectName: string | null; assigneeName: string | null };
 type MeetingItem = {
@@ -142,7 +143,7 @@ async function fetchCalendarData() {
     supabase.from('meetings').select('id, title, meeting_date, meeting_time, duration_minutes, meeting_link, attendees, notes, client_id, clients(company_name)').gte('meeting_date', rangeStart).lte('meeting_date', rangeEnd).order('meeting_date'),
     supabase.from('milestones').select('id, project_id, title, due_date, completed_at, progress, projects(name)').not('due_date', 'is', null).gte('due_date', rangeStart).lte('due_date', rangeEnd),
     supabase.from('clients').select('id, company_name').order('company_name'),
-    supabase.from('profiles').select('id, full_name, avatar_color').order('full_name'),
+    supabase.from('profiles').select('id, full_name, avatar_color, avatar_url').order('full_name'),
     supabase.from('tasks').select('assignee_id').neq('status', 'done').not('assignee_id', 'is', null),
   ]);
 
@@ -887,7 +888,7 @@ export default function CalendarPage() {
                     ) : (
                       teamAvailability.slice(0, 6).map((t) => (
                         <div className="team-avail-row" key={t.id}>
-                          <div className="avatar" style={{ width: 22, height: 22, fontSize: 9, background: t.avatar_color ?? undefined }}>{Array.from(t.full_name)[0]}</div>
+                          <Avatar person={t} size={22} />
                           <span className="team-avail-name">{t.full_name}</span>
                           <span className={`avail-badge ${t.cls}`}>{t.label}</span>
                         </div>

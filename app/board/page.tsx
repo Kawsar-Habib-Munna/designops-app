@@ -24,6 +24,7 @@ import { formatBnDateLong, relativeTimeBn, todayISO } from '@/lib/format';
 import { STATUS_META, PRIORITY_META, STAGE_LABEL, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
+import Avatar from '@/app/components/Avatar';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -112,7 +113,7 @@ function dueClass(dueDate: string | null, status: TaskStatus, today: string): ''
 
 type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null };
 type ProjectOption = { id: string; name: string };
-type AssigneeOption = { id: string; full_name: string; avatar_color: string | null };
+type AssigneeOption = { id: string; full_name: string; avatar_color: string | null; avatar_url: string | null };
 
 type RawTaskRow = {
   id: string;
@@ -133,7 +134,7 @@ type RawTaskRow = {
 
 type BoardTask = RawTaskRow & {
   projects: { name: string } | null;
-  profiles: { full_name: string; avatar_color: string | null } | null;
+  profiles: { full_name: string; avatar_color: string | null; avatar_url: string | null } | null;
   commentCount: number;
   attachmentCount: number;
   checklistDone: number;
@@ -141,15 +142,15 @@ type BoardTask = RawTaskRow & {
 };
 
 type ChecklistItem = { id: string; label: string; is_done: boolean; position: number };
-type CommentRow = { id: string; body: string; created_at: string; profiles: { full_name: string } | null };
+type CommentRow = { id: string; body: string; created_at: string; profiles: { full_name: string; avatar_color: string | null; avatar_url: string | null } | null };
 type AttachmentRow = { id: string; file_name: string; file_type: string | null; drive_url: string };
 type TaskActivityRow = { id: string; detail: string | null; created_at: string; profiles: { full_name: string } | null };
 type DrawerData = { checklist: ChecklistItem[]; comments: CommentRow[]; attachments: AttachmentRow[]; activity: TaskActivityRow[]; loading: boolean };
 type LiveEvent = { id: string; text: string; at: string };
-type PresenceMeta = { name: string; avatar_color: string | null };
+type PresenceMeta = { name: string; avatar_color: string | null; avatar_url: string | null };
 
 const TASK_SELECT =
-  'id, title, description, status, workflow_stage, priority, is_blocked, due_date, estimated_hours, logged_hours, progress, updated_at, project_id, assignee_id, projects(name), profiles!assignee_id(full_name, avatar_color)';
+  'id, title, description, status, workflow_stage, priority, is_blocked, due_date, estimated_hours, logged_hours, progress, updated_at, project_id, assignee_id, projects(name), profiles!assignee_id(full_name, avatar_color, avatar_url)';
 
 async function fetchBoardData() {
   const [tasksRes, commentsRes, attachmentsRes, checklistRes, projectsRes, teamRes] = await Promise.all([
@@ -158,7 +159,7 @@ async function fetchBoardData() {
     supabase.from('attachments').select('task_id'),
     supabase.from('checklist_items').select('task_id, is_done'),
     supabase.from('projects').select('id, name').order('name'),
-    supabase.from('profiles').select('id, full_name, avatar_color').order('full_name'),
+    supabase.from('profiles').select('id, full_name, avatar_color, avatar_url').order('full_name'),
   ]);
 
   const firstErrored = [tasksRes, commentsRes, attachmentsRes, checklistRes, projectsRes, teamRes].find((r) => r.error);
@@ -228,7 +229,7 @@ export default function BoardPage() {
 
   const [aiOpen, setAiOpen] = useState(false);
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
-  const [presentUsers, setPresentUsers] = useState<{ id: string; name: string; avatar_color: string | null }[]>([]);
+  const [presentUsers, setPresentUsers] = useState<{ id: string; name: string; avatar_color: string | null; avatar_url: string | null }[]>([]);
 
   const projectOptionsRef = useRef<ProjectOption[]>([]);
   const assigneeOptionsRef = useRef<AssigneeOption[]>([]);
@@ -267,7 +268,7 @@ export default function BoardPage() {
     }
     function resolveAssignee(id: string | null) {
       const a = id ? assigneeOptionsRef.current.find((x) => x.id === id) : null;
-      return a ? { full_name: a.full_name, avatar_color: a.avatar_color } : null;
+      return a ? { full_name: a.full_name, avatar_color: a.avatar_color, avatar_url: a.avatar_url } : null;
     }
 
     const channel = supabase
@@ -316,13 +317,13 @@ export default function BoardPage() {
       const state = channel.presenceState<PresenceMeta>();
       const others = Object.entries(state)
         .filter(([key]) => key !== user.id)
-        .map(([key, metas]) => ({ id: key, name: metas[0]?.name ?? '?', avatar_color: metas[0]?.avatar_color ?? null }));
+        .map(([key, metas]) => ({ id: key, name: metas[0]?.name ?? '?', avatar_color: metas[0]?.avatar_color ?? null, avatar_url: metas[0]?.avatar_url ?? null }));
       setPresentUsers(others);
     });
 
     channel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
-        await channel.track({ name: profile.full_name, avatar_color: profile.avatar_color });
+        await channel.track({ name: profile.full_name, avatar_color: profile.avatar_color, avatar_url: profile.avatar_url ?? null });
       }
     });
 
@@ -367,7 +368,7 @@ export default function BoardPage() {
 
     const [checklistRes, commentsRes, attachmentsRes, activityRes] = await Promise.all([
       supabase.from('checklist_items').select('id, label, is_done, position').eq('task_id', taskId).order('position'),
-      supabase.from('comments').select('id, body, created_at, profiles(full_name)').eq('task_id', taskId).order('created_at'),
+      supabase.from('comments').select('id, body, created_at, profiles(full_name, avatar_color, avatar_url)').eq('task_id', taskId).order('created_at'),
       supabase.from('attachments').select('id, file_name, file_type, drive_url').eq('task_id', taskId).order('uploaded_at', { ascending: false }),
       supabase.from('activity_log').select('id, detail, created_at, profiles(full_name)').eq('entity_type', 'task').eq('entity_id', taskId).order('created_at', { ascending: false }).limit(10),
     ]);
@@ -391,7 +392,7 @@ export default function BoardPage() {
     const assignee = 'assignee_id' in patch ? assigneeOptions.find((a) => a.id === patch.assignee_id) ?? null : undefined;
 
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, ...patch, ...(assignee !== undefined ? { profiles: assignee ? { full_name: assignee.full_name, avatar_color: assignee.avatar_color } : null } : {}) } : t))
+      prev.map((t) => (t.id === taskId ? { ...t, ...patch, ...(assignee !== undefined ? { profiles: assignee ? { full_name: assignee.full_name, avatar_color: assignee.avatar_color, avatar_url: assignee.avatar_url } : null } : {}) } : t))
     );
 
     const { error } = await supabase.from('tasks').update(patch).eq('id', taskId);
@@ -419,7 +420,7 @@ export default function BoardPage() {
     const { data, error } = await supabase
       .from('comments')
       .insert({ task_id: drawerTaskId, author_id: user.id, body })
-      .select('id, body, created_at, profiles(full_name)')
+      .select('id, body, created_at, profiles(full_name, avatar_color, avatar_url)')
       .single();
 
     if (error) {
@@ -578,10 +579,9 @@ export default function BoardPage() {
             {presentUsers.length > 0 && (
               <div className="presence-row avatar-stack" title="বর্তমানে এই বোর্ডে সক্রিয়">
                 {presentUsers.slice(0, 4).map((p) => (
-                  <div key={p.id} className="avatar" style={{ width: 26, height: 26, fontSize: 10, background: p.avatar_color ?? undefined }} title={p.name}>
-                    {Array.from(p.name)[0]}
+                  <Avatar key={p.id} person={{ full_name: p.name, avatar_color: p.avatar_color, avatar_url: p.avatar_url }} size={26} title={p.name}>
                     <span className="presence-ring"></span>
-                  </div>
+                  </Avatar>
                 ))}
               </div>
             )}
@@ -723,7 +723,7 @@ export default function BoardPage() {
                                 <div className="card-foot">
                                   <span className="checklist-mini">{task.checklistTotal > 0 ? `${task.checklistDone}/${task.checklistTotal}` : '—'}</span>
                                   {task.profiles && (
-                                    <div className="avatar" style={{ width: 20, height: 20, fontSize: 9, background: task.profiles.avatar_color ?? undefined }}>{Array.from(task.profiles.full_name)[0]}</div>
+                                    <Avatar person={task.profiles} size={20} />
                                   )}
                                 </div>
                               </div>
@@ -852,7 +852,7 @@ export default function BoardPage() {
                     {drawerData.comments.length === 0 && <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>এখনো কোনো কমেন্ট নেই।</p>}
                     {drawerData.comments.map((c) => (
                       <div className="comment-row" key={c.id}>
-                        <div className="avatar" style={{ width: 24, height: 24, fontSize: 10 }}>{Array.from(c.profiles?.full_name ?? '?')[0]}</div>
+                        <Avatar person={c.profiles} size={24} />
                         <div className="comment-bubble"><div className="comment-name">{c.profiles?.full_name ?? 'কেউ একজন'}</div>{c.body}</div>
                       </div>
                     ))}

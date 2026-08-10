@@ -19,9 +19,9 @@ import { useSession } from '@/lib/useSession';
 import { useUnreadCount } from '@/lib/useUnreadCount';
 import { formatBnDate, relativeTimeBn, todayISO } from '@/lib/format';
 import { STAGE_LABEL, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
-import { driveThumbnailUrl } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
+import Avatar from '@/app/components/Avatar';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -124,6 +124,7 @@ type MemberStat = {
   name: string;
   role: string | null;
   avatar_color: string | null;
+  avatar_url: string | null;
   is_admin: boolean;
   activeTasks: number;
   projectIds: string[];
@@ -143,7 +144,7 @@ type AllocProject = {
   status: string;
   progress: number | null;
   due_date: string | null;
-  assignees: { id: string; name: string; avatar_color: string | null }[];
+  assignees: { id: string; name: string; avatar_color: string | null; avatar_url: string | null }[];
 };
 
 const TEAM_SELECT =
@@ -151,7 +152,7 @@ const TEAM_SELECT =
 
 async function fetchTeamData() {
   const [profilesRes, tasksRes, activityRes] = await Promise.all([
-    supabase.from('profiles').select('id, full_name, role, avatar_color, is_admin').order('full_name'),
+    supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, is_admin').order('full_name'),
     supabase.from('tasks').select(TEAM_SELECT),
     supabase.from('activity_log').select('id, detail, created_at, profiles(full_name)').order('created_at', { ascending: false }).limit(8),
   ]);
@@ -222,6 +223,7 @@ async function fetchTeamData() {
       name: p.full_name,
       role: p.role,
       avatar_color: p.avatar_color,
+      avatar_url: p.avatar_url ?? null,
       is_admin: !!p.is_admin,
       activeTasks,
       projectIds,
@@ -256,7 +258,7 @@ async function fetchTeamData() {
     const proj = allocMap.get(t.projects.id) ?? { id: t.projects.id, name: t.projects.name, status: t.projects.status, progress, due_date: t.projects.due_date, assignees: [] };
     if (t.assignee_id && !proj.assignees.some((a) => a.id === t.assignee_id)) {
       const profile = profileById.get(t.assignee_id);
-      if (profile) proj.assignees.push({ id: profile.id, name: profile.full_name, avatar_color: profile.avatar_color });
+      if (profile) proj.assignees.push({ id: profile.id, name: profile.full_name, avatar_color: profile.avatar_color, avatar_url: profile.avatar_url ?? null });
     }
     allocMap.set(t.projects.id, proj);
   }
@@ -469,9 +471,6 @@ export default function TeamWorkloadPage() {
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
 
-  const displayName = profile?.full_name ?? user.email ?? 'ব্যবহারকারী';
-  const avatarInitial = Array.from(displayName)[0]?.toUpperCase() ?? '?';
-  const avatarImg = profile?.avatar_url ? driveThumbnailUrl(profile.avatar_url) : null;
   const today = todayISO();
 
   return (
@@ -520,14 +519,7 @@ export default function TeamWorkloadPage() {
               {unreadCount > 0 && <span className="bell-count">{unreadCount > 99 ? '99+' : unreadCount}</span>}
             </Link>
             <button className="icon-btn" aria-label="থিম পরিবর্তন" onClick={() => setDark((d) => !d)}><Icon name={dark ? 'moon' : 'sun'} /></button>
-            <div className="avatar" style={{ width: 30, height: 30, fontSize: 12, background: avatarImg ? undefined : (profile?.avatar_color ?? undefined), overflow: 'hidden', padding: 0 }}>
-              {avatarImg ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarImg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                avatarInitial
-              )}
-            </div>
+            <Avatar person={profile} size={30} />
           </header>
 
           <main className="content">
@@ -583,7 +575,7 @@ export default function TeamWorkloadPage() {
                     return (
                       <div className="member-card" key={m.id}>
                         <div className="member-top">
-                          <div className="avatar" style={{ width: 38, height: 38, fontSize: 14, background: m.avatar_color ?? undefined }}>{Array.from(m.name)[0]}</div>
+                          <Avatar person={{ full_name: m.name, avatar_color: m.avatar_color, avatar_url: m.avatar_url }} size={38} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div className="member-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               {m.name}
@@ -697,7 +689,7 @@ export default function TeamWorkloadPage() {
                             const state = capacityState(m.capacityPercent);
                             return (
                               <tr key={m.id}>
-                                <td><div className="assignee-cell"><div className="avatar" style={{ width: 22, height: 22, fontSize: 9, background: m.avatar_color ?? undefined }}>{Array.from(m.name)[0]}</div>{m.name}</div></td>
+                                <td><div className="assignee-cell"><Avatar person={{ full_name: m.name, avatar_color: m.avatar_color, avatar_url: m.avatar_url }} size={22} />{m.name}</div></td>
                                 <td>{projectNames.length > 0 ? projectNames.join(', ') : '—'}</td>
                                 <td className="tabular">{m.activeTasks}</td>
                                 <td>{m.currentStage ? <span className="stage-pill">{STAGE_LABEL[m.currentStage] ?? m.currentStage}</span> : '—'}</td>
@@ -750,7 +742,7 @@ export default function TeamWorkloadPage() {
                             <div className="proj-alloc-foot">
                               <div className="avatar-stack">
                                 {a.assignees.slice(0, 4).map((m) => (
-                                  <div className="avatar" key={m.id} style={{ width: 24, height: 24, fontSize: 9, background: m.avatar_color ?? undefined }}>{Array.from(m.name)[0]}</div>
+                                  <Avatar key={m.id} person={{ full_name: m.name, avatar_color: m.avatar_color, avatar_url: m.avatar_url }} size={24} />
                                 ))}
                               </div>
                               <span className="tabular" style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{a.progress ?? 0}%</span>

@@ -24,6 +24,7 @@ import { useUnreadCount } from '@/lib/useUnreadCount';
 import { relativeTimeBn } from '@/lib/format';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
+import Avatar from '@/app/components/Avatar';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -97,10 +98,10 @@ type NotificationRow = {
   link: string | null;
   is_read: boolean;
   created_at: string;
-  profiles: { full_name: string; avatar_color: string | null } | null;
+  profiles: { full_name: string; avatar_color: string | null; avatar_url: string | null } | null;
 };
 
-const NOTIF_SELECT = 'id, recipient_id, actor_id, type, title, subtitle, meta, entity_type, entity_id, link, is_read, created_at, profiles!actor_id(full_name, avatar_color)';
+const NOTIF_SELECT = 'id, recipient_id, actor_id, type, title, subtitle, meta, entity_type, entity_id, link, is_read, created_at, profiles!actor_id(full_name, avatar_color, avatar_url)';
 
 const TYPE_META: Record<string, { icon: IconName; color: string; bg: string }> = {
   task_assigned: { icon: 'check', color: 'var(--accent)', bg: 'var(--accent-soft)' },
@@ -401,6 +402,7 @@ export default function NotificationsPage() {
                             <span className={`notif-unread-dot${n.is_read ? ' hidden' : ''}`}></span>
                             <span className="notif-icon-badge" style={{ background: meta.bg, color: meta.color }}>
                               <Icon name={meta.icon} size={16} />
+                              {n.profiles && <Avatar person={n.profiles} size={16} className="avatar avatar-mini" />}
                             </span>
                             <span className="notif-main">
                               <span className="notif-text">{n.title}</span>

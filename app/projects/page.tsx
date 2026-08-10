@@ -13,6 +13,7 @@ import { useUnreadCount } from "@/lib/useUnreadCount";
 import { formatBnDate } from "@/lib/format";
 import SignInScreen from "@/app/components/SignInScreen";
 import ProfileMenu from "@/app/components/ProfileMenu";
+import Avatar from "@/app/components/Avatar";
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -105,7 +106,7 @@ type ProjectRow = {
   taskCount: number;
   discussionCount: number;
   fileCount: number;
-  avatars: { full_name: string; avatar_color: string | null }[];
+  avatars: { full_name: string; avatar_color: string | null; avatar_url: string | null }[];
 };
 
 type ClientOption = { id: string; company_name: string };
@@ -161,7 +162,7 @@ export default function ProjectsListPage() {
             .single(),
           supabase
             .from("tasks")
-            .select("project_id, status, assignee_id, profiles!assignee_id(full_name, avatar_color)")
+            .select("project_id, status, assignee_id, profiles!assignee_id(full_name, avatar_color, avatar_url)")
             .not("project_id", "is", null),
           supabase.from("discussions").select("project_id").not("project_id", "is", null),
           supabase.from("attachments").select("task_id, folder_id, tasks(project_id), folders(project_id)"),
@@ -172,12 +173,12 @@ export default function ProjectsListPage() {
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);
 
       const stats: Record<string, { done: number; total: number }> = {};
-      const avatarsByProject = new Map<string, Map<string, { full_name: string; avatar_color: string | null }>>();
+      const avatarsByProject = new Map<string, Map<string, { full_name: string; avatar_color: string | null; avatar_url: string | null }>>();
       for (const t of (tasksRes.data as unknown as {
         project_id: string;
         status: string;
         assignee_id: string | null;
-        profiles: { full_name: string; avatar_color: string | null } | null;
+        profiles: { full_name: string; avatar_color: string | null; avatar_url: string | null } | null;
       }[]) ?? []) {
         const cur = stats[t.project_id] ?? { done: 0, total: 0 };
         cur.total += 1;
@@ -500,13 +501,7 @@ export default function ProjectsListPage() {
                         {visibleAvatars.length > 0 && (
                           <div className="avatar-stack">
                             {visibleAvatars.map((a, i) => (
-                              <div
-                                key={i}
-                                className="avatar"
-                                style={{ width: 22, height: 22, fontSize: 9, background: a.avatar_color ?? undefined }}
-                              >
-                                {a.full_name.charAt(0)}
-                              </div>
+                              <Avatar key={i} person={a} size={22} />
                             ))}
                             {extraAvatars > 0 && (
                               <div className="avatar avatar-more" style={{ width: 22, height: 22, fontSize: 9 }}>

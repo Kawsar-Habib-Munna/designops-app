@@ -19,9 +19,9 @@ import { useSession } from '@/lib/useSession';
 import { useUnreadCount } from '@/lib/useUnreadCount';
 import { formatBnDate, formatBnDateLong, formatTimeBn, relativeTimeBn, todayISO } from '@/lib/format';
 import { STATUS_META, PRIORITY_META, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
-import { driveThumbnailUrl } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
+import Avatar from '@/app/components/Avatar';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -124,7 +124,7 @@ type ProjectDetail = {
     contact_phone: string | null;
     status: string;
   } | null;
-  manager: { full_name: string; avatar_color: string | null } | null;
+  manager: { full_name: string; avatar_color: string | null; avatar_url: string | null } | null;
 };
 
 type ProjectTask = {
@@ -139,13 +139,13 @@ type ProjectTask = {
   logged_hours: number | null;
   updated_at: string;
   assignee_id: string | null;
-  profiles: { full_name: string; avatar_color: string | null; role: string | null } | null;
+  profiles: { full_name: string; avatar_color: string | null; avatar_url: string | null; role: string | null } | null;
 };
 
 type ProjectAttachment = { id: string; file_name: string; file_type: string | null; drive_url: string; uploaded_at: string; profiles: { full_name: string } | null };
 type ProjectActivity = { id: string; detail: string | null; created_at: string; profiles: { full_name: string } | null };
 type NextMeeting = { id: string; title: string; meeting_date: string; meeting_time: string | null };
-type TeamEntry = { id: string; name: string; role: string | null; avatar_color: string | null; activeTasks: number };
+type TeamEntry = { id: string; name: string; role: string | null; avatar_color: string | null; avatar_url: string | null; activeTasks: number };
 type Milestone = { id: string; title: string; due_date: string | null; completed_at: string | null; progress: number | null };
 
 function daysFromNowISO(days: number) {
@@ -159,14 +159,14 @@ async function fetchProjectData(projectId: string) {
     supabase
       .from('projects')
       .select(
-        'id, name, status, progress, budget, start_date, due_date, description, category, clients(id, company_name, industry, primary_contact, contact_email, contact_phone, status), manager:profiles!project_manager_id(full_name, avatar_color)'
+        'id, name, status, progress, budget, start_date, due_date, description, category, clients(id, company_name, industry, primary_contact, contact_email, contact_phone, status), manager:profiles!project_manager_id(full_name, avatar_color, avatar_url)'
       )
       .eq('id', projectId)
       .single(),
     supabase
       .from('tasks')
       .select(
-        'id, title, status, priority, workflow_stage, due_date, progress, estimated_hours, logged_hours, updated_at, assignee_id, profiles!assignee_id(full_name, avatar_color, role)'
+        'id, title, status, priority, workflow_stage, due_date, progress, estimated_hours, logged_hours, updated_at, assignee_id, profiles!assignee_id(full_name, avatar_color, avatar_url, role)'
       )
       .eq('project_id', projectId)
       .order('updated_at', { ascending: false }),
@@ -307,9 +307,6 @@ export default function ProjectDetailPage() {
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
 
-  const displayName = profile?.full_name ?? user.email ?? 'ব্যবহারকারী';
-  const avatarInitial = Array.from(displayName)[0]?.toUpperCase() ?? '?';
-  const avatarImg = profile?.avatar_url ? driveThumbnailUrl(profile.avatar_url) : null;
   const doneTaskCount = tasks.filter((t) => t.status === 'done').length;
   const computedProgress = tasks.length > 0 ? Math.round((doneTaskCount / tasks.length) * 100) : 0;
 
@@ -351,7 +348,7 @@ export default function ProjectDetailPage() {
     const cur = teamMap.get(t.assignee_id);
     const isActive = t.status !== 'done' ? 1 : 0;
     if (cur) cur.activeTasks += isActive;
-    else teamMap.set(t.assignee_id, { id: t.assignee_id, name: t.profiles.full_name, role: t.profiles.role, avatar_color: t.profiles.avatar_color, activeTasks: isActive });
+    else teamMap.set(t.assignee_id, { id: t.assignee_id, name: t.profiles.full_name, role: t.profiles.role, avatar_color: t.profiles.avatar_color, avatar_url: t.profiles.avatar_url, activeTasks: isActive });
   }
   const team = Array.from(teamMap.values()).sort((a, b) => b.activeTasks - a.activeTasks);
 
@@ -411,14 +408,7 @@ export default function ProjectDetailPage() {
               {unreadCount > 0 && <span className="bell-count">{unreadCount > 99 ? '99+' : unreadCount}</span>}
             </Link>
             <button className="icon-btn" aria-label="থিম পরিবর্তন" onClick={() => setDark((d) => !d)}><Icon name={dark ? 'moon' : 'sun'} /></button>
-            <div className="avatar" style={{ width: 30, height: 30, fontSize: 12, background: avatarImg ? undefined : (profile?.avatar_color ?? undefined), overflow: 'hidden', padding: 0 }}>
-              {avatarImg ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarImg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                avatarInitial
-              )}
-            </div>
+            <Avatar person={profile} size={30} />
           </header>
 
           <main className="content">
@@ -555,7 +545,7 @@ export default function ProjectDetailPage() {
                     return (
                       <div className="team-card" key={m.id}>
                         <div className="team-card-top">
-                          <div className="avatar" style={{ width: 32, height: 32, fontSize: 12, background: m.avatar_color ?? undefined }}>{Array.from(m.name)[0]}</div>
+                          <Avatar person={{ full_name: m.name, avatar_color: m.avatar_color, avatar_url: m.avatar_url }} size={32} />
                           <div><div className="team-card-name">{m.name}</div><div className="team-card-role">{m.role ?? 'Team Member'}</div></div>
                         </div>
                         <div className="progress-track"><div className="progress-fill" style={{ width: `${percent}%`, background: tone === 'full' ? 'var(--danger)' : tone === 'busy' ? 'var(--warning)' : 'var(--positive)' }}></div></div>
@@ -594,7 +584,7 @@ export default function ProjectDetailPage() {
                           <td className="cell-assignee">
                             {t.profiles ? (
                               <>
-                                <div className="avatar" style={{ width: 20, height: 20, fontSize: 9, background: t.profiles.avatar_color ?? undefined }}>{Array.from(t.profiles.full_name)[0]}</div>
+                                <Avatar person={t.profiles} size={20} />
                                 {t.profiles.full_name}
                               </>
                             ) : (

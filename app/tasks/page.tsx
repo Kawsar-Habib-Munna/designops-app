@@ -20,9 +20,9 @@ import { useUnreadCount } from '@/lib/useUnreadCount';
 import { dueMeta, relativeTimeBn, todayISO } from '@/lib/format';
 import { STATUS_META, PRIORITY_META, STAGE_LABEL, reviewChip, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
 import { sendNotifications } from '@/lib/notify';
-import { driveThumbnailUrl } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
+import Avatar from '@/app/components/Avatar';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -82,7 +82,7 @@ function Icon({ name, size = 15, color = 'currentColor' }: { name: IconName; siz
 
 type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null };
 type ProjectOption = { id: string; name: string };
-type AssigneeOption = { id: string; full_name: string; avatar_color: string | null };
+type AssigneeOption = { id: string; full_name: string; avatar_color: string | null; avatar_url: string | null };
 
 type TaskRow = {
   id: string;
@@ -99,13 +99,13 @@ type TaskRow = {
   project_id: string | null;
   assignee_id: string | null;
   projects: { name: string } | null;
-  profiles: { full_name: string; avatar_color: string | null } | null;
+  profiles: { full_name: string; avatar_color: string | null; avatar_url: string | null } | null;
   commentCount: number;
   attachmentCount: number;
 };
 
 type ChecklistItem = { id: string; label: string; is_done: boolean; position: number };
-type CommentRow = { id: string; body: string; created_at: string; profiles: { full_name: string } | null };
+type CommentRow = { id: string; body: string; created_at: string; profiles: { full_name: string; avatar_color: string | null; avatar_url: string | null } | null };
 type AttachmentRow = { id: string; file_name: string; file_type: string | null; drive_url: string };
 type TaskActivityRow = { id: string; detail: string | null; created_at: string; profiles: { full_name: string } | null };
 
@@ -171,7 +171,7 @@ function matchesView(t: TaskRow, view: SmartView, userId: string, today: string)
 }
 
 const TASK_SELECT =
-  'id, title, description, status, workflow_stage, priority, is_blocked, due_date, estimated_hours, progress, updated_at, project_id, assignee_id, projects(name), profiles!assignee_id(full_name, avatar_color)';
+  'id, title, description, status, workflow_stage, priority, is_blocked, due_date, estimated_hours, progress, updated_at, project_id, assignee_id, projects(name), profiles!assignee_id(full_name, avatar_color, avatar_url)';
 
 export default function TasksPage() {
   return (
@@ -237,7 +237,7 @@ function TasksPageInner() {
       async function load() {
         const [checklistRes, commentsRes, attachmentsRes, activityRes] = await Promise.all([
           supabase.from('checklist_items').select('id, label, is_done, position').eq('task_id', taskParam!).order('position'),
-          supabase.from('comments').select('id, body, created_at, profiles(full_name)').eq('task_id', taskParam!).order('created_at'),
+          supabase.from('comments').select('id, body, created_at, profiles(full_name, avatar_color, avatar_url)').eq('task_id', taskParam!).order('created_at'),
           supabase.from('attachments').select('id, file_name, file_type, drive_url').eq('task_id', taskParam!).order('uploaded_at', { ascending: false }),
           supabase
             .from('activity_log')
@@ -278,7 +278,7 @@ function TasksPageInner() {
       supabase.from('comments').select('task_id'),
       supabase.from('attachments').select('task_id'),
       supabase.from('projects').select('id, name').order('name'),
-      supabase.from('profiles').select('id, full_name, avatar_color').order('full_name'),
+      supabase.from('profiles').select('id, full_name, avatar_color, avatar_url').order('full_name'),
       supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url').eq('id', uid).single(),
     ]);
 
@@ -426,7 +426,7 @@ function TasksPageInner() {
     setTasks((prev) =>
       prev.map((t) =>
         t.id === taskId
-          ? { ...t, assignee_id: newAssigneeId || null, profiles: assignee ? { full_name: assignee.full_name, avatar_color: assignee.avatar_color } : null }
+          ? { ...t, assignee_id: newAssigneeId || null, profiles: assignee ? { full_name: assignee.full_name, avatar_color: assignee.avatar_color, avatar_url: assignee.avatar_url } : null }
           : t
       )
     );
@@ -470,7 +470,7 @@ function TasksPageInner() {
 
     const [checklistRes, commentsRes, attachmentsRes, activityRes] = await Promise.all([
       supabase.from('checklist_items').select('id, label, is_done, position').eq('task_id', taskId).order('position'),
-      supabase.from('comments').select('id, body, created_at, profiles(full_name)').eq('task_id', taskId).order('created_at'),
+      supabase.from('comments').select('id, body, created_at, profiles(full_name, avatar_color, avatar_url)').eq('task_id', taskId).order('created_at'),
       supabase.from('attachments').select('id, file_name, file_type, drive_url').eq('task_id', taskId).order('uploaded_at', { ascending: false }),
       supabase
         .from('activity_log')
@@ -539,7 +539,7 @@ function TasksPageInner() {
     const { data, error } = await supabase
       .from('comments')
       .insert({ task_id: taskId, author_id: user.id, body })
-      .select('id, body, created_at, profiles(full_name)')
+      .select('id, body, created_at, profiles(full_name, avatar_color, avatar_url)')
       .single();
 
     if (error) {
@@ -617,9 +617,6 @@ function TasksPageInner() {
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
 
-  const displayName = profile?.full_name ?? user.email ?? 'ব্যবহারকারী';
-  const avatarInitial = Array.from(displayName)[0]?.toUpperCase() ?? '?';
-  const avatarImg = profile?.avatar_url ? driveThumbnailUrl(profile.avatar_url) : null;
   const allSelected = filtered.length > 0 && selected.size === filtered.length;
 
   return (
@@ -674,14 +671,7 @@ function TasksPageInner() {
             <button className="icon-btn" aria-label="থিম পরিবর্তন" onClick={() => setDark((d) => !d)}>
               <Icon name={dark ? 'moon' : 'sun'} />
             </button>
-            <div className="avatar" style={{ width: 30, height: 30, fontSize: 12, background: avatarImg ? undefined : (profile?.avatar_color ?? undefined), overflow: 'hidden', padding: 0 }}>
-              {avatarImg ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarImg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                avatarInitial
-              )}
-            </div>
+            <Avatar person={profile} size={30} />
           </header>
 
           <main className="content">
@@ -859,9 +849,7 @@ function TasksPageInner() {
                             <td>
                               {task.profiles ? (
                                 <div className="avatar-cell">
-                                  <div className="avatar" style={{ width: 20, height: 20, fontSize: 9, background: task.profiles.avatar_color ?? undefined }}>
-                                    {Array.from(task.profiles.full_name)[0]}
-                                  </div>
+                                  <Avatar person={task.profiles} size={20} />
                                   {task.profiles.full_name}
                                 </div>
                               ) : (
@@ -1001,9 +989,7 @@ function TasksPageInner() {
                                           {detail.comments.length === 0 && <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>এখনো কোনো কমেন্ট নেই।</p>}
                                           {detail.comments.map((c) => (
                                             <div className="expand-comment" key={c.id}>
-                                              <div className="avatar" style={{ width: 20, height: 20, fontSize: 9 }}>
-                                                {Array.from(c.profiles?.full_name ?? '?')[0]}
-                                              </div>
+                                              <Avatar person={c.profiles} size={20} />
                                               <div className="expand-comment-bubble">
                                                 <b>{c.profiles?.full_name ?? 'কেউ একজন'}:</b> {c.body}
                                               </div>
