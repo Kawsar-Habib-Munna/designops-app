@@ -316,6 +316,12 @@ export default function PortfolioPage() {
 
   async function handleAddImages(section: Section, files: FileList | null) {
     if (!editingId || !files || files.length === 0) return;
+    // input-এর value পরে রিসেট করা হয় (একই ফাইল আবার বাছাই করা যায় সেজন্য) —
+    // FileList টা লাইভ, input.value='' করলেই এটাও খালি হয়ে যায়। তাই await-এর
+    // আগেই, সিঙ্ক্রোনাসলি একটা আসল কপি (File[]) বানিয়ে রাখা হচ্ছে, নাহলে নিচের
+    // await শেষ হওয়ার আগেই caller-এর input.value='' চলে ফাইলগুলো হারিয়ে যেত
+    // (upload নীরবে কিছুই না করেই শেষ হয়ে যেত)।
+    const fileArr = Array.from(files);
     setUploadingSection(section);
     setSaveError(null);
     const existing = images.filter((i) => i.case_study_id === editingId && i.section === section);
@@ -328,7 +334,6 @@ export default function PortfolioPage() {
       return;
     }
 
-    const fileArr = Array.from(files);
     for (let i = 0; i < fileArr.length; i++) {
       setUploadInfo(`আপলোড হচ্ছে (${i + 1}/${fileArr.length})…`);
       try {
@@ -599,6 +604,8 @@ export default function PortfolioPage() {
                 </div>
               </div>
             </form>
+
+            {saveError && <p style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 14, padding: '8px 10px', background: 'var(--danger-soft)', borderRadius: 'var(--radius-sm)' }}>{saveError}</p>}
 
             {SECTION_ORDER.map((section) => {
               const sectionImages = images.filter((i) => i.case_study_id === editing.id && i.section === section).sort((a, b) => a.order_index - b.order_index);
