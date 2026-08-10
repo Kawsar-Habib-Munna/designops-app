@@ -691,3 +691,46 @@ drop policy if exists "team can delete case study media" on case_study_media;
 create policy "team can read case study media" on case_study_media for select using (auth.role() = 'authenticated');
 create policy "team can write case study media" on case_study_media for insert with check (auth.role() = 'authenticated');
 create policy "team can delete case study media" on case_study_media for delete using (auth.role() = 'authenticated');
+
+-- ============================================
+-- TO-DO — Tasks পেজ থেকে আলাদা: এটা প্রজেক্ট/ওয়ার্কফ্লো-এর সাথে বাঁধা না,
+-- শুধু "কে কী করবে" ছোট personal/team to-do। শুধু এডমিনরাই নতুন to-do
+-- তৈরি/অ্যাসাইন/রিঅ্যাসাইন/ডিলিট করতে পারবে (UI-তে গেট করা), যেকোনো মেম্বার
+-- নিজের নামে থাকা to-do complete/incomplete টগল করতে পারবে। "Overdue"
+-- আলাদা status না — due_date পার হয়ে গেলে আর status='pending' থাকলে সেটাই
+-- overdue (কোনো cron/ব্যাকগ্রাউন্ড জব লাগে না)।
+-- ============================================
+create table if not exists todos (
+  id uuid default gen_random_uuid() primary key,
+  title text not null,
+  description text,
+  assignee_id uuid references profiles(id) on delete cascade,
+  created_by uuid references profiles(id),
+  priority text not null default 'medium' check (priority in ('high', 'medium', 'low')),
+  due_date date,
+  due_time time,
+  project_id uuid references projects(id) on delete set null,
+  status text not null default 'pending' check (status in ('pending', 'completed')),
+  completed_at timestamptz,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create index if not exists idx_todos_assignee on todos(assignee_id);
+create index if not exists idx_todos_status on todos(status);
+
+alter table todos enable row level security;
+
+drop policy if exists "team can read todos" on todos;
+drop policy if exists "team can write todos" on todos;
+drop policy if exists "team can update todos" on todos;
+drop policy if exists "team can delete todos" on todos;
+create policy "team can read todos" on todos for select using (auth.role() = 'authenticated');
+create policy "team can write todos" on todos for insert with check (auth.role() = 'authenticated');
+create policy "team can update todos" on todos for update using (auth.role() = 'authenticated');
+create policy "team can delete todos" on todos for delete using (auth.role() = 'authenticated');
+
+drop trigger if exists todos_updated_at on todos;
+create trigger todos_updated_at
+  before update on todos
+  for each row execute procedure public.set_updated_at();

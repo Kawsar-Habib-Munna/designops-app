@@ -13,7 +13,7 @@
 // রুটে সরিয়ে service role দিয়ে করা হচ্ছে (RLS পুরোপুরি বাইপাস করে)।
 import { supabase } from './supabaseClient';
 
-export type NotificationType = 'task_assigned' | 'discussion_created' | 'discussion_mention' | 'discussion_reply' | 'vote_created';
+export type NotificationType = 'task_assigned' | 'discussion_created' | 'discussion_mention' | 'discussion_reply' | 'vote_created' | 'todo_assigned';
 
 export type NotificationInput = {
   recipient_id: string;

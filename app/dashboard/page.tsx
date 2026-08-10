@@ -20,6 +20,7 @@ const ICON_PATHS: Record<string, string> = {
   folder:
     '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/>',
   check: '<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>',
+  checklist: '<path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M4 6l1 1 2-2"/><path d="M4 12l1 1 2-2"/><path d="M4 18l1 1 2-2"/>',
   calendar:
     '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M3 10h18"/>',
   users:
@@ -97,6 +98,7 @@ const NAV_ITEMS: {
   { icon: "grid", label: "Dashboard", href: "/dashboard", active: true },
   { icon: "folder", label: "Projects", href: "/projects" },
   { icon: "check", label: "Tasks", href: "/tasks" },
+  { icon: "checklist", label: "To-Do", href: "/todos" },
   { icon: "calendar", label: "Calendar", href: "/calendar" },
   { icon: "users", label: "Team", href: "/team" },
   { icon: "building", label: "Clients", href: "#" },
