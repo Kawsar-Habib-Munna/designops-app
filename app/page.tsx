@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import './home.css';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
-import { driveThumbnailUrl } from '@/lib/driveUpload';
+import { driveThumbnailUrl, driveFullImageUrl } from '@/lib/driveUpload';
 import LandingNav from '@/app/components/LandingNav';
 import RevealOnScroll from '@/app/components/RevealOnScroll';
 
@@ -82,7 +82,7 @@ export default async function Home() {
 
           <div className="project-grid reveal" id="work">
             {caseStudies.map((p) => {
-              const cover = p.cover_image ? driveThumbnailUrl(p.cover_image) : null;
+              const cover = p.cover_image ? driveFullImageUrl(p.cover_image) : null;
               return (
                 <Link className="project-card" href={`/work/${p.slug}`} key={p.slug}>
                   <div className="project-photo" style={cover ? { backgroundImage: `url(${cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: 'linear-gradient(150deg,#232323,#050505)' }}></div>

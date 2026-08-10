@@ -18,6 +18,16 @@ export function driveThumbnailUrl(url: string): string {
   return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1000` : url;
 }
 
+// driveThumbnailUrl-এর "thumbnail" এন্ডপয়েন্ট সবসময় ম্যাক্স ১০০০px চওড়ায়
+// রিসাইজ + রি-কম্প্রেস করে দেয় — ছোট প্রিভিউ (avatar, admin-এর থাম্বনেইল গ্রিড)-এর
+// জন্য ঠিক আছে, কিন্তু কেস স্টাডির কভার/গ্যালারির মতো বড় করে দেখানো ছবির জন্য
+// রেজোলিউশন কমে যায়। lh3.googleusercontent.com-এর "=s0" প্যারামিটার আসল ফাইলের
+// পুরো রেজোলিউশন কোনো রিসাইজ/রি-কম্প্রেশন ছাড়াই সরাসরি সার্ভ করে।
+export function driveFullImageUrl(url: string): string {
+  const id = driveFileId(url);
+  return id ? `https://lh3.googleusercontent.com/d/${id}=s0` : url;
+}
+
 // ভিডিও প্লে করার জন্য Drive-এর "preview" এন্ডপয়েন্ট — একটা <iframe>-এ বসালে
 // নিজস্ব প্লেয়ার (play/pause/fullscreen) দেখায়, লগইন ছাড়াই কাজ করে যেহেতু
 // আপলোডের সময় ফাইলে "anyone: reader" পারমিশন দেওয়া হয়। Drive না হওয়া লিংকের

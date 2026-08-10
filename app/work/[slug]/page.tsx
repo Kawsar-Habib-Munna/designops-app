@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import '../../home.css';
 import '../work.css';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
-import { driveThumbnailUrl, driveEmbedUrl } from '@/lib/driveUpload';
+import { driveFullImageUrl, driveEmbedUrl } from '@/lib/driveUpload';
 
 // পাবলিক কেস স্টাডি পেজ — /portfolio (app-এর ভেতরের admin পেজ) থেকে টিম যেই
 // কেস স্টাডি publish করে, সেটাই এখানে Overview থেকে Team পর্যন্ত ১৬টা সেকশন
@@ -95,7 +95,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
   if (!result) notFound();
   const { caseStudy, sections, media } = result;
 
-  const cover = caseStudy.cover_image ? driveThumbnailUrl(caseStudy.cover_image) : null;
+  const cover = caseStudy.cover_image ? driveFullImageUrl(caseStudy.cover_image) : null;
   const embedUrl = caseStudy.figma_prototype_url ? `https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(caseStudy.figma_prototype_url)}` : null;
 
   const contentByKey = new Map(sections.map((s) => [s.section_key, s.content] as const));
@@ -164,7 +164,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
                   <div className="work-gallery">
                     {items.map((m) => {
                       if (m.media_type === 'image') {
-                        return <img className="work-gallery-img" key={m.id} src={driveThumbnailUrl(m.url)} alt={m.caption ?? sec.label} />;
+                        return <img className="work-gallery-img" key={m.id} src={driveFullImageUrl(m.url)} alt={m.caption ?? sec.label} />;
                       }
                       if (m.media_type === 'video') {
                         const embed = driveEmbedUrl(m.url);
