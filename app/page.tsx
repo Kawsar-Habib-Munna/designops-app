@@ -1,134 +1,219 @@
-import Link from "next/link";
-import "./home.css";
+import Link from 'next/link';
+import './home.css';
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+import { driveThumbnailUrl } from '@/lib/driveUpload';
+import LandingNav from '@/app/components/LandingNav';
+import RevealOnScroll from '@/app/components/RevealOnScroll';
 
-const ICON_PATHS: Record<string, string> = {
-  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
-  folder:
-    '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/>',
-  check: '<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>',
-  calendar:
-    '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M3 10h18"/>',
-  users:
-    '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
-  columns:
-    '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/><path d="M15 4v16"/>',
-};
+// পাবলিক ল্যান্ডিং পেজ — লগইন ছাড়াই সবাই দেখে, তাই profiles টেবিলের RLS
+// (শুধু authenticated ইউজার read করতে পারে) এই পেজের জন্য প্রযোজ্য না। এটা
+// একটা Server Component, তাই service-role client দিয়ে সরাসরি সার্ভারে
+// টিমের real ডেটা আনা হয় (Team পেজের মতোই আসল নাম/রোল/ছবি) — কোনো secret
+// ব্রাউজারে যায় না। প্রতি ঘণ্টায় revalidate হয়, তাই কেউ নতুন যোগ হলে বা
+// ছবি পাল্টালে খুব বেশি দেরি ছাড়াই পেজে দেখা যাবে।
+export const revalidate = 3600;
 
-function Icon({ name }: { name: keyof typeof ICON_PATHS }) {
-  return (
-    <svg
-      width={18}
-      height={18}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      dangerouslySetInnerHTML={{ __html: ICON_PATHS[name] }}
-    />
-  );
-}
+// Work সেকশনের প্রজেক্টগুলো (Aarambho/Nilkantha/Prantik Bank) — এগুলো কোনো
+// real client project না, ডিজাইনের placeholder। আসল case study তৈরি হলে এখানে
+// বদলে দিতে হবে।
+const COLLAGE_COLORS_A = ['#4285F4', '#EA4335', '#34A853', '#FBBC05', '#7C72FF', '#00C2A8', '#FF6F61', '#3B82F6', '#F472B6', '#F59E0B', '#10B981', '#6366F1', '#EF4444', '#0EA5E9', '#A855F7'];
+const COLLAGE_COLORS_B = ['#3B82F6', '#F472B6', '#F59E0B', '#10B981', '#6366F1', '#EF4444', '#0EA5E9', '#A855F7', '#4285F4', '#EA4335', '#34A853', '#FBBC05', '#7C72FF', '#00C2A8', '#FF6F61'];
 
-const FEATURES: {
-  icon: keyof typeof ICON_PATHS;
-  title: string;
-  desc: string;
-  href: string;
-}[] = [
-  {
-    icon: "grid",
-    title: "ড্যাশবোর্ড",
-    desc: "প্রজেক্ট, ডেডলাইন ও টিমের এক নজরে ওভারভিউ।",
-    href: "/dashboard",
-  },
-  {
-    icon: "folder",
-    title: "প্রজেক্টস",
-    desc: "ক্লায়েন্ট প্রজেক্ট, মাইলস্টোন ও ফাইল একসাথে।",
-    href: "/projects",
-  },
-  {
-    icon: "check",
-    title: "টাস্কস",
-    desc: "টাস্ক তৈরি, অ্যাসাইন ও স্ট্যাটাস ট্র্যাক করুন।",
-    href: "/tasks",
-  },
-  {
-    icon: "columns",
-    title: "বোর্ড",
-    desc: "কানবান ভিউতে রিয়েল-টাইম ওয়ার্কফ্লো।",
-    href: "/board",
-  },
-  {
-    icon: "calendar",
-    title: "ক্যালেন্ডার",
-    desc: "মিটিং, ডেডলাইন ও মাইলস্টোন এক জায়গায়।",
-    href: "/calendar",
-  },
-  {
-    icon: "users",
-    title: "টিম",
-    desc: "ওয়ার্কলোড ও ক্যাপাসিটি রিয়েল ডেটা দিয়ে।",
-    href: "/team",
-  },
+const PROJECTS = [
+  { name: 'Aarambho', desc: 'Brand app redesign for a consumer tech challenger.', tags: ['UI/UX design', 'Mobile App'], colors: COLLAGE_COLORS_A },
+  { name: 'Nilkantha', desc: 'A storefront & app for an FMCG e-commerce brand.', tags: ['UI/UX design', 'Mobile App'], colors: null },
+  { name: 'Prantik Bank', desc: 'A banking dashboard built for clarity at speed.', tags: ['UI/UX design', 'Dashboard'], colors: COLLAGE_COLORS_B },
 ];
 
-export default function Home() {
+const SERVICES_HIRED = [
+  { name: 'UX Research & Discovery', sub: 'Interviews · Journey Mapping' },
+  { name: 'UI Design', sub: 'Web · Mobile · Dashboards' },
+  { name: 'Design Systems', sub: 'Tokens · Components' },
+  { name: 'Prototyping & Testing', sub: 'Figma · Usability Testing' },
+  { name: 'Brand Identity', sub: 'Naming · Visual Identity' },
+];
+
+const PROCESS_STEPS = [
+  { name: 'Discover', desc: 'Research & a clear problem statement.' },
+  { name: 'Design', desc: 'Wireframes to high-fidelity UI.' },
+  { name: 'Test', desc: 'Real users, real tasks.' },
+  { name: 'Deliver', desc: 'Clean specs & a working system.' },
+];
+
+type TeamMember = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url: string | null };
+
+async function fetchTeam(): Promise<TeamMember[]> {
+  try {
+    const admin = getSupabaseAdmin();
+    const { data } = await admin
+      .from('profiles')
+      .select('id, full_name, role, avatar_color, avatar_url')
+      .order('created_at');
+    return (data as TeamMember[]) ?? [];
+  } catch {
+    // SUPABASE_SERVICE_ROLE_KEY লোকাল/প্রিভিউ এনভায়রনমেন্টে সেট না থাকলেও
+    // পুরো ল্যান্ডিং পেজ যেন ক্র্যাশ না করে
+    return [];
+  }
+}
+
+export default async function Home() {
+  const team = await fetchTeam();
+
   return (
     <div className="home-root">
-      <div className="glow"></div>
+      <LandingNav />
 
-      <header className="topbar">
-        <div className="brand">
-          <div className="brand-mark">DS</div>
-          <div>
-            <div className="brand-name">DesignOps</div>
-            <div className="brand-sub">Studio Nine</div>
+      <header className="hero">
+        <div className="hero-giant-num">53</div>
+        <div className="container">
+          <div className="hero-top reveal">
+            <h1 className="hero-headline">We design digital products people actually love to use.</h1>
+            <a href="#contact" className="hero-book-btn">Book a call</a>
+          </div>
+
+          <div className="project-grid reveal" id="work">
+            <div className="project-card">
+              <div className="project-photo teaser-photo">
+                <div className="teaser-ring"><div className="teaser-ring-inner"></div></div>
+              </div>
+              <div className="project-info project-info-row">
+                <span className="teaser-text">Got a project<br />in mind?</span>
+                <a href="#contact" className="arrow-circle" aria-label="যোগাযোগ করুন">→</a>
+              </div>
+            </div>
+
+            {PROJECTS.map((p) => (
+              <div className="project-card" key={p.name}>
+                <div className="project-photo" style={p.colors ? undefined : { background: 'linear-gradient(150deg,#232323,#050505)' }}>
+                  {p.colors && (
+                    <div className="icon-collage">
+                      {p.colors.map((c, ci) => (
+                        <div className="icon-sq" style={{ background: c }} key={ci}></div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="project-info">
+                  <div className="project-name">{p.name}</div>
+                  <div className="project-desc">{p.desc}</div>
+                  <div className="project-tags">
+                    {p.tags.map((t) => <span className="project-tag" key={t}>{t}</span>)}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-        <Link href="/dashboard" className="topbar-cta">
-          লগ-ইন করুন
-        </Link>
       </header>
 
-      <main className="hero">
-        <span className="eyebrow">
-          <span className="dot"></span> Studio Nine এর জন্য তৈরি
-        </span>
-        <h1>
-          DesignOps
-          <br />
-        </h1>
-        <p className="lede">
-          Supabase-চালিত DesignOps এজেন্সি টুল — ক্লায়েন্ট, প্রজেক্ট, টাস্ক ও
-          টিম শিডিউল এক ড্যাশবোর্ড থেকে সামলান।
-        </p>
-        <div className="cta-row">
-          <Link href="/dashboard" className="btn btn-accent">
-            ড্যাশবোর্ড দেখুন
-          </Link>
-          <Link href="/tasks" className="btn btn-ghost">
-            টাস্ক লিস্ট দেখুন
-          </Link>
-        </div>
-      </main>
-
-      <section className="features" aria-label="ফিচার">
-        {FEATURES.map((f) => (
-          <Link key={f.href} href={f.href} className="feature-card">
-            <div className="feature-icon">
-              <Icon name={f.icon} />
+      <section className="section hired-section" id="services">
+        <div className="container reveal">
+          <h2 className="section-title">What we are hired for</h2>
+          {SERVICES_HIRED.map((s, i) => (
+            <div className="hired-row" key={s.name}>
+              <span className="hired-index">{String(i + 1).padStart(2, '0')}</span>
+              <span className="hired-name">{s.name}</span>
+              <span className="hired-sub">{s.sub}</span>
+              <span className="arrow-circle">→</span>
             </div>
-            <div className="feature-title">{f.title}</div>
-            <div className="feature-desc">{f.desc}</div>
-          </Link>
-        ))}
+          ))}
+        </div>
       </section>
 
-      <footer className="foot">
-        © {new Date().getFullYear()} DesignOps · Studio Nine
+      <section className="section" id="process">
+        <div className="container reveal">
+          <h2 className="section-title">How an engagement runs.</h2>
+          <div className="process-grid">
+            {PROCESS_STEPS.map((s, i) => (
+              <div className="process-card" key={s.name}>
+                <span className="process-num">{String(i + 1).padStart(2, '0')}</span>
+                <div className="process-name">{s.name}</div>
+                <div className="process-desc">{s.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section services-section">
+        <div className="container services-split reveal">
+          <div className="collage-grid" aria-hidden="true">
+            <div className="collage-col" style={{ marginTop: 30 }}>
+              <div className="collage-img" style={{ height: 190, background: 'linear-gradient(150deg,#3B82F6,#0c1f3d)' }}></div>
+              <div className="collage-img" style={{ height: 130, background: 'linear-gradient(150deg,#10B981,#04241a)' }}></div>
+            </div>
+            <div className="collage-col">
+              <div className="collage-img" style={{ height: 150, background: 'linear-gradient(150deg,#6366F1,#150e33)' }}></div>
+              <div className="collage-img" style={{ height: 170, background: 'linear-gradient(150deg,#F59E0B,#3a2603)' }}></div>
+            </div>
+            <div className="collage-col" style={{ marginTop: 50 }}>
+              <div className="collage-img" style={{ height: 160, background: 'linear-gradient(150deg,#EF4444,#2c0a0a)' }}></div>
+              <div className="collage-img" style={{ height: 130, background: 'linear-gradient(150deg,#A855F7,#210b33)' }}></div>
+            </div>
+          </div>
+          <div>
+            <div className="collage-services-title">Our Services</div>
+            <div className="services-list-plain">
+              <div className="service-plain-item">UI / UX Design</div>
+              <div className="service-plain-item">Frontend Design</div>
+              <div className="service-plain-item">SaaS Design</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section" id="team">
+        <div className="container reveal">
+          <h2 className="section-title" style={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: 18 }}>Our Team</h2>
+          {team.length === 0 ? (
+            <p style={{ color: 'var(--ink-faint)', fontSize: 13, marginTop: 20 }}>টিমের তথ্য এই মুহূর্তে লোড করা যায়নি।</p>
+          ) : (
+            <div className="team-grid" style={{ marginTop: 20 }}>
+              {team.map((m) => {
+                const img = m.avatar_url ? driveThumbnailUrl(m.avatar_url) : null;
+                const initial = Array.from(m.full_name.trim())[0]?.toUpperCase() ?? '?';
+                return (
+                  <div className="team-card" key={m.id}>
+                    <div
+                      className="team-photo"
+                      style={img ? { backgroundImage: `url(${img})` } : { background: m.avatar_color ?? 'var(--ink-faint)' }}
+                    >
+                      {!img && initial}
+                    </div>
+                    <div className="team-overlay-bar">
+                      <div>
+                        <div className="team-name">{m.full_name}</div>
+                        <div className="team-title">{m.role ?? 'Team Member'}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="cta-band" id="contact">
+        <div className="container reveal">
+          <h2 className="cta-band-title">Got a product that deserves better design?</h2>
+          <a href="mailto:hello@flow53.studio" className="hero-book-btn">Book a call</a>
+        </div>
+      </section>
+
+      <footer className="footer">
+        <div className="container footer-inner">
+          <span className="footer-copy">© {new Date().getFullYear()} FLOW 53 Studio. Dhaka, Bangladesh.</span>
+          <div className="footer-links">
+            <Link href="/dashboard" className="footer-link">অ্যাপে লগইন করুন</Link>
+            <a href="#" className="footer-link">Instagram</a>
+            <a href="#" className="footer-link">LinkedIn</a>
+          </div>
+        </div>
       </footer>
+
+      <RevealOnScroll />
     </div>
   );
 }
