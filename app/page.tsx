@@ -193,12 +193,12 @@ export default async function Home() {
                       {(m.behance_url || m.linkedin_url) && (
                         <div className="team-socials">
                           {m.behance_url && (
-                            <a className="team-social-btn" href={m.behance_url} target="_blank" rel="noopener noreferrer" aria-label={`${m.full_name}-এর Behance`} onClick={(e) => e.stopPropagation()}>
+                            <a className="team-social-btn" href={m.behance_url} target="_blank" rel="noopener noreferrer" aria-label={`${m.full_name}-এর Behance`}>
                               Be
                             </a>
                           )}
                           {m.linkedin_url && (
-                            <a className="team-social-btn" href={m.linkedin_url} target="_blank" rel="noopener noreferrer" aria-label={`${m.full_name}-এর LinkedIn`} onClick={(e) => e.stopPropagation()}>
+                            <a className="team-social-btn" href={m.linkedin_url} target="_blank" rel="noopener noreferrer" aria-label={`${m.full_name}-এর LinkedIn`}>
                               in
                             </a>
                           )}
