@@ -9,9 +9,10 @@ import RevealOnScroll from '@/app/components/RevealOnScroll';
 // (শুধু authenticated ইউজার read করতে পারে) এই পেজের জন্য প্রযোজ্য না। এটা
 // একটা Server Component, তাই service-role client দিয়ে সরাসরি সার্ভারে
 // টিমের real ডেটা আনা হয় (Team পেজের মতোই আসল নাম/রোল/ছবি) — কোনো secret
-// ব্রাউজারে যায় না। প্রতি ঘণ্টায় revalidate হয়, তাই কেউ নতুন যোগ হলে বা
-// ছবি পাল্টালে খুব বেশি দেরি ছাড়াই পেজে দেখা যাবে।
-export const revalidate = 3600;
+// ব্রাউজারে যায় না। Team সেকশন সম্পূর্ণ dynamic রাখতে (কেউ যোগ/বাদ হলে বা
+// প্রোফাইল পাল্টালে সাথে সাথে পরের ভিজিটেই দেখা যায়) ক্যাশ/ISR ছাড়াই প্রতিটা
+// রিকোয়েস্টে fresh ডেটা আনা হয়।
+export const dynamic = 'force-dynamic';
 
 // Work সেকশনের প্রজেক্টগুলো (Aarambho/Nilkantha/Prantik Bank) — এগুলো কোনো
 // real client project না, ডিজাইনের placeholder। আসল case study তৈরি হলে এখানে
@@ -40,14 +41,14 @@ const PROCESS_STEPS = [
   { name: 'Deliver', desc: 'Clean specs & a working system.' },
 ];
 
-type TeamMember = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url: string | null };
+type TeamMember = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url: string | null; behance_url: string | null; linkedin_url: string | null };
 
 async function fetchTeam(): Promise<TeamMember[]> {
   try {
     const admin = getSupabaseAdmin();
     const { data } = await admin
       .from('profiles')
-      .select('id, full_name, role, avatar_color, avatar_url')
+      .select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url')
       .order('created_at');
     return (data as TeamMember[]) ?? [];
   } catch {
@@ -94,12 +95,15 @@ export default async function Home() {
                     </div>
                   )}
                 </div>
-                <div className="project-info">
-                  <div className="project-name">{p.name}</div>
-                  <div className="project-desc">{p.desc}</div>
-                  <div className="project-tags">
-                    {p.tags.map((t) => <span className="project-tag" key={t}>{t}</span>)}
+                <div className="project-info project-info-row">
+                  <div>
+                    <div className="project-name">{p.name}</div>
+                    <div className="project-desc">{p.desc}</div>
+                    <div className="project-tags">
+                      {p.tags.map((t) => <span className="project-tag" key={t}>{t}</span>)}
+                    </div>
                   </div>
+                  <a href="#contact" className="arrow-circle" aria-label={`${p.name} সম্পর্কে জানুন`}>→</a>
                 </div>
               </div>
             ))}
@@ -186,6 +190,20 @@ export default async function Home() {
                         <div className="team-name">{m.full_name}</div>
                         <div className="team-title">{m.role ?? 'Team Member'}</div>
                       </div>
+                      {(m.behance_url || m.linkedin_url) && (
+                        <div className="team-socials">
+                          {m.behance_url && (
+                            <a className="team-social-btn" href={m.behance_url} target="_blank" rel="noopener noreferrer" aria-label={`${m.full_name}-এর Behance`} onClick={(e) => e.stopPropagation()}>
+                              Be
+                            </a>
+                          )}
+                          {m.linkedin_url && (
+                            <a className="team-social-btn" href={m.linkedin_url} target="_blank" rel="noopener noreferrer" aria-label={`${m.full_name}-এর LinkedIn`} onClick={(e) => e.stopPropagation()}>
+                              in
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

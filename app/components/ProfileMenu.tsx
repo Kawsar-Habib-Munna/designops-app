@@ -26,12 +26,14 @@ import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { uploadFileToDrive, driveThumbnailUrl } from '@/lib/driveUpload';
 
-type Profile = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null };
+type Profile = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null; behance_url?: string | null; linkedin_url?: string | null };
 
 export default function ProfileMenu({ profile, email, onUpdated, dark = false }: { profile: Profile | null; email: string; onUpdated: (p: Profile) => void; dark?: boolean }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(profile?.full_name ?? '');
   const [role, setRole] = useState(profile?.role ?? '');
+  const [behanceUrl, setBehanceUrl] = useState(profile?.behance_url ?? '');
+  const [linkedinUrl, setLinkedinUrl] = useState(profile?.linkedin_url ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,6 +53,8 @@ export default function ProfileMenu({ profile, email, onUpdated, dark = false }:
   function handleOpen() {
     setName(profile?.full_name ?? '');
     setRole(profile?.role ?? '');
+    setBehanceUrl(profile?.behance_url ?? '');
+    setLinkedinUrl(profile?.linkedin_url ?? '');
     setError(null);
     setNewPassword('');
     setPasswordMsg(null);
@@ -65,9 +69,14 @@ export default function ProfileMenu({ profile, email, onUpdated, dark = false }:
     setSaving(true);
     const { data, error } = await supabase
       .from('profiles')
-      .update({ full_name: name.trim(), role: role.trim() || null })
+      .update({
+        full_name: name.trim(),
+        role: role.trim() || null,
+        behance_url: behanceUrl.trim() || null,
+        linkedin_url: linkedinUrl.trim() || null,
+      })
       .eq('id', profile.id)
-      .select('id, full_name, role, avatar_color, avatar_url')
+      .select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url')
       .single();
     setSaving(false);
 
@@ -204,6 +213,15 @@ export default function ProfileMenu({ profile, email, onUpdated, dark = false }:
 
             <label className={labelCls}>রোল</label>
             <input className={`${inputCls} mb-3`} type="text" value={role} onChange={(e) => setRole(e.target.value)} placeholder="যেমন: UX Designer" />
+
+            <label className={labelCls}>Behance প্রোফাইল লিংক (ঐচ্ছিক)</label>
+            <input className={`${inputCls} mb-3`} type="url" value={behanceUrl} onChange={(e) => setBehanceUrl(e.target.value)} placeholder="https://behance.net/yourname" />
+
+            <label className={labelCls}>LinkedIn প্রোফাইল লিংক (ঐচ্ছিক)</label>
+            <input className={`${inputCls} mb-3`} type="url" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/yourname" />
+            <p className="mb-3 text-[11px]" style={{ color: dark ? '#71717a' : '#9C9C98' }}>
+              এই লিংক দুটো FLOW 53-এর পাবলিক ওয়েবসাইটের Team সেকশনে দেখানো হয়।
+            </p>
 
             {error && <p className="mb-2.5 text-xs text-red-500">{error}</p>}
 

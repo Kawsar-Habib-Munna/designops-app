@@ -562,3 +562,11 @@ alter publication supabase_realtime add table notifications;
 -- যেহেতু এক ইউজারের একটাই প্রোফাইল ছবি থাকে।
 -- ============================================
 alter table profiles add column if not exists avatar_url text;
+
+-- ============================================
+-- সোশ্যাল লিংক (Behance/LinkedIn) — পাবলিক ল্যান্ডিং পেজের Team কার্ডে
+-- দেখানো হয়, প্রতিটা মেম্বার নিজে ProfileMenu থেকে নিজের লিংক বসাতে পারবে।
+-- খালি থাকলে সংশ্লিষ্ট বাটনটা লুকানো থাকে (fake/অকার্যকর বাটন দেখানো হয় না)।
+-- ============================================
+alter table profiles add column if not exists behance_url text;
+alter table profiles add column if not exists linkedin_url text;
