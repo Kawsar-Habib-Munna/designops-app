@@ -669,15 +669,7 @@ export default function DashboardPage() {
                   })}
                 </span>
               </div>
-              <div className="welcome-banner" aria-hidden="true">
-                <div className="welcome-banner-brand">
-                  <div className="welcome-banner-mark"></div>
-                  <div className="welcome-banner-text">
-                    FLOW 53
-                    <span>Innovate · Design · Elevate</span>
-                  </div>
-                </div>
-              </div>
+              <div className="welcome-banner" aria-hidden="true"></div>
             </div>
 
             {error && (
