@@ -76,6 +76,7 @@ const NAV_ITEMS: { icon: IconName; label: string; href: string; active?: boolean
   { icon: 'building', label: 'Clients', href: '#' },
   { icon: 'file', label: 'Files', href: '/files' },
   { icon: 'message', label: 'Discussions', href: '/discussions' },
+  { icon: 'layers', label: 'Portfolio', href: '/portfolio' },
   { icon: 'bar', label: 'Reports', href: '#' },
 ];
 

@@ -48,6 +48,8 @@ const ICON_PATHS: Record<string, string> = {
   "check-circle": '<circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/>',
   message:
     '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
+  layers:
+    '<path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>',
   "user-plus":
     '<path d="M14 19v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="7" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>',
   spark:
@@ -100,6 +102,7 @@ const NAV_ITEMS: {
   { icon: "building", label: "Clients", href: "#" },
   { icon: "file", label: "Files", href: "/files" },
   { icon: "message", label: "Discussions", href: "/discussions" },
+  { icon: "layers", label: "Portfolio", href: "/portfolio" },
   { icon: "bar", label: "Reports", href: "#" },
 ];
 

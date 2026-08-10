@@ -52,6 +52,7 @@ const ICON_PATHS: Record<string, string> = {
   spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
   upload: '<path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
   message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
+  layers: '<path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>',
 };
 
 type IconName = keyof typeof ICON_PATHS;
@@ -71,6 +72,7 @@ const NAV_ITEMS: { icon: IconName; label: string; href: string; active?: boolean
   { icon: 'building', label: 'Clients', href: '#' },
   { icon: 'file', label: 'Files', href: '/files' },
   { icon: 'message', label: 'Discussions', href: '/discussions' },
+  { icon: 'layers', label: 'Portfolio', href: '/portfolio' },
   { icon: 'bar', label: 'Reports', href: '#' },
 ];
 

@@ -570,3 +570,64 @@ alter table profiles add column if not exists avatar_url text;
 -- ============================================
 alter table profiles add column if not exists behance_url text;
 alter table profiles add column if not exists linkedin_url text;
+
+-- ============================================
+-- পোর্টফোলিও কেস স্টাডি — পাবলিক ল্যান্ডিং পেজের Work সেকশনে দেখানো প্রজেক্টগুলো
+-- আগে কোডে হার্ডকোড করা ছিল, এখন app-এর ভেতরের /portfolio পেজ থেকে টিম নিজেই
+-- কেস স্টাডি (wireframe/prototype/final UI ছবি + Figma prototype লিংক) যোগ/
+-- এডিট/ডিলিট করতে পারবে। published=true না হলে পাবলিক সাইটে দেখা যাবে না
+-- (draft হিসেবে রাখা যাবে)।
+-- ============================================
+create table if not exists case_studies (
+  id uuid default gen_random_uuid() primary key,
+  slug text not null unique,
+  title text not null,
+  client_name text,
+  summary text,
+  tags text[] default '{}',
+  cover_image text,
+  figma_prototype_url text,
+  order_index int default 0,
+  published boolean default false,
+  created_by uuid references profiles(id),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- প্রতিটা কেস স্টাডির wireframe/prototype/final_ui সেকশনের একাধিক ছবি —
+-- attachments টেবিলের মতোই Drive-hosted লিংক, শুধু case_study_id দিয়ে গ্রুপ করা।
+create table if not exists case_study_images (
+  id uuid default gen_random_uuid() primary key,
+  case_study_id uuid references case_studies(id) on delete cascade,
+  section text not null check (section in ('wireframe', 'prototype', 'final_ui')),
+  image_url text not null,
+  caption text,
+  order_index int default 0,
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_case_study_images_case_study on case_study_images(case_study_id);
+
+alter table case_studies enable row level security;
+alter table case_study_images enable row level security;
+
+drop policy if exists "team can read case studies" on case_studies;
+drop policy if exists "team can write case studies" on case_studies;
+drop policy if exists "team can update case studies" on case_studies;
+drop policy if exists "team can delete case studies" on case_studies;
+create policy "team can read case studies" on case_studies for select using (auth.role() = 'authenticated');
+create policy "team can write case studies" on case_studies for insert with check (auth.role() = 'authenticated');
+create policy "team can update case studies" on case_studies for update using (auth.role() = 'authenticated');
+create policy "team can delete case studies" on case_studies for delete using (auth.role() = 'authenticated');
+
+drop policy if exists "team can read case study images" on case_study_images;
+drop policy if exists "team can write case study images" on case_study_images;
+drop policy if exists "team can delete case study images" on case_study_images;
+create policy "team can read case study images" on case_study_images for select using (auth.role() = 'authenticated');
+create policy "team can write case study images" on case_study_images for insert with check (auth.role() = 'authenticated');
+create policy "team can delete case study images" on case_study_images for delete using (auth.role() = 'authenticated');
+
+drop trigger if exists case_studies_updated_at on case_studies;
+create trigger case_studies_updated_at
+  before update on case_studies
+  for each row execute procedure public.set_updated_at();

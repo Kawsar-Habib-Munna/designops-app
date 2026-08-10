@@ -14,17 +14,24 @@ import RevealOnScroll from '@/app/components/RevealOnScroll';
 // রিকোয়েস্টে fresh ডেটা আনা হয়।
 export const dynamic = 'force-dynamic';
 
-// Work সেকশনের প্রজেক্টগুলো (Aarambho/Nilkantha/Prantik Bank) — এগুলো কোনো
-// real client project না, ডিজাইনের placeholder। আসল case study তৈরি হলে এখানে
-// বদলে দিতে হবে।
-const COLLAGE_COLORS_A = ['#4285F4', '#EA4335', '#34A853', '#FBBC05', '#7C72FF', '#00C2A8', '#FF6F61', '#3B82F6', '#F472B6', '#F59E0B', '#10B981', '#6366F1', '#EF4444', '#0EA5E9', '#A855F7'];
-const COLLAGE_COLORS_B = ['#3B82F6', '#F472B6', '#F59E0B', '#10B981', '#6366F1', '#EF4444', '#0EA5E9', '#A855F7', '#4285F4', '#EA4335', '#34A853', '#FBBC05', '#7C72FF', '#00C2A8', '#FF6F61'];
+// Work সেকশনের প্রজেক্টগুলো আগে কোডে হার্ডকোড করা placeholder ছিল, এখন
+// app-এর ভেতরের /portfolio পেজ থেকে টিম যেই কেস স্টাডি publish করে সেটাই
+// এখানে (এবং /work/[slug]-এ ফুল কেস স্টাডি হিসেবে) দেখা যায়।
+type CaseStudyCard = { slug: string; title: string; summary: string | null; tags: string[] | null; cover_image: string | null };
 
-const PROJECTS = [
-  { name: 'Aarambho', desc: 'Brand app redesign for a consumer tech challenger.', tags: ['UI/UX design', 'Mobile App'], colors: COLLAGE_COLORS_A },
-  { name: 'Nilkantha', desc: 'A storefront & app for an FMCG e-commerce brand.', tags: ['UI/UX design', 'Mobile App'], colors: null },
-  { name: 'Prantik Bank', desc: 'A banking dashboard built for clarity at speed.', tags: ['UI/UX design', 'Dashboard'], colors: COLLAGE_COLORS_B },
-];
+async function fetchCaseStudies(): Promise<CaseStudyCard[]> {
+  try {
+    const admin = getSupabaseAdmin();
+    const { data } = await admin
+      .from('case_studies')
+      .select('slug, title, summary, tags, cover_image')
+      .eq('published', true)
+      .order('order_index');
+    return (data as CaseStudyCard[]) ?? [];
+  } catch {
+    return [];
+  }
+}
 
 const SERVICES_HIRED = [
   { name: 'UX Research & Discovery', sub: 'Interviews · Journey Mapping' },
@@ -59,7 +66,7 @@ async function fetchTeam(): Promise<TeamMember[]> {
 }
 
 export default async function Home() {
-  const team = await fetchTeam();
+  const [team, caseStudies] = await Promise.all([fetchTeam(), fetchCaseStudies()]);
 
   return (
     <div className="home-root">
@@ -84,29 +91,26 @@ export default async function Home() {
               </div>
             </div>
 
-            {PROJECTS.map((p) => (
-              <div className="project-card" key={p.name}>
-                <div className="project-photo" style={p.colors ? undefined : { background: 'linear-gradient(150deg,#232323,#050505)' }}>
-                  {p.colors && (
-                    <div className="icon-collage">
-                      {p.colors.map((c, ci) => (
-                        <div className="icon-sq" style={{ background: c }} key={ci}></div>
-                      ))}
+            {caseStudies.map((p) => {
+              const cover = p.cover_image ? driveThumbnailUrl(p.cover_image) : null;
+              return (
+                <Link className="project-card" href={`/work/${p.slug}`} key={p.slug}>
+                  <div className="project-photo" style={cover ? { backgroundImage: `url(${cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: 'linear-gradient(150deg,#232323,#050505)' }}></div>
+                  <div className="project-info project-info-row">
+                    <div>
+                      <div className="project-name">{p.title}</div>
+                      {p.summary && <div className="project-desc">{p.summary}</div>}
+                      {p.tags && p.tags.length > 0 && (
+                        <div className="project-tags">
+                          {p.tags.map((t) => <span className="project-tag" key={t}>{t}</span>)}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div className="project-info project-info-row">
-                  <div>
-                    <div className="project-name">{p.name}</div>
-                    <div className="project-desc">{p.desc}</div>
-                    <div className="project-tags">
-                      {p.tags.map((t) => <span className="project-tag" key={t}>{t}</span>)}
-                    </div>
+                    <span className="arrow-circle" aria-label={`${p.title} সম্পর্কে জানুন`}>→</span>
                   </div>
-                  <a href="#contact" className="arrow-circle" aria-label={`${p.name} সম্পর্কে জানুন`}>→</a>
-                </div>
-              </div>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </header>

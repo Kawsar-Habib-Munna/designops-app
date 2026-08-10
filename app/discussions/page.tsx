@@ -47,6 +47,7 @@ const ICON_PATHS: Record<string, string> = {
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
   refresh: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v6h-6"/>',
   message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
+  layers: '<path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/>',
   pin: '<path d="M12 2l1.5 5.5L19 9l-4 4 1 6-4-3-4 3 1-6-4-4 5.5-1.5z"/>',
   archive: '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/>',
@@ -82,6 +83,7 @@ const NAV_ITEMS: { icon: IconName; label: string; href: string; active?: boolean
   { icon: 'building', label: 'Clients', href: '#' },
   { icon: 'file', label: 'Files', href: '/files' },
   { icon: 'message', label: 'Discussions', href: '/discussions', active: true },
+  { icon: 'layers', label: 'Portfolio', href: '/portfolio' },
   { icon: 'bar', label: 'Reports', href: '#' },
 ];
 const NAV_ITEMS_BOTTOM: { icon: IconName; label: string; href: string }[] = [
