@@ -11,6 +11,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useSession } from "@/lib/useSession";
 import { useUnreadCount } from "@/lib/useUnreadCount";
 import { formatBnDate, formatTimeBn, dueMeta, todayISO } from "@/lib/format";
+import { driveThumbnailUrl } from "@/lib/driveUpload";
 import SignInScreen from "@/app/components/SignInScreen";
 import ProfileMenu from "@/app/components/ProfileMenu";
 
@@ -135,6 +136,7 @@ type ProfileRow = {
   full_name: string;
   role: string | null;
   avatar_color: string | null;
+  avatar_url?: string | null;
 };
 
 type ProjectRow = {
@@ -274,7 +276,7 @@ export default function DashboardPage() {
       ] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id, full_name, role, avatar_color")
+          .select("id, full_name, role, avatar_color, avatar_url")
           .eq("id", user!.id)
           .single(),
         supabase
@@ -489,6 +491,7 @@ export default function DashboardPage() {
   const displayName = profile?.full_name ?? user.email ?? "ব্যবহারকারী";
   const firstName = displayName.split(" ")[0];
   const avatarInitial = Array.from(firstName)[0]?.toUpperCase() ?? "?";
+  const avatarImg = profile?.avatar_url ? driveThumbnailUrl(profile.avatar_url) : null;
   const insights = buildInsights(kpis.overdue, workload, projects);
 
   const kpiCards: {
@@ -604,6 +607,7 @@ export default function DashboardPage() {
             profile={profile}
             email={user.email ?? ""}
             onUpdated={setProfile}
+            dark={dark}
           />
         </aside>
 
@@ -648,10 +652,17 @@ export default function DashboardPage() {
                 width: 30,
                 height: 30,
                 fontSize: 12,
-                background: profile?.avatar_color ?? undefined,
+                background: avatarImg ? undefined : (profile?.avatar_color ?? undefined),
+                overflow: "hidden",
+                padding: 0,
               }}
             >
-              {avatarInitial}
+              {avatarImg ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                avatarInitial
+              )}
             </div>
           </header>
 

@@ -553,3 +553,12 @@ alter table profiles add column if not exists notify_whatsapp_votes boolean defa
 -- বেল আইকনের আনরিড কাউন্ট লাইভ আপডেট হওয়ার জন্য (নতুন নোটিফিকেশন এলে রিফ্রেশ
 -- ছাড়াই ব্যাজ বদলাবে) — tasks টেবিলের মতোই realtime publication-এ যোগ করা।
 alter publication supabase_realtime add table notifications;
+
+-- ============================================
+-- প্রোফাইল ছবি (avatar_url) — ProfileMenu থেকে আপলোড করা ছবি Google Drive-এ
+-- (files/discussions যেভাবে করে সেই একই resumable upload দিয়ে) সেভ হয়ে এই
+-- কলামে drive_url রাখা হয় — attachments টেবিলের মতো, শুধু profile-এর নিজস্ব
+-- একটা মাত্র ছবির জন্য আলাদা টেবিল না বানিয়ে সরাসরি কলাম হিসেবে রাখা হয়েছে
+-- যেহেতু এক ইউজারের একটাই প্রোফাইল ছবি থাকে।
+-- ============================================
+alter table profiles add column if not exists avatar_url text;

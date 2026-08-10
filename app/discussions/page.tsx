@@ -101,7 +101,7 @@ const LOCAL_NAV_ITEMS: { key: LocalView; icon: IconName; label: string }[] = [
 const CATEGORY_OPTIONS = ['ডিজাইন ফিডব্যাক', 'UX রিভিউ', 'ব্র্যান্ডিং', 'ফিচার আইডিয়া', 'প্রজেক্ট ডিসিশন'];
 const REACTION_EMOJIS = ['👍', '❤️'];
 
-type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; is_admin?: boolean };
+type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null; is_admin?: boolean };
 type ProjectOption = { id: string; name: string };
 type TaskOption = { id: string; project_id: string | null; status: string };
 type AuthorRef = { full_name: string; role: string | null; avatar_color: string | null } | null;
@@ -341,7 +341,7 @@ export default function DiscussionsPage() {
     async function run() {
       const [result, profileRes] = await Promise.all([
         fetchDiscussionsData(),
-        supabase.from('profiles').select('id, full_name, role, avatar_color, is_admin').eq('id', user!.id).single(),
+        supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, is_admin').eq('id', user!.id).single(),
       ]);
       applyResult(result);
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);
@@ -946,7 +946,7 @@ export default function DiscussionsPage() {
               ))}
             </nav>
           </div>
-          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={(p) => setProfile((prev) => (prev ? { ...prev, ...p } : p))} />
+          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={(p) => setProfile((prev) => (prev ? { ...prev, ...p } : p))} dark={dark} />
         </aside>
 
         <div className="main">

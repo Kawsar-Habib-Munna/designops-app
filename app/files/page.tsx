@@ -113,7 +113,7 @@ function fileReviewChip(stage: string | undefined): { cls: string; label: string
   return { cls: 'rc-draft', label: 'Draft' };
 }
 
-type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null };
+type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null };
 type TaskOption = { id: string; title: string; project_id: string | null; status: string };
 type ProjectOption = { id: string; name: string; due_date: string | null };
 type ClientOption = { id: string; company_name: string };
@@ -217,7 +217,7 @@ export default function FilesPage() {
     async function run() {
       const [result, profileRes] = await Promise.all([
         fetchFilesData(),
-        supabase.from('profiles').select('id, full_name, role, avatar_color').eq('id', user!.id).single(),
+        supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url').eq('id', user!.id).single(),
       ]);
       setError(result.errorMessage);
       setAttachments(result.attachments);
@@ -556,7 +556,7 @@ export default function FilesPage() {
               ))}
             </nav>
           </div>
-          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={setProfile} />
+          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={setProfile} dark={dark} />
         </aside>
 
         <div className="main">

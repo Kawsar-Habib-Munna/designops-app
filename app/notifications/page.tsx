@@ -73,7 +73,7 @@ const NAV_ITEMS_BOTTOM: { icon: IconName; label: string; href: string; active?: 
   { icon: 'settings', label: 'Settings', href: '#' },
 ];
 
-type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null };
+type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null };
 
 type SettingsProfile = {
   id: string;
@@ -184,7 +184,7 @@ export default function NotificationsPage() {
     async function run() {
       const [result, profileRes] = await Promise.all([
         loadNotifications(),
-        supabase.from('profiles').select('id, full_name, role, avatar_color').eq('id', user!.id).single(),
+        supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url').eq('id', user!.id).single(),
       ]);
       setError(result.errorMessage);
       setNotifications(result.rows);
@@ -324,7 +324,7 @@ export default function NotificationsPage() {
               ))}
             </nav>
           </div>
-          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={setProfile} />
+          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={setProfile} dark={dark} />
         </aside>
 
         <div className="main">

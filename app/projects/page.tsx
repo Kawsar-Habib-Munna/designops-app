@@ -91,6 +91,7 @@ type ProfileRow = {
   full_name: string;
   role: string | null;
   avatar_color: string | null;
+  avatar_url?: string | null;
 };
 
 type ProjectRow = {
@@ -155,7 +156,7 @@ export default function ProjectsListPage() {
             .order("company_name"),
           supabase
             .from("profiles")
-            .select("id, full_name, role, avatar_color")
+            .select("id, full_name, role, avatar_color, avatar_url")
             .eq("id", user!.id)
             .single(),
           supabase
@@ -348,6 +349,7 @@ export default function ProjectsListPage() {
             profile={profile}
             email={user.email ?? ""}
             onUpdated={setProfile}
+            dark={dark}
           />
         </aside>
 

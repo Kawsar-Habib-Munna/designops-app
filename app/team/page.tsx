@@ -19,6 +19,7 @@ import { useSession } from '@/lib/useSession';
 import { useUnreadCount } from '@/lib/useUnreadCount';
 import { formatBnDate, relativeTimeBn, todayISO } from '@/lib/format';
 import { STAGE_LABEL, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
+import { driveThumbnailUrl } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
 
@@ -102,7 +103,7 @@ function isThisWeek(dateStr: string) {
 
 const WEEKLY_CAPACITY_HOURS = 40;
 
-type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; is_admin?: boolean };
+type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null; is_admin?: boolean };
 
 type TeamTaskRow = {
   id: string;
@@ -307,7 +308,7 @@ export default function TeamWorkloadPage() {
     async function run() {
       const [result, profileRes] = await Promise.all([
         fetchTeamData(),
-        supabase.from('profiles').select('id, full_name, role, avatar_color, is_admin').eq('id', user!.id).single(),
+        supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, is_admin').eq('id', user!.id).single(),
       ]);
       setError(result.errorMessage);
       setMembers(result.members);
@@ -470,6 +471,7 @@ export default function TeamWorkloadPage() {
 
   const displayName = profile?.full_name ?? user.email ?? 'ব্যবহারকারী';
   const avatarInitial = Array.from(displayName)[0]?.toUpperCase() ?? '?';
+  const avatarImg = profile?.avatar_url ? driveThumbnailUrl(profile.avatar_url) : null;
   const today = todayISO();
 
   return (
@@ -499,7 +501,7 @@ export default function TeamWorkloadPage() {
               ))}
             </nav>
           </div>
-          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={setProfile} />
+          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={setProfile} dark={dark} />
         </aside>
 
         {/* ============ MAIN ============ */}
@@ -518,7 +520,14 @@ export default function TeamWorkloadPage() {
               {unreadCount > 0 && <span className="bell-count">{unreadCount > 99 ? '99+' : unreadCount}</span>}
             </Link>
             <button className="icon-btn" aria-label="থিম পরিবর্তন" onClick={() => setDark((d) => !d)}><Icon name={dark ? 'moon' : 'sun'} /></button>
-            <div className="avatar" style={{ width: 30, height: 30, fontSize: 12, background: profile?.avatar_color ?? undefined }}>{avatarInitial}</div>
+            <div className="avatar" style={{ width: 30, height: 30, fontSize: 12, background: avatarImg ? undefined : (profile?.avatar_color ?? undefined), overflow: 'hidden', padding: 0 }}>
+              {avatarImg ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarImg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                avatarInitial
+              )}
+            </div>
           </header>
 
           <main className="content">

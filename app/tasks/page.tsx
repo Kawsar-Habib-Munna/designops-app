@@ -20,6 +20,7 @@ import { useUnreadCount } from '@/lib/useUnreadCount';
 import { dueMeta, relativeTimeBn, todayISO } from '@/lib/format';
 import { STATUS_META, PRIORITY_META, STAGE_LABEL, reviewChip, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
 import { sendNotifications } from '@/lib/notify';
+import { driveThumbnailUrl } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
 
@@ -79,7 +80,7 @@ function Icon({ name, size = 15, color = 'currentColor' }: { name: IconName; siz
   );
 }
 
-type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null };
+type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null };
 type ProjectOption = { id: string; name: string };
 type AssigneeOption = { id: string; full_name: string; avatar_color: string | null };
 
@@ -278,7 +279,7 @@ function TasksPageInner() {
       supabase.from('attachments').select('task_id'),
       supabase.from('projects').select('id, name').order('name'),
       supabase.from('profiles').select('id, full_name, avatar_color').order('full_name'),
-      supabase.from('profiles').select('id, full_name, role, avatar_color').eq('id', uid).single(),
+      supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url').eq('id', uid).single(),
     ]);
 
     const firstErrored = [tasksRes, commentsRes, attachmentsRes, projectsRes, teamRes, profileRes].find((r) => r.error);
@@ -618,6 +619,7 @@ function TasksPageInner() {
 
   const displayName = profile?.full_name ?? user.email ?? 'ব্যবহারকারী';
   const avatarInitial = Array.from(displayName)[0]?.toUpperCase() ?? '?';
+  const avatarImg = profile?.avatar_url ? driveThumbnailUrl(profile.avatar_url) : null;
   const allSelected = filtered.length > 0 && selected.size === filtered.length;
 
   return (
@@ -649,7 +651,7 @@ function TasksPageInner() {
             </nav>
           </div>
 
-          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={setProfile} />
+          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={setProfile} dark={dark} />
         </aside>
 
         {/* ============ MAIN ============ */}
@@ -672,8 +674,13 @@ function TasksPageInner() {
             <button className="icon-btn" aria-label="থিম পরিবর্তন" onClick={() => setDark((d) => !d)}>
               <Icon name={dark ? 'moon' : 'sun'} />
             </button>
-            <div className="avatar" style={{ width: 30, height: 30, fontSize: 12, background: profile?.avatar_color ?? undefined }}>
-              {avatarInitial}
+            <div className="avatar" style={{ width: 30, height: 30, fontSize: 12, background: avatarImg ? undefined : (profile?.avatar_color ?? undefined), overflow: 'hidden', padding: 0 }}>
+              {avatarImg ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarImg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                avatarInitial
+              )}
             </div>
           </header>
 

@@ -109,7 +109,7 @@ function isSameDay(a: Date, b: Date) {
 
 type ViewMode = 'day' | 'week' | 'month' | 'timeline' | 'agenda';
 
-type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null };
+type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null };
 type ProjectOption = { id: string; name: string };
 type ClientOption = { id: string; company_name: string };
 type AssigneeOption = { id: string; full_name: string; avatar_color: string | null };
@@ -243,7 +243,7 @@ export default function CalendarPage() {
     async function run() {
       const [result, profileRes] = await Promise.all([
         fetchCalendarData(),
-        supabase.from('profiles').select('id, full_name, role, avatar_color').eq('id', user!.id).single(),
+        supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url').eq('id', user!.id).single(),
       ]);
       setError(result.errorMessage);
       setDeadlines(result.deadlines);
@@ -616,7 +616,7 @@ export default function CalendarPage() {
               ))}
             </nav>
           </div>
-          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={setProfile} />
+          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={setProfile} dark={dark} />
         </aside>
 
         <div className="main">

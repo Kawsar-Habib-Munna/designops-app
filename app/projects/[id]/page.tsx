@@ -19,6 +19,7 @@ import { useSession } from '@/lib/useSession';
 import { useUnreadCount } from '@/lib/useUnreadCount';
 import { formatBnDate, formatBnDateLong, formatTimeBn, relativeTimeBn, todayISO } from '@/lib/format';
 import { STATUS_META, PRIORITY_META, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
+import { driveThumbnailUrl } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
 
@@ -232,7 +233,7 @@ export default function ProjectDetailPage() {
 
   const [dark, setDark] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [profile, setProfile] = useState<{ id: string; full_name: string; role: string | null; avatar_color: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null } | null>(null);
 
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
@@ -255,7 +256,7 @@ export default function ProjectDetailPage() {
     async function run() {
       const [result, profileRes] = await Promise.all([
         fetchProjectData(projectId),
-        supabase.from('profiles').select('id, full_name, role, avatar_color').eq('id', user!.id).single(),
+        supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url').eq('id', user!.id).single(),
       ]);
       setError(result.errorMessage);
       setProject(result.project);
@@ -308,6 +309,7 @@ export default function ProjectDetailPage() {
 
   const displayName = profile?.full_name ?? user.email ?? 'ব্যবহারকারী';
   const avatarInitial = Array.from(displayName)[0]?.toUpperCase() ?? '?';
+  const avatarImg = profile?.avatar_url ? driveThumbnailUrl(profile.avatar_url) : null;
   const doneTaskCount = tasks.filter((t) => t.status === 'done').length;
   const computedProgress = tasks.length > 0 ? Math.round((doneTaskCount / tasks.length) * 100) : 0;
 
@@ -390,7 +392,7 @@ export default function ProjectDetailPage() {
               ))}
             </nav>
           </div>
-          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={setProfile} />
+          <ProfileMenu profile={profile} email={user.email ?? ''} onUpdated={setProfile} dark={dark} />
         </aside>
 
         {/* ============ MAIN ============ */}
@@ -409,7 +411,14 @@ export default function ProjectDetailPage() {
               {unreadCount > 0 && <span className="bell-count">{unreadCount > 99 ? '99+' : unreadCount}</span>}
             </Link>
             <button className="icon-btn" aria-label="থিম পরিবর্তন" onClick={() => setDark((d) => !d)}><Icon name={dark ? 'moon' : 'sun'} /></button>
-            <div className="avatar" style={{ width: 30, height: 30, fontSize: 12, background: profile?.avatar_color ?? undefined }}>{avatarInitial}</div>
+            <div className="avatar" style={{ width: 30, height: 30, fontSize: 12, background: avatarImg ? undefined : (profile?.avatar_color ?? undefined), overflow: 'hidden', padding: 0 }}>
+              {avatarImg ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarImg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                avatarInitial
+              )}
+            </div>
           </header>
 
           <main className="content">
