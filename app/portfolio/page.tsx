@@ -338,12 +338,11 @@ export default function PortfolioPage() {
           .insert({ case_study_id: editingId, section, image_url: result.webViewLink, order_index: nextOrder })
           .select('id, case_study_id, section, image_url, caption, order_index')
           .single();
-        if (!err && data) {
-          setImages((prev) => [...prev, data as CSImage]);
-          nextOrder += 1;
-        }
-      } catch {
-        setSaveError('একটা ছবি আপলোড ব্যর্থ হয়েছে — বাকিগুলো চালিয়ে যাওয়া হচ্ছে।');
+        if (err || !data) throw new Error(err?.message ?? 'ছবি সেভ করা যায়নি।');
+        setImages((prev) => [...prev, data as CSImage]);
+        nextOrder += 1;
+      } catch (err) {
+        setSaveError(err instanceof Error ? `"${fileArr[i].name}" সেভ করা যায়নি: ${err.message}` : 'একটা ছবি আপলোড ব্যর্থ হয়েছে।');
       }
     }
     setUploadingSection(null);
