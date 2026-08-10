@@ -649,23 +649,35 @@ export default function DashboardPage() {
 
           {/* ---- CONTENT ---- */}
           <main className="content">
-            <div className="welcome-row">
-              <div>
-                <h1 className="welcome-title">
-                  {greeting()}, {firstName} 👋
-                </h1>
+            <div className="welcome-card">
+              <div className="welcome-left">
+                <div className="welcome-greeting">{greeting()}</div>
+                <div className="welcome-name-row">
+                  <Avatar person={profile} size={26} />
+                  <span className="welcome-name">{firstName}</span>
+                </div>
                 <p className="welcome-sub">
                   আজ টিমজুড়ে যা যা ঘটছে, তার সারসংক্ষেপ এখানে।
                 </p>
+                <span className="date-chip">
+                  <Icon name="calendar" size={12} />
+                  {new Date().toLocaleDateString("bn-BD", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </span>
               </div>
-              <span className="date-chip">
-                {new Date().toLocaleDateString("bn-BD", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </span>
+              <div className="welcome-banner" aria-hidden="true">
+                <div className="welcome-banner-brand">
+                  <div className="welcome-banner-mark"></div>
+                  <div className="welcome-banner-text">
+                    FLOW 53
+                    <span>Innovate · Design · Elevate</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {error && (
