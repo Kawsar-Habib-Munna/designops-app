@@ -75,7 +75,6 @@ export default async function Home() {
       <LandingNav />
 
       <header className="hero">
-        <div className="hero-giant-num">53</div>
         <div className="container">
           <div className="hero-top reveal">
             <h1 className="hero-headline">We design digital products people actually love to use.</h1>
@@ -116,7 +115,7 @@ export default async function Home() {
                 <span className="hired-index">{String(i + 1).padStart(2, '0')}</span>
                 <span className="hired-name">{s.name}</span>
                 <span className="hired-sub">{s.sub}</span>
-                <span className="hired-toggle" aria-hidden="true">+</span>
+                <span className="hired-toggle" aria-hidden="true">→</span>
               </summary>
               <div className="hired-body"><p>{s.detail}</p></div>
             </details>
@@ -144,16 +143,16 @@ export default async function Home() {
         <div className="container services-split reveal">
           <div className="collage-grid" aria-hidden="true">
             <div className="collage-col" style={{ marginTop: 30 }}>
-              <div className="collage-img" style={{ height: 190, background: 'linear-gradient(150deg,#3B82F6,#0c1f3d)' }}></div>
-              <div className="collage-img" style={{ height: 130, background: 'linear-gradient(150deg,#10B981,#04241a)' }}></div>
+              <div className="collage-img" style={{ height: 190, backgroundImage: 'url(/1.jpg)' }}></div>
+              <div className="collage-img" style={{ height: 130, backgroundImage: 'url(/2.jpg)' }}></div>
             </div>
             <div className="collage-col">
-              <div className="collage-img" style={{ height: 150, background: 'linear-gradient(150deg,#6366F1,#150e33)' }}></div>
-              <div className="collage-img" style={{ height: 170, background: 'linear-gradient(150deg,#F59E0B,#3a2603)' }}></div>
+              <div className="collage-img" style={{ height: 150, backgroundImage: 'url(/3.jpg)' }}></div>
+              <div className="collage-img" style={{ height: 170, backgroundImage: 'url(/4.jpg)' }}></div>
             </div>
             <div className="collage-col" style={{ marginTop: 50 }}>
-              <div className="collage-img" style={{ height: 160, background: 'linear-gradient(150deg,#EF4444,#2c0a0a)' }}></div>
-              <div className="collage-img" style={{ height: 130, background: 'linear-gradient(150deg,#A855F7,#210b33)' }}></div>
+              <div className="collage-img" style={{ height: 160, backgroundImage: 'url(/5.jpg)' }}></div>
+              <div className="collage-img" style={{ height: 130, backgroundImage: 'url(/6.jpg)' }}></div>
             </div>
           </div>
           <div>
