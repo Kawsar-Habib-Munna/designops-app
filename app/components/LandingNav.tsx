@@ -36,8 +36,7 @@ export default function LandingNav() {
     <nav className={`nav${scrolled ? ' scrolled' : ''}`}>
       <div className="container nav-inner">
         <a href="#" className="nav-logo">
-          <span className="nav-logo-mark"></span>
-          FLOW<span className="stroke-53">53</span>
+          <img src="/Navbar logo.png" alt="FLOW 53" className="nav-logo-img" />
         </a>
         <div className="nav-links">
           {LINKS.map((l) => (

@@ -119,9 +119,10 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
     <div className="home-root">
       <nav className="nav scrolled">
         <div className="container nav-inner">
-          <Link href="/" className="nav-logo"><span className="nav-logo-mark"></span>FLOW<span className="stroke-53">53</span></Link>
+          <Link href="/" className="nav-logo"><img src="/Navbar logo.png" alt="FLOW 53" className="nav-logo-img" /></Link>
           <div className="nav-links">
             <Link href="/#work" className="nav-link">Work</Link>
+            <Link href="/#process" className="nav-link">Process</Link>
             <Link href="/#services" className="nav-link">Services</Link>
             <Link href="/#team" className="nav-link">Team</Link>
           </div>
