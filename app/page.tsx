@@ -3,7 +3,10 @@ import './home.css';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { driveThumbnailUrl, driveFullImageUrl } from '@/lib/driveUpload';
 import LandingNav from '@/app/components/LandingNav';
+import LandingFooter from '@/app/components/LandingFooter';
 import RevealOnScroll from '@/app/components/RevealOnScroll';
+
+const WHATSAPP_URL = 'https://chat.whatsapp.com/E8RvWQSXPPp691V7odTwwl';
 
 // পাবলিক ল্যান্ডিং পেজ — লগইন ছাড়াই সবাই দেখে, তাই profiles টেবিলের RLS
 // (শুধু authenticated ইউজার read করতে পারে) এই পেজের জন্য প্রযোজ্য না। এটা
@@ -74,17 +77,14 @@ export default async function Home() {
     <div className="home-root">
       <LandingNav />
 
+      <div className="home-body">
       <header className="hero">
         <div className="container">
           <div className="hero-top reveal">
-            <div className="hero-brand">
-              <div className="hero-brand-mark"></div>
-              <span className="hero-brand-name">FLOW<span className="stroke-53">53</span></span>
-            </div>
             <span className="hero-eyebrow">UI/UX Design Studio</span>
             <h1 className="hero-headline">We design digital products people actually love to use.</h1>
             <p className="hero-desc">We partner with ambitious teams to research, design and ship digital products — from the first wireframe to a polished, production-ready UI.</p>
-            <a href="#contact" className="hero-book-btn">Book a call</a>
+            <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="hero-book-btn">Book a call</a>
           </div>
 
           <div className="project-grid reveal" id="work">
@@ -129,7 +129,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="section" id="process">
+      <section className="section process-section" id="process">
         <div className="container reveal">
           <h2 className="section-title">How an engagement runs.</h2>
           <div className="process-grid">
@@ -175,7 +175,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="section" id="team">
+      <section className="section team-section" id="team">
         <div className="container reveal">
           <h2 className="section-title" style={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: 18 }}>Our Team</h2>
           {team.length === 0 ? (
@@ -224,20 +224,12 @@ export default async function Home() {
       <section className="cta-band" id="contact">
         <div className="container reveal">
           <h2 className="cta-band-title">Got a product that deserves better design?</h2>
-          <a href="mailto:hello@flow53.studio" className="hero-book-btn">Book a call</a>
+          <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="hero-book-btn">Book a call</a>
         </div>
       </section>
 
-      <footer className="footer">
-        <div className="container footer-inner">
-          <span className="footer-copy">© {new Date().getFullYear()} FLOW 53 Studio. Dhaka, Bangladesh.</span>
-          <div className="footer-links">
-            <Link href="/dashboard" className="footer-link">অ্যাপে লগইন করুন</Link>
-            <a href="#" className="footer-link">Instagram</a>
-            <a href="#" className="footer-link">LinkedIn</a>
-          </div>
-        </div>
-      </footer>
+      <LandingFooter />
+      </div>
 
       <RevealOnScroll />
     </div>

@@ -4,6 +4,9 @@ import '../../home.css';
 import '../work.css';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { driveFullImageUrl, driveEmbedUrl } from '@/lib/driveUpload';
+import LandingFooter from '@/app/components/LandingFooter';
+
+const WHATSAPP_URL = 'https://chat.whatsapp.com/E8RvWQSXPPp691V7odTwwl';
 
 // পাবলিক কেস স্টাডি পেজ — /portfolio (app-এর ভেতরের admin পেজ) থেকে টিম যেই
 // কেস স্টাডি publish করে, সেটাই এখানে Overview থেকে Team পর্যন্ত ১৬টা সেকশন
@@ -116,16 +119,17 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
     <div className="home-root">
       <nav className="nav scrolled">
         <div className="container nav-inner">
-          <Link href="/" className="nav-logo">FLOW<span className="stroke-53">53</span></Link>
+          <Link href="/" className="nav-logo"><span className="nav-logo-mark"></span>FLOW<span className="stroke-53">53</span></Link>
           <div className="nav-links">
             <Link href="/#work" className="nav-link">Work</Link>
             <Link href="/#services" className="nav-link">Services</Link>
             <Link href="/#team" className="nav-link">Team</Link>
           </div>
-          <a href="mailto:hello@flow53.studio" className="nav-cta">Book a call</a>
+          <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="nav-cta">Book a call</a>
         </div>
       </nav>
 
+      <div className="home-body">
       <header className="work-hero">
         <div className="container">
           <Link href="/#work" className="work-back">← All projects</Link>
@@ -193,18 +197,12 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
       <section className="cta-band" id="contact">
         <div className="container">
           <h2 className="cta-band-title">Got a product that deserves better design?</h2>
-          <a href="mailto:hello@flow53.studio" className="hero-book-btn">Book a call</a>
+          <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="hero-book-btn">Book a call</a>
         </div>
       </section>
 
-      <footer className="footer">
-        <div className="container footer-inner">
-          <span className="footer-copy">© {new Date().getFullYear()} FLOW 53 Studio. Dhaka, Bangladesh.</span>
-          <div className="footer-links">
-            <Link href="/dashboard" className="footer-link">অ্যাপে লগইন করুন</Link>
-          </div>
-        </div>
-      </footer>
+      <LandingFooter />
+      </div>
     </div>
   );
 }
