@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
               <p style="font-size:16px;font-weight:600;margin:0 0 6px;">${n.title}</p>
               ${n.subtitle ? `<p style="margin:0 0 4px;color:#333;">${n.subtitle}</p>` : ''}
               ${n.meta ? `<p style="margin:0 0 12px;color:#6E6E7A;font-size:12px;">${n.meta}</p>` : ''}
-              ${link ? `<p style="margin-top:16px;"><a href="${link}" style="background:#5B4FE8;color:#fff;padding:9px 16px;border-radius:8px;text-decoration:none;display:inline-block;">DesignOps-এ দেখুন</a></p>` : ''}
+              ${link ? `<p style="margin-top:16px;"><a href="${link}" style="background:#5B4FE8;color:#fff;padding:9px 16px;border-radius:8px;text-decoration:none;display:inline-block;">FLOW 53-এ দেখুন</a></p>` : ''}
             </div>`
           );
           results.sent.push(`${n.id}:email`);

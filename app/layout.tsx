@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DesignOps",
-  description: "DesignOps এজেন্সি টুল — Supabase-চালিত ক্লায়েন্ট, প্রজেক্ট ও টাস্ক ম্যানেজমেন্ট",
+  title: "FLOW 53",
+  description: "FLOW 53 — UI/UX ডিজাইন স্টুডিও ও এজেন্সি ম্যানেজমেন্ট টুল",
 };
 
 export default function RootLayout({
