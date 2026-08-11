@@ -5,6 +5,7 @@ import '../work.css';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { driveFullImageUrl, driveEmbedUrl } from '@/lib/driveUpload';
 import LandingFooter from '@/app/components/LandingFooter';
+import BookCallButton from '@/app/components/BookCallButton';
 
 const WHATSAPP_URL = 'https://chat.whatsapp.com/E8RvWQSXPPp691V7odTwwl';
 
@@ -198,7 +199,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
       <section className="cta-band" id="contact">
         <div className="container">
           <h2 className="cta-band-title">Got a product that deserves better design?</h2>
-          <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="hero-book-btn">Book a call</a>
+          <BookCallButton />
         </div>
       </section>
 

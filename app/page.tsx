@@ -4,9 +4,8 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { driveThumbnailUrl, driveFullImageUrl } from '@/lib/driveUpload';
 import LandingNav from '@/app/components/LandingNav';
 import LandingFooter from '@/app/components/LandingFooter';
+import BookCallButton from '@/app/components/BookCallButton';
 import RevealOnScroll from '@/app/components/RevealOnScroll';
-
-const WHATSAPP_URL = 'https://chat.whatsapp.com/E8RvWQSXPPp691V7odTwwl';
 
 // পাবলিক ল্যান্ডিং পেজ — লগইন ছাড়াই সবাই দেখে, তাই profiles টেবিলের RLS
 // (শুধু authenticated ইউজার read করতে পারে) এই পেজের জন্য প্রযোজ্য না। এটা
@@ -84,7 +83,7 @@ export default async function Home() {
             <span className="hero-eyebrow">UI/UX Design Studio</span>
             <h1 className="hero-headline">We design digital products people actually love to use.</h1>
             <p className="hero-desc">We partner with ambitious teams to research, design and ship digital products — from the first wireframe to a polished, production-ready UI.</p>
-            <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="hero-book-btn">Book a call</a>
+            <BookCallButton />
           </div>
 
           <div className="project-grid reveal" id="work">
@@ -224,7 +223,7 @@ export default async function Home() {
       <section className="cta-band" id="contact">
         <div className="container reveal">
           <h2 className="cta-band-title">Got a product that deserves better design?</h2>
-          <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="hero-book-btn">Book a call</a>
+          <BookCallButton />
         </div>
       </section>
 
