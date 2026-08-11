@@ -77,7 +77,13 @@ export default async function Home() {
       <header className="hero">
         <div className="container">
           <div className="hero-top reveal">
+            <div className="hero-brand">
+              <div className="hero-brand-mark"></div>
+              <span className="hero-brand-name">FLOW<span className="stroke-53">53</span></span>
+            </div>
+            <span className="hero-eyebrow">UI/UX Design Studio</span>
             <h1 className="hero-headline">We design digital products people actually love to use.</h1>
+            <p className="hero-desc">We partner with ambitious teams to research, design and ship digital products — from the first wireframe to a polished, production-ready UI.</p>
             <a href="#contact" className="hero-book-btn">Book a call</a>
           </div>
 
