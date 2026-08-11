@@ -42,10 +42,10 @@ const SERVICES_HIRED = [
 ];
 
 const PROCESS_STEPS = [
-  { name: 'Discover', desc: 'Research & a clear problem statement.' },
-  { name: 'Design', desc: 'Wireframes to high-fidelity UI.' },
-  { name: 'Test', desc: 'Real users, real tasks.' },
-  { name: 'Deliver', desc: 'Clean specs & a working system.' },
+  { name: 'Discover', desc: 'Research & a clear problem statement.', image: '/Discover.png' },
+  { name: 'Design', desc: 'Wireframes to high-fidelity UI.', image: '/Design.png' },
+  { name: 'Test', desc: 'Real users, real tasks.', image: '/Test.png' },
+  { name: 'Deliver', desc: 'Clean specs & a working system.', image: '/Deliver.png' },
 ];
 
 type TeamMember = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url: string | null; behance_url: string | null; linkedin_url: string | null };
@@ -124,7 +124,8 @@ export default async function Home() {
           <h2 className="section-title">How an engagement runs.</h2>
           <div className="process-grid">
             {PROCESS_STEPS.map((s, i) => (
-              <div className="process-card" key={s.name}>
+              <div className="process-card" key={s.name} style={{ backgroundImage: `url(${s.image})` }}>
+                <div className="process-overlay"></div>
                 <span className="process-num">{String(i + 1).padStart(2, '0')}</span>
                 <div className="process-name">{s.name}</div>
                 <div className="process-desc">{s.desc}</div>
