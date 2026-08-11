@@ -34,12 +34,14 @@ async function fetchCaseStudies(): Promise<CaseStudyCard[]> {
 }
 
 const SERVICES_HIRED = [
-  { name: 'UX Research & Discovery', sub: 'Interviews · Journey Mapping' },
-  { name: 'UI Design', sub: 'Web · Mobile · Dashboards' },
-  { name: 'Design Systems', sub: 'Tokens · Components' },
-  { name: 'Prototyping & Testing', sub: 'Figma · Usability Testing' },
-  { name: 'Brand Identity', sub: 'Naming · Visual Identity' },
+  { name: 'UX Research & Discovery', sub: 'Interviews · Journey Mapping', detail: 'User interviews, market research and journey mapping to uncover the real problem before we design a single screen.' },
+  { name: 'UI Design', sub: 'Web · Mobile · Dashboards', detail: 'Pixel-perfect, responsive interfaces for web, mobile and dashboard products — built to convert and built to last.' },
+  { name: 'Design Systems', sub: 'Tokens · Components', detail: 'Reusable component libraries and design tokens so your product stays consistent as your team and codebase grow.' },
+  { name: 'Prototyping & Testing', sub: 'Figma · Usability Testing', detail: 'Interactive Figma prototypes validated with real users, so decisions are backed by evidence before a line of code is written.' },
+  { name: 'Brand Identity', sub: 'Naming · Visual Identity', detail: 'Naming, logo, color and typography systems that give your product a voice people recognize and remember.' },
 ];
+
+const SERVICES_LIST = ['UI / UX Design', 'Frontend Design', 'SaaS Design'];
 
 const PROCESS_STEPS = [
   { name: 'Discover', desc: 'Research & a clear problem statement.', image: '/Discover.png' },
@@ -109,12 +111,15 @@ export default async function Home() {
         <div className="container reveal">
           <h2 className="section-title">What we are hired for</h2>
           {SERVICES_HIRED.map((s, i) => (
-            <div className="hired-row" key={s.name}>
-              <span className="hired-index">{String(i + 1).padStart(2, '0')}</span>
-              <span className="hired-name">{s.name}</span>
-              <span className="hired-sub">{s.sub}</span>
-              <span className="arrow-circle">→</span>
-            </div>
+            <details className="hired-item" key={s.name}>
+              <summary className="hired-summary">
+                <span className="hired-index">{String(i + 1).padStart(2, '0')}</span>
+                <span className="hired-name">{s.name}</span>
+                <span className="hired-sub">{s.sub}</span>
+                <span className="hired-toggle" aria-hidden="true">+</span>
+              </summary>
+              <div className="hired-body"><p>{s.detail}</p></div>
+            </details>
           ))}
         </div>
       </section>
@@ -154,9 +159,12 @@ export default async function Home() {
           <div>
             <div className="collage-services-title">Our Services</div>
             <div className="services-list-plain">
-              <div className="service-plain-item">UI / UX Design</div>
-              <div className="service-plain-item">Frontend Design</div>
-              <div className="service-plain-item">SaaS Design</div>
+              {SERVICES_LIST.map((s, i) => (
+                <div className="service-plain-item" key={s}>
+                  <span className="service-plain-index">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="service-plain-name">{s}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
