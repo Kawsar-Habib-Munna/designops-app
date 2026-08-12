@@ -249,7 +249,7 @@ export default function BoardPage() {
     async function run() {
       const [result, profileRes] = await Promise.all([
         fetchBoardData(),
-        supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url').eq('id', user!.id).single(),
+        supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url').eq('id', user!.id).single(),
       ]);
       setError(result.errorMessage);
       setTasks(result.tasks);

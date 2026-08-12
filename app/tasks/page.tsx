@@ -282,7 +282,7 @@ function TasksPageInner() {
       supabase.from('attachments').select('task_id'),
       supabase.from('projects').select('id, name').order('name'),
       supabase.from('profiles').select('id, full_name, avatar_color, avatar_url').order('full_name'),
-      supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url').eq('id', uid).single(),
+      supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url').eq('id', uid).single(),
     ]);
 
     const firstErrored = [tasksRes, commentsRes, attachmentsRes, projectsRes, teamRes, profileRes].find((r) => r.error);

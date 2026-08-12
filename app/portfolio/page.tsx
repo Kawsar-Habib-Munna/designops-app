@@ -205,7 +205,7 @@ export default function PortfolioPage() {
     async function run() {
       const [result, profileRes] = await Promise.all([
         fetchAll(),
-        supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url').eq('id', user!.id).single(),
+        supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url').eq('id', user!.id).single(),
       ]);
       setError(result.errorMessage);
       setCaseStudies(result.caseStudies);

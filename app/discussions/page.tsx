@@ -346,7 +346,7 @@ export default function DiscussionsPage() {
     async function run() {
       const [result, profileRes] = await Promise.all([
         fetchDiscussionsData(),
-        supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, is_admin').eq('id', user!.id).single(),
+        supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url, is_admin').eq('id', user!.id).single(),
       ]);
       applyResult(result);
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);

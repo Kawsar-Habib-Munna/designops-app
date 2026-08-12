@@ -281,7 +281,7 @@ export default function DashboardPage() {
       ] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id, full_name, role, avatar_color, avatar_url")
+          .select("id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url")
           .eq("id", user!.id)
           .single(),
         supabase
