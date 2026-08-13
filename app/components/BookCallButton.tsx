@@ -2,7 +2,7 @@
 // আইকন+লিংক ডুপ্লিকেট না রেখে একটাই শেয়ার্ড কম্পোনেন্ট। কোনো interactivity/hook
 // নেই, তাই Server Component-এও (app/page.tsx, app/work/[slug]/page.tsx)
 // নিরাপদে সরাসরি ব্যবহার করা যায় — 'use client' লাগে না।
-const WHATSAPP_URL = 'https://chat.whatsapp.com/E8RvWQSXPPp691V7odTwwl';
+const WHATSAPP_URL = 'https://wa.me/8801804409235?text=Hi%20FLOW53,%20I%27m%20interested%20in%20your%20UI%2FUX%20design%20services.%20I%27d%20like%20to%20discuss%20my%20project';
 
 export default function BookCallButton({ className = 'hero-book-btn' }: { className?: string }) {
   return (

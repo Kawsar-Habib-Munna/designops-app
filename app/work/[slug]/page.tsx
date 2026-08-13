@@ -7,7 +7,7 @@ import { driveFullImageUrl, driveEmbedUrl } from '@/lib/driveUpload';
 import LandingFooter from '@/app/components/LandingFooter';
 import BookCallButton from '@/app/components/BookCallButton';
 
-const WHATSAPP_URL = 'https://chat.whatsapp.com/E8RvWQSXPPp691V7odTwwl';
+const WHATSAPP_URL = 'https://wa.me/8801804409235?text=Hi%20FLOW53,%20I%27m%20interested%20in%20your%20UI%2FUX%20design%20services.%20I%27d%20like%20to%20discuss%20my%20project';
 
 // পাবলিক কেস স্টাডি পেজ — /portfolio (app-এর ভেতরের admin পেজ) থেকে টিম যেই
 // কেস স্টাডি publish করে, সেটাই এখানে Overview থেকে Team পর্যন্ত ১৬টা সেকশন

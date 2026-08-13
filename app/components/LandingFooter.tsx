@@ -4,7 +4,7 @@ import Link from 'next/link';
 // একই ফুটার শেয়ার করা হয় যাতে ডুপ্লিকেট না হয়। শুধু আসল, কার্যকর লিংকই রাখা
 // হয়েছে (Instagram/LinkedIn-এর মতো ভুয়া "#" লিংক বাদ) — WhatsApp গ্রুপই এখন
 // পর্যন্ত টিমের একমাত্র real পাবলিক কন্টাক্ট চ্যানেল।
-const WHATSAPP_URL = 'https://chat.whatsapp.com/E8RvWQSXPPp691V7odTwwl';
+const WHATSAPP_URL = 'https://wa.me/8801804409235?text=Hi%20FLOW53,%20I%27m%20interested%20in%20your%20UI%2FUX%20design%20services.%20I%27d%20like%20to%20discuss%20my%20project';
 
 export default function LandingFooter() {
   return (
