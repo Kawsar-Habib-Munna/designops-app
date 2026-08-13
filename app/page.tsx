@@ -46,10 +46,10 @@ const SERVICES_HIRED = [
 const SERVICES_LIST = ['UI / UX Design', 'Frontend Design', 'SaaS Design'];
 
 const PROCESS_STEPS = [
-  { name: 'Discover', desc: 'Research & a clear problem statement.', image: '/Discover.png' },
-  { name: 'Design', desc: 'Wireframes to high-fidelity UI.', image: '/Design.png' },
-  { name: 'Test', desc: 'Real users, real tasks.', image: '/Test.png' },
-  { name: 'Deliver', desc: 'Clean specs & a working system.', image: '/Deliver.png' },
+  { name: 'Discover', desc: 'Research & a clear problem statement.', image: '/Discover.jpg' },
+  { name: 'Design', desc: 'Wireframes to high-fidelity UI.', image: '/Design.jpg' },
+  { name: 'Test', desc: 'Real users, real tasks.', image: '/Test.jpg' },
+  { name: 'Deliver', desc: 'Clean specs & a working system.', image: '/Deliver.jpg' },
 ];
 
 type TeamMember = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url: string | null; behance_url: string | null; linkedin_url: string | null };
