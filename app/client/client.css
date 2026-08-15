@@ -1,0 +1,187 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Gugi&display=swap");
+
+/* Scoped to .client-entry-root — same token system as dashboard.css so the
+   client portal feels like the same product as the internal app, not a
+   separate marketing page. */
+
+.client-entry-root {
+  --primary-50: #f2ebfd;
+  --primary-100: #d6c2f9;
+  --primary-500: #7c3aed;
+  --primary-600: #7135d8;
+  --neutral-50: #f2f1f2;
+  --neutral-100: #d5d4d7;
+  --neutral-400: #939197;
+  --neutral-600: #6d6a72;
+  --neutral-900: #323135;
+
+  --bg: var(--neutral-50);
+  --surface: #ffffff;
+  --border: var(--neutral-100);
+  --ink: var(--neutral-900);
+  --ink-soft: var(--neutral-600);
+  --ink-faint: var(--neutral-400);
+  --accent: var(--primary-500);
+  --accent-hover: var(--primary-600);
+  --accent-soft: var(--primary-50);
+  --shadow-lg: 0 12px 32px rgba(16, 16, 20, 0.1);
+  --radius-lg: 16px;
+  --radius-sm: 8px;
+
+  box-sizing: border-box;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 15% 12%, var(--accent-soft) 0%, transparent 45%),
+    radial-gradient(circle at 85% 88%, var(--accent-soft) 0%, transparent 45%),
+    var(--bg);
+  font-family: "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  .client-entry-root {
+    --bg: #323135;
+    --surface: #424045;
+    --border: #555359;
+    --ink: #f2f1f2;
+    --ink-soft: #c1c0c3;
+    --ink-faint: #939197;
+    --accent: #9661f1;
+    --accent-hover: #a77bf3;
+    --accent-soft: #442082;
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+  }
+}
+
+.client-entry-root,
+.client-entry-root * {
+  box-sizing: border-box;
+}
+.client-entry-root a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.client-entry-root .entry-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 44px 36px 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.client-entry-root .entry-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.client-entry-root .entry-logo-mark {
+  width: 26px;
+  height: 26px;
+  background-image: url("/flow53-logo.svg");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  flex-shrink: 0;
+}
+.client-entry-root .entry-logo-text {
+  font-family: "Gugi", sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.client-entry-root .entry-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.client-entry-root .entry-title {
+  margin: 0 0 10px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.client-entry-root .entry-desc {
+  margin: 0 0 28px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  max-width: 340px;
+}
+
+.client-entry-root .entry-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.client-entry-root .entry-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 20px;
+  min-height: 44px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.05s ease;
+}
+.client-entry-root .entry-btn:active {
+  transform: translateY(1px);
+}
+.client-entry-root .entry-btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.client-entry-root .entry-btn-primary:hover {
+  background: var(--accent-hover);
+}
+.client-entry-root .entry-btn-secondary {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--ink);
+}
+.client-entry-root .entry-btn-secondary:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.client-entry-root .entry-team-link {
+  font-size: 13px;
+  color: var(--ink-faint);
+  margin: 0;
+}
+.client-entry-root .entry-team-link a {
+  color: var(--accent);
+  font-weight: 600;
+}
+.client-entry-root .entry-team-link a:hover {
+  text-decoration: underline;
+}
