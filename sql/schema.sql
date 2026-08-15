@@ -949,3 +949,74 @@ create policy "team can read todos" on todos for select using (public.is_team_me
 create policy "team can write todos" on todos for insert with check (public.is_team_member());
 create policy "team can update todos" on todos for update using (public.is_team_member());
 create policy "team can delete todos" on todos for delete using (public.is_team_member());
+
+-- CLIENT PORTAL — ফেজ ২: onboarding ডেটা মডেল (Screen 4 — client_requirements,
+-- client_files) + clients টেবিলে অনবোর্ডিং-এর বাকি কলাম। clients.user_id ও
+-- is_team_member()/RLS foundation আগেই ফেজ ১-এ যোগ হয়েছে।
+
+alter table clients add column if not exists designation text;
+alter table clients add column if not exists company_size text;
+
+create table if not exists client_requirements (
+  id uuid default gen_random_uuid() primary key,
+  client_id uuid not null references clients(id) on delete cascade,
+  project_name text,
+  project_type text,
+  project_description text,
+  goals text,
+  target_audience text,
+  required_features text,
+  expected_timeline text,
+  budget_range text,
+  reference_notes text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+create unique index if not exists idx_client_requirements_client_id on client_requirements(client_id);
+
+create table if not exists client_files (
+  id uuid default gen_random_uuid() primary key,
+  client_id uuid not null references clients(id) on delete cascade,
+  project_id uuid references projects(id) on delete set null,
+  name text not null,
+  file_type text,
+  size_bytes bigint,
+  drive_url text not null,
+  category text not null default 'other', -- requirements | sow | invoice | receipt | design | deliverable | other
+  uploaded_by text not null default 'client', -- client | team
+  created_at timestamptz default now()
+);
+create index if not exists idx_client_files_client_id on client_files(client_id);
+
+alter table client_requirements enable row level security;
+alter table client_files enable row level security;
+
+drop policy if exists "team can read client_requirements" on client_requirements;
+drop policy if exists "client can read own requirements" on client_requirements;
+drop policy if exists "client can write own requirements" on client_requirements;
+drop policy if exists "client can update own requirements" on client_requirements;
+create policy "team can read client_requirements" on client_requirements for select using (public.is_team_member());
+create policy "client can read own requirements" on client_requirements for select using (
+  exists (select 1 from clients where clients.id = client_requirements.client_id and clients.user_id = auth.uid())
+);
+create policy "client can write own requirements" on client_requirements for insert with check (
+  exists (select 1 from clients where clients.id = client_requirements.client_id and clients.user_id = auth.uid())
+);
+create policy "client can update own requirements" on client_requirements for update using (
+  exists (select 1 from clients where clients.id = client_requirements.client_id and clients.user_id = auth.uid())
+);
+
+drop policy if exists "team can read client_files" on client_files;
+drop policy if exists "team can write client_files" on client_files;
+drop policy if exists "team can delete client_files" on client_files;
+drop policy if exists "client can read own files" on client_files;
+drop policy if exists "client can write own files" on client_files;
+create policy "team can read client_files" on client_files for select using (public.is_team_member());
+create policy "team can write client_files" on client_files for insert with check (public.is_team_member());
+create policy "team can delete client_files" on client_files for delete using (public.is_team_member());
+create policy "client can read own files" on client_files for select using (
+  exists (select 1 from clients where clients.id = client_files.client_id and clients.user_id = auth.uid())
+);
+create policy "client can write own files" on client_files for insert with check (
+  exists (select 1 from clients where clients.id = client_files.client_id and clients.user_id = auth.uid())
+);

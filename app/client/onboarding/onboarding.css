@@ -1,0 +1,68 @@
+/* Screen 4 — Client Onboarding। বাকিটা cp-* প্রিমিটিভ, এখানে শুধু ফাইল-লিস্ট আর
+   স্টেপ নেভিগেশন রো-র ইউনিক লেআউট। */
+
+.client-onboarding-root .ob-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.client-onboarding-root .ob-upload-trigger {
+  border-style: dashed;
+  margin-bottom: 6px;
+}
+
+.client-onboarding-root .ob-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.client-onboarding-root .ob-file-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+.client-onboarding-root .ob-file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.client-onboarding-root .ob-file-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.client-onboarding-root .ob-file-meta {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+}
+.client-onboarding-root .ob-file-progress {
+  width: 90px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.client-onboarding-root .ob-file-progress-bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.15s ease;
+}
+
+@media (max-width: 640px) {
+  .client-onboarding-root .ob-file-row {
+    flex-wrap: wrap;
+  }
+}
