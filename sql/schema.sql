@@ -734,3 +734,218 @@ drop trigger if exists todos_updated_at on todos;
 create trigger todos_updated_at
   before update on todos
   for each row execute procedure public.set_updated_at();
+
+-- ============================================
+-- CLIENT PORTAL — ফেজ ১: অ্যাকাউন্ট টাইপ ও RLS সিকিউরিটি ফাউন্ডেশন
+-- এতদিন প্রতিটা টেবিলের RLS পলিসি ছিল auth.role() = 'authenticated' —
+-- মানে যেকোনো লগইন করা ইউজার (টিম মেম্বার হোক বা না হোক) সব প্রজেক্ট/টাস্ক/
+-- টিম-মেম্বার/ইন্টারনাল ডেটা পড়তে পারত। এখন ক্লায়েন্ট পোর্টাল অ্যাকাউন্ট
+-- (একই Supabase Auth প্রজেক্টে, আলাদা auth সিস্টেম না) যোগ হওয়ার আগে এটা
+-- আবশ্যিকভাবে ঠিক করতে হবে — নাহলে যেকোনো ক্লায়েন্ট লগইন করেই ভেতরের সব
+-- ডেটা দেখতে পারত। এই মাইগ্রেশন শুধু সিকিউরিটি ফাউন্ডেশন — এখনো কোনো নতুন
+-- ক্লায়েন্ট-ফেসিং স্ক্রিন/ফিচার যোগ হয়নি।
+-- ============================================
+
+-- profiles-এ account_type — 'team' | 'client'। বিদ্যমান সব রো এখন 'team'
+-- (তারা সবাই আসল টিম মেম্বার), যেটাই সঠিক।
+alter table profiles add column if not exists account_type text not null default 'team' check (account_type in ('team', 'client'));
+
+-- ক্লায়েন্ট পোর্টাল অ্যাকাউন্টকে auth.users-এর সাথে লিংক করতে clients
+-- টেবিলে user_id — এখনো শুধু এই একটা কলামই যোগ হলো, বাকি অনবোর্ডিং ফিল্ড
+-- (full_name, phone, company_size ইত্যাদি) পরে Screen 3/4 বানানোর সময় যোগ
+-- হবে, এখন স্কোপ শুধু সিকিউরিটির জন্য যা লাগে তার মধ্যেই রাখা হয়েছে।
+alter table clients add column if not exists user_id uuid references auth.users(id) on delete cascade;
+create unique index if not exists idx_clients_user_id on clients(user_id) where user_id is not null;
+
+-- RLS পলিসিতে বারবার ব্যবহারের জন্য হেল্পার ফাংশন — security definer দিয়ে
+-- বানানো (function owner-এর পারমিশনে রান হয়), তাই profiles-এর নিজের RLS-এর
+-- সাথে infinite recursion হয় না।
+create or replace function public.is_team_member()
+returns boolean
+language sql
+security definer
+stable
+as $$
+  select exists (
+    select 1 from public.profiles where id = auth.uid() and account_type = 'team'
+  );
+$$;
+
+-- নতুন সাইনআপে profiles রো অটো-তৈরি হওয়ার trigger আপডেট — signup metadata-তে
+-- account_type='client' পাঠানো হলে profiles-এ কিছুই insert হবে না। ফলে
+-- ক্লায়েন্ট অ্যাকাউন্ট Team Workload, টাস্ক অ্যাসাইনি ড্রপডাউন, avatar
+-- stack — কোথাও দেখা যাবে না, বিদ্যমান কোনো পেজে কোনো কোড পরিবর্তন ছাড়াই।
+-- অ্যাডমিন-তৈরি টিম মেম্বার (/api/team/create-member) আগের মতোই কাজ করবে,
+-- যেহেতু সেখানে account_type পাঠানো হয় না (ডিফল্ট 'team')।
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  if coalesce(new.raw_user_meta_data->>'account_type', 'team') = 'client' then
+    return new;
+  end if;
+  insert into public.profiles (id, full_name, account_type)
+  values (new.id, coalesce(new.raw_user_meta_data->>'full_name', new.email), 'team');
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- ============================================
+-- বিদ্যমান সব internal টেবিলের RLS auth.role()='authenticated' থেকে
+-- is_team_member()-এ পরিবর্তন।
+-- ============================================
+
+drop policy if exists "team can read profiles" on profiles;
+create policy "team can read profiles" on profiles for select using (public.is_team_member());
+
+drop policy if exists "team can read clients" on clients;
+drop policy if exists "team can write clients" on clients;
+drop policy if exists "team can update clients" on clients;
+drop policy if exists "client can read own record" on clients;
+drop policy if exists "client can create own record" on clients;
+drop policy if exists "client can update own record" on clients;
+create policy "team can read clients" on clients for select using (public.is_team_member());
+create policy "team can write clients" on clients for insert with check (public.is_team_member());
+create policy "team can update clients" on clients for update using (public.is_team_member());
+-- ক্লায়েন্ট নিজের রেকর্ড পড়তে/বানাতে/আপডেট করতে পারবে (ভবিষ্যতের
+-- রেজিস্ট্রেশন স্ক্রিনের জন্য দরকার)
+create policy "client can read own record" on clients for select using (user_id = auth.uid());
+create policy "client can create own record" on clients for insert with check (user_id = auth.uid());
+create policy "client can update own record" on clients for update using (user_id = auth.uid());
+
+drop policy if exists "team can read projects" on projects;
+drop policy if exists "team can write projects" on projects;
+drop policy if exists "team can update projects" on projects;
+drop policy if exists "client can read own projects" on projects;
+create policy "team can read projects" on projects for select using (public.is_team_member());
+create policy "team can write projects" on projects for insert with check (public.is_team_member());
+create policy "team can update projects" on projects for update using (public.is_team_member());
+-- ক্লায়েন্ট শুধু নিজের প্রজেক্ট(গুলো) দেখতে পারবে, বাকি কারো না
+create policy "client can read own projects" on projects for select using (
+  exists (select 1 from clients where clients.id = projects.client_id and clients.user_id = auth.uid())
+);
+
+drop policy if exists "team can read tasks" on tasks;
+drop policy if exists "team can write tasks" on tasks;
+drop policy if exists "team can update tasks" on tasks;
+drop policy if exists "team can delete tasks" on tasks;
+create policy "team can read tasks" on tasks for select using (public.is_team_member());
+create policy "team can write tasks" on tasks for insert with check (public.is_team_member());
+create policy "team can update tasks" on tasks for update using (public.is_team_member());
+create policy "team can delete tasks" on tasks for delete using (public.is_team_member());
+
+drop policy if exists "team can read checklist" on checklist_items;
+drop policy if exists "team can write checklist" on checklist_items;
+create policy "team can read checklist" on checklist_items for select using (public.is_team_member());
+create policy "team can write checklist" on checklist_items for all using (public.is_team_member());
+
+drop policy if exists "team can read comments" on comments;
+drop policy if exists "team can write comments" on comments;
+create policy "team can read comments" on comments for select using (public.is_team_member());
+create policy "team can write comments" on comments for insert with check (public.is_team_member());
+
+drop policy if exists "team can read attachments" on attachments;
+drop policy if exists "team can write attachments" on attachments;
+create policy "team can read attachments" on attachments for select using (public.is_team_member());
+create policy "team can write attachments" on attachments for all using (public.is_team_member());
+
+drop policy if exists "team can read activity" on activity_log;
+drop policy if exists "team can write activity" on activity_log;
+create policy "team can read activity" on activity_log for select using (public.is_team_member());
+create policy "team can write activity" on activity_log for insert with check (public.is_team_member());
+
+drop policy if exists "team can read meetings" on meetings;
+drop policy if exists "team can write meetings" on meetings;
+create policy "team can read meetings" on meetings for select using (public.is_team_member());
+create policy "team can write meetings" on meetings for all using (public.is_team_member());
+
+drop policy if exists "team can read milestones" on milestones;
+drop policy if exists "team can write milestones" on milestones;
+create policy "team can read milestones" on milestones for select using (public.is_team_member());
+create policy "team can write milestones" on milestones for all using (public.is_team_member());
+
+drop policy if exists "team can read folders" on folders;
+drop policy if exists "team can write folders" on folders;
+create policy "team can read folders" on folders for select using (public.is_team_member());
+create policy "team can write folders" on folders for all using (public.is_team_member());
+
+drop policy if exists "team can read discussions" on discussions;
+drop policy if exists "team can write discussions" on discussions;
+create policy "team can read discussions" on discussions for select using (public.is_team_member());
+create policy "team can write discussions" on discussions for all using (public.is_team_member());
+
+drop policy if exists "team can read discussion_mentions" on discussion_mentions;
+drop policy if exists "team can write discussion_mentions" on discussion_mentions;
+create policy "team can read discussion_mentions" on discussion_mentions for select using (public.is_team_member());
+create policy "team can write discussion_mentions" on discussion_mentions for all using (public.is_team_member());
+
+drop policy if exists "team can read discussion_attachments" on discussion_attachments;
+drop policy if exists "team can write discussion_attachments" on discussion_attachments;
+create policy "team can read discussion_attachments" on discussion_attachments for select using (public.is_team_member());
+create policy "team can write discussion_attachments" on discussion_attachments for all using (public.is_team_member());
+
+drop policy if exists "team can read discussion_replies" on discussion_replies;
+drop policy if exists "team can write discussion_replies" on discussion_replies;
+create policy "team can read discussion_replies" on discussion_replies for select using (public.is_team_member());
+create policy "team can write discussion_replies" on discussion_replies for all using (public.is_team_member());
+
+drop policy if exists "team can read reply_attachments" on reply_attachments;
+drop policy if exists "team can write reply_attachments" on reply_attachments;
+create policy "team can read reply_attachments" on reply_attachments for select using (public.is_team_member());
+create policy "team can write reply_attachments" on reply_attachments for all using (public.is_team_member());
+
+drop policy if exists "team can read reply_reactions" on reply_reactions;
+drop policy if exists "team can write reply_reactions" on reply_reactions;
+create policy "team can read reply_reactions" on reply_reactions for select using (public.is_team_member());
+create policy "team can write reply_reactions" on reply_reactions for all using (public.is_team_member());
+
+drop policy if exists "team can read votes" on votes;
+drop policy if exists "team can write votes" on votes;
+create policy "team can read votes" on votes for select using (public.is_team_member());
+create policy "team can write votes" on votes for all using (public.is_team_member());
+
+drop policy if exists "team can read vote_options" on vote_options;
+drop policy if exists "team can write vote_options" on vote_options;
+create policy "team can read vote_options" on vote_options for select using (public.is_team_member());
+create policy "team can write vote_options" on vote_options for all using (public.is_team_member());
+
+drop policy if exists "team can read vote_responses" on vote_responses;
+drop policy if exists "team can write vote_responses" on vote_responses;
+create policy "team can read vote_responses" on vote_responses for select using (public.is_team_member());
+create policy "team can write vote_responses" on vote_responses for all using (public.is_team_member());
+
+drop policy if exists "team can read vote_attachments" on vote_attachments;
+drop policy if exists "team can write vote_attachments" on vote_attachments;
+create policy "team can read vote_attachments" on vote_attachments for select using (public.is_team_member());
+create policy "team can write vote_attachments" on vote_attachments for all using (public.is_team_member());
+
+drop policy if exists "team can read case studies" on case_studies;
+drop policy if exists "team can write case studies" on case_studies;
+drop policy if exists "team can update case studies" on case_studies;
+drop policy if exists "team can delete case studies" on case_studies;
+create policy "team can read case studies" on case_studies for select using (public.is_team_member());
+create policy "team can write case studies" on case_studies for insert with check (public.is_team_member());
+create policy "team can update case studies" on case_studies for update using (public.is_team_member());
+create policy "team can delete case studies" on case_studies for delete using (public.is_team_member());
+
+drop policy if exists "team can read case study sections" on case_study_sections;
+drop policy if exists "team can write case study sections" on case_study_sections;
+drop policy if exists "team can update case study sections" on case_study_sections;
+create policy "team can read case study sections" on case_study_sections for select using (public.is_team_member());
+create policy "team can write case study sections" on case_study_sections for insert with check (public.is_team_member());
+create policy "team can update case study sections" on case_study_sections for update using (public.is_team_member());
+
+drop policy if exists "team can read case study media" on case_study_media;
+drop policy if exists "team can write case study media" on case_study_media;
+drop policy if exists "team can delete case study media" on case_study_media;
+create policy "team can read case study media" on case_study_media for select using (public.is_team_member());
+create policy "team can write case study media" on case_study_media for insert with check (public.is_team_member());
+create policy "team can delete case study media" on case_study_media for delete using (public.is_team_member());
+
+drop policy if exists "team can read todos" on todos;
+drop policy if exists "team can write todos" on todos;
+drop policy if exists "team can update todos" on todos;
+drop policy if exists "team can delete todos" on todos;
+create policy "team can read todos" on todos for select using (public.is_team_member());
+create policy "team can write todos" on todos for insert with check (public.is_team_member());
+create policy "team can update todos" on todos for update using (public.is_team_member());
+create policy "team can delete todos" on todos for delete using (public.is_team_member());
