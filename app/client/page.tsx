@@ -1,12 +1,14 @@
 'use client';
 
-// Screen 1 — Client Portal Entry। আগে static Server Component ছিল, এখন রিডিজাইনের
-// সাথে সাথে সেশন-চেকও যোগ হলো: ইতিমধ্যে লগইন করা ক্লায়েন্ট এই এন্ট্রি পেজে এলে
-// সরাসরি তার সঠিক গন্তব্যে (dashboard/onboarding) রিডাইরেক্ট হয়ে যায়, যাতে সাইন-ইন
-// করা কেউ আবার "Sign In / Create Account" বাটন দেখে আটকে না থাকে। ব্যর্থ হলেও
-// (নেটওয়ার্ক এরর ইত্যাদি) fail-open — সাধারণ এন্ট্রি পেজটাই দেখায়, ব্লক করে না।
-// Preview কার্ডের ডেটা স্পষ্টভাবে "Preview" ব্যাজ দেওয়া উদাহরণ — কোনো real ফেচ না,
-// যেহেতু এই পেজে কেউ লগইন করা নেই তাই দেখানোর মতো real ডেটাও নেই।
+// Screen 1 — Client Portal Entry। রিডিজাইন করা হয়েছে যাতে পাবলিক মার্কেটিং সাইটের
+// (app/page.tsx, home.css) সাথে একই ভিজ্যুয়াল আইডেন্টিটি থাকে — dark theme,
+// একই nav/footer প্যাটার্ন (Navbar logo.png, WhatsApp কন্টাক্ট, sharp radius),
+// Fraunces italic হেডলাইন accent। লেআউট স্ট্রাকচার (hero+preview card, access
+// card, feature grid, trust, how-it-works, help, footer) আগের রিডিজাইন থেকে
+// অপরিবর্তিত, শুধু ভিজ্যুয়াল স্কিন বদলেছে।
+//
+// সেশন-চেক: ইতিমধ্যে লগইন করা ক্লায়েন্ট এই এন্ট্রি পেজে এলে সরাসরি dashboard/
+// onboarding-এ রিডাইরেক্ট হয়। ব্যর্থ হলেও (নেটওয়ার্ক এরর) fail-open।
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -64,6 +66,7 @@ const STEPS = [
 export default function ClientPortalEntry() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     supabase.auth
@@ -89,9 +92,6 @@ export default function ClientPortalEntry() {
 
   // এই effect আলাদা রাখা হয়েছে কারণ checkingSession=true থাকা অবস্থায় (প্রথম
   // রেন্ডারে) DOM-এ শুধু লোডিং স্পিনার থাকে — .reveal সেকশনগুলো তখনো রেন্ডারই হয়নি।
-  // উপরের effect-এর সাথে একসাথে থাকলে querySelectorAll খালি NodeList পেত, আর
-  // পরে আসল কনটেন্ট রেন্ডার হলেও (dependency array খালি বলে) আর কখনো re-run হতো
-  // না — ফলে .reveal-এর opacity:0 কখনো সরত না, পুরো পেজ ফাঁকা দেখাত।
   useEffect(() => {
     if (checkingSession || redirecting) return;
 
@@ -105,7 +105,17 @@ export default function ClientPortalEntry() {
       { threshold: 0.1 }
     );
     els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
+
+    function onScroll() {
+      setScrolled(window.scrollY > 8);
+    }
+    onScroll();
+    window.addEventListener('scroll', onScroll);
+
+    return () => {
+      io.disconnect();
+      window.removeEventListener('scroll', onScroll);
+    };
   }, [checkingSession, redirecting]);
 
   if (checkingSession || redirecting) {
@@ -122,18 +132,16 @@ export default function ClientPortalEntry() {
   return (
     <div className="client-entry-root">
       {/* ============ NAV ============ */}
-      <nav className="nav">
+      <nav className={`nav${scrolled ? ' scrolled' : ''}`}>
         <div className="container nav-inner">
           <Link href="/" className="nav-logo">
-            <span className="nav-logo-mark" aria-hidden="true"></span> FLOW 53
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/Navbar logo.png" alt="FLOW 53" className="nav-logo-img" />
           </Link>
           <span className="nav-center">Client Portal</span>
-          <div className="nav-right">
-            <span className="nav-right-text">Already a client?</span>
-            <Link href="/client/sign-in" className="btn btn-ghost btn-sm">
-              Sign In
-            </Link>
-          </div>
+          <Link href="/client/sign-in" className="nav-cta">
+            Sign In
+          </Link>
         </div>
       </nav>
 
@@ -141,15 +149,16 @@ export default function ClientPortalEntry() {
       <header className="hero">
         <div className="container hero-grid">
           <div className="reveal">
+            <span className="hero-eyebrow">Client Portal</span>
             <h1 className="hero-title">
               Your project, <span className="accent-word">all in one place</span>.
             </h1>
             <p className="hero-sub">Access your project updates, files, payments, approvals and communication through your secure client portal.</p>
             <div className="hero-ctas">
-              <Link href="/client/sign-in" className="btn btn-accent">
+              <Link href="/client/sign-in" className="btn-primary">
                 Sign In
               </Link>
-              <Link href="/client/register" className="btn btn-ghost">
+              <Link href="/client/register" className="btn-outline">
                 Create Client Account
               </Link>
             </div>
@@ -203,7 +212,7 @@ export default function ClientPortalEntry() {
             </span>
           </div>
           <div className="access-actions">
-            <Link href="/client/sign-in" className="btn btn-accent">
+            <Link href="/client/sign-in" className="btn-primary">
               Sign In
             </Link>
           </div>
@@ -269,7 +278,7 @@ export default function ClientPortalEntry() {
           <div className="help-card reveal">
             <div className="help-title">Need help accessing your project?</div>
             <p className="help-desc">If you are already working with our team and haven&apos;t received your portal access, contact your project manager.</p>
-            <a href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
+            <a href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noopener noreferrer" className="btn-outline">
               Contact Support
             </a>
           </div>
@@ -279,20 +288,39 @@ export default function ClientPortalEntry() {
       {/* ============ FOOTER ============ */}
       <footer className="footer">
         <div className="container">
-          <div className="footer-inner">
-            <div className="footer-left">
-              FLOW 53 <span>Client Portal</span>
+          <div className="footer-top">
+            <div className="footer-brand">
+              <Link href="/" className="nav-logo footer-logo">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/Navbar logo.png" alt="FLOW 53" className="nav-logo-img footer-logo-img" />
+              </Link>
+              <p className="footer-tagline">Manage your projects, payments, files, feedback and communication — all in one place.</p>
             </div>
-            <div className="footer-links">
+
+            <div className="footer-col">
+              <div className="footer-col-title">Portal</div>
+              <Link href="/client/sign-in" className="footer-link">
+                Sign In
+              </Link>
+              <Link href="/client/register" className="footer-link">
+                Create Account
+              </Link>
+            </div>
+
+            <div className="footer-col">
+              <div className="footer-col-title">Get in touch</div>
               <a href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noopener noreferrer" className="footer-link">
-                Support
+                WhatsApp
               </a>
               <Link href="/dashboard" className="footer-link">
                 Team Login
               </Link>
             </div>
           </div>
-          <p className="footer-copy">© {new Date().getFullYear()} FLOW 53 Design Studio. All rights reserved.</p>
+
+          <div className="footer-bottom">
+            <span className="footer-copy">© {new Date().getFullYear()} FLOW 53 Studio. Dhaka, Bangladesh.</span>
+          </div>
         </div>
       </footer>
     </div>
