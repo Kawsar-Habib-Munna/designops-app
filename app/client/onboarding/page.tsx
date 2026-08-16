@@ -221,6 +221,14 @@ export default function ClientOnboarding() {
       return;
     }
 
+    await supabase.from('activity_log').insert({
+      actor_id: null,
+      action: 'requirements_submitted',
+      entity_type: 'client',
+      entity_id: client.id,
+      detail: 'ক্লায়েন্ট প্রজেক্ট রিকোয়ারমেন্ট জমা দিয়েছে',
+    });
+
     const doneFiles = files.filter((f) => f.status === 'done' && f.result);
     if (doneFiles.length > 0) {
       const rows = doneFiles.map((f) => ({

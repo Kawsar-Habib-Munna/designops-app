@@ -45,22 +45,36 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: friendly }, { status: 400 });
   }
 
-  const { error: clientError } = await supabaseAdmin.from('clients').insert({
-    user_id: created.user.id,
-    company_name: companyName,
-    primary_contact: fullName,
-    contact_email: email,
-    contact_phone: phone || null,
-    status: 'lead',
-  });
+  const { data: clientRow, error: clientError } = await supabaseAdmin
+    .from('clients')
+    .insert({
+      user_id: created.user.id,
+      company_name: companyName,
+      primary_contact: fullName,
+      contact_email: email,
+      contact_phone: phone || null,
+      status: 'lead',
+    })
+    .select('id')
+    .single();
 
-  if (clientError) {
+  if (clientError || !clientRow) {
     // auth user তৈরি হয়ে গেছে কিন্তু clients রো লেখা যায়নি — অসম্পূর্ণ অ্যাকাউন্ট
     // রেখে না দিয়ে auth user মুছে ফেলা হলো, যাতে ইউজার আবার একই ইমেইল দিয়ে
     // পরিষ্কারভাবে আরেকবার রেজিস্টার করতে পারে।
     await supabaseAdmin.auth.admin.deleteUser(created.user.id);
-    return Response.json({ error: `অ্যাকাউন্ট তৈরি করা যায়নি: ${clientError.message}` }, { status: 500 });
+    return Response.json({ error: `অ্যাকাউন্ট তৈরি করা যায়নি: ${clientError?.message ?? 'unknown error'}` }, { status: 500 });
   }
+
+  // Screen 7 (Admin Client Details)-এর Activity টাইমলাইনে দেখানোর জন্য — actor_id
+  // null রাখা হয়েছে যেহেতু ক্লায়েন্টের কোনো profiles রো নেই, detail টেক্সটেই বলা আছে।
+  await supabaseAdmin.from('activity_log').insert({
+    actor_id: null,
+    action: 'client_registered',
+    entity_type: 'client',
+    entity_id: clientRow.id,
+    detail: `${companyName} ক্লায়েন্ট পোর্টালের মাধ্যমে রেজিস্টার করেছে`,
+  });
 
   return Response.json({ id: created.user.id });
 }

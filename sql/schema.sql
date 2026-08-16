@@ -1020,3 +1020,11 @@ create policy "client can read own files" on client_files for select using (
 create policy "client can write own files" on client_files for insert with check (
   exists (select 1 from clients where clients.id = client_files.client_id and clients.user_id = auth.uid())
 );
+
+-- CLIENT PORTAL — ফেজ ৩: ক্লায়েন্টরা নিজের activity_log এন্ট্রি লিখতে পারবে
+-- (শুধু entity_type='client', নিজের client_id-এর জন্য) — Screen 7 (Admin Client
+-- Details)-এর Activity টাইমলাইনে onboarding submit-এর মতো ঘটনা দেখানোর জন্য।
+drop policy if exists "client can write own activity" on activity_log;
+create policy "client can write own activity" on activity_log for insert with check (
+  entity_type = 'client' and exists (select 1 from clients where clients.id = activity_log.entity_id and clients.user_id = auth.uid())
+);

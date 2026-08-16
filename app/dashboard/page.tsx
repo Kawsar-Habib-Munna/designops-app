@@ -101,7 +101,7 @@ const NAV_ITEMS: {
   { icon: "checklist", label: "To-Do", href: "/todos" },
   { icon: "calendar", label: "Calendar", href: "/calendar" },
   { icon: "users", label: "Team", href: "/team" },
-  { icon: "building", label: "Clients", href: "#" },
+  { icon: "building", label: "Clients", href: "/clients" },
   { icon: "file", label: "Files", href: "/files" },
   { icon: "message", label: "Discussions", href: "/discussions" },
   { icon: "layers", label: "Portfolio", href: "/portfolio" },

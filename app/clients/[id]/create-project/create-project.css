@@ -1,0 +1,11 @@
+/* Screen 8 — Create Project। modal-field/modal-input ইত্যাদি ../../clients.css থেকে
+   আসে (মোডালের বাইরে, সরাসরি পেজে ব্যবহার করা হচ্ছে — ক্লাস সিলেক্টর যেকোনো
+   কনটেক্সটে কাজ করে)। এখানে শুধু দুই-কলাম রেশিও আর ফর্ম-ফুট স্পেসিং। */
+
+.create-project-root .create-project-grid{grid-template-columns:1.5fr 1fr;}
+.create-project-root .create-form{padding:20px 22px;}
+.create-project-root .create-form-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;padding-top:16px;border-top:1px solid var(--border-soft);}
+
+@media (max-width:1100px){
+  .create-project-root .create-project-grid{grid-template-columns:1fr;}
+}
