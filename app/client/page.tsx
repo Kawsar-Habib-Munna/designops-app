@@ -85,6 +85,15 @@ export default function ClientPortalEntry() {
         window.location.href = dest;
       })
       .catch(() => setCheckingSession(false));
+  }, []);
+
+  // এই effect আলাদা রাখা হয়েছে কারণ checkingSession=true থাকা অবস্থায় (প্রথম
+  // রেন্ডারে) DOM-এ শুধু লোডিং স্পিনার থাকে — .reveal সেকশনগুলো তখনো রেন্ডারই হয়নি।
+  // উপরের effect-এর সাথে একসাথে থাকলে querySelectorAll খালি NodeList পেত, আর
+  // পরে আসল কনটেন্ট রেন্ডার হলেও (dependency array খালি বলে) আর কখনো re-run হতো
+  // না — ফলে .reveal-এর opacity:0 কখনো সরত না, পুরো পেজ ফাঁকা দেখাত।
+  useEffect(() => {
+    if (checkingSession || redirecting) return;
 
     const els = document.querySelectorAll('.client-entry-root .reveal');
     const io = new IntersectionObserver(
@@ -97,7 +106,7 @@ export default function ClientPortalEntry() {
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, []);
+  }, [checkingSession, redirecting]);
 
   if (checkingSession || redirecting) {
     return (
