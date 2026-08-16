@@ -1,0 +1,30 @@
+/* Screen 15 — Payment Receipt। প্রিন্ট-ফ্রেন্ডলি ডকুমেন্ট লেআউট, window.print()-এর
+   জন্য @media print দিয়ে ন্যাভিগেশন/বাটন লুকিয়ে শুধু রসিদটাই প্রিন্ট হয়। */
+
+.receipt-root .receipt-shell{max-width:520px;}
+.receipt-root .receipt-no-print{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom: 20px;flex-wrap:wrap;}
+
+.receipt-root .receipt-doc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:32px 30px;}
+.receipt-root .receipt-doc-head{text-align:center;margin-bottom:22px;}
+.receipt-root .receipt-brand{font-family:'Gugi',sans-serif;font-size:18px;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.receipt-root .receipt-doc-title{font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.08em;}
+
+.receipt-root .receipt-meta-row{display:flex;justify-content:space-between;gap:16px;margin-bottom:16px;}
+.receipt-root .receipt-meta-label{font-size:10.5px;color:var(--ink-faint);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.02em;}
+.receipt-root .receipt-meta-value{font-size:13.5px;font-weight:600;color:var(--ink);}
+
+.receipt-root .receipt-divider{height:1px;background:var(--border-soft);margin:18px 0;}
+
+.receipt-root .receipt-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:4px;}
+
+.receipt-root .receipt-amount-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;}
+.receipt-root .receipt-amount{font-size:26px;font-weight:800;color:var(--accent);letter-spacing:-0.01em;}
+
+.receipt-root .receipt-footer{text-align:center;font-size:11.5px;color:var(--ink-faint);margin-top:24px;padding-top:16px;border-top:1px dashed var(--border);}
+
+@media print {
+  .receipt-root .receipt-no-print{display:none;}
+  .receipt-root .receipt-shell{max-width:100%;padding:0;margin:0;}
+  .receipt-root .receipt-doc{box-shadow:none;border:none;}
+  .client-portal{background:#fff;}
+}

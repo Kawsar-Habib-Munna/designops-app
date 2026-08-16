@@ -1,0 +1,19 @@
+/* Screen 18 — Messages (client)। ছোট চ্যাট থ্রেড লেআউট। */
+
+.msg-root .msg-shell{max-width:640px;margin:0 auto;padding:32px 20px 24px;display:flex;flex-direction:column;height:100vh;box-sizing:border-box;}
+
+.msg-root .msg-thread{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:16px 4px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:14px;}
+
+.msg-root .msg-bubble-row{display:flex;justify-content:flex-start;padding:0 12px;}
+.msg-root .msg-bubble-row.msg-mine{justify-content:flex-end;}
+.msg-root .msg-bubble{max-width:78%;background:var(--surface-muted);border-radius:14px 14px 14px 4px;padding:9px 13px;}
+.msg-root .msg-mine .msg-bubble{background:var(--accent);color:#fff;border-radius:14px 14px 4px 14px;}
+.msg-root .msg-text{font-size:13.5px;line-height:1.5;white-space:pre-wrap;}
+.msg-root .msg-attachment{font-size:12.5px;font-weight:600;color:inherit;text-decoration:underline;display:block;}
+.msg-root .msg-time{font-size:10px;opacity:.65;margin-top:4px;}
+
+.msg-root .msg-composer{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.msg-root .msg-attach-btn{width:40px;height:40px;flex-shrink:0;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);font-size:16px;display:flex;align-items:center;justify-content:center;}
+.msg-root .msg-input{flex:1;height:40px;padding:0 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:13.5px;font-family:inherit;outline:none;}
+.msg-root .msg-input:focus{border-color:var(--accent);}
+.msg-root .msg-composer .cp-btn{height:40px;padding:0 18px;}

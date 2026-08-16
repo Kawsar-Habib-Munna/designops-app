@@ -168,7 +168,8 @@ export default function AdminPaymentsPage() {
     const payment = payments.find((p) => p.invoice_id === invoiceId && !p.confirmed_at);
     setConfirmingId(invoiceId);
     if (payment) {
-      await supabase.from('payments').update({ confirmed_by: user!.id, confirmed_at: new Date().toISOString() }).eq('id', payment.id);
+      const receiptNumber = `RCPT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${payment.id.slice(0, 6).toUpperCase()}`;
+      await supabase.from('payments').update({ confirmed_by: user!.id, confirmed_at: new Date().toISOString(), receipt_number: receiptNumber }).eq('id', payment.id);
     }
     await supabase.from('invoices').update({ status: 'paid' }).eq('id', invoiceId);
     if (project?.client_id) {
@@ -309,6 +310,11 @@ export default function AdminPaymentsPage() {
                             <button className="btn btn-accent btn-sm" onClick={() => handleConfirm(inv.id)} disabled={confirmingId === inv.id}>
                               {confirmingId === inv.id ? 'কনফার্ম হচ্ছে…' : 'Confirm Payment'}
                             </button>
+                          )}
+                          {inv.status === 'paid' && submission && (
+                            <Link href={`/projects/${project.id}/payments/${submission.id}/receipt`} className="btn btn-ghost btn-sm">
+                              View Receipt
+                            </Link>
                           )}
                         </div>
                       );

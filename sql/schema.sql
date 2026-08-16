@@ -1223,3 +1223,172 @@ create policy "client can read own project team contacts" on profiles for select
     select 1 from clients where clients.user_id = auth.uid() and clients.account_manager_id = profiles.id
   )
 );
+
+-- CLIENT PORTAL — ফেজ ৫: Screens 14-24 (Payment History/Receipt, Progress,
+-- Feedback, Messages, Files, Approvals, Change Requests, Updates, Final
+-- Delivery, Completion)।
+
+-- Screen 15 রিসিট নাম্বার — payment confirm করার সময় সেট হয়।
+alter table payments add column if not exists receipt_number text;
+
+-- Screen 16 — প্রতিটা milestone-এর ছোট বিবরণ (আগে শুধু title ছিল)।
+alter table milestones add column if not exists description text;
+
+-- Screen 19 — admin কোনো ফাইল ক্লায়েন্ট থেকে লুকিয়ে রাখতে পারবে (Share/Hide)।
+alter table client_files add column if not exists hidden_from_client boolean not null default false;
+drop policy if exists "client can read own files" on client_files;
+create policy "client can read own files" on client_files for select using (
+  not hidden_from_client and exists (select 1 from clients where clients.id = client_files.client_id and clients.user_id = auth.uid())
+);
+drop policy if exists "team can update client_files" on client_files;
+create policy "team can update client_files" on client_files for update using (public.is_team_member());
+
+-- Screen 23/24 — ফাইনাল ডেলিভারি/প্রজেক্ট কমপ্লিশনের জন্য প্রজেক্ট-লেভেল স্টেট।
+alter table projects add column if not exists final_delivery_status text; -- null | ready | approved | changes_requested
+alter table projects add column if not exists final_delivery_notes text;
+alter table projects add column if not exists completed_at timestamptz;
+
+-- Screen 17 — FEEDBACK
+create table if not exists client_feedback (
+  id uuid default gen_random_uuid() primary key,
+  project_id uuid not null references projects(id) on delete cascade,
+  client_id uuid not null references clients(id) on delete cascade,
+  title text not null,
+  description text,
+  attachment_url text,
+  status text not null default 'new', -- new | in_progress | resolved | rejected
+  assigned_to uuid references profiles(id),
+  converted_task_id uuid references tasks(id) on delete set null,
+  created_at timestamptz default now(),
+  resolved_at timestamptz
+);
+create index if not exists idx_client_feedback_project on client_feedback(project_id);
+alter table client_feedback enable row level security;
+drop policy if exists "team can read client_feedback" on client_feedback;
+drop policy if exists "team can update client_feedback" on client_feedback;
+drop policy if exists "client can read own feedback" on client_feedback;
+drop policy if exists "client can write own feedback" on client_feedback;
+create policy "team can read client_feedback" on client_feedback for select using (public.is_team_member());
+create policy "team can update client_feedback" on client_feedback for update using (public.is_team_member());
+create policy "client can read own feedback" on client_feedback for select using (
+  exists (select 1 from clients where clients.id = client_feedback.client_id and clients.user_id = auth.uid())
+);
+create policy "client can write own feedback" on client_feedback for insert with check (
+  exists (select 1 from clients where clients.id = client_feedback.client_id and clients.user_id = auth.uid())
+);
+
+-- Screen 18 — MESSAGES (ইন্টারনাল টিম চ্যাট/discussions থেকে আলাদা)
+create table if not exists client_messages (
+  id uuid default gen_random_uuid() primary key,
+  project_id uuid not null references projects(id) on delete cascade,
+  client_id uuid not null references clients(id) on delete cascade,
+  sender text not null, -- client | team
+  sender_id uuid references profiles(id),
+  message text,
+  attachment_url text,
+  created_at timestamptz default now(),
+  read_at timestamptz
+);
+create index if not exists idx_client_messages_project on client_messages(project_id, created_at);
+alter table client_messages enable row level security;
+drop policy if exists "team can read client_messages" on client_messages;
+drop policy if exists "team can write client_messages" on client_messages;
+drop policy if exists "team can update client_messages" on client_messages;
+drop policy if exists "client can read own messages" on client_messages;
+drop policy if exists "client can write own messages" on client_messages;
+drop policy if exists "client can update own messages" on client_messages;
+create policy "team can read client_messages" on client_messages for select using (public.is_team_member());
+create policy "team can write client_messages" on client_messages for insert with check (public.is_team_member() and sender = 'team');
+create policy "team can update client_messages" on client_messages for update using (public.is_team_member());
+create policy "client can read own messages" on client_messages for select using (
+  exists (select 1 from clients where clients.id = client_messages.client_id and clients.user_id = auth.uid())
+);
+create policy "client can write own messages" on client_messages for insert with check (
+  sender = 'client' and exists (select 1 from clients where clients.id = client_messages.client_id and clients.user_id = auth.uid())
+);
+create policy "client can update own messages" on client_messages for update using (
+  exists (select 1 from clients where clients.id = client_messages.client_id and clients.user_id = auth.uid())
+);
+
+-- Screen 20 — APPROVALS
+create table if not exists client_approvals (
+  id uuid default gen_random_uuid() primary key,
+  project_id uuid not null references projects(id) on delete cascade,
+  client_id uuid not null references clients(id) on delete cascade,
+  item text not null,
+  status text not null default 'awaiting', -- awaiting | approved | changes_requested
+  comment text,
+  attachment_url text,
+  created_by uuid references profiles(id),
+  created_at timestamptz default now(),
+  responded_at timestamptz
+);
+create index if not exists idx_client_approvals_project on client_approvals(project_id);
+alter table client_approvals enable row level security;
+drop policy if exists "team can read client_approvals" on client_approvals;
+drop policy if exists "team can write client_approvals" on client_approvals;
+drop policy if exists "client can read own approvals" on client_approvals;
+drop policy if exists "client can respond own approvals" on client_approvals;
+create policy "team can read client_approvals" on client_approvals for select using (public.is_team_member());
+create policy "team can write client_approvals" on client_approvals for insert with check (public.is_team_member());
+create policy "client can read own approvals" on client_approvals for select using (
+  exists (select 1 from clients where clients.id = client_approvals.client_id and clients.user_id = auth.uid())
+);
+create policy "client can respond own approvals" on client_approvals for update using (
+  exists (select 1 from clients where clients.id = client_approvals.client_id and clients.user_id = auth.uid())
+);
+
+-- Screen 21 — CHANGE REQUESTS (ক্লায়েন্ট তৈরি করে, শুধু টিম রিভিউ/আপডেট করতে পারে)
+create table if not exists change_requests (
+  id uuid default gen_random_uuid() primary key,
+  project_id uuid not null references projects(id) on delete cascade,
+  client_id uuid not null references clients(id) on delete cascade,
+  title text not null,
+  description text,
+  reason text,
+  attachment_url text,
+  status text not null default 'pending', -- pending | under_review | approved | rejected
+  additional_cost numeric,
+  additional_time text,
+  admin_notes text,
+  converted_task_id uuid references tasks(id) on delete set null,
+  created_at timestamptz default now(),
+  resolved_at timestamptz
+);
+create index if not exists idx_change_requests_project on change_requests(project_id);
+alter table change_requests enable row level security;
+drop policy if exists "team can read change_requests" on change_requests;
+drop policy if exists "team can update change_requests" on change_requests;
+drop policy if exists "client can read own change_requests" on change_requests;
+drop policy if exists "client can write own change_requests" on change_requests;
+create policy "team can read change_requests" on change_requests for select using (public.is_team_member());
+create policy "team can update change_requests" on change_requests for update using (public.is_team_member());
+create policy "client can read own change_requests" on change_requests for select using (
+  exists (select 1 from clients where clients.id = change_requests.client_id and clients.user_id = auth.uid())
+);
+create policy "client can write own change_requests" on change_requests for insert with check (
+  exists (select 1 from clients where clients.id = change_requests.client_id and clients.user_id = auth.uid())
+);
+
+-- Screen 22 — PROJECT UPDATES (টিম পাবলিশ করে, ক্লায়েন্ট শুধু পড়ে)
+create table if not exists project_updates (
+  id uuid default gen_random_uuid() primary key,
+  project_id uuid not null references projects(id) on delete cascade,
+  client_id uuid not null references clients(id) on delete cascade,
+  title text not null,
+  description text,
+  attachment_url text,
+  notify_client boolean not null default true,
+  author_id uuid references profiles(id),
+  created_at timestamptz default now()
+);
+create index if not exists idx_project_updates_project on project_updates(project_id, created_at);
+alter table project_updates enable row level security;
+drop policy if exists "team can read project_updates" on project_updates;
+drop policy if exists "team can write project_updates" on project_updates;
+drop policy if exists "client can read own updates" on project_updates;
+create policy "team can read project_updates" on project_updates for select using (public.is_team_member());
+create policy "team can write project_updates" on project_updates for insert with check (public.is_team_member());
+create policy "client can read own updates" on project_updates for select using (
+  exists (select 1 from clients where clients.id = project_updates.client_id and clients.user_id = auth.uid())
+);

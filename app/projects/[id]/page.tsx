@@ -119,6 +119,9 @@ type ProjectDetail = {
   due_date: string | null;
   description: string | null;
   category: string | null;
+  final_delivery_status: string | null;
+  final_delivery_notes: string | null;
+  completed_at: string | null;
   clients: {
     id: string;
     company_name: string;
@@ -163,7 +166,7 @@ async function fetchProjectData(projectId: string) {
     supabase
       .from('projects')
       .select(
-        'id, name, status, progress, budget, start_date, due_date, description, category, clients(id, company_name, industry, primary_contact, contact_email, contact_phone, status), manager:profiles!project_manager_id(full_name, avatar_color, avatar_url)'
+        'id, name, status, progress, budget, start_date, due_date, description, category, final_delivery_status, final_delivery_notes, completed_at, clients(id, company_name, industry, primary_contact, contact_email, contact_phone, status), manager:profiles!project_manager_id(full_name, avatar_color, avatar_url)'
       )
       .eq('id', projectId)
       .single(),
@@ -306,6 +309,29 @@ export default function ProjectDetailPage() {
     setMilestones((prev) => prev.map((x) => (x.id === m.id ? { ...x, ...patch } : x)));
     const { error } = await supabase.from('milestones').update(patch).eq('id', m.id);
     if (error) setError(error.message);
+  }
+
+  // Screen 23/24 — Final Delivery ও Project Completion। ভারী নতুন পেজের বদলে এই
+  // বিদ্যমান প্রজেক্ট ডিটেইল পেজেই ছোট দুইটা অ্যাকশন — client-facing ফুল স্ক্রিন
+  // /client/project/[id]/final-delivery ও /complete-এ।
+  async function markReadyForDelivery() {
+    if (!project) return;
+    const { error } = await supabase.from('projects').update({ final_delivery_status: 'ready' }).eq('id', project.id);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setProject((prev) => (prev ? { ...prev, final_delivery_status: 'ready' } : prev));
+  }
+
+  async function closeProject() {
+    if (!project) return;
+    const { error } = await supabase.from('projects').update({ status: 'completed', progress: 100, completed_at: new Date().toISOString() }).eq('id', project.id);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setProject((prev) => (prev ? { ...prev, status: 'completed', progress: 100, completed_at: new Date().toISOString() } : prev));
   }
 
   if (sessionLoading) return null;
@@ -496,6 +522,13 @@ export default function ProjectDetailPage() {
               <a href="#client" className="tab">Client</a>
               <Link href={`/projects/${project.id}/sow`} className="tab">SOW</Link>
               <Link href={`/projects/${project.id}/payments`} className="tab">Payments</Link>
+              <Link href={`/projects/${project.id}/feedback`} className="tab">Feedback</Link>
+              <Link href={`/projects/${project.id}/messages`} className="tab">Messages</Link>
+              <Link href={`/projects/${project.id}/approvals`} className="tab">Approvals</Link>
+              <Link href={`/projects/${project.id}/change-requests`} className="tab">Change Requests</Link>
+              <Link href={`/projects/${project.id}/updates`} className="tab">Updates</Link>
+              <Link href={`/projects/${project.id}/files`} className="tab">Client Files</Link>
+              <a href="#final-delivery" className="tab">Final Delivery</a>
               <span className="tab" style={{ opacity: 0.5, cursor: 'default' }}>Settings</span>
             </nav>
 
@@ -678,6 +711,37 @@ export default function ProjectDetailPage() {
                     </div>
                   </section>
                 )}
+
+                {/* Final Delivery / Completion */}
+                <section className="panel block" id="final-delivery">
+                  <div className="panel-head"><span className="panel-title">Final Delivery &amp; Completion</span></div>
+                  <div style={{ padding: '4px 4px 8px' }}>
+                    {project.status === 'completed' ? (
+                      <p style={{ fontSize: 13, color: 'var(--positive)', fontWeight: 600 }}>✓ Project completed{project.completed_at ? ` — ${formatBnDate(project.completed_at)}` : ''}</p>
+                    ) : (
+                      <>
+                        <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 12 }}>
+                          Status: <strong>{project.final_delivery_status === 'ready' ? 'Ready for client review' : project.final_delivery_status === 'approved' ? 'Approved by client ✓' : project.final_delivery_status === 'changes_requested' ? 'Client requested changes' : 'Not started'}</strong>
+                        </p>
+                        {project.final_delivery_notes && project.final_delivery_status === 'changes_requested' && (
+                          <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 12, fontStyle: 'italic' }}>&quot;{project.final_delivery_notes}&quot;</p>
+                        )}
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          {!project.final_delivery_status || project.final_delivery_status === 'changes_requested' ? (
+                            <button className="btn btn-accent btn-sm" onClick={markReadyForDelivery}>
+                              Mark Ready for Final Review
+                            </button>
+                          ) : null}
+                          {project.final_delivery_status === 'approved' && (
+                            <button className="btn btn-accent btn-sm" onClick={closeProject}>
+                              Close Project
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </section>
 
                 {/* Quick Actions */}
                 <section className="panel block">

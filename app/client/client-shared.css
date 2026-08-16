@@ -440,6 +440,80 @@
   font-size: 13px;
 }
 
+/* ---- generic sub-page shell (Screens 14-24 client pages share this) ---- */
+.client-portal .cp-page-shell {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+.client-portal .cp-page-back {
+  font-size: 13px;
+  color: var(--ink-faint);
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 14px;
+}
+.client-portal .cp-page-back:hover {
+  color: var(--ink);
+}
+.client-portal .cp-page-title {
+  margin: 0 0 20px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.client-portal .cp-page-empty {
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 13.5px;
+}
+
+/* ---- generic item card/list ---- */
+.client-portal .cp-item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.client-portal .cp-item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.client-portal .cp-item-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.client-portal .cp-item-meta {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  margin-top: 2px;
+}
+.client-portal .cp-item-desc {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  margin: 6px 0 10px;
+  white-space: pre-wrap;
+}
+.client-portal .cp-item-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.client-portal .cp-item-link {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.client-portal .cp-item-link:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 640px) {
   .client-portal .cp-card {
     padding: 30px 22px 26px;

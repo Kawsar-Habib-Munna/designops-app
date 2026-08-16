@@ -44,3 +44,16 @@ export async function resolveClientLandingRoute(): Promise<string> {
   const submitted = await hasSubmittedRequirements(client.id);
   return submitted ? '/client/dashboard' : '/client/onboarding';
 }
+
+// Screens 9-24-এর /client/project/[id]/* পেজগুলোতে বার বার লাগে: লগইন করা
+// ক্লায়েন্ট + প্রজেক্টটা সত্যিই তার নিজের কিনা যাচাই — RLS আসল গার্ড (ভুল client_id
+// হলে row-ই ফেরত আসবে না), এটা শুধু client-side redirect UX-এর জন্য।
+export async function fetchOwnClientProject(projectId: string): Promise<{ client: ClientRecord; project: { id: string; name: string } } | null> {
+  const client = await fetchOwnClient();
+  if (!client) return null;
+
+  const { data } = await supabase.from('projects').select('id, name, client_id').eq('id', projectId).maybeSingle();
+  if (!data || (data as { client_id: string | null }).client_id !== client.id) return null;
+
+  return { client, project: { id: (data as { id: string }).id, name: (data as { name: string }).name } };
+}

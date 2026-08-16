@@ -26,6 +26,7 @@ type ProjectDetail = {
   due_date: string | null;
   description: string | null;
   client_id: string;
+  final_delivery_status: string | null;
   project_manager: ManagerBrief | ManagerBrief[] | null;
 };
 type Milestone = { id: string; title: string; due_date: string | null; completed_at: string | null; progress: number | null };
@@ -64,7 +65,7 @@ export default function ClientProjectDashboard() {
         const [projectRes, milestonesRes, filesRes, invoicesRes, sowRes] = await Promise.all([
           supabase
             .from('projects')
-            .select('id, name, status, progress, start_date, due_date, description, client_id, project_manager:profiles!project_manager_id(full_name, avatar_url)')
+            .select('id, name, status, progress, start_date, due_date, description, client_id, final_delivery_status, project_manager:profiles!project_manager_id(full_name, avatar_url)')
             .eq('id', projectId)
             .maybeSingle(),
           supabase.from('milestones').select('id, title, due_date, completed_at, progress').eq('project_id', projectId).order('position'),
@@ -185,6 +186,40 @@ export default function ClientProjectDashboard() {
             <span className="pd-action-card-title">Payments</span>
             <span className="pd-action-card-sub">{invoices.length > 0 ? `${invoices.length} invoice${invoices.length > 1 ? 's' : ''}` : 'No invoices yet'}</span>
           </Link>
+          <Link href={`/client/project/${project.id}/progress`} className="pd-action-card">
+            <span className="pd-action-card-title">Progress</span>
+            <span className="pd-action-card-sub">{milestones.length > 0 ? `${milestones.length} milestones` : 'Not yet set'}</span>
+          </Link>
+          <Link href={`/client/project/${project.id}/files`} className="pd-action-card">
+            <span className="pd-action-card-title">Files</span>
+            <span className="pd-action-card-sub">{files.length > 0 ? `${files.length} recent` : 'None yet'}</span>
+          </Link>
+          <Link href={`/client/project/${project.id}/feedback`} className="pd-action-card">
+            <span className="pd-action-card-title">Feedback</span>
+            <span className="pd-action-card-sub">Share your thoughts</span>
+          </Link>
+          <Link href={`/client/project/${project.id}/messages`} className="pd-action-card">
+            <span className="pd-action-card-title">Messages</span>
+            <span className="pd-action-card-sub">Talk to your team</span>
+          </Link>
+          <Link href={`/client/project/${project.id}/approvals`} className="pd-action-card">
+            <span className="pd-action-card-title">Approvals</span>
+            <span className="pd-action-card-sub">Review deliverables</span>
+          </Link>
+          <Link href={`/client/project/${project.id}/change-requests`} className="pd-action-card">
+            <span className="pd-action-card-title">Change Requests</span>
+            <span className="pd-action-card-sub">Request an update</span>
+          </Link>
+          <Link href={`/client/project/${project.id}/updates`} className="pd-action-card">
+            <span className="pd-action-card-title">Updates</span>
+            <span className="pd-action-card-sub">Project announcements</span>
+          </Link>
+          {project.final_delivery_status && (
+            <Link href={`/client/project/${project.id}/final-delivery`} className="pd-action-card">
+              <span className="pd-action-card-title">Final Delivery</span>
+              <span className="pd-action-card-sub">{project.final_delivery_status === 'approved' ? 'Approved ✓' : 'Review needed'}</span>
+            </Link>
+          )}
         </div>
 
         <div className="cp-dash-card">
