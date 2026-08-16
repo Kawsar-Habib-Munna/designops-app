@@ -88,6 +88,12 @@
 
 .clientslist-root .avatar{border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0;color:#fff;background:var(--accent);position:relative;overflow:hidden;}
 
+.clientslist-root .profile-card{display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface-muted);cursor:pointer;width:100%;text-align:left;}
+.clientslist-root .profile-card:hover{background:var(--border-soft);}
+.clientslist-root .profile-meta{flex:1;min-width:0;}
+.clientslist-root .profile-name{font-size:13px;font-weight:600;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.clientslist-root .profile-role{font-size:11px;color:var(--ink-faint);line-height:1.2;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
 .clientslist-root .main{flex:1;min-width:0;display:flex;flex-direction:column;}
 
 /* ---- topbar ---- */
