@@ -9,7 +9,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
-import { resolveClientLandingRoute } from '@/lib/clientPortal';
+import { fetchOwnClient, hasSubmittedRequirements } from '@/lib/clientPortal';
 import '../client-shared.css';
 import './register.css';
 
@@ -29,14 +29,23 @@ export default function ClientRegister() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (data.user) {
-        const dest = await resolveClientLandingRoute();
-        router.replace(dest);
-        return;
-      }
-      setCheckingSession(false);
-    });
+    // সেশন থাকলেও সেটা টিম মেম্বারের হতে পারে (একই ব্রাউজারে /dashboard-এ লগইন করা
+    // থাকলে) — fetchOwnClient() তখন null দেয়, আর এই পেজেই রিডাইরেক্ট করলে সেম-রুট
+    // নো-অপ লুপে "লোড হচ্ছে…"-তে আটকে যায়। শুধু প্রকৃত ক্লায়েন্ট সেশন পেলেই রিডাইরেক্ট।
+    supabase.auth
+      .getUser()
+      .then(async ({ data }) => {
+        if (data.user) {
+          const client = await fetchOwnClient();
+          if (client) {
+            const submitted = await hasSubmittedRequirements(client.id);
+            router.replace(submitted ? '/client/dashboard' : '/client/onboarding');
+            return;
+          }
+        }
+        setCheckingSession(false);
+      })
+      .catch(() => setCheckingSession(false));
   }, [router]);
 
   async function handleSubmit(e: FormEvent) {

@@ -91,27 +91,32 @@ export default function ClientOnboarding() {
 
   useEffect(() => {
     (async () => {
-      const own = await fetchOwnClient();
-      if (!own) {
+      try {
+        const own = await fetchOwnClient();
+        if (!own) {
+          router.replace('/client/sign-in');
+          return;
+        }
+        const submitted = await hasSubmittedRequirements(own.id);
+        if (submitted) {
+          router.replace('/client/dashboard');
+          return;
+        }
+        setClient(own);
+        setForm((f) => ({
+          ...f,
+          fullName: own.primary_contact ?? '',
+          designation: own.designation ?? '',
+          companyName: own.company_name ?? '',
+          website: own.website ?? '',
+          industry: own.industry ?? '',
+          companySize: own.company_size ?? '',
+        }));
+        setLoading(false);
+      } catch {
+        // সেশন/নেটওয়ার্ক চেক ব্যর্থ হলেও "লোড হচ্ছে…"-তে আটকে না থেকে সাইন-ইনে পাঠানো হলো।
         router.replace('/client/sign-in');
-        return;
       }
-      const submitted = await hasSubmittedRequirements(own.id);
-      if (submitted) {
-        router.replace('/client/dashboard');
-        return;
-      }
-      setClient(own);
-      setForm((f) => ({
-        ...f,
-        fullName: own.primary_contact ?? '',
-        designation: own.designation ?? '',
-        companyName: own.company_name ?? '',
-        website: own.website ?? '',
-        industry: own.industry ?? '',
-        companySize: own.company_size ?? '',
-      }));
-      setLoading(false);
     })();
   }, [router]);
 

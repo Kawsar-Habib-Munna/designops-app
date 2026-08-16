@@ -58,29 +58,34 @@ export default function ClientDashboard() {
 
   useEffect(() => {
     (async () => {
-      const own = await fetchOwnClient();
-      if (!own) {
+      try {
+        const own = await fetchOwnClient();
+        if (!own) {
+          router.replace('/client/sign-in');
+          return;
+        }
+
+        const { data: req } = await supabase
+          .from('client_requirements')
+          .select('project_name, project_type, project_description, goals, target_audience, required_features, expected_timeline, budget_range, reference_notes')
+          .eq('client_id', own.id)
+          .maybeSingle();
+
+        if (!req) {
+          router.replace('/client/onboarding');
+          return;
+        }
+
+        const { data: projectRows } = await supabase.from('projects').select('id, name, status, progress').eq('client_id', own.id).order('created_at', { ascending: false }).limit(1);
+
+        setClient(own);
+        setRequirements(req as Requirements);
+        setProject((projectRows?.[0] as ProjectRow) ?? null);
+        setLoading(false);
+      } catch {
+        // সেশন/নেটওয়ার্ক চেক ব্যর্থ হলেও "লোড হচ্ছে…"-তে আটকে না থেকে সাইন-ইনে পাঠানো হলো।
         router.replace('/client/sign-in');
-        return;
       }
-
-      const { data: req } = await supabase
-        .from('client_requirements')
-        .select('project_name, project_type, project_description, goals, target_audience, required_features, expected_timeline, budget_range, reference_notes')
-        .eq('client_id', own.id)
-        .maybeSingle();
-
-      if (!req) {
-        router.replace('/client/onboarding');
-        return;
-      }
-
-      const { data: projectRows } = await supabase.from('projects').select('id, name, status, progress').eq('client_id', own.id).order('created_at', { ascending: false }).limit(1);
-
-      setClient(own);
-      setRequirements(req as Requirements);
-      setProject((projectRows?.[0] as ProjectRow) ?? null);
-      setLoading(false);
     })();
   }, [router]);
 

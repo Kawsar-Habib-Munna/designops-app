@@ -11,7 +11,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
-import { resolveClientLandingRoute } from '@/lib/clientPortal';
+import { fetchOwnClient, hasSubmittedRequirements, resolveClientLandingRoute } from '@/lib/clientPortal';
 import '../client-shared.css';
 import './signin.css';
 
@@ -42,14 +42,24 @@ export default function ClientSignIn() {
   useEffect(() => {
     if (recoveryMode) return;
 
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (data.user) {
-        const dest = await resolveClientLandingRoute();
-        router.replace(dest);
-        return;
-      }
-      setCheckingSession(false);
-    });
+    // সেশন থাকলেও সেটা টিম মেম্বারের হতে পারে (একই ব্রাউজারে /dashboard-এ লগইন
+    // করা থাকলে) — সেক্ষেত্রে fetchOwnClient() null দেয়, আর তখন এই পেজেই আবার
+    // রিডাইরেক্ট করলে সেম-রুট নো-অপ লুপ হয়ে "লোড হচ্ছে…"-তে আটকে যায়। তাই শুধু
+    // প্রকৃত ক্লায়েন্ট সেশন পেলেই রিডাইরেক্ট করা হয়, নাহলে সাধারণ সাইন-ইন ফর্ম দেখানো হয়।
+    supabase.auth
+      .getUser()
+      .then(async ({ data }) => {
+        if (data.user) {
+          const client = await fetchOwnClient();
+          if (client) {
+            const submitted = await hasSubmittedRequirements(client.id);
+            router.replace(submitted ? '/client/dashboard' : '/client/onboarding');
+            return;
+          }
+        }
+        setCheckingSession(false);
+      })
+      .catch(() => setCheckingSession(false));
   }, [router, recoveryMode]);
 
   async function handleSubmit(e: FormEvent) {
