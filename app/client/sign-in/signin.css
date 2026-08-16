@@ -1,3 +1,393 @@
-/* Screen 2 — Client Sign In। লেআউট পুরোটাই client-shared.css-এর cp-* প্রিমিটিভ
-   (cp-auth-shell, cp-card, cp-field ইত্যাদি) দিয়ে তৈরি — এই স্ক্রিনের নিজস্ব কোনো
-   ইউনিক লেআউট নেই, তাই এখানে আলাদা করে কিছু ওভাররাইড করার দরকার হয়নি। */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,500&display=swap');
+
+/* Screen 2 — Client Sign In। ফর্ম ফিল্ড (cp-input/cp-field/cp-btn/cp-alert)
+   client-shared.css থেকে আসে — Screens 3-24-এর সাথে সামঞ্জস্যপূর্ণ রাখতে। এখানে
+   শুধু split-screen লেআউট আর brand প্যানেলের (dark, পাবলিক সাইটের মতো) স্টাইল। */
+
+.client-signin-root .split-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ---- brand panel (desktop only) ---- */
+.client-signin-root .brand-panel {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 42%;
+  min-width: 420px;
+  max-width: 560px;
+  padding: 44px 48px;
+  background: radial-gradient(circle at 20% 15%, rgba(124, 114, 255, 0.16), transparent 45%), radial-gradient(circle at 85% 85%, rgba(124, 114, 255, 0.12), transparent 45%), #0e0e12;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.client-signin-root .brand-panel-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 30% 30%, black 20%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 60% at 30% 30%, black 20%, transparent 75%);
+  pointer-events: none;
+}
+.client-signin-root .brand-panel-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.client-signin-root .brand-panel-mid {
+  position: relative;
+  z-index: 1;
+}
+.client-signin-root .brand-panel-headline {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.28;
+  margin-bottom: 16px;
+  color: #fff;
+}
+.client-signin-root .brand-panel-headline .accent-word {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 500;
+  color: #beb8ff;
+}
+.client-signin-root .brand-panel-sub {
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.65);
+  max-width: 360px;
+  margin-bottom: 34px;
+}
+.client-signin-root .panel-feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.client-signin-root .panel-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.client-signin-root .panel-feature-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #beb8ff;
+}
+.client-signin-root .panel-feature-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 2px;
+}
+.client-signin-root .panel-feature-desc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.5;
+}
+.client-signin-root .brand-panel-bottom {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+.client-signin-root .brand-panel-bottom svg {
+  flex-shrink: 0;
+}
+
+.client-signin-root .brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.client-signin-root .brand-logo-img {
+  height: 28px;
+  width: auto;
+  flex-shrink: 0;
+}
+.client-signin-root .brand-name {
+  font-family: 'Gugi', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.client-signin-root .brand-sub {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+}
+.client-signin-root .brand-panel .brand-name {
+  color: #fff;
+}
+.client-signin-root .brand-panel .brand-sub {
+  color: rgba(255, 255, 255, 0.5);
+}
+.client-signin-root .help-link-light {
+  position: relative;
+  z-index: 1;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+.client-signin-root .help-link-light .link {
+  color: #beb8ff;
+  font-weight: 700;
+}
+.client-signin-root .help-link-light:hover .link {
+  text-decoration: underline;
+}
+
+/* ---- form panel ---- */
+.client-signin-root .form-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.client-signin-root .topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 0;
+  gap: 12px;
+}
+.client-signin-root .help-link {
+  font-size: 12px;
+  color: var(--ink-faint);
+  font-weight: 500;
+}
+.client-signin-root .help-link .link {
+  color: var(--accent);
+  font-weight: 700;
+}
+.client-signin-root .help-link:hover .link {
+  text-decoration: underline;
+}
+
+.client-signin-root .main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+}
+.client-signin-root .auth-card {
+  width: 100%;
+  max-width: 420px;
+}
+
+@media (min-width: 1024px) {
+  .client-signin-root .brand-panel {
+    display: flex;
+  }
+  .client-signin-root .topbar {
+    display: none;
+  }
+  .client-signin-root .main {
+    padding: 48px;
+  }
+}
+
+.client-signin-root .auth-head {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.client-signin-root .headline {
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+  color: var(--ink);
+}
+.client-signin-root .subtext {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.client-signin-root .form-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 11px 13px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 18px;
+}
+.client-signin-root .form-banner.error {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid var(--danger-soft);
+}
+.client-signin-root .form-banner svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.client-signin-root .field-input-wrap {
+  position: relative;
+}
+.client-signin-root .cp-input.pw {
+  padding-right: 42px;
+}
+.client-signin-root .pw-toggle {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-faint);
+  background: transparent;
+  border: none;
+}
+.client-signin-root .pw-toggle:hover {
+  background: var(--border-soft);
+  color: var(--ink-soft);
+}
+
+.client-signin-root .field-row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  margin-top: -2px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.client-signin-root .remember-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.client-signin-root .remember-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.client-signin-root .remember-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--border);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.client-signin-root .remember-check.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.client-signin-root .remember-check.checked::after {
+  content: '';
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+.client-signin-root .remember-label {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+.client-signin-root .forgot-link {
+  font-size: 12.5px;
+  color: var(--accent);
+  font-weight: 600;
+  background: none;
+  border: none;
+}
+.client-signin-root .forgot-link:hover {
+  text-decoration: underline;
+}
+
+.client-signin-root .register-line {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  margin: 18px 0 0;
+}
+.client-signin-root .register-line .link {
+  color: var(--accent);
+  font-weight: 700;
+}
+.client-signin-root .register-line .link:hover {
+  text-decoration: underline;
+}
+
+.client-signin-root .trust-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  font-weight: 500;
+  padding-top: 18px;
+  margin-top: 18px;
+  border-top: 1px solid var(--border-soft);
+}
+.client-signin-root .trust-row svg {
+  color: var(--ink-faint);
+  flex-shrink: 0;
+}
+
+.client-signin-root .cp-team-link {
+  text-align: center;
+}
+
+.client-signin-root .footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 8px 24px 30px;
+  font-size: 11.5px;
+  color: var(--ink-faint);
+}
+.client-signin-root .footer a {
+  color: var(--ink-faint);
+}
+.client-signin-root .footer a:hover {
+  color: var(--accent);
+}
+
+@media (max-width: 520px) {
+  .client-signin-root .headline {
+    font-size: 20px;
+  }
+  .client-signin-root .footer {
+    flex-direction: column;
+    gap: 6px;
+  }
+}

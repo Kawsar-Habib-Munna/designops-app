@@ -1,11 +1,12 @@
 'use client';
 
-// Screen 2 — Client Sign In। ইমেইল+পাসওয়ার্ড দিয়ে সাইন-ইন করে, সফল হলে
-// resolveClientLandingRoute() ঠিক করে দেয় onboarding বাকি না ড্যাশবোর্ডে যাবে।
-// একই পেজেই Forgot-password রিকভারি হ্যান্ডল করা হয় (Supabase রিসেট-লিংক এই
-// পেজেই ফেরত আসে, hash-এ type=recovery থাকলে পাসওয়ার্ড-বদলের মিনি-ফর্ম দেখায়) —
-// স্পেকে আলাদা কোনো "reset password" স্ক্রিন নেই, তাই নতুন স্ক্রিন না বানিয়ে
-// এখানেই যুক্তিসঙ্গতভাবে সমাধান করা হলো।
+// Screen 2 — Client Sign In। রিডিজাইন: split-screen লেআউট — বাম পাশে dark brand
+// প্যানেল (পাবলিক সাইটের মতো Fraunces italic হেডলাইন + রিয়েল ফিচার লিস্ট, ≥1024px-এ
+// দেখা যায়), ডানে ফর্ম (client-shared.css-এর cp-* প্রিমিটিভ, বাকি Screens 3-24-এর
+// সাথে সামঞ্জস্যপূর্ণ)। আসল লজিক অপরিবর্তিত: ইমেইল+পাসওয়ার্ড সাইন-ইন,
+// resolveClientLandingRoute() দিয়ে সঠিক গন্তব্যে যাওয়া, একই পেজে forgot-password
+// (Supabase রিসেট-লিংক hash-এ type=recovery নিয়ে ফেরত আসে) — শুধু নতুন যোগ হলো
+// password show/hide টগল।
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
@@ -15,15 +16,46 @@ import { fetchOwnClient, hasSubmittedRequirements, resolveClientLandingRoute } f
 import '../client-shared.css';
 import './signin.css';
 
+const WHATSAPP_SUPPORT_URL = 'https://wa.me/8801804409235?text=Hi%20FLOW53,%20I%27m%20having%20trouble%20signing%20into%20my%20client%20portal.';
+
+const FEATURES = [
+  {
+    title: 'Track project progress',
+    desc: 'See exactly where your project stands, always.',
+    icon: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
+  },
+  {
+    title: 'Sign SOWs & review files',
+    desc: 'Approvals and deliverables, all in your portal.',
+    icon: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>',
+  },
+  {
+    title: 'Pay & track invoices',
+    desc: 'Clear payment history and downloadable receipts.',
+    icon: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+  },
+];
+
+function BrandMark() {
+  return (
+    <div className="brand-lockup">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/Navbar logo.png" alt="FLOW 53" className="brand-logo-img" />
+      <div>
+        <div className="brand-name">FLOW 53</div>
+        <div className="brand-sub">Client Portal</div>
+      </div>
+    </div>
+  );
+}
+
 export default function ClientSignIn() {
   const router = useRouter();
-  // hash-এ Supabase-এর রিকভারি টোকেন আছে কিনা — প্রথম রেন্ডারেই lazy initializer-এ
-  // পড়ে নেওয়া হয়, effect-এর ভেতর থেকে synchronous setState এড়াতে (react-hooks
-  // lint rule: "set-state-in-effect")।
   const [recoveryMode] = useState(() => typeof window !== 'undefined' && window.location.hash.includes('type=recovery'));
   const [checkingSession, setCheckingSession] = useState(!recoveryMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,185 +151,258 @@ export default function ClientSignIn() {
     );
   }
 
-  if (recoveryMode) {
-    return (
-      <div className="client-portal client-signin-root">
-        <div className="cp-auth-shell">
-          <div className="cp-card">
-            <div className="cp-brand">
-              <div className="cp-brand-mark" aria-hidden="true"></div>
-              <div className="cp-brand-text">FLOW 53</div>
-            </div>
-            {recoveryDone ? (
-              <>
-                <h1 className="cp-title">Password Updated</h1>
-                <p className="cp-subtitle">আপনার পাসওয়ার্ড পরিবর্তন হয়ে গেছে। এখন নতুন পাসওয়ার্ড দিয়ে সাইন-ইন করুন।</p>
-                <button
-                  type="button"
-                  className="cp-btn cp-btn-primary cp-btn-block"
-                  onClick={() => {
-                    window.location.href = '/client/sign-in';
-                  }}
-                >
-                  সাইন-ইন করুন
-                </button>
-              </>
-            ) : (
-              <>
-                <h1 className="cp-title">Set a New Password</h1>
-                <p className="cp-subtitle">আপনার অ্যাকাউন্টের জন্য একটা নতুন পাসওয়ার্ড দিন।</p>
-                <form onSubmit={handleRecoverySubmit}>
-                  {recoveryError && <div className="cp-alert cp-alert-error">{recoveryError}</div>}
-                  <div className="cp-field">
-                    <label className="cp-label" htmlFor="new-password">
-                      New Password
-                    </label>
-                    <input
-                      id="new-password"
-                      type="password"
-                      className="cp-input"
-                      required
-                      autoFocus
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="কমপক্ষে ৮ ক্যারেক্টার"
-                    />
-                  </div>
-                  <button type="submit" className="cp-btn cp-btn-primary cp-btn-block" disabled={recoverySubmitting}>
-                    {recoverySubmitting && <span className="cp-spinner" />}
-                    {recoverySubmitting ? 'আপডেট হচ্ছে…' : 'Update Password'}
-                  </button>
-                </form>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="client-portal client-signin-root">
-      <div className="cp-auth-shell">
-        <div className="cp-card">
-          <div className="cp-brand">
-            <div className="cp-brand-mark" aria-hidden="true"></div>
-            <div className="cp-brand-text">FLOW 53</div>
+      <div className="split-shell">
+        {/* ============ BRAND PANEL (desktop only) ============ */}
+        <aside className="brand-panel">
+          <div className="brand-panel-grid" aria-hidden="true"></div>
+          <div className="brand-panel-top">
+            <BrandMark />
+            <a href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noopener noreferrer" className="help-link-light">
+              Need help? <span className="link">Contact Support</span>
+            </a>
           </div>
 
-          {forgotOpen ? (
-            <>
-              <h1 className="cp-title">Reset Your Password</h1>
-              {forgotSent ? (
+          <div className="brand-panel-mid">
+            <h2 className="brand-panel-headline">
+              Everything about your project, <span className="accent-word">in one place</span>.
+            </h2>
+            <p className="brand-panel-sub">Sign in to track progress, review deliverables, and manage payments — without digging through email threads.</p>
+
+            <div className="panel-feature-list">
+              {FEATURES.map((f) => (
+                <div className="panel-feature" key={f.title}>
+                  <div className="panel-feature-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: f.icon }} />
+                  </div>
+                  <div>
+                    <div className="panel-feature-title">{f.title}</div>
+                    <div className="panel-feature-desc">{f.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="brand-panel-bottom">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+              <rect x="4" y="10" width="16" height="10" rx="2" />
+              <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+            </svg>
+            Your information is securely protected.
+          </div>
+        </aside>
+
+        {/* ============ FORM PANEL ============ */}
+        <div className="form-panel">
+          <header className="topbar">
+            <BrandMark />
+            <a href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noopener noreferrer" className="help-link">
+              Need help? <span className="link">Contact Support</span>
+            </a>
+          </header>
+
+          <main className="main">
+            <div className="auth-card">
+              {recoveryMode ? (
+                recoveryDone ? (
+                  <>
+                    <div className="auth-head">
+                      <h1 className="headline">Password Updated</h1>
+                      <p className="subtext">আপনার পাসওয়ার্ড পরিবর্তন হয়ে গেছে। এখন নতুন পাসওয়ার্ড দিয়ে সাইন-ইন করুন।</p>
+                    </div>
+                    <button type="button" className="cp-btn cp-btn-primary cp-btn-block" onClick={() => (window.location.href = '/client/sign-in')}>
+                      সাইন-ইন করুন
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="auth-head">
+                      <h1 className="headline">Set a New Password</h1>
+                      <p className="subtext">আপনার অ্যাকাউন্টের জন্য একটা নতুন পাসওয়ার্ড দিন।</p>
+                    </div>
+                    <form onSubmit={handleRecoverySubmit}>
+                      {recoveryError && <div className="cp-alert cp-alert-error">{recoveryError}</div>}
+                      <div className="cp-field">
+                        <label className="cp-label" htmlFor="new-password">
+                          New Password
+                        </label>
+                        <input
+                          id="new-password"
+                          type="password"
+                          className="cp-input"
+                          required
+                          autoFocus
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="কমপক্ষে ৮ ক্যারেক্টার"
+                        />
+                      </div>
+                      <button type="submit" className="cp-btn cp-btn-primary cp-btn-block" disabled={recoverySubmitting}>
+                        {recoverySubmitting && <span className="cp-spinner" />}
+                        {recoverySubmitting ? 'আপডেট হচ্ছে…' : 'Update Password'}
+                      </button>
+                    </form>
+                  </>
+                )
+              ) : forgotOpen ? (
                 <>
-                  <p className="cp-subtitle">
-                    <strong>{forgotEmail}</strong>-এ একটা পাসওয়ার্ড-রিসেট লিংক পাঠানো হয়েছে। ইনবক্স চেক করুন।
-                  </p>
-                  <button type="button" className="cp-btn cp-btn-secondary cp-btn-block" onClick={() => setForgotOpen(false)}>
-                    ফিরে যান
-                  </button>
+                  <div className="auth-head">
+                    <h1 className="headline">Reset Your Password</h1>
+                  </div>
+                  {forgotSent ? (
+                    <>
+                      <p className="subtext" style={{ marginBottom: 22 }}>
+                        <strong>{forgotEmail}</strong>-এ একটা পাসওয়ার্ড-রিসেট লিংক পাঠানো হয়েছে। ইনবক্স চেক করুন।
+                      </p>
+                      <button type="button" className="cp-btn cp-btn-secondary cp-btn-block" onClick={() => setForgotOpen(false)}>
+                        ফিরে যান
+                      </button>
+                    </>
+                  ) : (
+                    <form onSubmit={handleForgotSubmit}>
+                      <p className="subtext" style={{ marginBottom: 22 }}>
+                        আপনার ইমেইল দিন — একটা রিসেট লিংক পাঠানো হবে।
+                      </p>
+                      {forgotError && <div className="cp-alert cp-alert-error">{forgotError}</div>}
+                      <div className="cp-field">
+                        <label className="cp-label" htmlFor="forgot-email">
+                          Email
+                        </label>
+                        <input
+                          id="forgot-email"
+                          type="email"
+                          className="cp-input"
+                          required
+                          autoFocus
+                          value={forgotEmail}
+                          onChange={(e) => setForgotEmail(e.target.value)}
+                          placeholder="you@company.com"
+                        />
+                      </div>
+                      <button type="submit" className="cp-btn cp-btn-primary cp-btn-block" disabled={forgotSending}>
+                        {forgotSending && <span className="cp-spinner" />}
+                        {forgotSending ? 'পাঠানো হচ্ছে…' : 'Send Reset Link'}
+                      </button>
+                      <button type="button" className="cp-btn cp-btn-ghost cp-btn-block" style={{ marginTop: 8 }} onClick={() => setForgotOpen(false)}>
+                        Cancel
+                      </button>
+                    </form>
+                  )}
                 </>
               ) : (
-                <form onSubmit={handleForgotSubmit}>
-                  <p className="cp-subtitle">আপনার ইমেইল দিন — একটা রিসেট লিংক পাঠানো হবে।</p>
-                  {forgotError && <div className="cp-alert cp-alert-error">{forgotError}</div>}
-                  <div className="cp-field">
-                    <label className="cp-label" htmlFor="forgot-email">
-                      Email
-                    </label>
-                    <input
-                      id="forgot-email"
-                      type="email"
-                      className="cp-input"
-                      required
-                      autoFocus
-                      value={forgotEmail}
-                      onChange={(e) => setForgotEmail(e.target.value)}
-                      placeholder="you@company.com"
-                    />
+                <>
+                  <div className="auth-head">
+                    <h1 className="headline">Welcome Back</h1>
+                    <p className="subtext">Sign in to access your projects, payments and client portal.</p>
                   </div>
-                  <button type="submit" className="cp-btn cp-btn-primary cp-btn-block" disabled={forgotSending}>
-                    {forgotSending && <span className="cp-spinner" />}
-                    {forgotSending ? 'পাঠানো হচ্ছে…' : 'Send Reset Link'}
-                  </button>
-                  <button type="button" className="cp-btn cp-btn-ghost cp-btn-block" style={{ marginTop: 8 }} onClick={() => setForgotOpen(false)}>
-                    Cancel
-                  </button>
-                </form>
+
+                  <form onSubmit={handleSubmit} noValidate>
+                    {error && (
+                      <div className="form-banner error">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 9v4" />
+                          <path d="M12 17h.01" />
+                          <circle cx="12" cy="12" r="9" />
+                        </svg>
+                        <span>{error}</span>
+                      </div>
+                    )}
+
+                    <div className="cp-field">
+                      <label className="cp-label" htmlFor="signin-email">
+                        Email Address
+                      </label>
+                      <input id="signin-email" type="email" className="cp-input" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" autoComplete="email" />
+                    </div>
+                    <div className="cp-field">
+                      <label className="cp-label" htmlFor="signin-password">
+                        Password
+                      </label>
+                      <div className="field-input-wrap">
+                        <input
+                          id="signin-password"
+                          type={showPassword ? 'text' : 'password'}
+                          className="cp-input pw"
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Enter your password"
+                          autoComplete="current-password"
+                        />
+                        <button type="button" className="pw-toggle" onClick={() => setShowPassword((s) => !s)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                          {showPassword ? (
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-6 0-10-8-10-8a18.6 18.6 0 0 1 4.22-5.06" />
+                              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6 0 10 8 10 8a18.5 18.5 0 0 1-2.16 3.19" />
+                              <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                              <path d="M2 2l20 20" />
+                            </svg>
+                          ) : (
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="field-row-between">
+                      <label className="remember-wrap">
+                        <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="remember-native" />
+                        <span className={`remember-check${remember ? ' checked' : ''}`} aria-hidden="true"></span>
+                        <span className="remember-label">Remember me</span>
+                      </label>
+                      <button
+                        type="button"
+                        className="forgot-link"
+                        onClick={() => {
+                          setForgotEmail(email);
+                          setForgotOpen(true);
+                        }}
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+
+                    <button type="submit" className="cp-btn cp-btn-primary cp-btn-block" disabled={submitting}>
+                      {submitting && <span className="cp-spinner" />}
+                      {submitting ? 'সাইন-ইন হচ্ছে…' : 'Sign In'}
+                    </button>
+                  </form>
+
+                  <p className="register-line">
+                    Don&apos;t have a client account?{' '}
+                    <Link href="/client/register" className="link">
+                      Create Client Account
+                    </Link>
+                  </p>
+
+                  <div className="trust-row">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="4" y="10" width="16" height="10" rx="2" />
+                      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                    </svg>
+                    Your information is securely protected.
+                  </div>
+
+                  <p className="cp-team-link" style={{ marginTop: 16 }}>
+                    Part of the FLOW 53 team? <Link href="/dashboard">Sign in here →</Link>
+                  </p>
+                </>
               )}
-            </>
-          ) : (
-            <>
-              <span className="cp-eyebrow">Client Portal</span>
-              <h1 className="cp-title">Sign In</h1>
-              <p className="cp-subtitle">আপনার প্রজেক্ট, পেমেন্ট আর ফাইল দেখতে সাইন-ইন করুন।</p>
+            </div>
+          </main>
 
-              <form onSubmit={handleSubmit}>
-                {error && <div className="cp-alert cp-alert-error">{error}</div>}
-
-                <div className="cp-field">
-                  <label className="cp-label" htmlFor="signin-email">
-                    Email
-                  </label>
-                  <input
-                    id="signin-email"
-                    type="email"
-                    className="cp-input"
-                    required
-                    autoFocus
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
-                  />
-                </div>
-                <div className="cp-field">
-                  <label className="cp-label" htmlFor="signin-password">
-                    Password
-                  </label>
-                  <input
-                    id="signin-password"
-                    type="password"
-                    className="cp-input"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="আপনার পাসওয়ার্ড"
-                  />
-                </div>
-
-                <div className="cp-row">
-                  <label className="cp-checkbox-row" style={{ marginBottom: 0 }}>
-                    <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-                    Remember me
-                  </label>
-                  <button
-                    type="button"
-                    className="cp-btn cp-btn-ghost"
-                    onClick={() => {
-                      setForgotEmail(email);
-                      setForgotOpen(true);
-                    }}
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-
-                <button type="submit" className="cp-btn cp-btn-primary cp-btn-block" disabled={submitting}>
-                  {submitting && <span className="cp-spinner" />}
-                  {submitting ? 'সাইন-ইন হচ্ছে…' : 'Sign In'}
-                </button>
-              </form>
-
-              <p className="cp-footnote">
-                অ্যাকাউন্ট নেই? <Link href="/client/register">Create Client Account</Link>
-              </p>
-            </>
-          )}
+          <footer className="footer">
+            <a href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noopener noreferrer">
+              Support
+            </a>
+            <span className="footer-copy">© {new Date().getFullYear()} FLOW 53 Design Studio</span>
+          </footer>
         </div>
-
-        <p className="cp-team-link">
-          Part of the FLOW 53 team? <Link href="/dashboard">Sign in here →</Link>
-        </p>
       </div>
     </div>
   );
