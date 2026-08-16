@@ -1,0 +1,52 @@
+/* Screen 9 — Client Project Dashboard। টোকেন/cp-badge/cp-btn client-shared.css
+   থেকে আসে, এখানে শুধু ড্যাশবোর্ড-স্পেসিফিক লেআউট। */
+
+.client-projectdash-root .pd-shell{max-width:760px;margin:0 auto;padding:32px 20px 64px;}
+.client-projectdash-root .pd-top{margin-bottom:16px;}
+.client-projectdash-root .pd-back{font-size:13px;color:var(--ink-faint);font-weight:600;}
+.client-projectdash-root .pd-back:hover{color:var(--ink);}
+
+.client-projectdash-root .pd-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;}
+.client-projectdash-root .pd-title{margin:0 0 8px;font-size:22px;font-weight:700;letter-spacing:-0.01em;color:var(--ink);}
+.client-projectdash-root .pd-sub-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.client-projectdash-root .pd-manager{font-size:12.5px;color:var(--ink-faint);}
+.client-projectdash-root .pd-progress-ring{flex-shrink:0;}
+
+.client-projectdash-root .pd-action-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius-md);padding:14px 18px;margin-bottom:20px;flex-wrap:wrap;}
+.client-projectdash-root .pd-action-label{font-size:10.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--accent);margin-bottom:3px;}
+.client-projectdash-root .pd-action-text{font-size:13px;color:var(--ink);}
+.client-projectdash-root .pd-action-banner .cp-btn{white-space:nowrap;}
+
+.client-projectdash-root .pd-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:18px;}
+.client-projectdash-root .pd-stat-label{font-size:10.5px;color:var(--ink-faint);margin-bottom:4px;}
+.client-projectdash-root .pd-stat-value{font-size:13.5px;font-weight:600;color:var(--ink);}
+
+.client-projectdash-root .pd-description{font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:20px;}
+
+.client-projectdash-root .pd-action-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+.client-projectdash-root .pd-action-card{display:flex;flex-direction:column;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 18px;transition:border-color .15s ease,box-shadow .15s ease;}
+.client-projectdash-root .pd-action-card:hover{border-color:var(--accent);box-shadow:var(--shadow-lg);}
+.client-projectdash-root .pd-action-card-title{font-size:13.5px;font-weight:700;color:var(--ink);}
+.client-projectdash-root .pd-action-card-sub{font-size:11.5px;color:var(--ink-faint);text-transform:capitalize;}
+
+.client-projectdash-root .pd-section-title{font-size:12px;font-weight:700;letter-spacing:0.02em;color:var(--ink-soft);margin-bottom:14px;}
+.client-projectdash-root .pd-empty{font-size:12.5px;color:var(--ink-faint);margin:0;}
+
+.client-projectdash-root .pd-milestone-list{display:flex;flex-direction:column;gap:12px;}
+.client-projectdash-root .pd-milestone{display:flex;align-items:center;gap:10px;}
+.client-projectdash-root .pd-milestone-dot{width:20px;height:20px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.client-projectdash-root .pd-milestone-done{background:var(--positive-soft);color:var(--positive);}
+.client-projectdash-root .pd-milestone-active{background:var(--accent-soft);color:var(--accent);}
+.client-projectdash-root .pd-milestone-pending{background:var(--surface-muted);color:var(--ink-faint);border:1px solid var(--border);}
+.client-projectdash-root .pd-milestone-title{flex:1;font-size:13px;color:var(--ink);}
+.client-projectdash-root .pd-milestone-date{font-size:11.5px;color:var(--ink-faint);}
+
+.client-projectdash-root .pd-file-list{display:flex;flex-direction:column;gap:10px;}
+.client-projectdash-root .pd-file-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;}
+.client-projectdash-root .pd-file-name{color:var(--ink);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.client-projectdash-root .pd-file-date{color:var(--ink-faint);flex-shrink:0;}
+
+@media (max-width:600px){
+  .client-projectdash-root .pd-stat-grid{grid-template-columns:1fr;}
+  .client-projectdash-root .pd-action-row{grid-template-columns:1fr;}
+}

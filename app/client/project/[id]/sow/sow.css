@@ -1,0 +1,24 @@
+/* Screen 11 — SOW Signature (client)। cp-* প্রিমিটিভ client-shared.css থেকে,
+   এখানে শুধু এই স্ক্রিনের ইউনিক লেআউট। */
+
+.client-sow-root .sw-shell{max-width:640px;margin:0 auto;padding:32px 20px 64px;}
+.client-sow-root .sw-back{font-size:13px;color:var(--ink-faint);font-weight:600;display:inline-block;margin-bottom:14px;}
+.client-sow-root .sw-back:hover{color:var(--ink);}
+.client-sow-root .sw-title{margin:0 0 20px;font-size:22px;font-weight:700;letter-spacing:-0.01em;color:var(--ink);}
+
+.client-sow-root .sw-empty{text-align:center;color:var(--ink-faint);font-size:13.5px;}
+
+.client-sow-root .sw-signed-banner{background:var(--positive-soft);color:var(--positive);font-size:14px;font-weight:600;padding:14px 18px;border-radius:var(--radius-md);margin-bottom:18px;}
+.client-sow-root .sw-signed-meta{display:block;font-size:12px;font-weight:500;margin-top:3px;color:var(--positive);opacity:.85;}
+
+.client-sow-root .sw-version-label{font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:14px;}
+.client-sow-root .sw-doc-link{display:inline-block;font-size:13px;font-weight:600;color:var(--accent);margin-bottom:16px;}
+.client-sow-root .sw-doc-link:hover{text-decoration:underline;}
+
+.client-sow-root .sw-field{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border-soft);}
+.client-sow-root .sw-field:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.client-sow-root .sw-field-label{font-size:11px;font-weight:700;color:var(--ink-faint);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.02em;}
+.client-sow-root .sw-field-text{font-size:13.5px;color:var(--ink-soft);line-height:1.65;margin:0;white-space:pre-wrap;}
+
+.client-sow-root .sw-agree-text{font-size:14px;font-weight:600;color:var(--ink);margin:0 0 16px;}
+.client-sow-root .sw-signature-input{font-family:'Georgia',serif;font-style:italic;font-size:17px;}

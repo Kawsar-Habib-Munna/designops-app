@@ -55,6 +55,20 @@
   align-items: center;
   gap: 12px;
 }
+.client-dashboard-root .db-project-card {
+  display: block;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.client-dashboard-root .db-project-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-lg);
+}
+.client-dashboard-root .db-project-arrow {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
 .client-dashboard-root .db-project-progress {
   font-size: 13px;
   color: var(--ink-soft);

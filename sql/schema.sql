@@ -1028,3 +1028,198 @@ drop policy if exists "client can write own activity" on activity_log;
 create policy "client can write own activity" on activity_log for insert with check (
   entity_type = 'client' and exists (select 1 from clients where clients.id = activity_log.entity_id and clients.user_id = auth.uid())
 );
+
+-- CLIENT PORTAL — ফেজ ৪: Screens 9-13 (Client Project Dashboard, SOW,
+-- SOW Signature, Payment Request, Payment Confirmation)।
+--
+-- milestones টেবিল আগে থেকেই আছে (admin /projects/[id]-এ ব্যবহার করে) — Screen 9-এর
+-- "client-safe milestones" এটাই read-only দেখাবে, নতুন কোনো টেবিল লাগেনি।
+drop policy if exists "client can read own project milestones" on milestones;
+create policy "client can read own project milestones" on milestones for select using (
+  exists (select 1 from projects join clients on clients.id = projects.client_id where projects.id = milestones.project_id and clients.user_id = auth.uid())
+);
+
+-- SOW: version-per-row (project_id, version) — "Create New Version" নতুন রো ইনসার্ট
+-- করে, পুরনো ভার্সনগুলো v1/v2/v3 হিসেবে দেখা যাবে। ক্লায়েন্ট শুধু read করতে পারে,
+-- সাইন করা হয় নিচের sign_sow() ফাংশন দিয়ে (RPC) — সরাসরি UPDATE পলিসি না দিয়ে,
+-- যাতে ক্লায়েন্ট sign করা ছাড়া scope/deliverables/terms বদলাতে না পারে।
+create table if not exists sows (
+  id uuid default gen_random_uuid() primary key,
+  project_id uuid not null references projects(id) on delete cascade,
+  version int not null default 1,
+  scope text,
+  objectives text,
+  deliverables text,
+  timeline text,
+  payment_terms text,
+  revision_policy text,
+  client_responsibilities text,
+  terms text,
+  document_url text, -- ঐচ্ছিক: টাইপ করার বদলে সরাসরি PDF/DOC আপলোড (Drive পাইপলাইন রিইউজ)
+  status text not null default 'draft', -- draft | sent | signed
+  notify_client boolean not null default true,
+  created_by uuid references profiles(id),
+  created_at timestamptz default now(),
+  sent_at timestamptz,
+  signed_at timestamptz,
+  signed_by_name text,
+  signature_text text
+);
+create unique index if not exists idx_sows_project_version on sows(project_id, version);
+create index if not exists idx_sows_project on sows(project_id);
+
+alter table sows enable row level security;
+drop policy if exists "team can read sows" on sows;
+drop policy if exists "team can write sows" on sows;
+drop policy if exists "team can update sows" on sows;
+drop policy if exists "client can read own project sows" on sows;
+create policy "team can read sows" on sows for select using (public.is_team_member());
+create policy "team can write sows" on sows for insert with check (public.is_team_member());
+create policy "team can update sows" on sows for update using (public.is_team_member());
+create policy "client can read own project sows" on sows for select using (
+  exists (select 1 from projects join clients on clients.id = projects.client_id where projects.id = sows.project_id and clients.user_id = auth.uid())
+);
+
+create or replace function public.sign_sow(p_sow_id uuid, p_full_name text, p_signature text)
+returns void
+language plpgsql
+security definer
+as $$
+declare
+  v_project_id uuid;
+  v_client_user_id uuid;
+begin
+  select sows.project_id into v_project_id from sows where sows.id = p_sow_id;
+  if v_project_id is null then
+    raise exception 'SOW not found';
+  end if;
+
+  select clients.user_id into v_client_user_id
+  from projects join clients on clients.id = projects.client_id
+  where projects.id = v_project_id;
+
+  if v_client_user_id is null or v_client_user_id != auth.uid() then
+    raise exception 'Not authorized to sign this SOW';
+  end if;
+
+  update sows
+  set status = 'signed', signed_at = now(), signed_by_name = p_full_name, signature_text = p_signature
+  where id = p_sow_id and status = 'sent';
+
+  if not found then
+    raise exception 'This SOW is not awaiting signature';
+  end if;
+end;
+$$;
+grant execute on function public.sign_sow(uuid, text, text) to authenticated;
+
+-- INVOICES (Screen 12 — Payment Request) ও PAYMENTS (Screen 13 — Payment
+-- Confirmation)। কোনো পেমেন্ট গেটওয়ে ইন্টিগ্রেট করা নেই বলে ম্যানুয়াল ফ্লো:
+-- ক্লায়েন্ট নিজের transaction id/method জমা দেয় (submit_payment RPC), এডমিন
+-- ব্যাংক/মোবাইল-ওয়ালেট স্টেটমেন্টের সাথে মিলিয়ে "Confirm Payment" চাপে।
+create table if not exists invoices (
+  id uuid default gen_random_uuid() primary key,
+  project_id uuid not null references projects(id) on delete cascade,
+  client_id uuid not null references clients(id) on delete cascade,
+  payment_type text not null default 'milestone', -- deposit | milestone | final | additional
+  amount numeric not null,
+  currency text not null default 'BDT',
+  description text,
+  due_date date,
+  payment_method text,
+  status text not null default 'pending', -- pending | processing | paid | failed | cancelled | refunded
+  notify_client boolean not null default true,
+  created_by uuid references profiles(id),
+  created_at timestamptz default now()
+);
+create index if not exists idx_invoices_project on invoices(project_id);
+create index if not exists idx_invoices_client on invoices(client_id);
+
+create table if not exists payments (
+  id uuid default gen_random_uuid() primary key,
+  invoice_id uuid not null references invoices(id) on delete cascade,
+  project_id uuid not null references projects(id) on delete cascade,
+  client_id uuid not null references clients(id) on delete cascade,
+  amount numeric,
+  payment_method text,
+  transaction_id text,
+  payment_date date,
+  notes text,
+  submitted_by text not null default 'client', -- client | team
+  confirmed_by uuid references profiles(id),
+  confirmed_at timestamptz,
+  created_at timestamptz default now()
+);
+create index if not exists idx_payments_invoice on payments(invoice_id);
+
+alter table invoices enable row level security;
+alter table payments enable row level security;
+
+drop policy if exists "team can read invoices" on invoices;
+drop policy if exists "team can write invoices" on invoices;
+drop policy if exists "team can update invoices" on invoices;
+drop policy if exists "client can read own invoices" on invoices;
+create policy "team can read invoices" on invoices for select using (public.is_team_member());
+create policy "team can write invoices" on invoices for insert with check (public.is_team_member());
+create policy "team can update invoices" on invoices for update using (public.is_team_member());
+create policy "client can read own invoices" on invoices for select using (
+  exists (select 1 from clients where clients.id = invoices.client_id and clients.user_id = auth.uid())
+);
+
+drop policy if exists "team can read payments" on payments;
+drop policy if exists "team can write payments" on payments;
+drop policy if exists "team can update payments" on payments;
+drop policy if exists "client can read own payments" on payments;
+create policy "team can read payments" on payments for select using (public.is_team_member());
+create policy "team can write payments" on payments for insert with check (public.is_team_member());
+create policy "team can update payments" on payments for update using (public.is_team_member());
+create policy "client can read own payments" on payments for select using (
+  exists (select 1 from clients where clients.id = payments.client_id and clients.user_id = auth.uid())
+);
+
+create or replace function public.submit_payment(
+  p_invoice_id uuid, p_amount numeric, p_method text, p_transaction_id text, p_payment_date date, p_notes text
+)
+returns uuid
+language plpgsql
+security definer
+as $$
+declare
+  v_project_id uuid;
+  v_client_id uuid;
+  v_client_user_id uuid;
+  v_payment_id uuid;
+begin
+  select invoices.project_id, invoices.client_id into v_project_id, v_client_id from invoices where invoices.id = p_invoice_id;
+  if v_client_id is null then
+    raise exception 'Invoice not found';
+  end if;
+
+  select clients.user_id into v_client_user_id from clients where clients.id = v_client_id;
+  if v_client_user_id is null or v_client_user_id != auth.uid() then
+    raise exception 'Not authorized';
+  end if;
+
+  insert into payments (invoice_id, project_id, client_id, amount, payment_method, transaction_id, payment_date, notes, submitted_by)
+  values (p_invoice_id, v_project_id, v_client_id, p_amount, p_method, p_transaction_id, p_payment_date, p_notes, 'client')
+  returning id into v_payment_id;
+
+  update invoices set status = 'processing' where id = p_invoice_id and status = 'pending';
+
+  return v_payment_id;
+end;
+$$;
+grant execute on function public.submit_payment(uuid, numeric, text, text, date, text) to authenticated;
+
+-- ক্লায়েন্ট নিজের প্রজেক্টের PM/অ্যাকাউন্ট ম্যানেজারের নাম-ছবি দেখতে পারবে (Screen 9-এর
+-- "Project Manager / Client Contact") — পুরো টিম লিস্ট না, শুধু এই দুইজন।
+drop policy if exists "client can read own project team contacts" on profiles;
+create policy "client can read own project team contacts" on profiles for select using (
+  exists (
+    select 1 from projects join clients on clients.id = projects.client_id
+    where clients.user_id = auth.uid() and projects.project_manager_id = profiles.id
+  )
+  or exists (
+    select 1 from clients where clients.user_id = auth.uid() and clients.account_manager_id = profiles.id
+  )
+);

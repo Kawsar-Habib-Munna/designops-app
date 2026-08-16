@@ -8,6 +8,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
 import { uploadFileToDrive, guessFileType } from '@/lib/driveUpload';
@@ -193,7 +194,7 @@ export default function ClientDashboard() {
         </div>
 
         {project ? (
-          <div className="cp-dash-card">
+          <Link href={`/client/project/${project.id}`} className="cp-dash-card db-project-card">
             <div className="db-section-title">Your Project</div>
             <div className="db-project-name">{project.name}</div>
             <div className="db-project-meta">
@@ -201,8 +202,9 @@ export default function ClientDashboard() {
                 {project.status}
               </span>
               <span className="db-project-progress">{project.progress}% complete</span>
+              <span className="db-project-arrow">View project →</span>
             </div>
-          </div>
+          </Link>
         ) : (
           <div className="cp-dash-card db-empty-card">
             <div className="db-empty-icon" aria-hidden="true">

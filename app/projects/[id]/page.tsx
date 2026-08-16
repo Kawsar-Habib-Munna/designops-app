@@ -494,6 +494,8 @@ export default function ProjectDetailPage() {
               <a href="#activity" className="tab">Activity</a>
               <a href="#notes" className="tab">Notes</a>
               <a href="#client" className="tab">Client</a>
+              <Link href={`/projects/${project.id}/sow`} className="tab">SOW</Link>
+              <Link href={`/projects/${project.id}/payments`} className="tab">Payments</Link>
               <span className="tab" style={{ opacity: 0.5, cursor: 'default' }}>Settings</span>
             </nav>
 
