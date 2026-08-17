@@ -20,6 +20,7 @@
   --positive-soft: #EAF7EF;
   --danger: #E5484D;
   --danger-soft: #FCEBEC;
+  --danger-border: #F0C9C6;
   --warning: #F5A524;
   --warning-soft: #FDF3E1;
   --warning-border: #F0DBA6;
@@ -54,6 +55,7 @@
   --positive-soft: #132A1D;
   --danger: #F2777A;
   --danger-soft: #301A1B;
+  --danger-border: #4A2323;
   --warning: #F5B455;
   --warning-soft: #332616;
   --warning-border: #4A3A1E;
@@ -110,6 +112,10 @@
 .clientslist-root .btn-accent:hover{background:var(--accent-hover);}
 .clientslist-root .btn-ghost{background:transparent;color:var(--ink);border-color:var(--border);}
 .clientslist-root .btn-ghost:hover{background:var(--surface-muted);}
+.clientslist-root .btn-ghost:disabled{opacity:.5;cursor:default;}
+.clientslist-root .btn-danger-ghost{background:transparent;color:var(--danger);border-color:var(--danger-border);}
+.clientslist-root .btn-danger-ghost:hover{background:var(--danger-soft);}
+.clientslist-root .btn-block{width:100%;justify-content:center;}
 .clientslist-root .btn-sm{padding:6px 11px;font-size:12.5px;}
 .clientslist-root .btn-accent:disabled{opacity:.45;cursor:default;}
 

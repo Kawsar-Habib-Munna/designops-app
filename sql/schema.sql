@@ -1419,3 +1419,27 @@ create policy "client can read own activity" on activity_log for select using (
 -- করার আগের আসল স্টেজ (active/discussion/completed ইত্যাদি) হারিয়ে না যায় —
 -- "Unarchive" করলে ঠিক আগের স্টেটাসেই ফিরে যায়।
 alter table clients add column if not exists is_archived boolean not null default false;
+
+-- CLIENT PORTAL — ফেজ ৯: Screen 7 (Admin Client Details) রিডিজাইন। "Internal Notes"-এর
+-- জন্য নতুন টেবিল — ক্লায়েন্টের একক notes ফিল্ড ওভাররাইট না করে (সেটা এখনো Edit
+-- Client মোডালে আছে), একাধিক timestamped/authored নোট রাখার জন্য (comments
+-- টেবিলের মতোই প্যাটার্ন, শুধু টিমের জন্য — ক্লায়েন্ট এটা কখনো দেখে না)।
+create table if not exists client_notes (
+  id uuid default gen_random_uuid() primary key,
+  client_id uuid not null references clients(id) on delete cascade,
+  author_id uuid references profiles(id) on delete set null,
+  body text not null,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+create index if not exists idx_client_notes_client on client_notes(client_id, created_at desc);
+
+alter table client_notes enable row level security;
+drop policy if exists "team can read client_notes" on client_notes;
+drop policy if exists "team can write client_notes" on client_notes;
+drop policy if exists "team can update client_notes" on client_notes;
+drop policy if exists "team can delete client_notes" on client_notes;
+create policy "team can read client_notes" on client_notes for select using (public.is_team_member());
+create policy "team can write client_notes" on client_notes for insert with check (public.is_team_member());
+create policy "team can update client_notes" on client_notes for update using (public.is_team_member());
+create policy "team can delete client_notes" on client_notes for delete using (public.is_team_member());
