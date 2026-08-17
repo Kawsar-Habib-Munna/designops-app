@@ -169,10 +169,10 @@
 }
 
 .client-dashboard-root .content {
-  max-width: 820px;
+  max-width: 1240px;
   width: 100%;
   margin: 0 auto;
-  padding: 36px 28px 64px;
+  padding: 36px 40px 64px;
 }
 .client-dashboard-root .welcome-title {
   margin: 0 0 6px;
@@ -246,6 +246,7 @@
   font-size: 13px;
   line-height: 1.65;
   color: var(--ink-soft);
+  max-width: 680px;
 }
 .client-dashboard-root .checklist-row {
   display: flex;
@@ -291,6 +292,7 @@
   line-height: 1.6;
   color: var(--ink);
   font-style: italic;
+  max-width: 680px;
 }
 .client-dashboard-root .status-action-row {
   display: flex;
