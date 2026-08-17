@@ -1413,3 +1413,9 @@ drop policy if exists "client can read own activity" on activity_log;
 create policy "client can read own activity" on activity_log for select using (
   entity_type = 'client' and exists (select 1 from clients where clients.id = activity_log.entity_id and clients.user_id = auth.uid())
 );
+
+-- CLIENT PORTAL — ফেজ ৮: Screen 6 (Admin Client List) রিডিজাইন। "Archive Client"
+-- আলাদা boolean হিসেবে রাখা হয়েছে (clients.status ওভাররাইট না করে) যাতে আর্কাইভ
+-- করার আগের আসল স্টেজ (active/discussion/completed ইত্যাদি) হারিয়ে না যায় —
+-- "Unarchive" করলে ঠিক আগের স্টেটাসেই ফিরে যায়।
+alter table clients add column if not exists is_archived boolean not null default false;

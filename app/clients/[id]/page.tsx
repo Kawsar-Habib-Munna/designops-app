@@ -5,8 +5,8 @@
 // Files/Activity (ডান)। Activity টাইমলাইন বিদ্যমান activity_log টেবিল রিইউজ করে
 // (entity_type='client') — নতুন কোনো audit টেবিল বানানো হয়নি।
 
-import { useEffect, useState, type FormEvent } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import '../clients.css';
 import './client-detail.css';
@@ -104,6 +104,7 @@ type ClientDetail = {
   user_id: string | null;
   admin_request: string | null;
   admin_request_at: string | null;
+  is_archived: boolean;
   created_at: string;
 };
 
@@ -137,6 +138,8 @@ function formatBytes(bytes: number | null): string {
 export default function ClientDetailPage() {
   const params = useParams();
   const clientId = params.id as string;
+  const searchParams = useSearchParams();
+  const editParamHandledRef = useRef(false);
   const { user, loading: sessionLoading } = useSession();
   const unreadCount = useUnreadCount(user);
   const [dark, setDark] = useState(false);
@@ -169,7 +172,7 @@ export default function ClientDetailPage() {
       const [clientRes, requirementsRes, filesRes, projectsRes, activityRes, managersRes] = await Promise.all([
         supabase
           .from('clients')
-          .select('id, company_name, primary_contact, contact_email, contact_phone, industry, website, designation, company_size, status, priority, account_manager_id, notes, user_id, admin_request, admin_request_at, created_at, account_manager:profiles!account_manager_id(id, full_name, avatar_color, avatar_url)')
+          .select('id, company_name, primary_contact, contact_email, contact_phone, industry, website, designation, company_size, status, priority, account_manager_id, notes, user_id, admin_request, admin_request_at, is_archived, created_at, account_manager:profiles!account_manager_id(id, full_name, avatar_color, avatar_url)')
           .eq('id', clientId)
           .maybeSingle(),
         supabase.from('client_requirements').select('project_name, project_type, project_description, goals, target_audience, required_features, expected_timeline, budget_range, reference_notes').eq('client_id', clientId).maybeSingle(),
@@ -200,6 +203,20 @@ export default function ClientDetailPage() {
 
     loadAll();
   }, [user, clientId, reloadKey]);
+
+  // Screen 6-এর "Edit Client" রো-অ্যাকশন থেকে ?edit=1 দিয়ে আসলে এডিট মোডাল
+  // অটোমেটিক খুলে যায় — শুধু প্রথমবার, সেভ করার পর reloadKey বদলালে আবার
+  // খুলে যাওয়া থেকে আটকাতে editParamHandledRef ব্যবহার করা হয়েছে।
+  useEffect(() => {
+    if (!client || editParamHandledRef.current) return;
+    if (searchParams.get('edit') !== '1') return;
+    editParamHandledRef.current = true;
+    const timer = setTimeout(() => {
+      setEditForm(client);
+      setShowEdit(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [client, searchParams]);
 
   async function handleSaveEdit(e: FormEvent) {
     e.preventDefault();
@@ -331,7 +348,11 @@ export default function ClientDetailPage() {
     );
   }
 
-  const meta = STATUS_META[client.status] ?? { label: client.status, cls: 's-todo' };
+  const meta = client.is_archived
+    ? { label: 'আর্কাইভড', cls: 's-archived' }
+    : client.admin_request
+      ? { label: 'তথ্য দরকার', cls: 's-action' }
+      : (STATUS_META[client.status] ?? { label: client.status, cls: 's-todo' });
   const source = client.user_id ? 'Client Portal (self-registered)' : 'Manually Added by Team';
 
   return (
