@@ -1392,3 +1392,11 @@ create policy "team can write project_updates" on project_updates for insert wit
 create policy "client can read own updates" on project_updates for select using (
   exists (select 1 from clients where clients.id = project_updates.client_id and clients.user_id = auth.uid())
 );
+
+-- CLIENT PORTAL — ফেজ ৬: Screen 4 (Onboarding) রিডিজাইনে নতুন যোগ হওয়া ফিল্ড।
+alter table clients add column if not exists preferred_contact_method text;
+alter table clients add column if not exists country text;
+alter table clients add column if not exists timezone text;
+alter table client_requirements add column if not exists competitors text;
+alter table client_requirements add column if not exists existing_assets text;
+alter table client_requirements add column if not exists priority text default 'normal';
