@@ -1,112 +1,537 @@
-/* Screen 5 — Client Empty Dashboard। ড্যাশবোর্ড শেলের ইউনিক লেআউট + ফাইল-আপলোড
-   লিস্ট (onboarding.css-এর ob-file-* ক্লাসের মতোই, কিন্তু এই পেজের নিজের root-এ
-   স্কোপড — কনভেনশন অনুযায়ী প্রতিটা পেজের CSS স্বয়ংসম্পূর্ণ)। */
+/* Scoped to .client-dashboard-root — tokens (--bg, --surface, --accent, etc.)
+   come from the shared .client-portal class in client-shared.css. */
 
-.client-dashboard-root .db-welcome {
-  margin: 4px 0 2px;
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--ink);
+.client-dashboard-root {
+  --warning: #f5a524;
+  --warning-soft: #fdf3e1;
 }
-.client-dashboard-root .db-welcome-sub {
-  margin: 0 0 24px;
-  font-size: 14px;
-  color: var(--ink-soft);
+@media (prefers-color-scheme: dark) {
+  .client-dashboard-root {
+    --warning: #f5b455;
+    --warning-soft: #332616;
+  }
 }
 
-.client-dashboard-root .db-status-row {
+.client-dashboard-root .shell {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 18px;
+  min-height: 100vh;
 }
 
-.client-dashboard-root .db-progress-row {
+/* ---------- sidebar ---------- */
+.client-dashboard-root .sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  justify-content: space-between;
+  padding: 18px 14px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
 }
-.client-dashboard-root .db-progress-label {
+.client-dashboard-root .sidebar-close-btn {
+  display: none;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-faint);
+  background: transparent;
+  border: none;
+}
+.client-dashboard-root .sidebar-close-btn:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.client-dashboard-root .nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.client-dashboard-root .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+.client-dashboard-root .nav-item.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.client-dashboard-root .nav-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.client-dashboard-root .nav-tag {
+  margin-left: auto;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.client-dashboard-root .profile-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  width: 100%;
+  text-align: left;
+}
+.client-dashboard-root .profile-card:hover {
+  background: var(--accent-soft);
+}
+.client-dashboard-root .avatar {
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: #fff;
+  background: var(--accent);
+}
+.client-dashboard-root .profile-meta {
+  flex: 1;
+  min-width: 0;
+}
+.client-dashboard-root .profile-name {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.client-dashboard-root .profile-role {
+  font-size: 11px;
+  color: var(--ink-faint);
+  line-height: 1.2;
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.client-dashboard-root .mobile-backdrop {
+  display: none;
+}
+
+/* ---------- main ---------- */
+.client-dashboard-root .main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.client-dashboard-root .topbar {
+  display: none;
+  height: 56px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.client-dashboard-root .icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+}
+.client-dashboard-root .topbar-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.client-dashboard-root .content {
+  max-width: 820px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 36px 28px 64px;
+}
+.client-dashboard-root .welcome-title {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.client-dashboard-root .welcome-sub {
+  margin: 0 0 26px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  max-width: 560px;
+}
+.client-dashboard-root .block {
+  margin-bottom: 20px;
+}
+.client-dashboard-root .section-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+}
+
+/* ---------- status card ---------- */
+.client-dashboard-root .status-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+}
+.client-dashboard-root .status-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-
-.client-dashboard-root .db-section-title {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-  margin-bottom: 10px;
-}
-.client-dashboard-root .db-project-name {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--ink);
+  gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 8px;
 }
-.client-dashboard-root .db-project-meta {
-  display: flex;
+.client-dashboard-root .status-title {
+  font-size: 15.5px;
+  font-weight: 700;
+}
+.client-dashboard-root .status-badge {
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 11px;
+  border-radius: 999px;
 }
-.client-dashboard-root .db-project-card {
-  display: block;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+.client-dashboard-root .status-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
-.client-dashboard-root .db-project-card:hover {
-  border-color: var(--accent);
-  box-shadow: var(--shadow-lg);
-}
-.client-dashboard-root .db-project-arrow {
-  margin-left: auto;
-  font-size: 12.5px;
-  font-weight: 600;
+.client-dashboard-root .status-badge.b-review {
+  background: var(--accent-soft);
   color: var(--accent);
 }
-.client-dashboard-root .db-project-progress {
+.client-dashboard-root .status-badge.b-action {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.client-dashboard-root .status-desc {
+  margin: 0 0 16px;
   font-size: 13px;
+  line-height: 1.65;
   color: var(--ink-soft);
 }
-
-.client-dashboard-root .db-empty-card {
-  text-align: center;
-  padding: 40px 26px;
-}
-.client-dashboard-root .db-empty-icon {
-  font-size: 28px;
-  margin-bottom: 10px;
-}
-.client-dashboard-root .db-empty-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ink);
-  margin-bottom: 6px;
-}
-.client-dashboard-root .db-empty-desc {
-  font-size: 13.5px;
-  color: var(--ink-faint);
-  margin: 0;
-}
-
-.client-dashboard-root .db-actions-row {
+.client-dashboard-root .checklist-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 4px;
+  gap: 10px 18px;
 }
-.client-dashboard-root .db-actions-row .cp-btn {
-  flex: 0 0 auto;
+.client-dashboard-root .checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+.client-dashboard-root .checklist-check {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--positive-soft);
+  color: var(--positive);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.client-dashboard-root .admin-request-box {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--warning-soft);
+  border: 1px solid rgba(245, 165, 36, 0.35);
+}
+.client-dashboard-root .admin-request-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--warning);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 5px;
+}
+.client-dashboard-root .admin-request-text {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink);
+  font-style: italic;
+}
+.client-dashboard-root .status-action-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
 }
 
-.client-dashboard-root .ob-upload-trigger {
-  border-style: dashed;
+/* ---------- buttons ---------- */
+.client-dashboard-root .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 18px;
+  min-height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
 }
+.client-dashboard-root .btn-block {
+  width: 100%;
+}
+.client-dashboard-root .btn-accent {
+  background: var(--accent);
+  color: #fff;
+}
+.client-dashboard-root .btn-accent:hover {
+  background: var(--accent-hover);
+}
+.client-dashboard-root .btn-ghost {
+  background: var(--bg);
+  border-color: var(--border);
+  color: var(--ink);
+}
+.client-dashboard-root .btn-ghost:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------- lifecycle stepper ---------- */
+.client-dashboard-root .lifecycle-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px 22px;
+}
+.client-dashboard-root .lc-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 16px;
+}
+.client-dashboard-root .lc-row {
+  display: flex;
+  align-items: flex-start;
+}
+.client-dashboard-root .lc-step {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.client-dashboard-root .lc-line {
+  position: absolute;
+  top: 11px;
+  left: -50%;
+  width: 100%;
+  height: 2px;
+  background: var(--positive);
+  z-index: 0;
+}
+.client-dashboard-root .lc-step:first-child .lc-line {
+  display: none;
+}
+.client-dashboard-root .lc-dot {
+  position: relative;
+  z-index: 1;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--border);
+  color: var(--ink-faint);
+}
+.client-dashboard-root .lc-step.done .lc-dot {
+  background: var(--positive);
+  color: #fff;
+}
+.client-dashboard-root .lc-step.current .lc-dot {
+  background: var(--accent);
+  color: #fff;
+}
+.client-dashboard-root .lc-step.current .lc-line,
+.client-dashboard-root .lc-step:not(.done):not(.current) .lc-line {
+  background: var(--border);
+}
+.client-dashboard-root .lc-step-label {
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.client-dashboard-root .lc-step.current .lc-step-label {
+  color: var(--accent);
+}
+
+/* ---------- empty project hero ---------- */
+.client-dashboard-root .project-empty-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px 26px;
+  text-align: center;
+}
+.client-dashboard-root .pe-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+.client-dashboard-root .pe-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.client-dashboard-root .pe-badge.pe-badge-action {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.client-dashboard-root .pe-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.client-dashboard-root .pe-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.client-dashboard-root .pe-desc {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--ink-soft);
+  max-width: 420px;
+  margin: 0 auto 24px;
+}
+.client-dashboard-root .whats-next {
+  text-align: left;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  margin-bottom: 24px;
+}
+.client-dashboard-root .whats-next-title {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.client-dashboard-root .whats-next-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  padding: 5px 0;
+}
+.client-dashboard-root .whats-next-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.client-dashboard-root .pe-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ---------- summary / upload cards ---------- */
+.client-dashboard-root .summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+}
+.client-dashboard-root .summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+.client-dashboard-root .summary-row:last-child {
+  border-bottom: none;
+}
+.client-dashboard-root .summary-row span:first-child {
+  color: var(--ink-faint);
+}
+.client-dashboard-root .summary-row span:last-child {
+  font-weight: 600;
+  color: var(--ink);
+}
+
 .client-dashboard-root .ob-file-list {
   display: flex;
   flex-direction: column;
@@ -115,33 +540,32 @@
 .client-dashboard-root .ob-file-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg);
+  border: 1px solid var(--border);
 }
 .client-dashboard-root .ob-file-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1;
   min-width: 0;
 }
 .client-dashboard-root .ob-file-name {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
-  color: var(--ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .client-dashboard-root .ob-file-meta {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--ink-faint);
 }
 .client-dashboard-root .ob-file-progress {
-  width: 90px;
+  width: 80px;
   height: 5px;
   border-radius: 3px;
   background: var(--border);
@@ -154,12 +578,176 @@
   transition: width 0.15s ease;
 }
 
-@media (max-width: 640px) {
-  .client-dashboard-root .db-actions-row {
-    flex-direction: column;
-    align-items: stretch;
+/* ---------- 2-column: submitted info + activity ---------- */
+.client-dashboard-root .content-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+.client-dashboard-root .activity-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+}
+.client-dashboard-root .empty-inline {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  margin: 0;
+}
+.client-dashboard-root .timeline-item {
+  display: flex;
+  gap: 12px;
+}
+.client-dashboard-root .timeline-dot-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.client-dashboard-root .timeline-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--positive-soft);
+  color: var(--positive);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.client-dashboard-root .timeline-line {
+  width: 1px;
+  flex: 1;
+  background: var(--border);
+  margin: 4px 0;
+}
+.client-dashboard-root .timeline-text {
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.5;
+  padding-bottom: 14px;
+}
+.client-dashboard-root .timeline-time {
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin-top: 2px;
+}
+
+/* ---------- support card ---------- */
+.client-dashboard-root .support-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+}
+.client-dashboard-root .support-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.client-dashboard-root .support-desc {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  max-width: 440px;
+}
+
+/* ---------- loading / error states ---------- */
+.client-dashboard-root .state-view {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+}
+.client-dashboard-root .state-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.client-dashboard-root .state-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.client-dashboard-root .state-sub {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-bottom: 20px;
+}
+.client-dashboard-root .state-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 860px) {
+  .client-dashboard-root .topbar {
+    display: flex;
   }
-  .client-dashboard-root .ob-file-row {
-    flex-wrap: wrap;
+  .client-dashboard-root .menu-btn {
+    display: flex;
+  }
+  .client-dashboard-root .sidebar-close-btn {
+    display: flex;
+  }
+  .client-dashboard-root .content {
+    padding: 24px 18px 48px;
+  }
+  .client-dashboard-root .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 240px;
+    height: 100vh;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: var(--shadow-lg);
+  }
+  .client-dashboard-root .sidebar.open {
+    transform: translateX(0);
+  }
+  .client-dashboard-root .mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 190;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .client-dashboard-root .mobile-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+@media (max-width: 640px) {
+  .client-dashboard-root .content-2col {
+    grid-template-columns: 1fr;
+  }
+  .client-dashboard-root .status-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .client-dashboard-root .support-card {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

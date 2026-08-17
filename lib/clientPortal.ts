@@ -16,6 +16,8 @@ export type ClientRecord = {
   designation: string | null;
   company_size: string | null;
   status: string;
+  admin_request: string | null;
+  admin_request_at: string | null;
 };
 
 export async function fetchOwnClient(): Promise<ClientRecord | null> {
@@ -24,7 +26,7 @@ export async function fetchOwnClient(): Promise<ClientRecord | null> {
 
   const { data } = await supabase
     .from('clients')
-    .select('id, user_id, company_name, primary_contact, contact_email, contact_phone, industry, website, designation, company_size, status')
+    .select('id, user_id, company_name, primary_contact, contact_email, contact_phone, industry, website, designation, company_size, status, admin_request, admin_request_at')
     .eq('user_id', userData.user.id)
     .maybeSingle();
 

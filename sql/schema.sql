@@ -1400,3 +1400,16 @@ alter table clients add column if not exists timezone text;
 alter table client_requirements add column if not exists competitors text;
 alter table client_requirements add column if not exists existing_assets text;
 alter table client_requirements add column if not exists priority text default 'normal';
+
+-- CLIENT PORTAL — ফেজ ৭: Screen 5 (Empty Dashboard) রিডিজাইন। এডমিন client-এর
+-- কাছে অতিরিক্ত তথ্য চাইলে (Screen 7-এর নতুন "Request Information" অ্যাকশন) সেটা
+-- এখানে সেভ হয়, ড্যাশবোর্ডে "Action Required" স্টেট হিসেবে দেখা যায়।
+alter table clients add column if not exists admin_request text;
+alter table clients add column if not exists admin_request_at timestamptz;
+
+-- Screen 5-এর Recent Activity টাইমলাইনের জন্য — ক্লায়েন্ট নিজের entity_type='client'
+-- অ্যাক্টিভিটি পড়তে পারবে (আগে শুধু insert পলিসি ছিল, select ছিল না)।
+drop policy if exists "client can read own activity" on activity_log;
+create policy "client can read own activity" on activity_log for select using (
+  entity_type = 'client' and exists (select 1 from clients where clients.id = activity_log.entity_id and clients.user_id = auth.uid())
+);

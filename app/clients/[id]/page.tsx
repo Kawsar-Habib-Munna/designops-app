@@ -102,6 +102,8 @@ type ClientDetail = {
   account_manager_id: string | null;
   notes: string | null;
   user_id: string | null;
+  admin_request: string | null;
+  admin_request_at: string | null;
   created_at: string;
 };
 
@@ -157,6 +159,9 @@ export default function ClientDetailPage() {
   const [saving, setSaving] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
+  const [requestText, setRequestText] = useState('');
+  const [requestSaving, setRequestSaving] = useState(false);
+
   useEffect(() => {
     if (!user || !clientId) return;
 
@@ -164,7 +169,7 @@ export default function ClientDetailPage() {
       const [clientRes, requirementsRes, filesRes, projectsRes, activityRes, managersRes] = await Promise.all([
         supabase
           .from('clients')
-          .select('id, company_name, primary_contact, contact_email, contact_phone, industry, website, designation, company_size, status, priority, account_manager_id, notes, user_id, created_at, account_manager:profiles!account_manager_id(id, full_name, avatar_color, avatar_url)')
+          .select('id, company_name, primary_contact, contact_email, contact_phone, industry, website, designation, company_size, status, priority, account_manager_id, notes, user_id, admin_request, admin_request_at, created_at, account_manager:profiles!account_manager_id(id, full_name, avatar_color, avatar_url)')
           .eq('id', clientId)
           .maybeSingle(),
         supabase.from('client_requirements').select('project_name, project_type, project_description, goals, target_audience, required_features, expected_timeline, budget_range, reference_notes').eq('client_id', clientId).maybeSingle(),
@@ -237,6 +242,60 @@ export default function ClientDetailPage() {
 
     setSaving(false);
     setShowEdit(false);
+    setReloadKey((k) => k + 1);
+  }
+
+  // ক্লায়েন্টের কাছে অতিরিক্ত তথ্য চাওয়া — client ড্যাশবোর্ডে (Screen 5) সাথে সাথে
+  // "Action Required" স্টেট হিসেবে দেখা যায়, কোনো আলাদা মেসেজিং টেবিল ছাড়াই।
+  async function handleSendRequest() {
+    if (!client || !user || !requestText.trim()) return;
+    setRequestSaving(true);
+
+    const { error: updateError } = await supabase
+      .from('clients')
+      .update({ admin_request: requestText.trim(), admin_request_at: new Date().toISOString() })
+      .eq('id', client.id);
+
+    if (updateError) {
+      setError(updateError.message);
+      setRequestSaving(false);
+      return;
+    }
+
+    await supabase.from('activity_log').insert({
+      actor_id: user.id,
+      action: 'info_requested',
+      entity_type: 'client',
+      entity_id: client.id,
+      detail: `ক্লায়েন্টের কাছে অতিরিক্ত তথ্য চাওয়া হয়েছে: "${requestText.trim()}"`,
+    });
+
+    setRequestText('');
+    setRequestSaving(false);
+    setReloadKey((k) => k + 1);
+  }
+
+  async function handleResolveRequest() {
+    if (!client || !user) return;
+    setRequestSaving(true);
+
+    const { error: updateError } = await supabase.from('clients').update({ admin_request: null, admin_request_at: null }).eq('id', client.id);
+
+    if (updateError) {
+      setError(updateError.message);
+      setRequestSaving(false);
+      return;
+    }
+
+    await supabase.from('activity_log').insert({
+      actor_id: user.id,
+      action: 'info_request_resolved',
+      entity_type: 'client',
+      entity_id: client.id,
+      detail: 'তথ্য অনুরোধ সমাধান হিসেবে চিহ্নিত করা হয়েছে',
+    });
+
+    setRequestSaving(false);
     setReloadKey((k) => k + 1);
   }
 
@@ -411,6 +470,36 @@ export default function ClientDetailPage() {
 
             <div className="detail-two-col">
               <div className="detail-main-col">
+                {client.user_id && (
+                  <div className="side-card">
+                    <div className="side-card-title">Request Information from Client</div>
+                    {client.admin_request ? (
+                      <>
+                        <p className="req-text" style={{ marginBottom: 10 }}>&quot;{client.admin_request}&quot;</p>
+                        <div className="client-detail-label" style={{ marginBottom: 12 }}>
+                          {client.admin_request_at ? `পাঠানো হয়েছে ${relativeTimeBn(client.admin_request_at)}` : ''}
+                        </div>
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={handleResolveRequest} disabled={requestSaving}>
+                          {requestSaving ? 'সেভ হচ্ছে…' : 'Mark Resolved'}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <textarea
+                          className="modal-textarea"
+                          placeholder="ক্লায়েন্টের কাছে কী তথ্য দরকার লিখুন…"
+                          value={requestText}
+                          onChange={(e) => setRequestText(e.target.value)}
+                          style={{ marginBottom: 10 }}
+                        />
+                        <button type="button" className="btn btn-accent btn-sm" onClick={handleSendRequest} disabled={requestSaving || !requestText.trim()}>
+                          {requestSaving ? 'পাঠানো হচ্ছে…' : 'Send Request'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 <div className="side-card">
                   <div className="side-card-title">Project Requirements</div>
                   {requirements ? (
