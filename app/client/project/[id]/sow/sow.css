@@ -90,7 +90,7 @@
 .client-sow-root .sw-bare-shell { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
 
 /* ---------- document ---------- */
-.client-sow-root .sw-doc-wrap { max-width: 760px; margin: 0 auto; }
+.client-sow-root .sw-doc-wrap { width: 100%; }
 
 .client-sow-root .sw-just-signed-banner { background: var(--positive-soft); color: var(--positive); font-size: 12.5px; font-weight: 600; padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 16px; }
 
