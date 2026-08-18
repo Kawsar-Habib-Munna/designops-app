@@ -1443,3 +1443,22 @@ create policy "team can read client_notes" on client_notes for select using (pub
 create policy "team can write client_notes" on client_notes for insert with check (public.is_team_member());
 create policy "team can update client_notes" on client_notes for update using (public.is_team_member());
 create policy "team can delete client_notes" on client_notes for delete using (public.is_team_member());
+
+-- CLIENT PORTAL — ফেজ ১০: Screen 8 (Create Project) রিডিজাইন।
+-- scope_note/deliverables_note ছোট formatted-text কলাম হিসেবে রাখা হয়েছে —
+-- structured scope/deliverables টেবিল বানানো হয়নি যেহেতু SOW টেবিল (Screen 10-11)-ই
+-- আসল structured scope/deliverables/payment_terms রাখে; এখানে শুধু agency-র
+-- initial planning নোট, যেটা পরে SOW বানানোর সময় রেফারেন্স হিসেবে কাজে লাগবে।
+alter table projects add column if not exists scope_note text;
+alter table projects add column if not exists deliverables_note text;
+alter table projects add column if not exists payment_structure text; -- full | deposit_final | milestones | custom
+
+-- client_visible=false দিয়ে প্রজেক্ট client portal-এ লুকানো থাকে (Screen 5/9
+-- কোনো কোড পরিবর্তন ছাড়াই এই RLS পলিসিতেই real-এ কাজ করে — hidden প্রজেক্ট
+-- client-এর কাছে row-ই আসে না, তাই Screen 5 dashboard redirect করে না, Screen 9
+-- সরাসরি URL দিয়েও অ্যাক্সেস করা যায় না)।
+alter table projects add column if not exists client_visible boolean not null default true;
+drop policy if exists "client can read own projects" on projects;
+create policy "client can read own projects" on projects for select using (
+  client_visible = true and exists (select 1 from clients where clients.id = projects.client_id and clients.user_id = auth.uid())
+);

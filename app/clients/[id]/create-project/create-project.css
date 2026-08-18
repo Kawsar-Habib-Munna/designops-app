@@ -1,11 +1,103 @@
-/* Screen 8 — Create Project। modal-field/modal-input ইত্যাদি ../../clients.css থেকে
-   আসে (মোডালের বাইরে, সরাসরি পেজে ব্যবহার করা হচ্ছে — ক্লাস সিলেক্টর যেকোনো
-   কনটেক্সটে কাজ করে)। এখানে শুধু দুই-কলাম রেশিও আর ফর্ম-ফুট স্পেসিং। */
+/* Screen 8 — Create Project। রুট div-এ .clientslist-root, .client-detail-root,
+   .create-project-root তিনটাই থাকে, তাই টোকেন, শেল, modal, dcard, field,
+   toggle, status-pill, file-row ক্লাসগুলো ওই দুই ফাইল থেকে ফ্রি-তে আসে —
+   এখানে শুধু এই স্ক্রিনের নিজস্ব নতুন প্যাটার্নগুলো (client context bar,
+   chip toggles, deliverable rows, payment structure cards, sticky summary
+   sidebar)। */
 
-.create-project-root .create-project-grid{grid-template-columns:1.5fr 1fr;}
-.create-project-root .create-form{padding:20px 22px;}
-.create-project-root .create-form-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;padding-top:16px;border-top:1px solid var(--border-soft);}
+.create-project-root .cp8-layout{display:grid;grid-template-columns:1.7fr 1fr;gap:20px;align-items:start;}
+.create-project-root .cp8-main{display:flex;flex-direction:column;gap:16px;min-width:0;}
+
+/* ---- client context bar ---- */
+.create-project-root .client-context-bar{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;box-shadow:var(--shadow-sm);margin-bottom:18px;flex-wrap:wrap;}
+.create-project-root .cc-info{flex:1;min-width:200px;}
+.create-project-root .cc-name-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.create-project-root .cc-name{font-size:15px;font-weight:700;}
+.create-project-root .cc-company{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+.create-project-root .cc-meta-row{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.create-project-root .cc-req-label{font-size:10.5px;color:var(--ink-faint);}
+.create-project-root .cc-req-value{font-size:12px;font-weight:600;}
+
+/* ---- form section header ---- */
+.create-project-root .fs-title{font-size:13.5px;font-weight:700;margin-bottom:3px;}
+.create-project-root .fs-sub{font-size:11.5px;color:var(--ink-faint);margin-bottom:14px;}
+
+/* ---- chip toggles (Included / Excluded scope) ---- */
+.create-project-root .chip-toggle-group{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px;}
+.create-project-root .chip-toggle{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink-soft);}
+.create-project-root .chip-toggle:hover{border-color:var(--accent);}
+.create-project-root .chip-toggle.selected{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
+.create-project-root .chip-toggle.excluded.selected{background:var(--danger-soft);border-color:var(--danger-border);color:var(--danger);}
+.create-project-root .chip-add-row{display:flex;gap:8px;}
+.create-project-root .chip-add-row input{flex:1;}
+
+/* ---- deliverables ---- */
+.create-project-root .deliverable-list{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
+.create-project-root .deliverable-row{background:var(--surface-muted);border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:12px;}
+.create-project-root .deliverable-row-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.create-project-root .deliverable-row-head input{flex:1;}
+.create-project-root .deliverable-remove-btn{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--ink-faint);flex-shrink:0;background:none;border:none;}
+.create-project-root .deliverable-remove-btn:hover{background:var(--danger-soft);color:var(--danger);}
+.create-project-root .deliverable-quick-add{display:flex;flex-wrap:wrap;gap:6px;}
+
+/* ---- timeline ---- */
+.create-project-root .duration-hint{font-size:12px;color:var(--ink-soft);margin-top:8px;display:flex;align-items:center;gap:6px;}
+.create-project-root .duration-hint b{color:var(--ink);}
+.create-project-root .date-error{font-size:12px;color:var(--danger);margin-top:6px;}
+.create-project-root .milestone-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--surface-muted);border:1px solid var(--border-soft);border-radius:var(--radius-sm);margin-top:10px;}
+.create-project-root .milestone-toggle-label{font-size:12.5px;font-weight:600;}
+.create-project-root .milestone-toggle-sub{font-size:11px;color:var(--ink-faint);margin-top:2px;}
+.create-project-root .milestone-preview-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.create-project-root .milestone-preview-chip{font-size:10.5px;font-weight:600;padding:4px 9px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--ink-soft);}
+
+/* ---- payment structure ---- */
+.create-project-root .payment-structure-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+.create-project-root .payment-structure-card{text-align:left;padding:11px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer;}
+.create-project-root .payment-structure-card:hover{border-color:var(--accent);}
+.create-project-root .payment-structure-card.selected{background:var(--accent-soft);border-color:var(--accent);}
+.create-project-root .psc-title{font-size:12.5px;font-weight:700;}
+.create-project-root .psc-sub{font-size:10.5px;color:var(--ink-faint);margin-top:2px;}
+.create-project-root .payment-preview-box{background:var(--surface-muted);border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:12px 14px;}
+.create-project-root .payment-preview-row{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;padding:5px 0;}
+.create-project-root .payment-preview-row b{font-weight:700;}
+.create-project-root .deposit-slider-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.create-project-root .deposit-slider-row input[type='range']{flex:1;}
+
+/* ---- capacity hint ---- */
+.create-project-root .capacity-hint{font-size:11px;color:var(--ink-faint);margin-top:6px;}
+
+/* ---- client visibility ---- */
+.create-project-root .visibility-options{display:flex;flex-direction:column;gap:8px;}
+.create-project-root .visibility-option{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;}
+.create-project-root .visibility-option:hover{border-color:var(--accent);}
+.create-project-root .visibility-option.selected{background:var(--accent-soft);border-color:var(--accent);}
+.create-project-root .visibility-option input{margin-top:3px;flex-shrink:0;}
+.create-project-root .vo-title{font-size:12.5px;font-weight:700;}
+.create-project-root .vo-sub{font-size:11px;color:var(--ink-faint);margin-top:2px;}
+
+/* ---- sticky summary sidebar ---- */
+.create-project-root .ps-sidebar{position:sticky;top:16px;display:flex;flex-direction:column;gap:14px;}
+.create-project-root .ps-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:7px 0;font-size:12px;border-bottom:1px solid var(--border-soft);}
+.create-project-root .ps-row:last-child{border-bottom:none;}
+.create-project-root .ps-row span:first-child{color:var(--ink-faint);flex-shrink:0;}
+.create-project-root .ps-row span:last-child{font-weight:600;color:var(--ink);text-align:right;}
+.create-project-root .ps-row span:last-child.muted{color:var(--ink-faint);font-weight:500;font-style:italic;}
+.create-project-root .ps-actions{display:flex;flex-direction:column;gap:8px;margin-top:4px;}
+
+/* ---- header actions ---- */
+.create-project-root .cp8-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+.create-project-root .cp8-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+
+/* ---- duplicate warning icon ---- */
+.create-project-root .dup-icon{width:40px;height:40px;border-radius:12px;background:var(--warning-soft);color:var(--warning);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 
 @media (max-width:1100px){
-  .create-project-root .create-project-grid{grid-template-columns:1fr;}
+  .create-project-root .cp8-layout{grid-template-columns:1fr;}
+  .create-project-root .ps-sidebar{position:static;}
+}
+@media (max-width:640px){
+  .create-project-root .payment-structure-grid{grid-template-columns:1fr;}
+  .create-project-root .cp8-header-row{flex-direction:column;align-items:stretch;}
+  .create-project-root .cp8-actions{width:100%;}
+  .create-project-root .cp8-actions .btn{flex:1;justify-content:center;}
 }
