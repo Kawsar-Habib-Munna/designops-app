@@ -1,0 +1,83 @@
+/* Screen 13 — Payment Confirmation (client)। cp-* প্রিমিটিভ client-shared.css থেকে,
+   এখানে শুধু সামারি/ফর্ম/সাকসেস-স্টেট লেআউট। */
+
+.client-confirm-root {
+  --warning: #f5a524;
+  --warning-soft: #fdf3e1;
+}
+@media (prefers-color-scheme: dark) {
+  .client-confirm-root {
+    --warning: #f5b455;
+    --warning-soft: #332616;
+  }
+}
+
+.client-confirm-root .cf-shell { max-width: 640px; margin: 0 auto; padding: 32px 20px 64px; }
+.client-confirm-root .cf-back { font-size: 13px; color: var(--ink-faint); font-weight: 600; display: inline-block; margin-bottom: 14px; }
+.client-confirm-root .cf-back:hover { color: var(--ink); }
+.client-confirm-root .cf-breadcrumb { font-size: 11.5px; color: var(--ink-faint); margin-bottom: 6px; }
+.client-confirm-root .cf-title { margin: 0 0 4px; font-size: 21px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
+.client-confirm-root .cf-sub { margin: 0 0 18px; font-size: 13px; color: var(--ink-soft); }
+
+.client-confirm-root .cf-banner { border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 16px; font-size: 13px; color: var(--ink-soft); }
+.client-confirm-root .cf-banner-warning { background: var(--warning-soft); }
+.client-confirm-root .cf-banner-title { font-size: 13.5px; font-weight: 700; color: var(--warning); margin-bottom: 4px; }
+.client-confirm-root .cf-banner p { margin: 0; }
+
+/* ---- summary ---- */
+.client-confirm-root .cf-summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 22px; margin-bottom: 16px; }
+.client-confirm-root .cf-summary-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+.client-confirm-root .cf-summary-ref { font-size: 12px; font-weight: 700; color: var(--ink-faint); }
+.client-confirm-root .cf-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+.client-confirm-root .cf-summary-label { display: block; font-size: 10.5px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.client-confirm-root .cf-summary-grid p { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.client-confirm-root .cf-summary-amount { font-size: 20px !important; font-weight: 800 !important; color: var(--accent) !important; }
+
+/* ---- SOW reference ---- */
+.client-confirm-root .cf-sow-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 16px; }
+.client-confirm-root .cf-sow-label { display: block; font-size: 11px; font-weight: 700; color: var(--ink); margin-bottom: 10px; }
+.client-confirm-root .cf-sow-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.client-confirm-root .cf-sow-number { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.client-confirm-root .cf-sow-sub { font-size: 11.5px; color: var(--ink-faint); margin-top: 2px; }
+
+/* ---- form ---- */
+.client-confirm-root .cf-form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 24px; margin-bottom: 16px; }
+.client-confirm-root .cf-form-title { font-size: 14px; font-weight: 800; color: var(--ink); margin-bottom: 16px; }
+.client-confirm-root .cf-upload-hint { font-size: 12px; color: var(--ink-faint); margin: 0 0 10px; }
+
+.client-confirm-root .cf-proof-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.client-confirm-root .cf-proof-thumb { max-width: 140px; max-height: 100px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; padding: 6px; }
+.client-confirm-root .cf-proof-link { font-size: 12.5px; font-weight: 600; color: var(--accent); }
+.client-confirm-root .cf-proof-link:hover { text-decoration: underline; }
+
+.client-confirm-root .cf-check-row { display: flex; align-items: flex-start; gap: 10px; margin: 18px 0 16px; cursor: pointer; }
+.client-confirm-root .cf-check { width: 20px; height: 20px; min-width: 20px; border-radius: 6px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; transition: background 0.15s ease, border-color 0.15s ease; }
+.client-confirm-root .cf-check.checked { background: var(--accent); border-color: var(--accent); }
+.client-confirm-root .cf-check-label { font-size: 13px; line-height: 1.5; color: var(--ink-soft); padding-top: 1px; }
+
+.client-confirm-root .cf-support-line { text-align: center; font-size: 12.5px; color: var(--ink-faint); }
+.client-confirm-root .cf-support-line a { color: var(--accent); font-weight: 600; }
+.client-confirm-root .cf-support-line a:hover { text-decoration: underline; }
+
+/* ---- state / success cards ---- */
+.client-confirm-root .cf-state-card { text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 48px 24px; margin-top: 20px; }
+.client-confirm-root .cf-state-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.client-confirm-root .cf-state-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 18px; }
+.client-confirm-root .cf-state-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+.client-confirm-root .cf-success-card { text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 40px 28px; }
+.client-confirm-root .cf-success-icon { width: 52px; height: 52px; border-radius: 50%; background: var(--positive-soft); color: var(--positive); font-size: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+.client-confirm-root .cf-success-title { margin: 0 0 8px; font-size: 18px; font-weight: 700; color: var(--ink); }
+.client-confirm-root .cf-success-sub { margin: 0 0 22px; font-size: 13.5px; color: var(--ink-soft); line-height: 1.6; }
+.client-confirm-root .cf-success-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; text-align: left; background: var(--bg); border-radius: var(--radius-sm); padding: 18px 20px; margin-bottom: 18px; }
+.client-confirm-root .cf-success-label { display: block; font-size: 10px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+.client-confirm-root .cf-success-grid p { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); word-break: break-word; }
+.client-confirm-root .cf-success-badge { margin-bottom: 22px; }
+
+@media (max-width: 600px) {
+  .client-confirm-root .cf-summary-grid,
+  .client-confirm-root .cf-success-grid { grid-template-columns: 1fr 1fr; }
+  .client-confirm-root .cf-form-card,
+  .client-confirm-root .cf-summary-card,
+  .client-confirm-root .cf-success-card { padding: 18px; }
+}

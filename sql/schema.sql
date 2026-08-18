@@ -1641,3 +1641,76 @@ begin
 end;
 $$;
 grant execute on function public.mark_invoice_viewed(uuid) to authenticated;
+
+-- CLIENT PORTAL — ফেজ ১৫: Screen 13 (Payment Confirmation)। বিদ্যমান payments
+-- টেবিলই "payment transaction" রেকর্ড — নতুন কোনো ডুপ্লিকেট টেবিল লাগেনি। প্রতিটা
+-- সাবমিশন একটা নতুন রো (correction/resubmit হলে পুরনো রো অপরিবর্তিত থাকে, audit
+-- history রক্ষিত) — payments.status ভেরিফিকেশন সাব-স্টেট ট্র্যাক করে, invoices.status
+-- রিকোয়েস্ট-লেভেল lifecycle ট্র্যাক করে (spec-এর "Request vs Transaction" আলাদা
+-- রাখার নীতি অনুযায়ী)।
+--
+-- Partial payment এই আর্কিটেকচারে সাপোর্টেড না (কোথাও partial-paid ট্র্যাকিং কলাম
+-- নেই) — তাই ক্লায়েন্ট-সাইডে "Amount Paid" ইচ্ছাকৃতভাবে read-only থাকবে, amount
+-- mismatch/partial-paid state ফ্যাব্রিকেট করা হয়নি (spec নিজেই এই ছাড় দিয়েছে)।
+alter table payments add column if not exists status text not null default 'submitted';
+-- submitted | correction_requested | unable_to_verify | confirmed
+alter table payments add column if not exists proof_url text;
+alter table payments add column if not exists sender_name text;
+alter table payments add column if not exists correction_reason text;
+alter table payments add column if not exists correction_requested_at timestamptz;
+alter table payments add column if not exists correction_requested_by uuid references profiles(id);
+
+-- ফেজ ১৫-এর আগে confirm করা পুরনো payments রো-গুলো default 'submitted' পেয়ে
+-- যেত — সেগুলোকে ঠিক করে 'confirmed'-এ আনা হলো।
+update payments set status = 'confirmed' where confirmed_at is not null and status = 'submitted';
+
+-- submit_payment()-এ proof_url/sender_name যোগ + real duplicate-submission guard
+-- (আগে শুধু invoices UPDATE-এ status='pending' চেক হতো, payments INSERT
+-- unconditionally হয়ে যেত — এখন insert-এর আগেই invoice-এর বর্তমান status চেক হয়)।
+drop function if exists public.submit_payment(uuid, numeric, text, text, date, text);
+
+create or replace function public.submit_payment(
+  p_invoice_id uuid,
+  p_amount numeric,
+  p_method text,
+  p_transaction_id text,
+  p_payment_date date,
+  p_notes text,
+  p_proof_url text default null,
+  p_sender_name text default null
+)
+returns uuid
+language plpgsql
+security definer
+as $$
+declare
+  v_project_id uuid;
+  v_client_id uuid;
+  v_client_user_id uuid;
+  v_status text;
+  v_payment_id uuid;
+begin
+  select invoices.project_id, invoices.client_id, invoices.status into v_project_id, v_client_id, v_status from invoices where invoices.id = p_invoice_id;
+  if v_client_id is null then
+    raise exception 'Invoice not found';
+  end if;
+
+  select clients.user_id into v_client_user_id from clients where clients.id = v_client_id;
+  if v_client_user_id is null or v_client_user_id != auth.uid() then
+    raise exception 'Not authorized';
+  end if;
+
+  if v_status != 'pending' then
+    raise exception 'This payment request is not currently accepting confirmation.';
+  end if;
+
+  insert into payments (invoice_id, project_id, client_id, amount, payment_method, transaction_id, payment_date, notes, submitted_by, status, proof_url, sender_name)
+  values (p_invoice_id, v_project_id, v_client_id, p_amount, p_method, p_transaction_id, p_payment_date, p_notes, 'client', 'submitted', p_proof_url, p_sender_name)
+  returning id into v_payment_id;
+
+  update invoices set status = 'processing' where id = p_invoice_id;
+
+  return v_payment_id;
+end;
+$$;
+grant execute on function public.submit_payment(uuid, numeric, text, text, date, text, text, text) to authenticated;

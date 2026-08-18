@@ -5,12 +5,12 @@
 // হিরো কার্ডে বড় করে দেখায় — বাকিগুলো নিচে কমপ্যাক্ট হিস্ট্রি হিসেবে (Screen 14
 // এখানে বানানো হয়নি, শুধু ডেটা লুকানো হচ্ছে না)।
 //
-// "Continue to Payment"/"I Have Made the Payment" চাপলে বিদ্যমান
-// submit_payment RPC-ই কল হয় (এটাই Screen 13-এর আসল মেকানিজম, আগে থেকেই ছিল —
-// নতুন কিছু বানানো হয়নি, শুধু নতুন হিরো লেআউটে ইন্টিগ্রেট করা হলো)। internal_note
-// কলাম এখানে কখনো select করা হয় না — client-safe কলাম লিস্টই একমাত্র সুরক্ষা।
+// "Continue to Payment"/"I Have Made the Payment" এখন dedicated Screen 13
+// (./confirm) রুটে নিয়ে যায় — সেখানেই আসল submit_payment RPC কল হয়, proof
+// আপলোড, correction/resubmit ফ্লো ইত্যাদি। internal_note কলাম এখানে কখনো
+// select করা হয় না — client-safe কলাম লিস্টই একমাত্র সুরক্ষা।
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
@@ -39,10 +39,9 @@ type Invoice = {
   viewed_at: string | null;
   created_at: string;
 };
-type Payment = { id: string; invoice_id: string; payment_method: string | null; transaction_id: string | null; payment_date: string | null; notes: string | null; confirmed_at: string | null };
+type Payment = { id: string; invoice_id: string; payment_method: string | null; transaction_id: string | null; payment_date: string | null; notes: string | null; confirmed_at: string | null; status: string; correction_reason: string | null };
 
 const WHATSAPP_URL_BASE = 'https://wa.me/8801804409235';
-const METHOD_OPTIONS = ['Bank Transfer', 'bKash', 'Nagad', 'Other'];
 
 function humanizeType(slug: string) {
   return slug.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -61,14 +60,6 @@ export default function ClientPaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [sows, setSows] = useState<SowBrief[]>([]);
   const [reloadKey, setReloadKey] = useState(0);
-
-  const [showPayForm, setShowPayForm] = useState(false);
-  const [method, setMethod] = useState('Bank Transfer');
-  const [transactionId, setTransactionId] = useState('');
-  const [paymentDate, setPaymentDate] = useState(todayISO());
-  const [notes, setNotes] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -93,7 +84,7 @@ export default function ClientPaymentsPage() {
             .select('id, request_number, payment_type, description, amount, currency, percentage, due_date, payment_method, status, client_instructions, sow_id, document_url, sent_at, viewed_at, created_at')
             .eq('project_id', projectId)
             .order('created_at', { ascending: false }),
-          supabase.from('payments').select('id, invoice_id, payment_method, transaction_id, payment_date, notes, confirmed_at').eq('project_id', projectId).order('created_at', { ascending: false }),
+          supabase.from('payments').select('id, invoice_id, payment_method, transaction_id, payment_date, notes, confirmed_at, status, correction_reason').eq('project_id', projectId).order('created_at', { ascending: false }),
           supabase.from('sows').select('id, sow_number, version, status, project_value').eq('project_id', projectId),
         ]);
         const invoiceRows = (invoicesRes.data as Invoice[]) ?? [];
@@ -115,33 +106,6 @@ export default function ClientPaymentsPage() {
 
     load();
   }, [router, projectId, reloadKey]);
-
-  async function handleSubmitPayment(e: FormEvent, invoiceId: string, amount: number) {
-    e.preventDefault();
-    if (!transactionId.trim()) {
-      setSubmitError('Please enter your transaction ID.');
-      return;
-    }
-    setSubmitError(null);
-    setSubmitting(true);
-    const { error } = await supabase.rpc('submit_payment', {
-      p_invoice_id: invoiceId,
-      p_amount: amount,
-      p_method: method,
-      p_transaction_id: transactionId.trim(),
-      p_payment_date: paymentDate,
-      p_notes: notes.trim() || null,
-    });
-    setSubmitting(false);
-    if (error) {
-      setSubmitError(error.message);
-      return;
-    }
-    setShowPayForm(false);
-    setTransactionId('');
-    setNotes('');
-    setReloadKey((k) => k + 1);
-  }
 
   if (loading) {
     return (
@@ -242,6 +206,9 @@ export default function ClientPaymentsPage() {
                   Submitted: {submission.payment_method} · {submission.transaction_id} · {submission.payment_date ? formatBnDateLong(submission.payment_date) : ''}
                 </div>
               )}
+              <Link href={`/client/project/${project.id}/payments/confirm`} className="cp-btn cp-btn-secondary cp-btn-sm" style={{ marginTop: 10 }}>
+                View Payment Details
+              </Link>
             </div>
           )}
 
@@ -253,47 +220,24 @@ export default function ClientPaymentsPage() {
             </Link>
           )}
 
-          {primary.status === 'pending' &&
-            (showPayForm ? (
-              <form className="pm-confirm-form" onSubmit={(e) => handleSubmitPayment(e, primary.id, primary.amount)}>
-                {submitError && <div className="cp-alert cp-alert-error">{submitError}</div>}
-                <div className="cp-field">
-                  <label className="cp-label">Payment Method</label>
-                  <select className="cp-input" value={method} onChange={(e) => setMethod(e.target.value)}>
-                    {METHOD_OPTIONS.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="cp-field">
-                  <label className="cp-label">Transaction ID</label>
-                  <input className="cp-input" type="text" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} required />
-                </div>
-                <div className="cp-field">
-                  <label className="cp-label">Payment Date</label>
-                  <input className="cp-input" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
-                </div>
-                <div className="cp-field">
-                  <label className="cp-label">Notes (optional)</label>
-                  <textarea className="cp-input" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} style={{ resize: 'vertical' }} />
-                </div>
-                <div className="pm-confirm-actions">
-                  <button type="button" className="cp-btn cp-btn-secondary" onClick={() => setShowPayForm(false)}>
-                    Cancel
-                  </button>
-                  <button type="submit" className="cp-btn cp-btn-primary" disabled={submitting}>
-                    {submitting && <span className="cp-spinner" />}
-                    {submitting ? 'জমা হচ্ছে…' : 'Submit'}
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <button type="button" className="cp-btn cp-btn-primary cp-btn-block" style={{ marginTop: 14 }} onClick={() => setShowPayForm(true)}>
-                {primary.payment_method === 'Bank Transfer' ? 'I Have Made the Payment' : 'Continue to Payment'}
-              </button>
-            ))}
+          {primary.status === 'pending' && submission?.status === 'correction_requested' && (
+            <div className="pm-hero-note pm-hero-note-warning">
+              <div className="pm-hero-note-title">Action Required</div>
+              <p>{submission.correction_reason || 'Please review your payment details and resubmit.'}</p>
+            </div>
+          )}
+          {primary.status === 'pending' && submission?.status === 'unable_to_verify' && (
+            <div className="pm-hero-note pm-hero-note-warning">
+              <div className="pm-hero-note-title">Unable to Verify</div>
+              <p>We couldn&apos;t verify the payment using the information you provided. Please check the details and resubmit.</p>
+            </div>
+          )}
+
+          {primary.status === 'pending' && (
+            <Link href={`/client/project/${project.id}/payments/confirm`} className="cp-btn cp-btn-primary cp-btn-block" style={{ marginTop: 14 }}>
+              {submission?.status === 'correction_requested' || submission?.status === 'unable_to_verify' ? 'Update Payment Details' : primary.payment_method === 'Bank Transfer' ? 'I Have Made the Payment' : 'Continue to Payment'}
+            </Link>
+          )}
         </div>
 
         {/* ---- breakdown ---- */}

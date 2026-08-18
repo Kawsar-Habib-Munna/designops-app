@@ -118,7 +118,30 @@ type Invoice = {
   cancelled_at: string | null;
   created_at: string;
 };
-type Payment = { id: string; invoice_id: string; amount: number | null; payment_method: string | null; transaction_id: string | null; payment_date: string | null; notes: string | null; submitted_by: string; confirmed_at: string | null };
+type Payment = {
+  id: string;
+  invoice_id: string;
+  amount: number | null;
+  payment_method: string | null;
+  transaction_id: string | null;
+  payment_date: string | null;
+  notes: string | null;
+  submitted_by: string;
+  confirmed_at: string | null;
+  status: string;
+  proof_url: string | null;
+  sender_name: string | null;
+  correction_reason: string | null;
+  receipt_number: string | null;
+  created_at: string;
+};
+
+function paymentStatusMeta(p: Payment): { label: string; cls: string } {
+  if (p.status === 'confirmed') return { label: 'Confirmed', cls: 's-done' };
+  if (p.status === 'correction_requested') return { label: 'Action Required', cls: 's-overdue' };
+  if (p.status === 'unable_to_verify') return { label: 'Unable to Verify', cls: 's-danger' };
+  return { label: 'Awaiting Verification', cls: 's-review' };
+}
 
 function statusMeta(inv: Invoice): { label: string; cls: string } {
   if (inv.status === 'draft') return { label: 'Draft', cls: 's-todo' };
@@ -151,7 +174,13 @@ export default function AdminPaymentsPage() {
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const [mode, setMode] = useState<'list' | 'editor'>('list');
+  const [mode, setMode] = useState<'list' | 'editor' | 'verify'>('list');
+  const [verifyTargetId, setVerifyTargetId] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [correctionMode, setCorrectionMode] = useState<'correction' | 'unable' | null>(null);
+  const [correctionReason, setCorrectionReason] = useState('');
+  const [correctionNotify, setCorrectionNotify] = useState(true);
+  const [submittingCorrection, setSubmittingCorrection] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [fType, setFType] = useState('Initial Deposit');
   const [fAmount, setFAmount] = useState('');
@@ -321,17 +350,50 @@ export default function AdminPaymentsPage() {
   }
 
   async function handleConfirm(invoiceId: string) {
-    const payment = payments.find((p) => p.invoice_id === invoiceId && !p.confirmed_at);
+    const payment = payments.find((p) => p.invoice_id === invoiceId && p.status !== 'confirmed');
     setConfirmingId(invoiceId);
     if (payment) {
       const receiptNumber = `RCPT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${payment.id.slice(0, 6).toUpperCase()}`;
-      await supabase.from('payments').update({ confirmed_by: user!.id, confirmed_at: new Date().toISOString(), receipt_number: receiptNumber }).eq('id', payment.id);
+      await supabase.from('payments').update({ confirmed_by: user!.id, confirmed_at: new Date().toISOString(), receipt_number: receiptNumber, status: 'confirmed' }).eq('id', payment.id);
     }
     await supabase.from('invoices').update({ status: 'paid' }).eq('id', invoiceId);
+    const invoiceRef = invoices.find((i) => i.id === invoiceId);
     if (project?.client_id) {
-      await supabase.from('activity_log').insert({ actor_id: user!.id, action: 'payment_received', entity_type: 'client', entity_id: project.client_id, detail: 'পেমেন্ট কনফার্ম করা হয়েছে' });
+      await supabase.from('activity_log').insert({ actor_id: user!.id, action: 'payment_received', entity_type: 'client', entity_id: project.client_id, detail: `পেমেন্ট কনফার্ম করা হয়েছে — ${invoiceRef?.currency ?? ''} ${invoiceRef?.amount?.toLocaleString('en-US') ?? ''}`.trim() });
     }
     setConfirmingId(null);
+    setShowConfirmModal(false);
+    setMode('list');
+    setReloadKey((k) => k + 1);
+  }
+
+  async function handleCorrectionSubmit() {
+    if (!verifyTargetId || !correctionMode || !project?.client_id) return;
+    const payment = payments.find((p) => p.invoice_id === verifyTargetId && p.status !== 'confirmed');
+    setSubmittingCorrection(true);
+    if (payment) {
+      await supabase
+        .from('payments')
+        .update({
+          status: correctionMode === 'correction' ? 'correction_requested' : 'unable_to_verify',
+          correction_reason: correctionReason.trim() || null,
+          correction_requested_at: new Date().toISOString(),
+          correction_requested_by: user!.id,
+        })
+        .eq('id', payment.id);
+    }
+    await supabase.from('invoices').update({ status: 'pending' }).eq('id', verifyTargetId);
+    await supabase.from('activity_log').insert({
+      actor_id: user!.id,
+      action: correctionMode === 'correction' ? 'payment_correction_requested' : 'payment_unable_to_verify',
+      entity_type: 'client',
+      entity_id: project.client_id,
+      detail: correctionMode === 'correction' ? 'পেমেন্ট সংশোধনের জন্য অনুরোধ পাঠানো হয়েছে' : 'পেমেন্ট যাচাই করা যায়নি বলে জানানো হয়েছে',
+    });
+    setSubmittingCorrection(false);
+    setCorrectionMode(null);
+    setCorrectionReason('');
+    setMode('list');
     setReloadKey((k) => k + 1);
   }
 
@@ -399,12 +461,159 @@ export default function AdminPaymentsPage() {
                   <span className="sep">/</span>
                   <Link href={`/projects/${project.id}`}>{project.name}</Link>
                   <span className="sep">/</span>
-                  <span className="current">{mode === 'editor' ? 'Payment Request' : 'Payments'}</span>
+                  <span className="current">{mode === 'editor' ? 'Payment Request' : mode === 'verify' ? 'Payment Verification' : 'Payments'}</span>
                 </div>
 
                 {error && <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: 13 }}>{error}</div>}
 
-                {mode === 'list' ? (
+                {mode === 'verify' ? (
+                  (() => {
+                    const verifyInvoice = invoices.find((i) => i.id === verifyTargetId) ?? null;
+                    const verifyPayment = verifyInvoice ? (payments.find((p) => p.invoice_id === verifyInvoice.id) ?? null) : null;
+                    const verifySow = verifyInvoice?.sow_id ? signedSow : null;
+                    const duplicateReference =
+                      !!verifyPayment?.transaction_id &&
+                      payments.some((p) => p.id !== verifyPayment.id && p.transaction_id === verifyPayment.transaction_id && p.status === 'confirmed');
+
+                    if (!verifyInvoice) {
+                      return (
+                        <div className="summary-card" style={{ textAlign: 'center', padding: '40px 20px' }}>
+                          <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>This submission could not be found.</p>
+                          <button className="btn btn-ghost btn-sm" onClick={() => setMode('list')} style={{ marginTop: 12 }}>
+                            Back to Payments
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <>
+                        <div className="proj-header">
+                          <div>
+                            <span className="proj-title">Payment Verification</span>
+                            <div className="proj-sub-row">
+                              {client && (
+                                <>
+                                  <span>{client.primary_contact ?? client.company_name}</span>
+                                  <span className="dividerdot"></span>
+                                </>
+                              )}
+                              <span>{client?.company_name}</span>
+                            </div>
+                          </div>
+                          <div className="header-actions">
+                            <button className="btn btn-ghost btn-sm" onClick={() => setMode('list')}>
+                              Back to Payments
+                            </button>
+                          </div>
+                        </div>
+
+                        {duplicateReference && (
+                          <div className="pay-warning-box" style={{ marginBottom: 16 }}>
+                            Possible duplicate transaction — reference &quot;{verifyPayment?.transaction_id}&quot; already matches a confirmed payment on this project.
+                          </div>
+                        )}
+
+                        <div className="pay-verify-grid">
+                          <div className="summary-card">
+                            <div className="dcard-title" style={{ marginBottom: 14 }}>
+                              Request
+                            </div>
+                            <div className="pay-sum-row">
+                              <span>Request</span>
+                              <span>{verifyInvoice.request_number ?? '—'}</span>
+                            </div>
+                            <div className="pay-sum-row">
+                              <span>Payment Type</span>
+                              <span>{humanizeType(verifyInvoice.payment_type)}</span>
+                            </div>
+                            <div className="pay-sum-row">
+                              <span>Requested Amount</span>
+                              <span className="tabular">
+                                {verifyInvoice.currency} {verifyInvoice.amount.toLocaleString('en-US')}
+                              </span>
+                            </div>
+                            <div className="pay-sum-row">
+                              <span>Due</span>
+                              <span>{verifyInvoice.due_date ? formatBnDate(verifyInvoice.due_date) : '—'}</span>
+                            </div>
+                            <div className="pay-sum-row">
+                              <span>Related SOW</span>
+                              <span>{verifySow ? `${verifySow.sow_number ?? `v${verifySow.version}`} · Signed ✓` : '—'}</span>
+                            </div>
+                          </div>
+
+                          <div className="summary-card">
+                            <div className="dcard-title" style={{ marginBottom: 14 }}>
+                              Verification
+                            </div>
+                            {verifyPayment ? (
+                              <>
+                                <div className="pay-sum-row">
+                                  <span>Submitted Amount</span>
+                                  <span className="tabular">
+                                    {verifyInvoice.currency} {verifyPayment.amount?.toLocaleString('en-US') ?? '—'}
+                                  </span>
+                                </div>
+                                <div className="pay-sum-row">
+                                  <span>Reference</span>
+                                  <span>{verifyPayment.transaction_id ?? '—'}</span>
+                                </div>
+                                <div className="pay-sum-row">
+                                  <span>Sender Name</span>
+                                  <span>{verifyPayment.sender_name ?? '—'}</span>
+                                </div>
+                                <div className="pay-sum-row">
+                                  <span>Payment Date</span>
+                                  <span>{verifyPayment.payment_date ? formatBnDate(verifyPayment.payment_date) : '—'}</span>
+                                </div>
+                                <div className="pay-sum-row">
+                                  <span>Submitted At</span>
+                                  <span>{formatBnDate(verifyPayment.created_at)}</span>
+                                </div>
+                                <div className="pay-sum-row">
+                                  <span>Status</span>
+                                  <span className={`status-pill ${paymentStatusMeta(verifyPayment).cls}`}>{paymentStatusMeta(verifyPayment).label}</span>
+                                </div>
+                                {verifyPayment.proof_url && (
+                                  <div style={{ marginTop: 12 }}>
+                                    <a href={verifyPayment.proof_url} target="_blank" rel="noopener noreferrer" className="pay-doc-link">
+                                      📄 View Proof of Payment ↗
+                                    </a>
+                                  </div>
+                                )}
+                                {verifyPayment.notes && (
+                                  <div style={{ marginTop: 12 }}>
+                                    <div className="pay-context-label" style={{ marginBottom: 4 }}>
+                                      Client Note
+                                    </div>
+                                    <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: 0 }}>{verifyPayment.notes}</p>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <p style={{ fontSize: 13, color: 'var(--ink-faint)' }}>No submission found for this request.</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {verifyPayment && verifyPayment.status !== 'confirmed' && (
+                          <div className="pay-verify-actions">
+                            <button className="btn btn-ghost btn-sm" onClick={() => setCorrectionMode('unable')}>
+                              Unable to Verify
+                            </button>
+                            <button className="btn btn-danger-ghost btn-sm" onClick={() => setCorrectionMode('correction')}>
+                              Request Correction
+                            </button>
+                            <button className="btn btn-accent btn-sm" onClick={() => setShowConfirmModal(true)}>
+                              Confirm Payment
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()
+                ) : mode === 'list' ? (
                   <>
                     <div className="proj-header">
                       <div>
@@ -486,7 +695,9 @@ export default function AdminPaymentsPage() {
 
                               {submission && (
                                 <div className="invoice-submission">
-                                  <div className="invoice-submission-title">Client submitted:</div>
+                                  <div className="invoice-submission-title">
+                                    Client submitted: <span className={`status-pill ${paymentStatusMeta(submission).cls}`}>{paymentStatusMeta(submission).label}</span>
+                                  </div>
                                   <div className="invoice-submission-grid">
                                     <span>Method: {submission.payment_method ?? '—'}</span>
                                     <span>Transaction ID: {submission.transaction_id ?? '—'}</span>
@@ -503,8 +714,14 @@ export default function AdminPaymentsPage() {
                                   </button>
                                 )}
                                 {inv.status === 'processing' && (
-                                  <button className="btn btn-accent btn-sm" onClick={() => handleConfirm(inv.id)} disabled={confirmingId === inv.id}>
-                                    {confirmingId === inv.id ? 'কনফার্ম হচ্ছে…' : 'Confirm Payment'}
+                                  <button
+                                    className="btn btn-accent btn-sm"
+                                    onClick={() => {
+                                      setVerifyTargetId(inv.id);
+                                      setMode('verify');
+                                    }}
+                                  >
+                                    Review Submission
                                   </button>
                                 )}
                                 {inv.status === 'paid' && submission && (
@@ -769,6 +986,106 @@ export default function AdminPaymentsPage() {
               </button>
               <button type="button" className="btn btn-danger btn-sm" onClick={handleCancelRequest} disabled={cancelling}>
                 {cancelling ? 'বাতিল হচ্ছে…' : 'Cancel Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showConfirmModal &&
+        (() => {
+          const invoiceForModal = invoices.find((i) => i.id === verifyTargetId);
+          const paymentForModal = invoiceForModal ? payments.find((p) => p.invoice_id === invoiceForModal.id) : null;
+          if (!invoiceForModal) return null;
+          return (
+            <div
+              className="modal-overlay"
+              onClick={(e) => {
+                if (e.target === e.currentTarget && confirmingId === null) setShowConfirmModal(false);
+              }}
+            >
+              <div className="modal-box">
+                <div className="modal-title" style={{ padding: '16px 18px', borderBottom: '1px solid var(--border-soft)' }}>
+                  Confirm payment received?
+                </div>
+                <div style={{ padding: 18 }}>
+                  <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: '0 0 14px' }}>
+                    You&apos;re confirming that {invoiceForModal.currency} {invoiceForModal.amount.toLocaleString('en-US')} has been received for {invoiceForModal.request_number ?? 'this request'}.
+                  </p>
+                  <div className="pay-sum-row">
+                    <span>Client</span>
+                    <span>{client?.primary_contact ?? client?.company_name}</span>
+                  </div>
+                  <div className="pay-sum-row">
+                    <span>Project</span>
+                    <span>{project?.name}</span>
+                  </div>
+                  <div className="pay-sum-row">
+                    <span>Amount</span>
+                    <span className="tabular">
+                      {invoiceForModal.currency} {invoiceForModal.amount.toLocaleString('en-US')}
+                    </span>
+                  </div>
+                  <div className="pay-sum-row">
+                    <span>Transaction Reference</span>
+                    <span>{paymentForModal?.transaction_id ?? '—'}</span>
+                  </div>
+                </div>
+                <div className="modal-foot">
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowConfirmModal(false)} disabled={confirmingId !== null}>
+                    Cancel
+                  </button>
+                  <button type="button" className="btn btn-accent btn-sm" onClick={() => handleConfirm(invoiceForModal.id)} disabled={confirmingId !== null}>
+                    {confirmingId !== null ? 'কনফার্ম হচ্ছে…' : 'Confirm Payment'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+      {correctionMode && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !submittingCorrection) {
+              setCorrectionMode(null);
+              setCorrectionReason('');
+            }
+          }}
+        >
+          <div className="modal-box">
+            <div className="modal-title" style={{ padding: '16px 18px', borderBottom: '1px solid var(--border-soft)' }}>
+              {correctionMode === 'correction' ? 'Request Correction' : 'Mark unable to verify?'}
+            </div>
+            <div style={{ padding: 18 }}>
+              <label className="field-label">Reason</label>
+              <textarea
+                className="field-input"
+                rows={3}
+                value={correctionReason}
+                onChange={(e) => setCorrectionReason(e.target.value)}
+                placeholder={correctionMode === 'correction' ? 'The transaction reference could not be verified. Please check and resubmit.' : "We couldn't verify the payment using the information provided."}
+                style={{ resize: 'vertical' }}
+              />
+              <label className="notify-row" style={{ marginTop: 4 }}>
+                <input type="checkbox" checked={correctionNotify} onChange={(e) => setCorrectionNotify(e.target.checked)} /> Notify Client
+              </label>
+            </div>
+            <div className="modal-foot">
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => {
+                  setCorrectionMode(null);
+                  setCorrectionReason('');
+                }}
+                disabled={submittingCorrection}
+              >
+                Cancel
+              </button>
+              <button type="button" className="btn btn-accent btn-sm" onClick={handleCorrectionSubmit} disabled={submittingCorrection}>
+                {submittingCorrection ? 'পাঠানো হচ্ছে…' : 'Send Request'}
               </button>
             </div>
           </div>
