@@ -1,0 +1,130 @@
+/* Screen 11 — SOW Signature (dedicated /sow/sign route)।
+   cp-* প্রিমিটিভ client-shared.css থেকে, বাকি সব sg-* এই পাতায় স্কোপড। */
+
+.client-sign-root {
+  --warning: #f5a524;
+  --warning-soft: #fdf3e1;
+}
+@media (prefers-color-scheme: dark) {
+  .client-sign-root {
+    --warning: #f5b455;
+    --warning-soft: #332616;
+  }
+}
+
+.client-sign-root .sg-shell { max-width: 640px; margin: 0 auto; padding: 32px 20px 140px; }
+.client-sign-root .sg-back { font-size: 13px; color: var(--ink-faint); font-weight: 600; display: inline-block; margin-bottom: 14px; }
+.client-sign-root .sg-back:hover { color: var(--ink); }
+.client-sign-root .sg-breadcrumb { font-size: 11.5px; color: var(--ink-faint); margin-bottom: 6px; }
+
+.client-sign-root .sg-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.client-sign-root .sg-title { margin: 0 0 4px; font-size: 21px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
+.client-sign-root .sg-sub { margin: 0; font-size: 13px; color: var(--ink-soft); }
+
+/* progress indicator */
+.client-sign-root .sg-progress { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+.client-sign-root .sg-progress-step { font-size: 11.5px; font-weight: 600; color: var(--ink-faint); white-space: nowrap; }
+.client-sign-root .sg-progress-step.sg-active { color: var(--accent); }
+.client-sign-root .sg-progress-step.sg-done { color: var(--positive); }
+.client-sign-root .sg-progress-line { flex: 1; height: 1px; background: var(--border); }
+
+/* agreement summary card */
+.client-sign-root .sg-summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 22px; margin-bottom: 18px; }
+.client-sign-root .sg-summary-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.client-sign-root .sg-summary-project { font-size: 15px; font-weight: 700; color: var(--ink); }
+.client-sign-root .sg-summary-client { font-size: 12.5px; color: var(--ink-faint); margin-top: 2px; }
+.client-sign-root .sg-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+.client-sign-root .sg-summary-label,
+.client-sign-root .sg-success-label { display: block; font-size: 10px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.client-sign-root .sg-summary-grid p,
+.client-sign-root .sg-modal-grid p { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.client-sign-root .sg-view-full-link { display: inline-block; margin-top: 16px; font-size: 12.5px; font-weight: 600; color: var(--accent); }
+.client-sign-root .sg-view-full-link:hover { text-decoration: underline; }
+
+/* generic panel */
+.client-sign-root .sg-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 22px; margin-bottom: 18px; }
+.client-sign-root .sg-panel-title { font-size: 14px; font-weight: 800; color: var(--ink); margin-bottom: 14px; }
+.client-sign-root .sg-panel-title-sm { display: block; font-size: 11px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
+
+.client-sign-root .sg-before-block { margin-bottom: 14px; }
+.client-sign-root .sg-before-label { display: block; font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px; }
+.client-sign-root .sg-before-list { margin: 0; padding-left: 18px; }
+.client-sign-root .sg-before-list li { font-size: 13px; line-height: 1.8; color: var(--ink-soft); }
+.client-sign-root .sg-before-text { margin: 0; font-size: 13px; line-height: 1.7; color: var(--ink-soft); white-space: pre-wrap; }
+.client-sign-root .sg-before-note { font-size: 12.5px; color: var(--ink-faint); font-style: italic; margin: 4px 0 14px; }
+
+/* confirmation checklist */
+.client-sign-root .sg-check-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; cursor: pointer; }
+.client-sign-root .sg-check { width: 20px; height: 20px; min-width: 20px; border-radius: 6px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; transition: background 0.15s ease, border-color 0.15s ease; }
+.client-sign-root .sg-check:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.client-sign-root .sg-check.checked { background: var(--accent); border-color: var(--accent); }
+.client-sign-root .sg-check-label { font-size: 13px; line-height: 1.55; color: var(--ink-soft); padding-top: 1px; }
+.client-sign-root .sg-legal-text { font-size: 13px; line-height: 1.7; color: var(--ink); background: var(--bg); border-radius: var(--radius-sm); padding: 14px 16px; margin-top: 4px; }
+
+/* signature tabs */
+.client-sign-root .sg-tabs { display: flex; gap: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 16px; }
+.client-sign-root .sg-tab { flex: 1; min-height: 44px; border: none; background: transparent; border-radius: 7px; font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.client-sign-root .sg-tab.active { background: var(--surface); color: var(--accent); box-shadow: var(--shadow-lg); }
+
+.client-sign-root .sg-sig-interface { margin-bottom: 16px; }
+.client-sign-root .sg-typed-preview { font-family: 'Georgia', serif; font-style: italic; font-size: 30px; color: var(--ink); padding: 18px 4px; border-bottom: 2px solid var(--border); min-height: 60px; display: flex; align-items: center; }
+.client-sign-root .sg-sig-caption { font-size: 11.5px; color: var(--ink-faint); margin-top: 8px; }
+
+.client-sign-root .sg-canvas-instruction { font-size: 12.5px; color: var(--ink-soft); margin: 0 0 10px; }
+.client-sign-root .sg-canvas { width: 100%; height: 170px; background: #fff; border: 1px solid var(--border); border-radius: 14px; touch-action: none; cursor: crosshair; display: block; }
+.client-sign-root .sg-canvas-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+.client-sign-root .sg-file-input { display: none; }
+.client-sign-root .sg-upload-preview img { max-width: 100%; max-height: 140px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; padding: 8px; display: block; }
+
+.client-sign-root .sg-preview-card { background: var(--bg); border-radius: var(--radius-sm); padding: 16px; margin-top: 4px; }
+.client-sign-root .sg-preview-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; }
+.client-sign-root .sg-preview-row span { font-size: 12px; color: var(--ink-faint); }
+.client-sign-root .sg-preview-row p { margin: 0; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+
+.client-sign-root .sg-trust-note { font-size: 12px; line-height: 1.6; color: var(--ink-faint); text-align: center; padding: 0 8px; margin-bottom: 18px; }
+.client-sign-root .sg-trust-note strong { color: var(--ink-soft); }
+
+/* sticky final cta */
+.client-sign-root .sg-sticky-cta { position: sticky; bottom: 0; background: var(--bg); padding: 14px 0 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; border-top: 1px solid var(--border); margin-top: -6px; }
+.client-sign-root .sg-question-link { font-size: 12px; color: var(--ink-faint); font-weight: 600; }
+.client-sign-root .sg-question-link:hover { color: var(--accent); }
+
+/* confirmation modal */
+.client-sign-root .sg-modal-overlay { position: fixed; inset: 0; background: rgba(20, 18, 24, 0.5); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 60; }
+.client-sign-root .sg-modal-box { width: 100%; max-width: 420px; background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 26px; }
+.client-sign-root .sg-modal-title { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: var(--ink); }
+.client-sign-root .sg-modal-desc { margin: 0 0 16px; font-size: 13px; line-height: 1.6; color: var(--ink-soft); }
+.client-sign-root .sg-modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; background: var(--bg); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 14px; }
+.client-sign-root .sg-modal-note { font-size: 12px; color: var(--ink-faint); margin: 0 0 18px; }
+.client-sign-root .sg-modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* state cards (expired / cancelled / superseded / error) */
+.client-sign-root .sg-state-card { text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 48px 24px; }
+.client-sign-root .sg-state-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--ink); }
+.client-sign-root .sg-state-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 18px; }
+.client-sign-root .sg-state-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* success / already-signed */
+.client-sign-root .sg-success-card { text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 44px 28px; }
+.client-sign-root .sg-success-icon { width: 56px; height: 56px; border-radius: 50%; background: var(--positive-soft); color: var(--positive); font-size: 26px; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; }
+.client-sign-root .sg-success-title { margin: 0 0 8px; font-size: 19px; font-weight: 700; color: var(--ink); }
+.client-sign-root .sg-success-sub { margin: 0 0 24px; font-size: 13.5px; color: var(--ink-soft); line-height: 1.6; }
+.client-sign-root .sg-success-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; text-align: left; background: var(--bg); border-radius: var(--radius-sm); padding: 18px 20px; margin-bottom: 18px; }
+.client-sign-root .sg-success-grid p { margin: 2px 0 0; font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.client-sign-root .sg-success-full { grid-column: 1 / -1; }
+.client-sign-root .sg-success-sig-preview img { max-height: 90px; max-width: 220px; margin: 0 auto 16px; display: block; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px; }
+.client-sign-root .sg-success-badge { margin-bottom: 24px; }
+.client-sign-root .sg-success-next { background: var(--accent-soft); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 22px; text-align: left; }
+.client-sign-root .sg-success-next-title { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.client-sign-root .sg-success-next p { margin: 0; font-size: 12.5px; color: var(--ink-soft); }
+
+@media (max-width: 640px) {
+  .client-sign-root .sg-summary-grid,
+  .client-sign-root .sg-success-grid,
+  .client-sign-root .sg-modal-grid { grid-template-columns: 1fr 1fr; }
+  .client-sign-root .sg-panel,
+  .client-sign-root .sg-summary-card { padding: 18px; }
+  .client-sign-root .sg-state-card,
+  .client-sign-root .sg-success-card { padding: 36px 20px; }
+}

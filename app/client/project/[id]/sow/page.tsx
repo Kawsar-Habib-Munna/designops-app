@@ -1,21 +1,21 @@
 'use client';
 
-// Screen 10/11 — Statement of Work, ক্লায়েন্ট সাইড (v2, মকআপ অনুযায়ী একটাই
-// পাতায় একত্রিত): পুরো ডকুমেন্ট + নিচে সাইন প্যানেল (typed name + single agree
-// checkbox + Sign & Accept), আলাদা কোনো /sow/sign সাব-রুট নেই। "Request
-// Changes" বিদ্যমান client_feedback টেবিল রিইউজ করে (নতুন কোনো টেবিল লাগেনি)।
+// Screen 10 — Statement of Work, ক্লায়েন্ট সাইড। পুরো ডকুমেন্ট + সাইন করা থাকলে
+// Agreement & Signatures ব্লকে আসল সিগনেচার (typed/drawn/uploaded) দেখায়। সাইন
+// করার আসল ফ্লো এখন আলাদা ডেডিকেটেড রুটে (./sign — Screen 11) — এখানে শুধু
+// "Review & Sign" CTA যেটা ওখানে নিয়ে যায়। "Request Changes" বিদ্যমান
+// client_feedback টেবিল রিইউজ করে (নতুন কোনো টেবিল লাগেনি)।
 //
-// sign_sow() RPC-কে এখনো real version-mismatch protection সহ কল করা হয় (client
-// যে ভার্সন দেখেছে ঠিক সেটাই সাইন হচ্ছে কিনা) — এটা ইনভিজিবল সিকিউরিটি, UI
-// সরলীকরণের সাথে সাংঘর্ষিক না। Draft SOW RLS-এই ফিল্টার হয়ে যায় (ফেজ ১১),
-// Sent→Viewed ট্র্যাকিং real (mark_sow_viewed RPC)।
+// Draft SOW RLS-এই ফিল্টার হয়ে যায় (ফেজ ১১), Sent→Viewed ট্র্যাকিং real
+// (mark_sow_viewed RPC, Screen 11 পাতাতেও একই কল হয়)।
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
 import { formatBnDateLong, todayISO } from '@/lib/format';
+import { driveThumbnailUrl } from '@/lib/driveUpload';
 import '../../../client-shared.css';
 import './sow.css';
 
@@ -45,6 +45,7 @@ type Sow = {
   signed_at: string | null;
   signed_by_name: string | null;
   signature_method: string | null;
+  signature_image_url: string | null;
 };
 
 function toOne<T>(v: T | T[] | null | undefined): T | null {
@@ -67,6 +68,8 @@ export default function ClientSowPage() {
   const params = useParams();
   const projectId = params.id as string;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const justSigned = searchParams.get('signed') === '1';
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -74,12 +77,7 @@ export default function ClientSowPage() {
   const [client, setClient] = useState<ClientRecord | null>(null);
   const [sow, setSow] = useState<Sow | null>(null);
 
-  const [fullName, setFullName] = useState('');
-  const [agreed, setAgreed] = useState(false);
-  const [signing, setSigning] = useState(false);
   const [signError, setSignError] = useState<string | null>(null);
-  const [justSigned, setJustSigned] = useState(false);
-  const [needsLatestVersion, setNeedsLatestVersion] = useState(false);
 
   const [showRequestChanges, setShowRequestChanges] = useState(false);
   const [changesText, setChangesText] = useState('');
@@ -102,7 +100,6 @@ export default function ClientSowPage() {
         }
         setProject(projectData as ProjectBrief);
         setClient(own);
-        setFullName(own.primary_contact ?? '');
 
         const { data: sowData } = await supabase.from('sows').select('*').eq('project_id', projectId).order('version', { ascending: false }).limit(1).maybeSingle();
         const sowRow = (sowData as Sow) ?? null;
@@ -121,46 +118,6 @@ export default function ClientSowPage() {
 
     load();
   }, [router, projectId]);
-
-  async function handleSign() {
-    if (!sow || !client || !fullName.trim() || !agreed) return;
-    setSigning(true);
-    setSignError(null);
-
-    const { error } = await supabase.rpc('sign_sow', {
-      p_sow_id: sow.id,
-      p_full_name: fullName.trim(),
-      p_signature: fullName.trim(),
-      p_signature_method: 'typed',
-      p_signature_image_url: null,
-      p_confirmation_statements: `I, ${fullName.trim()}, have reviewed this Statement of Work and agree to its scope, timeline, and payment terms on behalf of ${client.company_name}.`,
-      p_expected_version: sow.version,
-    });
-
-    if (error) {
-      setSigning(false);
-      if (error.message.includes('VERSION_MISMATCH')) {
-        setNeedsLatestVersion(true);
-        return;
-      }
-      setSignError(error.message);
-      return;
-    }
-
-    if (project) {
-      await supabase.from('activity_log').insert({
-        actor_id: null,
-        action: 'sow_signed',
-        entity_type: 'client',
-        entity_id: client.id,
-        detail: `${fullName.trim()} SOW ${sow.sow_number ?? `v${sow.version}`} সাইন করেছেন`,
-      });
-    }
-
-    setJustSigned(true);
-    setSigning(false);
-    setSow((prev) => (prev ? { ...prev, status: 'signed', signed_at: new Date().toISOString(), signed_by_name: fullName.trim() } : prev));
-  }
 
   async function handleSubmitChanges() {
     if (!client || !project || !changesText.trim()) return;
@@ -219,24 +176,6 @@ export default function ClientSowPage() {
           <div className="sw-state-card">
             <div className="sw-state-title">Statement of Work is being prepared</div>
             <p className="sw-state-sub">Our team is currently preparing your project agreement.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (needsLatestVersion) {
-    return (
-      <div className="client-portal client-sow-root">
-        <div className="sw-shell">
-          <div className="sw-state-card">
-            <div className="sw-state-title">This Statement of Work has been updated</div>
-            <p className="sw-state-sub">A newer version is available. Please review the latest version before signing.</p>
-            <div className="sw-state-actions">
-              <button type="button" className="cp-btn cp-btn-primary" onClick={() => window.location.reload()}>
-                View Latest Version
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -332,7 +271,7 @@ export default function ClientSowPage() {
         </div>
 
         {justSigned && (
-          <div className="sw-just-signed-banner">✓ SOW signed successfully — FLOW53 has been notified. Your signature now appears below.</div>
+          <div className="sw-just-signed-banner">✓ SOW signed successfully — your signature now appears below.</div>
         )}
 
         <div className="doc-card">
@@ -409,8 +348,13 @@ export default function ClientSowPage() {
               <div className="sig-block-sub">{client.company_name}</div>
               {isSigned ? (
                 <>
-                  <div className="sig-block-typed">{sow.signed_by_name}</div>
-                  <div className="sig-block-caption">Typed Signature</div>
+                  {sow.signature_image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className="sig-block-image" src={driveThumbnailUrl(sow.signature_image_url)} alt={`${sow.signed_by_name} signature`} />
+                  ) : (
+                    <div className="sig-block-typed">{sow.signed_by_name}</div>
+                  )}
+                  <div className="sig-block-caption">{sow.signature_method === 'drawn' ? 'Drawn Signature' : sow.signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
                   <div className="sig-block-meta">Signed on {sow.signed_at ? formatBnDateLong(sow.signed_at) : ''}</div>
                 </>
               ) : (
@@ -431,32 +375,17 @@ export default function ClientSowPage() {
           )}
         </div>
 
-        {!isSigned && (
+        {!isSigned && sow.status === 'sent' && (
           <div className="sign-panel">
-            <div className="sign-panel-title">Sign this Statement of Work</div>
+            <div className="sign-panel-title">Ready to proceed?</div>
+            <p className="sw-sign-cta-text">Review the agreement above, then sign electronically to begin your project.</p>
 
             {signError && <div className="cp-alert cp-alert-error">{signError}</div>}
 
-            <div className="cp-field">
-              <label className="cp-label">Type your full name to sign</label>
-              <input className="cp-input" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={client.primary_contact ?? 'Your full name'} />
-              <div className="sw-sig-preview">{fullName}</div>
-            </div>
-
-            <label className={`agree-row${agreed ? ' agreed' : ''}`}>
-              <span className={`agree-check${agreed ? ' checked' : ''}`} onClick={() => setAgreed((v) => !v)}>
-                {agreed ? '✓' : ''}
-              </span>
-              <span className="agree-label">
-                I, {fullName || '____________'}, have reviewed this Statement of Work and agree to its scope, timeline, and payment terms on behalf of {client.company_name}.
-              </span>
-            </label>
-
             <div className="sign-actions">
-              <button type="button" className="cp-btn cp-btn-primary" disabled={!fullName.trim() || !agreed || signing} onClick={handleSign}>
-                {signing && <span className="cp-spinner" />}
-                {signing ? 'Signing…' : 'Sign & Accept'}
-              </button>
+              <Link href={`/client/project/${project.id}/sow/sign?from=sow`} className="cp-btn cp-btn-primary">
+                Review &amp; Sign →
+              </Link>
               <button type="button" className="cp-btn cp-btn-secondary" onClick={() => setShowRequestChanges((v) => !v)}>
                 Request Changes
               </button>

@@ -19,7 +19,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
 import { useUnreadCount } from '@/lib/useUnreadCount';
 import { formatBnDateLong } from '@/lib/format';
-import { uploadFileToDrive } from '@/lib/driveUpload';
+import { uploadFileToDrive, driveThumbnailUrl } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
 
@@ -123,6 +123,7 @@ type Sow = {
   signed_at: string | null;
   signed_by_name: string | null;
   signature_method: string | null;
+  signature_image_url: string | null;
 };
 type MilestoneRow = { id: string; label: string; week: string };
 
@@ -844,8 +845,13 @@ export default function AdminSowPage() {
                               <div className="sig-block-sub">{client?.company_name}</div>
                               {selected.status === 'signed' ? (
                                 <>
-                                  <div className="sig-block-typed">{selected.signed_by_name}</div>
-                                  <div className="sig-block-caption">Typed Signature</div>
+                                  {selected.signature_image_url ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img className="sig-block-image" src={driveThumbnailUrl(selected.signature_image_url)} alt={`${selected.signed_by_name} signature`} />
+                                  ) : (
+                                    <div className="sig-block-typed">{selected.signed_by_name}</div>
+                                  )}
+                                  <div className="sig-block-caption">{selected.signature_method === 'drawn' ? 'Drawn Signature' : selected.signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
                                   <div className="sig-block-meta">Signed on {selected.signed_at ? formatBnDateLong(selected.signed_at) : ''}</div>
                                 </>
                               ) : (

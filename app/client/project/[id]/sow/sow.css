@@ -43,6 +43,7 @@
 .client-sow-root .sig-block-name { font-size: 14px; font-weight: 700; color: var(--ink); }
 .client-sow-root .sig-block-sub { font-size: 12px; color: var(--ink-faint); margin-bottom: 10px; }
 .client-sow-root .sig-block-typed { font-family: 'Georgia', serif; font-style: italic; font-size: 24px; color: var(--ink); border-bottom: 1.5px solid var(--border); padding-bottom: 6px; margin-bottom: 4px; }
+.client-sow-root .sig-block-image { max-width: 200px; max-height: 80px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px; margin-bottom: 6px; display: block; }
 .client-sow-root .sig-block-caption { font-size: 10.5px; color: var(--ink-faint); margin-bottom: 6px; }
 .client-sow-root .sig-block-meta { font-size: 12px; color: var(--ink-soft); }
 .client-sow-root .sig-block-pending { font-size: 12px; font-weight: 600; color: var(--warning); background: var(--warning-soft); display: inline-block; padding: 4px 10px; border-radius: 999px; }
@@ -50,13 +51,8 @@
 .client-sow-root .sig-version-line { font-size: 11.5px; color: var(--ink-faint); margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--border); }
 
 .client-sow-root .sign-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 24px; }
-.client-sow-root .sign-panel-title { font-size: 14px; font-weight: 800; margin-bottom: 14px; color: var(--ink); }
-.client-sow-root .sw-sig-preview { font-family: 'Georgia', serif; font-style: italic; font-size: 22px; color: var(--ink); padding: 10px 2px; border-bottom: 2px solid var(--border); min-height: 40px; display: flex; align-items: center; }
-
-.client-sow-root .agree-row { display: flex; align-items: flex-start; gap: 9px; margin: 14px 0; cursor: pointer; }
-.client-sow-root .agree-check { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--border); flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; transition: background 0.15s ease, border-color 0.15s ease; font-size: 11px; color: #fff; }
-.client-sow-root .agree-check.checked { background: var(--accent); border-color: var(--accent); }
-.client-sow-root .agree-label { font-size: 12px; line-height: 1.6; color: var(--ink-soft); }
+.client-sow-root .sign-panel-title { font-size: 14px; font-weight: 800; margin-bottom: 6px; color: var(--ink); }
+.client-sow-root .sw-sign-cta-text { font-size: 13px; color: var(--ink-soft); margin: 0 0 16px; }
 
 .client-sow-root .sign-actions { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
 .client-sow-root .sign-actions .cp-btn { flex: 1; min-width: 160px; justify-content: center; }

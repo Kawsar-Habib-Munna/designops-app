@@ -43,6 +43,16 @@ export function formatTimeBn(t: string | null) {
   return `${h}:${mStr} ${period}`;
 }
 
+// Trusted server timestamp (timestamptz) -> "Aug 24, 2026 · 10:42 AM BST" (viewer-এর
+// লোকাল টাইমজোনে, ইংরেজি লোকেলে — Signed SOW-এর মতো অফিসিয়াল টাইমস্ট্যাম্প দেখানোর জন্য)।
+export function formatDateTime(iso: string | null) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const datePart = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+  const timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+  return `${datePart} · ${timePart}`;
+}
+
 export function relativeTimeBn(dateStr: string) {
   const diffMs = Date.now() - new Date(dateStr).getTime();
   const diffMin = Math.round(diffMs / 60000);
