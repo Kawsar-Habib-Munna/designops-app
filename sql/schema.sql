@@ -1592,3 +1592,52 @@ grant execute on function public.sign_sow(uuid, text, text, text, text, text, in
 -- কলামে রাখা হলো যাতে ফর্ম রিলোড করলে ঠিকভাবে পার্স হয়।
 alter table sows add column if not exists start_date date;
 alter table sows add column if not exists delivery_date date;
+
+-- CLIENT PORTAL — ফেজ ১৪: Screen 12 (Payment Request) রিডিজাইন। বিদ্যমান invoices
+-- টেবিলই রিইউজ (নতুন কোনো ডুপ্লিকেট ফাইন্যান্সিয়াল টেবিল না) — SOW-এর ঠিক same
+-- draft/sent প্যাটার্ন: draft ক্লায়েন্টের কাছে RLS-এই অদৃশ্য, request_number
+-- sow_number-এর মতোই অটো-জেনারেটেড, sent_at/viewed_at real ট্র্যাকিং
+-- (mark_invoice_viewed RPC, mark_sow_viewed-এর security-definer প্যাটার্ন রিইউজ)।
+-- internal_note client-এর কাছে RLS দিয়ে না, বরং ক্লায়েন্ট-সাইড কোয়েরি কখনো এই
+-- কলাম select করে না (এই কোডবেসে সবখানে কলাম-লেভেল সুরক্ষা এভাবেই হয়, দেখুন
+-- clients.admin_request-এর মতো ক্ষেত্রে যেখানে column-level RLS/view কোথাও নেই)।
+alter table invoices add column if not exists request_number text;
+alter table invoices add column if not exists sow_id uuid references sows(id) on delete set null;
+alter table invoices add column if not exists milestone_id uuid references milestones(id) on delete set null;
+alter table invoices add column if not exists percentage numeric;
+alter table invoices add column if not exists client_instructions text;
+alter table invoices add column if not exists internal_note text;
+alter table invoices add column if not exists document_url text;
+alter table invoices add column if not exists sent_at timestamptz;
+alter table invoices add column if not exists viewed_at timestamptz;
+alter table invoices add column if not exists cancelled_at timestamptz;
+-- status ভ্যালুতে 'draft' যোগ হলো: draft | pending | processing | paid | failed |
+-- cancelled | refunded (কলাম আগে থেকেই plain text, নতুন constraint লাগেনি)।
+-- "Sent"/"Viewed"/"Overdue" আলাদা স্ট্যাটাস ভ্যালু না — SOW-এর isExpired প্যাটার্নের
+-- মতোই sent_at/viewed_at/due_date থেকে UI-তে derive করা হয়।
+
+drop policy if exists "client can read own invoices" on invoices;
+create policy "client can read own invoices" on invoices for select using (
+  status != 'draft' and exists (select 1 from clients where clients.id = invoices.client_id and clients.user_id = auth.uid())
+);
+
+create or replace function public.mark_invoice_viewed(p_invoice_id uuid)
+returns void
+language plpgsql
+security definer
+as $$
+declare
+  v_client_user_id uuid;
+begin
+  select clients.user_id into v_client_user_id
+  from invoices join clients on clients.id = invoices.client_id
+  where invoices.id = p_invoice_id;
+
+  if v_client_user_id is null or v_client_user_id != auth.uid() then
+    raise exception 'Not authorized to view this payment request';
+  end if;
+
+  update invoices set viewed_at = now() where id = p_invoice_id and viewed_at is null;
+end;
+$$;
+grant execute on function public.mark_invoice_viewed(uuid) to authenticated;

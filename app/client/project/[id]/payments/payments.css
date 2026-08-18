@@ -1,30 +1,80 @@
-/* Screen 12/13 (client) — Payments। cp-* প্রিমিটিভ client-shared.css থেকে,
-   এখানে শুধু এই স্ক্রিনের ইউনিক লেআউট। */
+/* Screen 12 — Payment Request (client)। cp-* প্রিমিটিভ client-shared.css থেকে,
+   এখানে শুধু হিরো/ব্রেকডাউন/ইনস্ট্রাকশন/SOW-লিংক/হিস্ট্রি লেআউট। */
 
-.client-payments-root .pm-shell{max-width:640px;margin:0 auto;padding:32px 20px 64px;}
-.client-payments-root .pm-back{font-size:13px;color:var(--ink-faint);font-weight:600;display:inline-block;margin-bottom:14px;}
-.client-payments-root .pm-back:hover{color:var(--ink);}
-.client-payments-root .pm-title{margin:0 0 20px;font-size:22px;font-weight:700;letter-spacing:-0.01em;color:var(--ink);}
+.client-payments-root {
+  --warning: #f5a524;
+  --warning-soft: #fdf3e1;
+}
+@media (prefers-color-scheme: dark) {
+  .client-payments-root {
+    --warning: #f5b455;
+    --warning-soft: #332616;
+  }
+}
 
-.client-payments-root .pm-empty{text-align:center;color:var(--ink-faint);font-size:13.5px;}
+.client-payments-root .pm-shell { max-width: 640px; margin: 0 auto; padding: 32px 20px 64px; }
+.client-payments-root .pm-back { font-size: 13px; color: var(--ink-faint); font-weight: 600; display: inline-block; margin-bottom: 14px; }
+.client-payments-root .pm-back:hover { color: var(--ink); }
+.client-payments-root .pm-breadcrumb { font-size: 11.5px; color: var(--ink-faint); margin-bottom: 6px; }
+.client-payments-root .pm-title { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
+.client-payments-root .pm-page-sub { margin: 0 0 22px; font-size: 13px; color: var(--ink-soft); }
 
-.client-payments-root .pm-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
-.client-payments-root .pm-summary-label{font-size:10.5px;color:var(--ink-faint);margin-bottom:4px;}
-.client-payments-root .pm-summary-value{font-size:16px;font-weight:700;color:var(--ink);}
+/* ---- hero ---- */
+.client-payments-root .pm-hero { text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 32px 28px; margin-bottom: 20px; }
+.client-payments-root .pm-hero.overdue { border-color: var(--warning); }
+.client-payments-root .pm-hero-top { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.client-payments-root .pm-hero-ref { font-size: 11.5px; font-weight: 700; color: var(--ink-faint); }
+.client-payments-root .pm-badge-overdue { background: var(--warning-soft); color: var(--warning); }
+.client-payments-root .pm-badge-neutral { background: var(--bg); color: var(--ink-faint); }
+.client-payments-root .pm-hero-amount { font-size: 40px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 6px; }
+.client-payments-root .pm-hero-desc { font-size: 14.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 8px; }
+.client-payments-root .pm-hero-due { font-size: 12.5px; color: var(--ink-faint); }
+.client-payments-root .pm-hero.overdue .pm-hero-due { color: var(--warning); font-weight: 600; }
+.client-payments-root .pm-hero-note { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--ink-soft); text-align: left; }
+.client-payments-root .pm-hero-note-title { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
+.client-payments-root .pm-hero-note p { margin: 0 0 10px; }
 
-.client-payments-root .pm-invoice-list{display:flex;flex-direction:column;gap:14px;}
-.client-payments-root .pm-invoice-card{margin-bottom:0;}
-.client-payments-root .pm-invoice-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px;}
-.client-payments-root .pm-invoice-type{font-size:11px;font-weight:600;color:var(--ink-faint);text-transform:capitalize;margin-bottom:3px;}
-.client-payments-root .pm-invoice-amount{font-size:18px;font-weight:700;color:var(--ink);}
-.client-payments-root .pm-invoice-desc{font-size:12.5px;color:var(--ink-soft);margin:0 0 6px;}
-.client-payments-root .pm-invoice-due{font-size:11.5px;color:var(--ink-faint);margin:0 0 12px;}
+/* ---- breakdown ---- */
+.client-payments-root .pm-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.client-payments-root .pm-summary-label { font-size: 10.5px; color: var(--ink-faint); margin-bottom: 4px; }
+.client-payments-root .pm-summary-value { font-size: 15px; font-weight: 700; color: var(--ink); }
 
-.client-payments-root .pm-submitted-note{font-size:12px;color:var(--ink-soft);background:var(--surface-muted);border-radius:var(--radius-sm);padding:9px 12px;}
+/* ---- how to pay / SOW / block sections ---- */
+.client-payments-root .pm-block-title { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 10px; }
+.client-payments-root .pm-method-line { font-size: 13px; font-weight: 600; color: var(--accent); margin: 0 0 8px; }
+.client-payments-root .pm-instructions { font-size: 13px; line-height: 1.7; color: var(--ink-soft); margin: 0 0 10px; }
+.client-payments-root .pm-instructions-note { font-size: 12px; color: var(--ink-faint); margin: 0; }
 
-.client-payments-root .pm-confirm-form{margin-top:12px;padding-top:14px;border-top:1px solid var(--border-soft);}
-.client-payments-root .pm-confirm-actions{display:flex;justify-content:flex-end;gap:8px;}
+.client-payments-root .pm-sow-card { margin-top: 0; }
+.client-payments-root .pm-sow-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.client-payments-root .pm-sow-number { font-size: 14px; font-weight: 700; color: var(--ink); }
+.client-payments-root .pm-sow-sub { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
 
-@media (max-width:600px){
-  .client-payments-root .pm-summary-grid{grid-template-columns:1fr;gap:10px;}
+/* ---- history ---- */
+.client-payments-root .pm-history { margin-top: 4px; }
+.client-payments-root .pm-invoice-list { display: flex; flex-direction: column; gap: 12px; }
+.client-payments-root .pm-invoice-card { margin-bottom: 0; }
+.client-payments-root .pm-invoice-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+.client-payments-root .pm-invoice-type { font-size: 11px; font-weight: 600; color: var(--ink-faint); margin-bottom: 3px; }
+.client-payments-root .pm-invoice-amount { font-size: 15px; font-weight: 700; color: var(--ink); }
+.client-payments-root .pm-invoice-due { font-size: 11.5px; color: var(--ink-faint); margin: 0; }
+
+.client-payments-root .pm-support-line { text-align: center; font-size: 12.5px; color: var(--ink-faint); margin-top: 20px; }
+.client-payments-root .pm-support-line a { color: var(--accent); font-weight: 600; }
+.client-payments-root .pm-support-line a:hover { text-decoration: underline; }
+
+.client-payments-root .pm-submitted-note { font-size: 12px; color: var(--ink-soft); background: var(--bg); border-radius: var(--radius-sm); padding: 9px 12px; }
+
+.client-payments-root .pm-confirm-form { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); text-align: left; }
+.client-payments-root .pm-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+.client-payments-root .pm-state-card { text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 48px 24px; }
+.client-payments-root .pm-state-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.client-payments-root .pm-state-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 18px; }
+.client-payments-root .pm-state-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+@media (max-width: 600px) {
+  .client-payments-root .pm-summary-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .client-payments-root .pm-hero { padding: 26px 20px; }
+  .client-payments-root .pm-hero-amount { font-size: 32px; }
 }

@@ -1,12 +1,17 @@
 'use client';
 
-// Screen 12/13 (admin half) — Payment Request + Confirm Payment। কোনো পেমেন্ট
-// গেটওয়ে নেই বলে ম্যানুয়াল ফ্লো: এডমিন invoice তৈরি করে → ক্লায়েন্ট নিজের
-// transaction id/method জমা দেয় (submit_payment RPC, Screen 13 ক্লায়েন্ট-সাইড) →
-// invoice.status 'processing' হয়ে যায় → এডমিন এখানে সেই সাবমিশন দেখে ব্যাংক/
-// মোবাইল-ওয়ালেট স্টেটমেন্টের সাথে মিলিয়ে "Confirm Payment" চাপে → 'paid'।
+// Screen 12 — Payment Request (admin)। বিদ্যমান invoices/payments টেবিল রিইউজ
+// (ফেজ ১৪) — SOW-এর ঠিক same draft/sent প্যাটার্ন: draft ক্লায়েন্টের কাছে RLS-এই
+// অদৃশ্য, request_number sow_number-এর মতো অটো-জেনারেটেড, sent_at/viewed_at real
+// ট্র্যাকিং (mark_invoice_viewed RPC)। Payment amount কখনো signedSow.project_value-এর
+// বিপরীতে চেক করা হয় বাকি (non-cancelled) ইনভয়েসগুলোর যোগফল দিয়ে — "amount
+// differs from SOW schedule" ওয়ার্নিং ফ্যাব্রিকেটেড parsing না করে real ডেটা থেকে।
+//
+// Screen 13 (client-side transaction submission, submit_payment RPC ও admin-এর
+// "Confirm Payment" রিভিউ) অপরিবর্তিত রাখা হয়েছে — এটা পরবর্তী স্ক্রিন, এখানে শুধু
+// রিইউজ করা হলো যাতে পুরনো ফ্লো ভেঙে না যায়।
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import '../project.css';
@@ -14,7 +19,8 @@ import './payments.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
 import { useUnreadCount } from '@/lib/useUnreadCount';
-import { formatBnDate } from '@/lib/format';
+import { formatBnDate, todayISO } from '@/lib/format';
+import { uploadFileToDrive } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
 
@@ -38,6 +44,7 @@ const ICON_PATHS: Record<string, string> = {
   close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
   layers: '<path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>',
+  upload: '<path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
 };
 type IconName = keyof typeof ICON_PATHS;
 function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
@@ -62,24 +69,68 @@ const NAV_ITEMS_BOTTOM: { icon: IconName; label: string; href: string }[] = [
   { icon: 'settings', label: 'Settings', href: '#' },
 ];
 
-const STATUS_META: Record<string, { label: string; cls: string }> = {
-  pending: { label: 'Pending', cls: 's-todo' },
-  processing: { label: 'Processing', cls: 's-review' },
-  paid: { label: 'Paid ✓', cls: 's-done' },
-  failed: { label: 'Failed', cls: 's-todo' },
-  cancelled: { label: 'Cancelled', cls: 's-todo' },
-  refunded: { label: 'Refunded', cls: 's-review' },
+const TYPE_OPTIONS = ['Initial Deposit', 'Milestone Payment', 'Final Payment', 'Additional Work', 'Custom'];
+const DEFAULT_DESCRIPTION: Record<string, string> = {
+  'Initial Deposit': 'Initial Project Deposit',
+  'Milestone Payment': 'Milestone Payment',
+  'Final Payment': 'Final Project Payment',
+  'Additional Work': 'Additional Work Payment',
+  Custom: '',
 };
-const PAYMENT_TYPE_OPTIONS = ['Deposit', 'Milestone', 'Final Payment', 'Additional Payment'];
+const METHOD_OPTIONS = ['Bank Transfer', 'bKash', 'Nagad', 'Other'];
+const BANK_PLACEHOLDER = `Account Name: ...\nBank: ...\nAccount Number: ...\nReference: (this request's number)`;
 
-type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null; behance_url?: string | null; linkedin_url?: string | null };
-type ProjectBrief = { id: string; name: string; client_id: string | null; clients: { company_name: string } | { company_name: string }[] | null };
-type Invoice = { id: string; payment_type: string; amount: number; currency: string; description: string | null; due_date: string | null; payment_method: string | null; status: string; notify_client: boolean; created_at: string };
-type Payment = { id: string; invoice_id: string; amount: number | null; payment_method: string | null; transaction_id: string | null; payment_date: string | null; notes: string | null; submitted_by: string; confirmed_at: string | null };
-
+function slugify(label: string) {
+  return label.toLowerCase().replace(/\s+/g, '_');
+}
+function humanizeType(slug: string) {
+  return slug.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 function toOne<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
   return Array.isArray(v) ? (v[0] ?? null) : v;
+}
+
+type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null; behance_url?: string | null; linkedin_url?: string | null };
+type ClientBrief = { company_name: string; primary_contact: string | null };
+type ProjectBrief = { id: string; name: string; client_id: string | null; budget: number | null; clients: ClientBrief | ClientBrief[] | null };
+type SowBrief = { id: string; status: string; sow_number: string | null; version: number; project_value: number | null; currency: string | null };
+type MilestoneRow = { id: string; title: string };
+type Invoice = {
+  id: string;
+  request_number: string | null;
+  payment_type: string;
+  description: string | null;
+  amount: number;
+  currency: string;
+  percentage: number | null;
+  due_date: string | null;
+  payment_method: string | null;
+  status: string;
+  notify_client: boolean;
+  sow_id: string | null;
+  milestone_id: string | null;
+  client_instructions: string | null;
+  internal_note: string | null;
+  document_url: string | null;
+  sent_at: string | null;
+  viewed_at: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+};
+type Payment = { id: string; invoice_id: string; amount: number | null; payment_method: string | null; transaction_id: string | null; payment_date: string | null; notes: string | null; submitted_by: string; confirmed_at: string | null };
+
+function statusMeta(inv: Invoice): { label: string; cls: string } {
+  if (inv.status === 'draft') return { label: 'Draft', cls: 's-todo' };
+  if (inv.status === 'cancelled') return { label: 'Cancelled', cls: 's-todo' };
+  if (inv.status === 'failed') return { label: 'Failed', cls: 's-danger' };
+  if (inv.status === 'refunded') return { label: 'Refunded', cls: 's-review' };
+  if (inv.status === 'paid') return { label: 'Paid ✓', cls: 's-done' };
+  if (inv.status === 'processing') return { label: 'Under Review', cls: 's-review' };
+  if (inv.due_date && inv.due_date < todayISO()) return { label: 'Overdue', cls: 's-overdue' };
+  if (inv.viewed_at) return { label: 'Viewed', cls: 's-review' };
+  if (inv.sent_at) return { label: 'Sent · Pending Payment', cls: 's-review' };
+  return { label: 'Pending Payment', cls: 's-review' };
 }
 
 export default function AdminPaymentsPage() {
@@ -92,29 +143,43 @@ export default function AdminPaymentsPage() {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
 
   const [project, setProject] = useState<ProjectBrief | null>(null);
+  const [signedSow, setSignedSow] = useState<SowBrief | null>(null);
+  const [milestones, setMilestones] = useState<MilestoneRow[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const [showCreate, setShowCreate] = useState(false);
-  const [newType, setNewType] = useState('Deposit');
-  const [newAmount, setNewAmount] = useState('');
-  const [newCurrency, setNewCurrency] = useState('BDT');
-  const [newDescription, setNewDescription] = useState('');
-  const [newDueDate, setNewDueDate] = useState('');
-  const [newMethod, setNewMethod] = useState('');
-  const [newNotify, setNewNotify] = useState(true);
-  const [creating, setCreating] = useState(false);
+  const [mode, setMode] = useState<'list' | 'editor'>('list');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [fType, setFType] = useState('Initial Deposit');
+  const [fAmount, setFAmount] = useState('');
+  const [fDescription, setFDescription] = useState(DEFAULT_DESCRIPTION['Initial Deposit']);
+  const [fDueDate, setFDueDate] = useState('');
+  const [fMethod, setFMethod] = useState('Bank Transfer');
+  const [fMilestoneId, setFMilestoneId] = useState('');
+  const [fClientInstructions, setFClientInstructions] = useState('');
+  const [fInternalNote, setFInternalNote] = useState('');
+  const [fNotify, setFNotify] = useState(true);
+  const [fDocumentUrl, setFDocumentUrl] = useState<string | null>(null);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [saving, setSaving] = useState<'draft' | 'send' | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
+
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (!user || !projectId) return;
 
     async function run() {
-      const [projectRes, invoicesRes, paymentsRes, profileRes] = await Promise.all([
-        supabase.from('projects').select('id, name, client_id, clients(company_name)').eq('id', projectId).maybeSingle(),
+      const [projectRes, sowRes, milestonesRes, invoicesRes, paymentsRes, profileRes] = await Promise.all([
+        supabase.from('projects').select('id, name, client_id, budget, clients(company_name, primary_contact)').eq('id', projectId).maybeSingle(),
+        supabase.from('sows').select('id, status, sow_number, version, project_value, currency').eq('project_id', projectId).order('version', { ascending: false }),
+        supabase.from('milestones').select('id, title').eq('project_id', projectId).order('position'),
         supabase.from('invoices').select('*').eq('project_id', projectId).order('created_at', { ascending: false }),
         supabase.from('payments').select('*').eq('project_id', projectId).order('created_at', { ascending: false }),
         supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url').eq('id', user!.id).single(),
@@ -122,6 +187,8 @@ export default function AdminPaymentsPage() {
 
       if (projectRes.error) setError(projectRes.error.message);
       setProject((projectRes.data as unknown as ProjectBrief) ?? null);
+      setSignedSow(((sowRes.data as SowBrief[]) ?? []).find((s) => s.status === 'signed') ?? null);
+      setMilestones((milestonesRes.data as MilestoneRow[]) ?? []);
       setInvoices((invoicesRes.data as Invoice[]) ?? []);
       setPayments((paymentsRes.data as Payment[]) ?? []);
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);
@@ -131,36 +198,125 @@ export default function AdminPaymentsPage() {
     run();
   }, [user, projectId, reloadKey]);
 
-  async function handleCreate(e: FormEvent) {
-    e.preventDefault();
-    if (!newAmount || !project?.client_id) return;
-    setCreating(true);
-    const { error: createError } = await supabase.from('invoices').insert({
-      project_id: projectId,
-      client_id: project.client_id,
-      payment_type: newType.toLowerCase().replace(' ', '_'),
-      amount: Number(newAmount),
-      currency: newCurrency,
-      description: newDescription.trim() || null,
-      due_date: newDueDate || null,
-      payment_method: newMethod.trim() || null,
-      notify_client: newNotify,
-      created_by: user!.id,
-    });
-    setCreating(false);
-    if (createError) {
-      setError(createError.message);
+  const client = project ? toOne(project.clients) : null;
+  const currency = signedSow?.currency ?? 'BDT';
+  const projectValue = signedSow?.project_value ?? project?.budget ?? null;
+  const committedElsewhere = invoices.filter((i) => i.id !== editingId && !['draft', 'cancelled', 'failed'].includes(i.status)).reduce((sum, i) => sum + i.amount, 0);
+  const remainingBalance = projectValue != null ? projectValue - committedElsewhere : null;
+  const amountNum = Number(fAmount) || 0;
+  const percentage = projectValue && projectValue > 0 ? Math.round((amountNum / projectValue) * 1000) / 10 : null;
+  const exceedsRemaining = remainingBalance != null && amountNum > remainingBalance + 0.01;
+
+  function openEditor(existing: Invoice | null) {
+    setFormError(null);
+    setEditingId(existing?.id ?? null);
+    const typeLabel = existing ? (TYPE_OPTIONS.find((o) => slugify(o) === existing.payment_type) ?? 'Custom') : 'Initial Deposit';
+    setFType(typeLabel);
+    setFAmount(existing ? String(existing.amount) : '');
+    setFDescription(existing?.description ?? DEFAULT_DESCRIPTION[typeLabel] ?? '');
+    setFDueDate(existing?.due_date ?? '');
+    setFMethod(existing?.payment_method ?? 'Bank Transfer');
+    setFMilestoneId(existing?.milestone_id ?? '');
+    setFClientInstructions(existing?.client_instructions ?? '');
+    setFInternalNote(existing?.internal_note ?? '');
+    setFNotify(existing?.notify_client ?? true);
+    setFDocumentUrl(existing?.document_url ?? null);
+    setMode('editor');
+  }
+
+  function handleTypeChange(label: string) {
+    setFType(label);
+    if (!fDescription || Object.values(DEFAULT_DESCRIPTION).includes(fDescription)) {
+      setFDescription(DEFAULT_DESCRIPTION[label] ?? '');
+    }
+  }
+
+  async function handleUploadDoc(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (!accessToken) return;
+    setUploadingDoc(true);
+    try {
+      const result = await uploadFileToDrive(file, accessToken);
+      setFDocumentUrl(result.webViewLink);
+    } catch {
+      // silently fail — আপলোড বাটন আবার দেখা যাবে
+    }
+    setUploadingDoc(false);
+  }
+
+  async function handleSave(sendNow: boolean) {
+    if (!amountNum || amountNum <= 0) {
+      setFormError('Please enter a valid amount greater than 0.');
       return;
     }
-    await supabase.from('activity_log').insert({ actor_id: user!.id, action: 'payment_requested', entity_type: 'client', entity_id: project.client_id, detail: `${newType} — ${newCurrency} ${Number(newAmount).toLocaleString('en-US')} পেমেন্ট রিকোয়েস্ট পাঠানো হয়েছে` });
-    setNewType('Deposit');
-    setNewAmount('');
-    setNewCurrency('BDT');
-    setNewDescription('');
-    setNewDueDate('');
-    setNewMethod('');
-    setNewNotify(true);
-    setShowCreate(false);
+    if (sendNow && !fDueDate) {
+      setFormError('Please choose a due date.');
+      return;
+    }
+    if (!project?.client_id) return;
+
+    setSaving(sendNow ? 'send' : 'draft');
+    setFormError(null);
+
+    let requestNumber: string | null = editingId ? (invoices.find((i) => i.id === editingId)?.request_number ?? null) : null;
+    if (sendNow && !requestNumber) {
+      const { count } = await supabase.from('invoices').select('id', { count: 'exact', head: true });
+      requestNumber = `PAY-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(3, '0')}`;
+    }
+
+    const payload: Record<string, unknown> = {
+      project_id: projectId,
+      client_id: project.client_id,
+      payment_type: slugify(fType),
+      description: fDescription.trim() || null,
+      amount: amountNum,
+      currency,
+      percentage,
+      due_date: fDueDate || null,
+      payment_method: fMethod,
+      sow_id: signedSow?.id ?? null,
+      milestone_id: fMilestoneId || null,
+      client_instructions: fClientInstructions.trim() || null,
+      internal_note: fInternalNote.trim() || null,
+      document_url: fDocumentUrl,
+      notify_client: fNotify,
+      status: sendNow ? 'pending' : 'draft',
+    };
+    if (sendNow) payload.sent_at = new Date().toISOString();
+    if (requestNumber) payload.request_number = requestNumber;
+
+    const { error: saveError } = editingId ? await supabase.from('invoices').update(payload).eq('id', editingId) : await supabase.from('invoices').insert({ ...payload, created_by: user!.id });
+
+    setSaving(null);
+    if (saveError) {
+      setFormError(saveError.message);
+      return;
+    }
+
+    await supabase.from('activity_log').insert({
+      actor_id: user!.id,
+      action: sendNow ? 'payment_requested' : 'payment_draft_saved',
+      entity_type: 'client',
+      entity_id: project.client_id,
+      detail: sendNow ? `${fType} — ${currency} ${amountNum.toLocaleString('en-US')} পেমেন্ট রিকোয়েস্ট পাঠানো হয়েছে` : `${fType} পেমেন্ট রিকোয়েস্ট ড্রাফট সেভ করা হয়েছে`,
+    });
+
+    setMode('list');
+    setReloadKey((k) => k + 1);
+  }
+
+  async function handleCancelRequest() {
+    if (!cancelTargetId || !project?.client_id) return;
+    setCancelling(true);
+    const { error: cancelError } = await supabase.from('invoices').update({ status: 'cancelled', cancelled_at: new Date().toISOString() }).eq('id', cancelTargetId);
+    setCancelling(false);
+    if (cancelError) return;
+    await supabase.from('activity_log').insert({ actor_id: user!.id, action: 'payment_cancelled', entity_type: 'client', entity_id: project.client_id, detail: 'পেমেন্ট রিকোয়েস্ট বাতিল করা হয়েছে' });
+    setCancelTargetId(null);
     setReloadKey((k) => k + 1);
   }
 
@@ -181,8 +337,6 @@ export default function AdminPaymentsPage() {
 
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
-
-  const client = project ? toOne(project.clients) : null;
 
   return (
     <div className={`projdetail-root payments-admin-root${dark ? ' dark' : ''}`}>
@@ -239,87 +393,355 @@ export default function AdminPaymentsPage() {
             ) : (
               <>
                 <div className="breadcrumb">
-                  <Link href="/projects">Projects</Link>
+                  <Link href="/clients">Clients</Link>
+                  <span className="sep">/</span>
+                  {client && <Link href={`/projects/${project.id}`}>{client.company_name}</Link>}
                   <span className="sep">/</span>
                   <Link href={`/projects/${project.id}`}>{project.name}</Link>
                   <span className="sep">/</span>
-                  <span className="current">Payments</span>
+                  <span className="current">{mode === 'editor' ? 'Payment Request' : 'Payments'}</span>
                 </div>
 
                 {error && <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: 13 }}>{error}</div>}
 
-                <div className="proj-header">
-                  <div>
-                    <span className="proj-title">Payments</span>
-                    <div className="proj-sub-row">
-                      {client && (
-                        <>
-                          <span>{client.company_name}</span>
-                          <span className="dividerdot"></span>
-                        </>
-                      )}
-                      <span>{project.name}</span>
-                    </div>
-                  </div>
-                  <div className="header-actions">
-                    <button className="btn btn-accent btn-sm" onClick={() => setShowCreate(true)}>
-                      <Icon name="plus" size={14} /> Create Payment Request
-                    </button>
-                  </div>
-                </div>
-
-                {invoices.length === 0 ? (
-                  <div className="summary-card" style={{ textAlign: 'center', padding: '40px 20px' }}>
-                    <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>এখনো কোনো পেমেন্ট রিকোয়েস্ট তৈরি হয়নি।</p>
-                  </div>
-                ) : (
-                  <div className="invoice-list">
-                    {invoices.map((inv) => {
-                      const meta = STATUS_META[inv.status] ?? { label: inv.status, cls: 's-todo' };
-                      const submission = payments.find((p) => p.invoice_id === inv.id);
-                      return (
-                        <div className="invoice-card" key={inv.id}>
-                          <div className="invoice-card-top">
-                            <div>
-                              <div className="invoice-type">{inv.payment_type.replace('_', ' ')}</div>
-                              <div className="invoice-amount tabular">
-                                {inv.currency} {inv.amount.toLocaleString('en-US')}
-                              </div>
-                            </div>
-                            <span className={`status-pill ${meta.cls}`}>{meta.label}</span>
-                          </div>
-                          {inv.description && <p className="invoice-desc">{inv.description}</p>}
-                          <div className="invoice-meta-row">
-                            {inv.due_date && <span>Due {formatBnDate(inv.due_date)}</span>}
-                            {inv.payment_method && <span>{inv.payment_method}</span>}
-                          </div>
-
-                          {submission && (
-                            <div className="invoice-submission">
-                              <div className="invoice-submission-title">Client submitted:</div>
-                              <div className="invoice-submission-grid">
-                                <span>Method: {submission.payment_method ?? '—'}</span>
-                                <span>Transaction ID: {submission.transaction_id ?? '—'}</span>
-                                <span>Date: {formatBnDate(submission.payment_date)}</span>
-                              </div>
-                              {submission.notes && <p className="invoice-submission-notes">{submission.notes}</p>}
-                            </div>
+                {mode === 'list' ? (
+                  <>
+                    <div className="proj-header">
+                      <div>
+                        <span className="proj-title">Payments</span>
+                        <div className="proj-sub-row">
+                          {client && (
+                            <>
+                              <span>{client.company_name}</span>
+                              <span className="dividerdot"></span>
+                            </>
                           )}
+                          <span>{project.name}</span>
+                        </div>
+                      </div>
+                      {signedSow && (
+                        <div className="header-actions">
+                          <button className="btn btn-accent btn-sm" onClick={() => openEditor(null)}>
+                            <Icon name="plus" size={14} /> Create Payment Request
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
-                          {inv.status === 'processing' && (
-                            <button className="btn btn-accent btn-sm" onClick={() => handleConfirm(inv.id)} disabled={confirmingId === inv.id}>
-                              {confirmingId === inv.id ? 'কনফার্ম হচ্ছে…' : 'Confirm Payment'}
+                    <div className="pay-context-card">
+                      <div className="pay-context-item">
+                        <span className="pay-context-label">Client</span>
+                        <span className="pay-context-value">{client?.primary_contact ?? client?.company_name ?? '—'}</span>
+                      </div>
+                      <div className="pay-context-item">
+                        <span className="pay-context-label">Project Value</span>
+                        <span className="pay-context-value tabular">{projectValue != null ? `${currency} ${projectValue.toLocaleString('en-US')}` : '—'}</span>
+                      </div>
+                      <div className="pay-context-item">
+                        <span className="pay-context-label">SOW</span>
+                        <span className={`status-pill ${signedSow ? 's-done' : 's-todo'}`}>{signedSow ? 'Signed ✓' : 'Not Signed'}</span>
+                      </div>
+                    </div>
+
+                    {!signedSow && (
+                      <div className="summary-card pay-gate-card">
+                        <div className="pay-gate-title">SOW signature required</div>
+                        <p className="pay-gate-sub">The client must sign the Statement of Work before a payment request can be sent.</p>
+                        <Link href={`/projects/${project.id}/sow`} className="btn btn-accent btn-sm">
+                          View SOW
+                        </Link>
+                      </div>
+                    )}
+
+                    {invoices.length === 0 ? (
+                      <div className="summary-card" style={{ textAlign: 'center', padding: '40px 20px' }}>
+                        <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>এখনো কোনো পেমেন্ট রিকোয়েস্ট তৈরি হয়নি।</p>
+                      </div>
+                    ) : (
+                      <div className="invoice-list">
+                        {invoices.map((inv) => {
+                          const meta = statusMeta(inv);
+                          const submission = payments.find((p) => p.invoice_id === inv.id);
+                          const canCancel = !['paid', 'cancelled', 'failed', 'refunded'].includes(inv.status);
+                          return (
+                            <div className="invoice-card" key={inv.id}>
+                              <div className="invoice-card-top">
+                                <div>
+                                  <div className="invoice-type">
+                                    {inv.request_number && <span className="pay-req-number">{inv.request_number}</span>}
+                                    {humanizeType(inv.payment_type)}
+                                  </div>
+                                  <div className="invoice-amount tabular">
+                                    {inv.currency} {inv.amount.toLocaleString('en-US')}
+                                    {inv.percentage != null && <span className="pay-pct"> · {inv.percentage}%</span>}
+                                  </div>
+                                </div>
+                                <span className={`status-pill ${meta.cls}`}>{meta.label}</span>
+                              </div>
+                              {inv.description && <p className="invoice-desc">{inv.description}</p>}
+                              <div className="invoice-meta-row">
+                                {inv.due_date && <span>Due {formatBnDate(inv.due_date)}</span>}
+                                {inv.payment_method && <span>{inv.payment_method}</span>}
+                              </div>
+
+                              {submission && (
+                                <div className="invoice-submission">
+                                  <div className="invoice-submission-title">Client submitted:</div>
+                                  <div className="invoice-submission-grid">
+                                    <span>Method: {submission.payment_method ?? '—'}</span>
+                                    <span>Transaction ID: {submission.transaction_id ?? '—'}</span>
+                                    <span>Date: {formatBnDate(submission.payment_date)}</span>
+                                  </div>
+                                  {submission.notes && <p className="invoice-submission-notes">{submission.notes}</p>}
+                                </div>
+                              )}
+
+                              <div className="pay-card-actions">
+                                {inv.status === 'draft' && (
+                                  <button className="btn btn-ghost btn-sm" onClick={() => openEditor(inv)}>
+                                    Edit Draft
+                                  </button>
+                                )}
+                                {inv.status === 'processing' && (
+                                  <button className="btn btn-accent btn-sm" onClick={() => handleConfirm(inv.id)} disabled={confirmingId === inv.id}>
+                                    {confirmingId === inv.id ? 'কনফার্ম হচ্ছে…' : 'Confirm Payment'}
+                                  </button>
+                                )}
+                                {inv.status === 'paid' && submission && (
+                                  <Link href={`/projects/${project.id}/payments/${submission.id}/receipt`} className="btn btn-ghost btn-sm">
+                                    View Receipt
+                                  </Link>
+                                )}
+                                {canCancel && (
+                                  <button className="btn btn-danger-ghost btn-sm" onClick={() => setCancelTargetId(inv.id)}>
+                                    Cancel Request
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="proj-header">
+                      <div>
+                        <span className="proj-title">{editingId ? 'Edit Payment Request' : 'Create Payment Request'}</span>
+                        <div className="proj-sub-row">
+                          <span>Request the next project payment from this client.</span>
+                        </div>
+                      </div>
+                      <div className="header-actions">
+                        <button className="btn btn-ghost btn-sm" onClick={() => setMode('list')} disabled={saving !== null}>
+                          Cancel
+                        </button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => handleSave(false)} disabled={saving !== null}>
+                          {saving === 'draft' ? 'সেভ হচ্ছে…' : 'Save Draft'}
+                        </button>
+                        <button className="btn btn-accent btn-sm" onClick={() => handleSave(true)} disabled={saving !== null}>
+                          {saving === 'send' ? 'পাঠানো হচ্ছে…' : 'Send Payment Request'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="pay-context-card">
+                      <div className="pay-context-item">
+                        <span className="pay-context-label">Client</span>
+                        <span className="pay-context-value">
+                          {client?.primary_contact ?? client?.company_name} · {client?.company_name}
+                        </span>
+                      </div>
+                      <div className="pay-context-item">
+                        <span className="pay-context-label">Project Value</span>
+                        <span className="pay-context-value tabular">{projectValue != null ? `${currency} ${projectValue.toLocaleString('en-US')}` : '—'}</span>
+                      </div>
+                      <div className="pay-context-item">
+                        <span className="pay-context-label">SOW</span>
+                        <span className="status-pill s-done">Signed ✓</span>
+                      </div>
+                    </div>
+
+                    {formError && <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: 13 }}>{formError}</div>}
+
+                    <div className="pay-editor-grid">
+                      <div className="pay-form-col">
+                        <div className="summary-card">
+                          <div className="dcard-title" style={{ marginBottom: 14 }}>
+                            Payment Details
+                          </div>
+                          <label className="field-label">Payment Type</label>
+                          <select className="field-input" value={fType} onChange={(e) => handleTypeChange(e.target.value)}>
+                            {TYPE_OPTIONS.map((o) => (
+                              <option key={o} value={o}>
+                                {o}
+                              </option>
+                            ))}
+                          </select>
+
+                          <div className="field-row">
+                            <div>
+                              <label className="field-label">Amount ({currency})</label>
+                              <input className="field-input" type="number" min="0" step="0.01" value={fAmount} onChange={(e) => setFAmount(e.target.value)} required />
+                            </div>
+                            <div>
+                              <label className="field-label">Percentage of Project Value</label>
+                              <input className="field-input" type="text" value={percentage != null ? `${percentage}%` : '—'} disabled />
+                            </div>
+                          </div>
+
+                          <label className="field-label">Payment For</label>
+                          <input className="field-input" type="text" value={fDescription} onChange={(e) => setFDescription(e.target.value)} placeholder="e.g. 50% Initial Deposit" />
+
+                          {exceedsRemaining && <div className="pay-warning-box">This amount differs from the agreed SOW payment schedule — it exceeds the remaining project balance.</div>}
+                        </div>
+
+                        <div className="summary-card">
+                          <div className="dcard-title" style={{ marginBottom: 14 }}>
+                            Payment Schedule Context
+                          </div>
+                          <div className="pay-breakdown-row">
+                            <span>Project Value</span>
+                            <span className="tabular">{projectValue != null ? `${currency} ${projectValue.toLocaleString('en-US')}` : '—'}</span>
+                          </div>
+                          <div className="pay-breakdown-row">
+                            <span>Already Requested / Paid</span>
+                            <span className="tabular">
+                              {currency} {committedElsewhere.toLocaleString('en-US')}
+                            </span>
+                          </div>
+                          <div className="pay-breakdown-row">
+                            <span>This Request</span>
+                            <span className="tabular">
+                              {currency} {amountNum.toLocaleString('en-US')}
+                            </span>
+                          </div>
+                          <div className="pay-breakdown-row pay-breakdown-total">
+                            <span>Remaining After This Request</span>
+                            <span className="tabular">{remainingBalance != null ? `${currency} ${Math.max(0, remainingBalance - amountNum).toLocaleString('en-US')}` : '—'}</span>
+                          </div>
+                        </div>
+
+                        <div className="summary-card">
+                          <div className="dcard-title" style={{ marginBottom: 14 }}>
+                            Due Date
+                          </div>
+                          <input className="field-input" type="date" min={todayISO()} value={fDueDate} onChange={(e) => setFDueDate(e.target.value)} style={{ marginBottom: 4 }} />
+                          <p className="pay-hint">The client will see this deadline in their portal.</p>
+                        </div>
+
+                        <div className="summary-card">
+                          <div className="dcard-title" style={{ marginBottom: 14 }}>
+                            Payment Method
+                          </div>
+                          <select className="field-input" value={fMethod} onChange={(e) => setFMethod(e.target.value)}>
+                            {METHOD_OPTIONS.map((m) => (
+                              <option key={m} value={m}>
+                                {m}
+                              </option>
+                            ))}
+                          </select>
+                          <label className="field-label">Client Instructions</label>
+                          <textarea className="field-input" rows={4} value={fClientInstructions} onChange={(e) => setFClientInstructions(e.target.value)} placeholder={fMethod === 'Bank Transfer' ? BANK_PLACEHOLDER : `How should ${client?.primary_contact ?? 'the client'} send this payment?`} style={{ resize: 'vertical' }} />
+                        </div>
+
+                        <div className="summary-card">
+                          <div className="dcard-title" style={{ marginBottom: 14 }}>
+                            Related Milestone (optional)
+                          </div>
+                          <select className="field-input" value={fMilestoneId} onChange={(e) => setFMilestoneId(e.target.value)} style={{ marginBottom: 0 }}>
+                            <option value="">No milestone</option>
+                            {milestones.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="summary-card">
+                          <div className="dcard-title" style={{ marginBottom: 14 }}>
+                            Invoice / Attachment (optional)
+                          </div>
+                          <input ref={docInputRef} type="file" hidden onChange={handleUploadDoc} />
+                          {fDocumentUrl ? (
+                            <div className="pay-doc-row">
+                              <a href={fDocumentUrl} target="_blank" rel="noopener noreferrer" className="pay-doc-link">
+                                📄 View attached document ↗
+                              </a>
+                              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setFDocumentUrl(null)}>
+                                Remove
+                              </button>
+                            </div>
+                          ) : (
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={() => docInputRef.current?.click()} disabled={uploadingDoc}>
+                              <Icon name="upload" size={13} /> {uploadingDoc ? 'আপলোড হচ্ছে…' : 'Attach Document'}
                             </button>
                           )}
-                          {inv.status === 'paid' && submission && (
-                            <Link href={`/projects/${project.id}/payments/${submission.id}/receipt`} className="btn btn-ghost btn-sm">
-                              View Receipt
-                            </Link>
-                          )}
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        <div className="summary-card">
+                          <div className="dcard-title" style={{ marginBottom: 10 }}>
+                            Notification
+                          </div>
+                          <label className="notify-row">
+                            <input type="checkbox" checked={fNotify} onChange={(e) => setFNotify(e.target.checked)} /> Notify Client
+                          </label>
+                          <p className="pay-hint">Send the client a notification when this payment request is sent.</p>
+                        </div>
+
+                        <div className="summary-card">
+                          <div className="dcard-title" style={{ marginBottom: 14 }}>
+                            Internal Note (optional)
+                          </div>
+                          <textarea className="field-input" rows={3} value={fInternalNote} onChange={(e) => setFInternalNote(e.target.value)} placeholder="Visible to team only — never shown to the client." style={{ resize: 'vertical', marginBottom: 0 }} />
+                        </div>
+                      </div>
+
+                      <aside className="pay-summary-col">
+                        <div className="summary-card pay-summary-sticky">
+                          <div className="dcard-title" style={{ marginBottom: 12 }}>
+                            Request Summary
+                          </div>
+                          <div className="pay-sum-row">
+                            <span>Client</span>
+                            <span>{client?.primary_contact ?? client?.company_name ?? '—'}</span>
+                          </div>
+                          <div className="pay-sum-row">
+                            <span>Project</span>
+                            <span>{project.name}</span>
+                          </div>
+                          <div className="pay-sum-row">
+                            <span>Payment Type</span>
+                            <span>{fType}</span>
+                          </div>
+                          <div className="pay-sum-row">
+                            <span>Amount</span>
+                            <span className="tabular">
+                              {currency} {amountNum.toLocaleString('en-US')}
+                            </span>
+                          </div>
+                          <div className="pay-sum-row">
+                            <span>Due</span>
+                            <span>{fDueDate ? formatBnDate(fDueDate) : '—'}</span>
+                          </div>
+                          <div className="pay-sum-row">
+                            <span>Method</span>
+                            <span>{fMethod}</span>
+                          </div>
+                          <div className="pay-sum-row">
+                            <span>SOW</span>
+                            <span>Signed ✓</span>
+                          </div>
+                          <div className="pay-sum-row">
+                            <span>Notify Client</span>
+                            <span>{fNotify ? 'ON' : 'OFF'}</span>
+                          </div>
+                        </div>
+                      </aside>
+                    </div>
+                  </>
                 )}
               </>
             )}
@@ -327,69 +749,28 @@ export default function AdminPaymentsPage() {
         </div>
       </div>
 
-      {showCreate && (
+      {cancelTargetId && (
         <div
           className="modal-overlay"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setShowCreate(false);
+            if (e.target === e.currentTarget) setCancelTargetId(null);
           }}
         >
           <div className="modal-box">
             <div className="modal-title" style={{ padding: '16px 18px', borderBottom: '1px solid var(--border-soft)' }}>
-              Create Payment Request
+              Cancel payment request?
             </div>
-            <form onSubmit={handleCreate}>
-              <div style={{ padding: 18 }}>
-                <label className="field-label">Payment Type</label>
-                <select className="field-input" value={newType} onChange={(e) => setNewType(e.target.value)}>
-                  {PAYMENT_TYPE_OPTIONS.map((o) => (
-                    <option key={o} value={o}>
-                      {o}
-                    </option>
-                  ))}
-                </select>
-
-                <div className="field-row">
-                  <div>
-                    <label className="field-label">Amount</label>
-                    <input className="field-input" type="number" min="0" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} required autoFocus />
-                  </div>
-                  <div>
-                    <label className="field-label">Currency</label>
-                    <select className="field-input" value={newCurrency} onChange={(e) => setNewCurrency(e.target.value)}>
-                      <option value="BDT">BDT</option>
-                      <option value="USD">USD</option>
-                    </select>
-                  </div>
-                </div>
-
-                <label className="field-label">Description</label>
-                <input className="field-input" type="text" value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="ঐচ্ছিক" />
-
-                <div className="field-row">
-                  <div>
-                    <label className="field-label">Due Date</label>
-                    <input className="field-input" type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="field-label">Payment Method</label>
-                    <input className="field-input" type="text" value={newMethod} onChange={(e) => setNewMethod(e.target.value)} placeholder="যেমন: Bank Transfer" />
-                  </div>
-                </div>
-
-                <label className="notify-row" style={{ marginTop: 4 }}>
-                  <input type="checkbox" checked={newNotify} onChange={(e) => setNewNotify(e.target.checked)} /> Notify Client
-                </label>
-              </div>
-              <div className="modal-foot">
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowCreate(false)}>
-                  বাতিল
-                </button>
-                <button type="submit" className="btn btn-accent btn-sm" disabled={creating || !newAmount}>
-                  {creating ? 'তৈরি হচ্ছে…' : 'Create Payment Request'}
-                </button>
-              </div>
-            </form>
+            <div style={{ padding: 18 }}>
+              <p style={{ fontSize: 13, color: 'var(--ink-soft)', margin: 0 }}>This request will no longer be payable by the client.</p>
+            </div>
+            <div className="modal-foot">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setCancelTargetId(null)} disabled={cancelling}>
+                Keep Request
+              </button>
+              <button type="button" className="btn btn-danger btn-sm" onClick={handleCancelRequest} disabled={cancelling}>
+                {cancelling ? 'বাতিল হচ্ছে…' : 'Cancel Request'}
+              </button>
+            </div>
           </div>
         </div>
       )}

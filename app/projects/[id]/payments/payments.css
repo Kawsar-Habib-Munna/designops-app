@@ -1,25 +1,80 @@
-/* Screen 12/13 (admin) — Payments। ../project.css থেকে shell/modal/status-pill/
-   field-input সব আসে, এখানে শুধু ইনভয়েস-লিস্ট আর মোডালের দুই-কলাম রো। */
+/* Screen 12 — Payment Request (admin)। ../project.css থেকে shell/modal/status-pill/
+   field-input/tabular সব আসে, এখানে শুধু context card/editor two-column/
+   summary sidebar/breakdown/danger-button ক্লাস। */
 
-.payments-admin-root .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.payments-admin-root .field-row .field-input{margin-bottom:12px;}
+.payments-admin-root .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.payments-admin-root .field-row .field-input { margin-bottom: 12px; }
 
-.payments-admin-root .notify-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft);}
-.payments-admin-root .notify-row input{width:16px;height:16px;accent-color:var(--accent);}
+.payments-admin-root .notify-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft); }
+.payments-admin-root .notify-row input { width: 16px; height: 16px; accent-color: var(--accent); }
 
-.payments-admin-root .invoice-list{display:flex;flex-direction:column;gap:12px;}
-.payments-admin-root .invoice-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow-sm);}
-.payments-admin-root .invoice-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px;}
-.payments-admin-root .invoice-type{font-size:11.5px;font-weight:600;color:var(--ink-faint);text-transform:capitalize;margin-bottom:3px;}
-.payments-admin-root .invoice-amount{font-size:18px;font-weight:700;color:var(--ink);}
-.payments-admin-root .invoice-desc{font-size:12.5px;color:var(--ink-soft);margin:0 0 8px;}
-.payments-admin-root .invoice-meta-row{display:flex;gap:14px;font-size:11.5px;color:var(--ink-faint);margin-bottom:10px;}
+.payments-admin-root .dcard-title { font-size: 13px; font-weight: 700; color: var(--ink); }
 
-.payments-admin-root .invoice-submission{background:var(--surface-muted);border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:12px;}
-.payments-admin-root .invoice-submission-title{font-size:11px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;}
-.payments-admin-root .invoice-submission-grid{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--ink-soft);}
-.payments-admin-root .invoice-submission-notes{font-size:12px;color:var(--ink-soft);margin:6px 0 0;font-style:italic;}
+.payments-admin-root .btn-danger-ghost { background: transparent; color: var(--danger); border-color: var(--danger); }
+.payments-admin-root .btn-danger-ghost:hover { background: var(--danger-soft); }
+.payments-admin-root .btn-danger { background: var(--danger); color: #fff; }
+.payments-admin-root .btn-danger:hover { opacity: 0.9; }
 
-@media (max-width:600px){
-  .payments-admin-root .field-row{grid-template-columns:1fr;}
+/* ---- client/project context strip ---- */
+.payments-admin-root .pay-context-card { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 16px 20px; margin-bottom: 18px; }
+.payments-admin-root .pay-context-item { display: flex; flex-direction: column; gap: 3px; }
+.payments-admin-root .pay-context-label { font-size: 10.5px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; }
+.payments-admin-root .pay-context-value { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+
+.payments-admin-root .pay-gate-card { text-align: center; padding: 32px 24px; }
+.payments-admin-root .pay-gate-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.payments-admin-root .pay-gate-sub { font-size: 13px; color: var(--ink-soft); margin: 0 0 16px; }
+
+/* ---- status pill variants ---- */
+.payments-admin-root .s-review { background: var(--warning-soft); color: var(--warning); }
+.payments-admin-root .s-done { background: var(--positive-soft); color: var(--positive); }
+.payments-admin-root .s-todo { background: var(--surface-muted); color: var(--ink-soft); }
+.payments-admin-root .s-overdue { background: var(--danger-soft); color: var(--danger); }
+.payments-admin-root .s-danger { background: var(--danger-soft); color: var(--danger); }
+
+/* ---- invoice list ---- */
+.payments-admin-root .invoice-list { display: flex; flex-direction: column; gap: 12px; }
+.payments-admin-root .invoice-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; box-shadow: var(--shadow-sm); }
+.payments-admin-root .invoice-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.payments-admin-root .invoice-type { font-size: 11.5px; font-weight: 600; color: var(--ink-faint); text-transform: capitalize; margin-bottom: 3px; display: flex; align-items: center; gap: 8px; }
+.payments-admin-root .pay-req-number { font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-soft); padding: 2px 7px; border-radius: 999px; text-transform: none; }
+.payments-admin-root .invoice-amount { font-size: 18px; font-weight: 700; color: var(--ink); }
+.payments-admin-root .pay-pct { font-size: 12.5px; font-weight: 500; color: var(--ink-faint); }
+.payments-admin-root .invoice-desc { font-size: 12.5px; color: var(--ink-soft); margin: 0 0 8px; }
+.payments-admin-root .invoice-meta-row { display: flex; gap: 14px; font-size: 11.5px; color: var(--ink-faint); margin-bottom: 10px; }
+.payments-admin-root .pay-card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+
+.payments-admin-root .invoice-submission { background: var(--surface-muted); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 12px; }
+.payments-admin-root .invoice-submission-title { font-size: 11px; font-weight: 700; color: var(--ink-soft); margin-bottom: 6px; }
+.payments-admin-root .invoice-submission-grid { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-soft); }
+.payments-admin-root .invoice-submission-notes { font-size: 12px; color: var(--ink-soft); margin: 6px 0 0; font-style: italic; }
+
+/* ---- editor two-column layout ---- */
+.payments-admin-root .pay-editor-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+.payments-admin-root .pay-form-col { display: flex; flex-direction: column; gap: 16px; }
+.payments-admin-root .pay-summary-col { position: relative; }
+.payments-admin-root .pay-summary-sticky { position: sticky; top: 20px; }
+
+.payments-admin-root .pay-sum-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border-soft); font-size: 12.5px; }
+.payments-admin-root .pay-sum-row:last-child { border-bottom: none; }
+.payments-admin-root .pay-sum-row span:first-child { color: var(--ink-faint); }
+.payments-admin-root .pay-sum-row span:last-child { color: var(--ink); font-weight: 600; text-align: right; }
+
+.payments-admin-root .pay-breakdown-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; font-size: 13px; color: var(--ink-soft); }
+.payments-admin-root .pay-breakdown-total { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 10px; font-weight: 700; color: var(--ink); }
+
+.payments-admin-root .pay-warning-box { margin-top: 12px; font-size: 12.5px; color: var(--warning); background: var(--warning-soft); border-radius: var(--radius-sm); padding: 10px 14px; }
+.payments-admin-root .pay-hint { font-size: 11.5px; color: var(--ink-faint); margin: 4px 0 0; }
+
+.payments-admin-root .pay-doc-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.payments-admin-root .pay-doc-link { font-size: 12.5px; font-weight: 600; color: var(--accent); }
+.payments-admin-root .pay-doc-link:hover { text-decoration: underline; }
+
+@media (max-width: 900px) {
+  .payments-admin-root .pay-editor-grid { grid-template-columns: 1fr; }
+  .payments-admin-root .pay-summary-sticky { position: static; }
+}
+@media (max-width: 600px) {
+  .payments-admin-root .field-row { grid-template-columns: 1fr; }
+  .payments-admin-root .pay-context-card { gap: 14px 24px; }
 }
