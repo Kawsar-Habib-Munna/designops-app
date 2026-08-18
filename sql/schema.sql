@@ -1585,3 +1585,10 @@ begin
 end;
 $$;
 grant execute on function public.sign_sow(uuid, text, text, text, text, text, int) to authenticated;
+
+-- CLIENT PORTAL — ফেজ ১৩: SOW এডিটর সরলীকরণ (নতুন মকআপ অনুযায়ী)। এডমিন এখন
+-- SOW-এর নিজস্ব Start Date/Expected Delivery সেট করে (প্রজেক্টের start_date/
+-- due_date থেকে আলাদা হতে পারে) — timeline টেক্সটে এমবেড করার বদলে real date
+-- কলামে রাখা হলো যাতে ফর্ম রিলোড করলে ঠিকভাবে পার্স হয়।
+alter table sows add column if not exists start_date date;
+alter table sows add column if not exists delivery_date date;

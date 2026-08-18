@@ -1,5 +1,5 @@
-/* Screen 10 — Statement of Work (client)। cp-* প্রিমিটিভ client-shared.css থেকে,
-   এখানে শুধু document/TOC/section লেআউট। */
+/* Screen 10/11 — Statement of Work (client, v2 — combined review+sign)।
+   cp-* প্রিমিটিভ client-shared.css থেকে, এখানে শুধু document/sign-panel লেআউট। */
 
 .client-sow-root {
   --warning: #f5a524;
@@ -12,114 +12,56 @@
   }
 }
 
-.client-sow-root .sw-shell { max-width: 980px; margin: 0 auto; padding: 32px 20px 90px; }
+.client-sow-root .sw-shell { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
 .client-sow-root .sw-back { font-size: 13px; color: var(--ink-faint); font-weight: 600; display: inline-block; margin-bottom: 18px; }
 .client-sow-root .sw-back:hover { color: var(--ink); }
 
-.client-sow-root .sw-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.client-sow-root .page-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
 .client-sow-root .sw-title { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
-.client-sow-root .sw-header-sub { margin: 0 0 10px; font-size: 13px; color: var(--ink-soft); max-width: 460px; }
-.client-sow-root .sw-header-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--ink-faint); }
-.client-sow-root .sw-dot { width: 3px; height: 3px; border-radius: 999px; background: var(--ink-faint); }
-.client-sow-root .sw-header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.client-sow-root .sw-page-sub { margin: 0; font-size: 13px; color: var(--ink-soft); }
 
-.client-sow-root .sw-summary-banner { display: flex; flex-wrap: wrap; gap: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 18px; margin-bottom: 24px; }
-.client-sow-root .sw-summary-label { display: block; font-size: 10.5px; color: var(--ink-faint); margin-bottom: 2px; }
-.client-sow-root .sw-summary-value { display: block; font-size: 13px; font-weight: 600; color: var(--ink); }
+.client-sow-root .doc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 36px 34px; margin-bottom: 20px; }
+.client-sow-root .doc-letterhead { font-size: 19px; font-weight: 800; color: var(--accent); margin-bottom: 2px; }
+.client-sow-root .doc-letterhead-sub { font-size: 11px; color: var(--ink-faint); margin-bottom: 22px; }
+.client-sow-root .doc-title { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 4px; color: var(--ink); }
+.client-sow-root .doc-subtitle { font-size: 12px; color: var(--ink-faint); text-align: center; font-style: italic; margin-bottom: 26px; }
+.client-sow-root .doc-h2 { font-size: 13.5px; font-weight: 700; color: var(--accent); margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.client-sow-root .doc-p { font-size: 13px; line-height: 1.75; color: var(--ink-soft); margin: 0 0 10px; }
+.client-sow-root .doc-list { margin: 0 0 10px 18px; padding: 0; }
+.client-sow-root .doc-list li { font-size: 13px; line-height: 1.8; color: var(--ink-soft); }
+.client-sow-root .doc-field-line { font-size: 13px; margin-bottom: 6px; color: var(--ink); }
+.client-sow-root .doc-field-line b { font-weight: 700; }
+.client-sow-root .sw-doc-link { display: inline-block; font-size: 12.5px; font-weight: 600; color: var(--accent); margin-top: 8px; }
+.client-sow-root .sw-doc-link:hover { text-decoration: underline; }
 
-.client-sow-root .sw-body-grid { display: grid; grid-template-columns: 200px 1fr; gap: 32px; align-items: start; }
-.client-sow-root .sw-toc { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 2px; }
-.client-sow-root .sw-toc-item { font-size: 12.5px; color: var(--ink-faint); padding: 6px 10px; border-radius: var(--radius-sm); border-left: 2px solid transparent; }
-.client-sow-root .sw-toc-item:hover { color: var(--ink); background: var(--surface); }
-.client-sow-root .sw-toc-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
-.client-sow-root .sw-toc-num { font-variant-numeric: tabular-nums; margin-right: 4px; opacity: 0.7; }
-.client-sow-root .sw-toc-mobile { display: none; margin-bottom: 20px; }
-.client-sow-root .sw-toc-mobile-label { display: block; font-size: 11px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
-.client-sow-root .sw-toc-select { width: 100%; font-size: 13px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font-family: inherit; }
+.client-sow-root .sw-signed-banner { background: var(--positive-soft); color: var(--positive); font-size: 14px; font-weight: 600; padding: 14px 18px; border-radius: var(--radius-md); }
 
-.client-sow-root .sw-document { min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 8px 32px; }
-.client-sow-root .sw-section { max-width: 740px; padding: 26px 0; border-bottom: 1px solid var(--border); }
-.client-sow-root .sw-section:last-child { border-bottom: none; }
-.client-sow-root .sw-section-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 14px; color: var(--ink); scroll-margin-top: 24px; }
-.client-sow-root .sw-body-text { font-size: 13.5px; line-height: 1.75; color: var(--ink-soft); white-space: pre-wrap; margin: 0 0 10px; }
-.client-sow-root .sw-empty { font-size: 13px; color: var(--ink-faint); font-style: italic; margin: 0; }
-.client-sow-root .sw-footnote { font-size: 12px; color: var(--ink-faint); line-height: 1.6; margin-top: 10px; }
+.client-sow-root .sign-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 24px; }
+.client-sow-root .sign-panel-title { font-size: 14px; font-weight: 800; margin-bottom: 14px; color: var(--ink); }
+.client-sow-root .sw-sig-preview { font-family: 'Georgia', serif; font-style: italic; font-size: 22px; color: var(--ink); padding: 10px 2px; border-bottom: 2px solid var(--border); min-height: 40px; display: flex; align-items: center; }
 
-.client-sow-root .sw-overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; margin-bottom: 14px; }
-.client-sow-root .sw-field-label { display: block; font-size: 10.5px; color: var(--ink-faint); margin-bottom: 2px; }
-.client-sow-root .sw-field-value { display: block; font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.client-sow-root .agree-row { display: flex; align-items: flex-start; gap: 9px; margin: 14px 0; cursor: pointer; }
+.client-sow-root .agree-check { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--border); flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; transition: background 0.15s ease, border-color 0.15s ease; font-size: 11px; color: #fff; }
+.client-sow-root .agree-check.checked { background: var(--accent); border-color: var(--accent); }
+.client-sow-root .agree-label { font-size: 12px; line-height: 1.6; color: var(--ink-soft); }
 
-.client-sow-root .sw-list { margin: 0 0 10px; padding-left: 20px; }
-.client-sow-root .sw-list li { font-size: 13.5px; line-height: 1.8; color: var(--ink-soft); }
-.client-sow-root .sw-list-numbered { list-style: decimal; }
-.client-sow-root .sw-list-check { list-style: none; padding-left: 0; }
-.client-sow-root .sw-list-check li::before { content: '✓'; color: var(--positive); font-weight: 700; margin-right: 8px; }
-.client-sow-root .sw-list-cross { list-style: none; padding-left: 0; }
-.client-sow-root .sw-list-cross li { color: var(--ink-faint); }
-.client-sow-root .sw-list-cross li::before { content: '×'; color: var(--ink-faint); font-weight: 700; margin-right: 8px; }
+.client-sow-root .sign-actions { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+.client-sow-root .sign-actions .cp-btn { flex: 1; min-width: 160px; justify-content: center; }
 
-.client-sow-root .sw-scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.client-sow-root .sw-scope-heading { font-size: 12px; font-weight: 700; color: var(--positive); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 8px; }
-.client-sow-root .sw-scope-heading.sw-scope-excluded { color: var(--ink-faint); }
-
-.client-sow-root .sw-timeline-row { display: flex; gap: 32px; flex-wrap: wrap; }
-
-.client-sow-root .sw-milestone-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 8px; }
-.client-sow-root .sw-milestone-row { display: flex; gap: 12px; align-items: flex-start; }
-.client-sow-root .sw-milestone-dot { width: 22px; height: 22px; border-radius: 999px; background: var(--surface-muted, var(--bg)); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--positive); flex-shrink: 0; }
-.client-sow-root .sw-milestone-title { font-size: 13px; font-weight: 700; color: var(--ink); }
-.client-sow-root .sw-milestone-desc { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
-.client-sow-root .sw-milestone-date { font-size: 11.5px; color: var(--ink-faint); margin-top: 2px; }
-
-.client-sow-root .sw-flow-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); background: var(--bg, var(--surface)); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 12px; }
-.client-sow-root .sw-flow-arrow { color: var(--ink-faint); }
-.client-sow-root .sw-inline-link { font-size: 12.5px; font-weight: 600; color: var(--accent); }
-.client-sow-root .sw-inline-link:hover { text-decoration: underline; }
-
-.client-sow-root .sw-terms-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
-.client-sow-root .sw-terms-item:last-child { border-bottom: none; }
-.client-sow-root .sw-terms-heading { font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; padding: 4px 0; }
-.client-sow-root .sw-terms-body { margin-top: 8px; }
-
-.client-sow-root .sw-agreement-card { text-align: center; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius-lg); padding: 28px 24px; margin-top: 24px; }
-.client-sow-root .sw-agreement-label { font-size: 10.5px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
-.client-sow-root .sw-agreement-status { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
-.client-sow-root .sw-agreement-status.sw-agreement-signed { color: var(--positive); }
-.client-sow-root .sw-agreement-card .sw-body-text { max-width: 440px; margin-left: auto; margin-right: auto; }
-.client-sow-root .sw-agreement-card .cp-btn { margin-top: 8px; }
+.client-sow-root .request-changes-box { margin-top: 14px; }
+.client-sow-root .sw-changes-sent { font-size: 12.5px; color: var(--positive); font-weight: 600; margin: 0; }
 
 .client-sow-root .sw-state-card { text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 48px 24px; }
 .client-sow-root .sw-state-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
 .client-sow-root .sw-state-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 18px; }
 .client-sow-root .sw-state-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
-.client-sow-root .sw-sticky-cta { display: none; }
+.client-sow-root .sw-success-view { text-align: center; padding: 50px 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.client-sow-root .sw-success-icon { width: 64px; height: 64px; border-radius: 999px; background: var(--positive-soft); color: var(--positive); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+.client-sow-root .sw-success-title { font-size: 19px; font-weight: 800; margin-bottom: 8px; color: var(--ink); }
+.client-sow-root .sw-success-sub { font-size: 13px; color: var(--ink-soft); line-height: 1.6; max-width: 380px; margin: 0 auto 26px; }
 
-@media (max-width: 860px) {
-  .client-sow-root .sw-body-grid { grid-template-columns: 1fr; }
-  .client-sow-root .sw-toc { display: none; }
-  .client-sow-root .sw-toc-mobile { display: block; }
-  .client-sow-root .sw-document { padding: 6px 18px; }
-  .client-sow-root .sw-overview-grid,
-  .client-sow-root .sw-scope-grid { grid-template-columns: 1fr; }
-  .client-sow-root .sw-header-actions .cp-btn-primary { display: none; }
-  .client-sow-root .sw-sticky-cta {
-    display: block;
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    z-index: 50;
-  }
-}
-
-@media print {
-  .client-sow-root .sw-print-hide { display: none !important; }
-  .client-sow-root .sw-shell { max-width: 100%; padding: 0; }
-  .client-sow-root .sw-body-grid { grid-template-columns: 1fr; }
-  .client-sow-root .sw-document { border: none; padding: 0; }
-  .client-sow-root .sw-section { break-inside: avoid; }
+@media (max-width: 640px) {
+  .client-sow-root .doc-card { padding: 26px 20px; }
+  .client-sow-root .sign-actions { flex-direction: column; }
 }

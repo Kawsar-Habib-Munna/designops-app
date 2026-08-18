@@ -1,17 +1,16 @@
 'use client';
 
-// Screen 10 — SOW (Statement of Work), অ্যাডমিন সাইড। রিডিজাইন: প্রতিটা
-// "Create New Version" sows টেবিলে (project_id, version) কম্বিনেশনে নতুন রো
-// ইনসার্ট করে — v1/v2/v3 ট্যাব হিসেবে দেখা যায়, পুরনো ভার্সন immutable থাকে।
-// নতুন SOW তৈরির সময় Screen 8-এর project ডেটা (scope_note/deliverables_note/
-// budget/payment_structure) থেকে pre-fill হয় — commercial টার্মগুলো
-// (project_value/currency/payment_structure) SOW-এর নিজের কলামে "স্ন্যাপশট"
-// হিসেবে কপি হয়, প্রজেক্ট টেবিলের সাথে live-bound থাকে না (সাইন করার পরে
-// প্রজেক্টের বাজেট বদলালেও সাইন করা SOW অপরিবর্তিত থাকতে হবে)। "Send to Client"
-// আগে একটা কনফার্মেশন মোডাল দেখায়; পাঠানোর সময় আগের 'sent' ভার্সন থাকলে সেটা
-// 'superseded' হয়ে যায়।
+// Screen 10 — SOW (admin)। রিডিজাইন (v2, মকআপ অনুযায়ী সরলীকৃত): সংক্ষিপ্ত ফিল্ড
+// সেট (Summary/Services/Milestones/Payment Schedule/Revision/Terms) + লাইভ
+// ডকুমেন্ট প্রিভিউ (React state থেকেই রিয়েল-টাইমে রেন্ডার হয়, আলাদা কোনো sync
+// লজিক লাগে না)। v1/v2/v3 ভার্সন ট্যাব প্যাটার্ন অক্ষত — sows টেবিলে
+// (project_id, version) কম্বিনেশনে নতুন রো, পুরনো ভার্সন immutable।
+// Services/Milestones structured input নেয় কিন্তু scope/timeline টেক্সট কলামেই
+// ফরম্যাটেড বুলেট হিসেবে সেভ হয় (নতুন কোনো array/jsonb কলাম লাগেনি) — শুধু
+// Start/Delivery Date real কলামে (sows.start_date/delivery_date, ফেজ ১৩)
+// যাতে ফর্ম রিলোড করলে ঠিকভাবে দেখা যায়, টেক্সট পার্স করতে না হয়।
 
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import '../project.css';
@@ -45,6 +44,10 @@ const ICON_PATHS: Record<string, string> = {
   message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
   layers: '<path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>',
   upload: '<path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
+  send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>',
+  eye: '<path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8z"/><circle cx="12" cy="12" r="3"/>',
+  edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/>',
+  download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
 };
 type IconName = keyof typeof ICON_PATHS;
 function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
@@ -70,128 +73,99 @@ const NAV_ITEMS_BOTTOM: { icon: IconName; label: string; href: string }[] = [
 ];
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
-  draft: { label: 'Draft', cls: 's-todo' },
-  sent: { label: 'Awaiting Signature', cls: 's-review' },
-  signed: { label: 'Signed ✓', cls: 's-done' },
-  superseded: { label: 'Superseded', cls: 's-todo' },
-  cancelled: { label: 'Cancelled', cls: 's-todo' },
+  draft: { label: 'Draft', cls: 'sp-draft' },
+  sent: { label: 'Sent · Awaiting Signature', cls: 'sp-sent' },
+  signed: { label: 'Signed ✓', cls: 'sp-signed' },
+  superseded: { label: 'Superseded', cls: 'sp-draft' },
+  cancelled: { label: 'Voided', cls: 'sp-declined' },
 };
+const CURRENCIES = ['BDT', 'USD', 'GBP'];
+const CURRENCY_SYMBOL: Record<string, string> = { BDT: '৳', USD: '$', GBP: '£' };
+const DEFAULT_REVISION = 'Up to 2 rounds of revisions per deliverable included.';
+const DEFAULT_TERMS = `Ownership: Upon full payment, all final deliverables become the property of the Client. FLOW 53 retains the right to display finished work in its portfolio unless confidentiality is requested in writing.
 
-const DEFAULT_REVISION_POLICY =
-  'This engagement includes 2 revision rounds per major design milestone. A revision round refers to one consolidated set of feedback submitted by the client. Additional revision rounds beyond what is included may require additional cost and timeline, and will be handled through a Change Request.';
-const DEFAULT_CLIENT_RESP =
-  'The client agrees to:\n• Provide required brand materials.\n• Provide required content.\n• Provide access to relevant systems when needed.\n• Review work within agreed timelines.\n• Provide consolidated feedback.\n• Make payments according to agreed terms.\n• Provide approvals through the Client Portal.';
-const DEFAULT_AGENCY_RESP =
-  'The agency agrees to:\n• Deliver the agreed scope.\n• Provide reasonable project updates.\n• Maintain client communication.\n• Submit work for review.\n• Address included revisions.\n• Deliver final agreed assets.\n• Maintain project confidentiality according to agreed terms.';
-const DEFAULT_COMMUNICATION = 'Primary Channel: Client Portal\nGeneral Response Time: Within 1 business day\nProject Updates: Weekly\nMeetings: As required\nFeedback: Through Client Portal';
-const DEFAULT_TERMS = `## Intellectual Property
-Upon full payment, ownership of final approved deliverables transfers to the client, unless otherwise agreed in writing.
+Confidentiality: Both parties agree to keep all non-public project information confidential.
 
-## Confidentiality
-Both parties agree to keep shared project information confidential and not disclose it to third parties without consent.
+Termination: Either party may terminate this SOW with 14 days written notice; the Client will be billed for work completed to date on a pro-rata basis.
 
-## Third-Party Services
-Any third-party subscriptions, licenses or services required for the project are the client's responsibility unless otherwise agreed.
-
-## Delays
-Project timelines assume timely feedback and material delivery from the client. Delays in client response may shift the delivery timeline.
-
-## Payment
-Invoices are due according to the agreed payment structure. Work may pause if payments are significantly overdue.
-
-## Cancellation
-Either party may cancel this engagement with written notice. Work completed and costs incurred up to the cancellation date remain payable.
-
-## Ownership Transfer
-Source files and final assets are released upon completion of all outstanding payments.
-
-## Project Suspension
-If a project is inactive for an extended period due to client delay, the agency reserves the right to pause or reprioritize the engagement.`;
-
-const PAYMENT_STRUCTURE_LABEL: Record<string, string> = { full: 'Full Payment', deposit_final: 'Deposit + Final Payment', milestones: 'Milestone Payments', custom: 'Custom' };
+Governing Law: This SOW is governed by the laws of Bangladesh.`;
 
 type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null; behance_url?: string | null; linkedin_url?: string | null };
 type ProjectBrief = {
   id: string;
   name: string;
   description: string | null;
-  category: string | null;
   client_id: string | null;
-  start_date: string | null;
-  due_date: string | null;
   budget: number | null;
-  payment_structure: string | null;
-  scope_note: string | null;
-  deliverables_note: string | null;
   clients: { company_name: string; primary_contact: string | null } | { company_name: string; primary_contact: string | null }[] | null;
-  project_manager: { full_name: string } | { full_name: string }[] | null;
 };
 type Sow = {
   id: string;
   project_id: string;
   version: number;
   sow_number: string | null;
-  valid_until: string | null;
+  status: string;
+  start_date: string | null;
+  delivery_date: string | null;
   project_value: number | null;
   currency: string | null;
-  payment_structure: string | null;
   scope: string | null;
   objectives: string | null;
-  deliverables: string | null;
   timeline: string | null;
   payment_terms: string | null;
   revision_policy: string | null;
-  client_responsibilities: string | null;
-  agency_responsibilities: string | null;
-  communication_terms: string | null;
   terms: string | null;
   document_url: string | null;
-  status: string;
   notify_client: boolean;
   sent_at: string | null;
   viewed_at: string | null;
   signed_at: string | null;
   signed_by_name: string | null;
-  superseded_by: string | null;
 };
-
-type FormState = Pick<
-  Sow,
-  | 'valid_until'
-  | 'project_value'
-  | 'payment_structure'
-  | 'scope'
-  | 'objectives'
-  | 'deliverables'
-  | 'timeline'
-  | 'payment_terms'
-  | 'revision_policy'
-  | 'client_responsibilities'
-  | 'agency_responsibilities'
-  | 'communication_terms'
-  | 'terms'
->;
-function formFromSow(sow: Sow): FormState {
-  return {
-    valid_until: sow.valid_until,
-    project_value: sow.project_value,
-    payment_structure: sow.payment_structure,
-    scope: sow.scope,
-    objectives: sow.objectives,
-    deliverables: sow.deliverables,
-    timeline: sow.timeline,
-    payment_terms: sow.payment_terms,
-    revision_policy: sow.revision_policy,
-    client_responsibilities: sow.client_responsibilities,
-    agency_responsibilities: sow.agency_responsibilities,
-    communication_terms: sow.communication_terms,
-    terms: sow.terms,
-  };
-}
+type MilestoneRow = { id: string; label: string; week: string };
 
 function toOne<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
   return Array.isArray(v) ? (v[0] ?? null) : v;
+}
+let rowSeq = 0;
+function newRowId() {
+  rowSeq += 1;
+  return `r${rowSeq}`;
+}
+function parseServices(scope: string | null): string[] {
+  if (!scope) return [];
+  return scope
+    .split('\n')
+    .map((l) => l.replace(/^[•\-]\s*/, '').trim())
+    .filter(Boolean);
+}
+function serializeServices(services: string[]): string {
+  return services
+    .filter((s) => s.trim())
+    .map((s) => `• ${s.trim()}`)
+    .join('\n');
+}
+function parseMilestones(timeline: string | null): MilestoneRow[] {
+  if (!timeline) return [];
+  return timeline
+    .split('\n')
+    .filter((l) => l.startsWith('•'))
+    .map((l) => {
+      const clean = l.replace(/^•\s*/, '');
+      const [label, week] = clean.split(' — ');
+      return { id: newRowId(), label: (label ?? '').trim(), week: (week ?? '').trim() };
+    });
+}
+function serializeTimeline(milestones: MilestoneRow[]): string {
+  return milestones
+    .filter((m) => m.label.trim())
+    .map((m) => `• ${m.label.trim()}${m.week.trim() ? ` — ${m.week.trim()}` : ''}`)
+    .join('\n');
+}
+function formatDateLong(iso: string): string {
+  if (!iso) return '';
+  return new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 export default function AdminSowPage() {
@@ -209,29 +183,54 @@ export default function AdminSowPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [mode, setMode] = useState<'overview' | 'editor' | 'preview'>('overview');
 
-  const [form, setForm] = useState<FormState | null>(null);
+  // ---- editable form state ----
+  const [summary, setSummary] = useState('');
+  const [services, setServices] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [milestones, setMilestones] = useState<MilestoneRow[]>([]);
+  const [projectValue, setProjectValue] = useState('');
+  const [currency, setCurrency] = useState('BDT');
+  const [paymentSchedule, setPaymentSchedule] = useState('');
+  const [revisionPolicy, setRevisionPolicy] = useState(DEFAULT_REVISION);
+  const [terms, setTerms] = useState(DEFAULT_TERMS);
+  const [attachMSA, setAttachMSA] = useState(false);
+  const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [notify, setNotify] = useState(true);
+
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
+  const [voiding, setVoiding] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [showSendConfirm, setShowSendConfirm] = useState(false);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showVoidConfirm, setShowVoidConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function loadFormFrom(sow: Sow) {
+    setSummary(sow.objectives ?? '');
+    setServices(parseServices(sow.scope));
+    setStartDate(sow.start_date ?? '');
+    setDeliveryDate(sow.delivery_date ?? '');
+    setMilestones(parseMilestones(sow.timeline));
+    setProjectValue(sow.project_value != null ? String(sow.project_value) : '');
+    setCurrency(sow.currency ?? 'BDT');
+    setPaymentSchedule(sow.payment_terms?.replace(/^Total project value:.*?\.\s*/, '') ?? '');
+    setRevisionPolicy(sow.revision_policy ?? DEFAULT_REVISION);
+    setTerms(sow.terms ?? DEFAULT_TERMS);
+    setDocumentUrl(sow.document_url);
+    setAttachMSA(!!sow.document_url);
+    setNotify(sow.notify_client);
+  }
 
   useEffect(() => {
     if (!user || !projectId) return;
 
     async function run() {
       const [projectRes, sowsRes, profileRes] = await Promise.all([
-        supabase
-          .from('projects')
-          .select('id, name, description, category, client_id, start_date, due_date, budget, payment_structure, scope_note, deliverables_note, clients(company_name, primary_contact), project_manager:profiles!project_manager_id(full_name)')
-          .eq('id', projectId)
-          .maybeSingle(),
+        supabase.from('projects').select('id, name, description, client_id, budget, clients(company_name, primary_contact)').eq('id', projectId).maybeSingle(),
         supabase.from('sows').select('*').eq('project_id', projectId).order('version', { ascending: false }),
         supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url').eq('id', user!.id).single(),
       ]);
@@ -242,9 +241,10 @@ export default function AdminSowPage() {
       setVersions(rows);
       if (rows.length > 0) {
         setSelectedId(rows[0].id);
-        setForm(formFromSow(rows[0]));
-        setNotify(rows[0].notify_client);
-        setDocumentUrl(rows[0].document_url);
+        loadFormFrom(rows[0]);
+        setMode(rows[0].status === 'draft' ? 'editor' : 'preview');
+      } else {
+        setMode('overview');
       }
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);
       setLoading(false);
@@ -255,28 +255,42 @@ export default function AdminSowPage() {
 
   function selectVersion(sow: Sow) {
     setSelectedId(sow.id);
-    setForm(formFromSow(sow));
-    setNotify(sow.notify_client);
-    setDocumentUrl(sow.document_url);
+    loadFormFrom(sow);
+    setMode(sow.status === 'draft' ? 'editor' : 'preview');
   }
 
   const selected = versions.find((v) => v.id === selectedId) ?? null;
-  const isDraft = selected ? selected.status === 'draft' : true;
   const client = project ? toOne(project.clients) : null;
-  const manager = project ? toOne(project.project_manager) : null;
+
+  function addService() {
+    setServices((prev) => [...prev, '']);
+  }
+  function updateService(i: number, value: string) {
+    setServices((prev) => prev.map((s, idx) => (idx === i ? value : s)));
+  }
+  function removeService(i: number) {
+    setServices((prev) => prev.filter((_, idx) => idx !== i));
+  }
+  function addMilestone() {
+    setMilestones((prev) => [...prev, { id: newRowId(), label: '', week: '' }]);
+  }
+  function updateMilestone(id: string, patch: Partial<MilestoneRow>) {
+    setMilestones((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+  }
+  function removeMilestone(id: string) {
+    setMilestones((prev) => prev.filter((m) => m.id !== id));
+  }
+
+  function buildPaymentTerms(): string {
+    const sym = CURRENCY_SYMBOL[currency] ?? currency;
+    const value = projectValue ? Number(projectValue).toLocaleString('en-US') : '0';
+    return `Total project value: ${sym}${value}. ${paymentSchedule.trim()}`.trim();
+  }
 
   async function handleCreateFirst() {
     if (!user || !project) return;
     const { count } = await supabase.from('sows').select('id', { count: 'exact', head: true });
     const sowNumber = `SOW-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(4, '0')}`;
-    const validUntil = new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10);
-    const timelineText =
-      project.start_date && project.due_date
-        ? `Start Date: ${formatBnDateLong(project.start_date)}\nExpected Completion: ${formatBnDateLong(project.due_date)}`
-        : '';
-    const paymentTermsText = project.budget
-      ? `Project Value: ৳${project.budget.toLocaleString('en-US')}\nPayment Structure: ${PAYMENT_STRUCTURE_LABEL[project.payment_structure ?? ''] ?? project.payment_structure ?? 'To be agreed'}`
-      : '';
 
     const { data, error: createError } = await supabase
       .from('sows')
@@ -285,18 +299,10 @@ export default function AdminSowPage() {
         version: 1,
         created_by: user.id,
         sow_number: sowNumber,
-        valid_until: validUntil,
+        objectives: project.description ?? '',
         project_value: project.budget,
         currency: 'BDT',
-        payment_structure: project.payment_structure,
-        scope: project.scope_note,
-        deliverables: project.deliverables_note,
-        timeline: timelineText,
-        payment_terms: paymentTermsText,
-        revision_policy: DEFAULT_REVISION_POLICY,
-        client_responsibilities: DEFAULT_CLIENT_RESP,
-        agency_responsibilities: DEFAULT_AGENCY_RESP,
-        communication_terms: DEFAULT_COMMUNICATION,
+        revision_policy: DEFAULT_REVISION,
         terms: DEFAULT_TERMS,
       })
       .select('*')
@@ -307,6 +313,7 @@ export default function AdminSowPage() {
     }
     setVersions([data as Sow]);
     selectVersion(data as Sow);
+    setMode('editor');
   }
 
   async function handleCreateNewVersion() {
@@ -319,19 +326,15 @@ export default function AdminSowPage() {
         version: nextVersion,
         created_by: user.id,
         sow_number: selected.sow_number,
-        valid_until: new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10),
+        start_date: selected.start_date,
+        delivery_date: selected.delivery_date,
         project_value: selected.project_value,
         currency: selected.currency,
-        payment_structure: selected.payment_structure,
         scope: selected.scope,
         objectives: selected.objectives,
-        deliverables: selected.deliverables,
         timeline: selected.timeline,
         payment_terms: selected.payment_terms,
         revision_policy: selected.revision_policy,
-        client_responsibilities: selected.client_responsibilities,
-        agency_responsibilities: selected.agency_responsibilities,
-        communication_terms: selected.communication_terms,
         terms: selected.terms,
         document_url: selected.document_url,
       })
@@ -342,21 +345,34 @@ export default function AdminSowPage() {
       return;
     }
 
-    // আগের ভার্সন 'sent' অবস্থায় থাকলে (এখনো সাইন হয়নি) সেটা superseded হয়ে
-    // যায় — সাইন হয়ে যাওয়া ভার্সন কখনো superseded/immutable-ভাঙা হয় না।
     if (selected.status === 'sent') {
       await supabase.from('sows').update({ status: 'superseded', superseded_by: (data as Sow).id }).eq('id', selected.id);
     }
 
     setVersions((prev) => [data as Sow, ...prev.map((v) => (v.id === selected.id && selected.status === 'sent' ? { ...v, status: 'superseded' } : v))]);
     selectVersion(data as Sow);
+    setMode('editor');
   }
 
-  async function handleSaveDraft(e: FormEvent) {
-    e.preventDefault();
-    if (!selected || !form) return;
+  async function handleSaveDraft() {
+    if (!selected) return;
     setSaving(true);
-    const { error: updateError } = await supabase.from('sows').update({ ...form, document_url: documentUrl }).eq('id', selected.id);
+    const { error: updateError } = await supabase
+      .from('sows')
+      .update({
+        objectives: summary,
+        scope: serializeServices(services),
+        start_date: startDate || null,
+        delivery_date: deliveryDate || null,
+        timeline: serializeTimeline(milestones),
+        project_value: projectValue ? Number(projectValue) : null,
+        currency,
+        payment_terms: buildPaymentTerms(),
+        revision_policy: revisionPolicy,
+        terms,
+        document_url: attachMSA ? documentUrl : null,
+      })
+      .eq('id', selected.id);
     setSaving(false);
     if (updateError) {
       setError(updateError.message);
@@ -366,11 +382,12 @@ export default function AdminSowPage() {
   }
 
   async function handleConfirmSend() {
-    if (!selected || !user || !form) return;
+    if (!selected || !user) return;
     setSending(true);
+    await handleSaveDraft();
     const { error: updateError } = await supabase
       .from('sows')
-      .update({ ...form, document_url: documentUrl, status: 'sent', sent_at: new Date().toISOString(), notify_client: notify })
+      .update({ status: 'sent', sent_at: new Date().toISOString(), notify_client: notify })
       .eq('id', selected.id);
     setSending(false);
     setShowSendConfirm(false);
@@ -384,18 +401,18 @@ export default function AdminSowPage() {
     setReloadKey((k) => k + 1);
   }
 
-  async function handleConfirmCancel() {
+  async function handleConfirmVoid() {
     if (!selected || !user) return;
-    setCancelling(true);
+    setVoiding(true);
     const { error: updateError } = await supabase.from('sows').update({ status: 'cancelled' }).eq('id', selected.id);
-    setCancelling(false);
-    setShowCancelConfirm(false);
+    setVoiding(false);
+    setShowVoidConfirm(false);
     if (updateError) {
       setError(updateError.message);
       return;
     }
     if (project?.client_id) {
-      await supabase.from('activity_log').insert({ actor_id: user.id, action: 'sow_cancelled', entity_type: 'client', entity_id: project.client_id, detail: `SOW ${selected.sow_number ?? `v${selected.version}`} বাতিল করা হয়েছে` });
+      await supabase.from('activity_log').insert({ actor_id: user.id, action: 'sow_cancelled', entity_type: 'client', entity_id: project.client_id, detail: `SOW ${selected.sow_number ?? `v${selected.version}`} void করা হয়েছে` });
     }
     setReloadKey((k) => k + 1);
   }
@@ -470,12 +487,12 @@ export default function AdminSowPage() {
             </button>
           </header>
 
-          <main className="content">
+          <main className="content" style={mode === 'editor' ? { maxWidth: 1180 } : undefined}>
             {loading || !project ? (
               <p style={{ padding: 24, fontSize: 13, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
             ) : (
               <>
-                <div className="breadcrumb">
+                <div className="breadcrumb" style={mode === 'editor' ? { padding: '0 24px', maxWidth: 1180, margin: '0 auto 14px' } : undefined}>
                   <Link href="/clients">Clients</Link>
                   <span className="sep">/</span>
                   {client && <Link href={`/projects/${project.id}`}>{client.company_name}</Link>}
@@ -487,164 +504,415 @@ export default function AdminSowPage() {
 
                 {error && <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: 13 }}>{error}</div>}
 
-                <div className="proj-header">
-                  <div>
-                    <span className="proj-title">Statement of Work</span>
-                    <div className="proj-sub-row">
-                      {client && (
-                        <>
-                          <span>{client.company_name}</span>
-                          <span className="dividerdot"></span>
-                        </>
-                      )}
-                      <span>{project.name}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {versions.length === 0 ? (
-                  <div className="summary-card" style={{ textAlign: 'center', padding: '40px 20px' }}>
-                    <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 14 }}>এই প্রজেক্টের জন্য এখনো কোনো SOW তৈরি হয়নি।</p>
-                    <button className="btn btn-accent btn-sm" onClick={handleCreateFirst}>
-                      <Icon name="plus" size={14} /> Create SOW
-                    </button>
-                  </div>
-                ) : (
+                {/* ---- OVERVIEW (no SOW yet) ---- */}
+                {mode === 'overview' && (
                   <>
+                    <div className="page-header-row">
+                      <div>
+                        <h1 className="page-title">Statement of Work</h1>
+                        <p className="page-sub">
+                          {project.name} — {client?.company_name}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="dcard">
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span className="dcard-title" style={{ marginBottom: 0 }}>
+                          Current Status
+                        </span>
+                        <span className="status-pill sp-none">
+                          <span className="dot" style={{ background: 'var(--ink-faint)' }}></span>No SOW Created
+                        </span>
+                      </div>
+                      <div className="sow-empty">
+                        <div className="sow-empty-icon">
+                          <Icon name="file" />
+                        </div>
+                        <div className="sow-empty-title">No Statement of Work yet</div>
+                        <p className="sow-empty-sub">Create a SOW to define scope, timeline, and payment terms — then send it to {client?.primary_contact ?? client?.company_name} for review and e-signature.</p>
+                        <button className="btn btn-accent" onClick={handleCreateFirst}>
+                          <Icon name="plus" size={14} /> Create SOW
+                        </button>
+                      </div>
+                    </div>
+                    <div className="dcard" style={{ opacity: 0.6 }}>
+                      <span className="dcard-title">Version History</span>
+                      <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>No previous versions — this will appear here once a SOW is created and sent.</p>
+                    </div>
+                  </>
+                )}
+
+                {/* ---- EDITOR (draft) ---- */}
+                {mode === 'editor' && selected && (
+                  <>
+                    <div className="page-header-row" style={{ padding: '0 24px', maxWidth: 1180, margin: '0 auto 18px' }}>
+                      <div>
+                        <h1 className="page-title">{versions.length > 1 || selected.sent_at ? 'Edit Statement of Work' : 'Create Statement of Work'}</h1>
+                        <p className="page-sub">
+                          {project.name} — {client?.company_name} · {client?.primary_contact}
+                        </p>
+                      </div>
+                      <div className="header-actions">
+                        {versions.length > 0 && (
+                          <button className="btn btn-ghost btn-sm" onClick={() => setMode('overview')}>
+                            All Versions
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="editor-split">
+                      <div className="editor-form-col">
+                        <div className="dcard">
+                          <span className="dcard-title">Scope of Work</span>
+                          <div className="field">
+                            <label className="field-label">Project Summary</label>
+                            <textarea className="field-textarea" value={summary} onChange={(e) => setSummary(e.target.value)} />
+                          </div>
+                          <div className="field">
+                            <label className="field-label">Services Included</label>
+                            {services.map((s, i) => (
+                              <div className="deliverable-row" key={i}>
+                                <input className="field-input" value={s} onChange={(e) => updateService(i, e.target.value)} placeholder="e.g. UX Research & Discovery" />
+                                <span></span>
+                                <button type="button" className="deliverable-remove" onClick={() => removeService(i)} aria-label="বাদ দিন">
+                                  <Icon name="close" size={12} />
+                                </button>
+                              </div>
+                            ))}
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={addService}>
+                              <Icon name="plus" size={12} /> Add Service
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="dcard">
+                          <span className="dcard-title">Deliverables &amp; Timeline</span>
+                          <div className="field-grid-2">
+                            <div className="field">
+                              <label className="field-label">Start Date</label>
+                              <input type="date" className="field-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                            </div>
+                            <div className="field">
+                              <label className="field-label">Expected Delivery</label>
+                              <input type="date" className="field-input" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
+                            </div>
+                          </div>
+                          {milestones.map((m) => (
+                            <div className="deliverable-row" key={m.id}>
+                              <input className="field-input" value={m.label} onChange={(e) => updateMilestone(m.id, { label: e.target.value })} placeholder="e.g. Wireframes — all core screens" />
+                              <input className="field-input" style={{ maxWidth: 120 }} value={m.week} onChange={(e) => updateMilestone(m.id, { week: e.target.value })} placeholder="Week" />
+                              <button type="button" className="deliverable-remove" onClick={() => removeMilestone(m.id)} aria-label="বাদ দিন">
+                                <Icon name="close" size={12} />
+                              </button>
+                            </div>
+                          ))}
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={addMilestone}>
+                            <Icon name="plus" size={12} /> Add Milestone
+                          </button>
+                        </div>
+
+                        <div className="dcard">
+                          <span className="dcard-title">Payment Terms</span>
+                          <div className="field-grid-2">
+                            <div className="field">
+                              <label className="field-label">Project Value</label>
+                              <input type="number" min="0" className="field-input" value={projectValue} onChange={(e) => setProjectValue(e.target.value)} />
+                            </div>
+                            <div className="field">
+                              <label className="field-label">Currency</label>
+                              <select className="field-select" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                                {CURRENCIES.map((c) => (
+                                  <option key={c} value={c}>
+                                    {c}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                          <div className="field">
+                            <label className="field-label">Payment Schedule</label>
+                            <textarea className="field-textarea" style={{ minHeight: 70 }} value={paymentSchedule} onChange={(e) => setPaymentSchedule(e.target.value)} placeholder="e.g. 50% due upon signing. Remaining 50% due upon final delivery." />
+                          </div>
+                          <div className="field">
+                            <label className="field-label">Revision Policy</label>
+                            <input className="field-input" value={revisionPolicy} onChange={(e) => setRevisionPolicy(e.target.value)} />
+                          </div>
+                        </div>
+
+                        <div className="dcard">
+                          <span className="dcard-title">Terms &amp; Conditions</span>
+                          <textarea className="field-textarea large" value={terms} onChange={(e) => setTerms(e.target.value)} />
+                          <div className="toggle-row">
+                            <span className="toggle-label">📎 Attach Master Service Agreement</span>
+                            <button type="button" className={`toggle-switch${attachMSA ? ' on' : ''}`} onClick={() => setAttachMSA((v) => !v)} aria-label="MSA সংযুক্তি টগল">
+                              <div className="toggle-knob"></div>
+                            </button>
+                          </div>
+                          {attachMSA && (
+                            <div className="sow-doc-row" style={{ marginTop: 10, paddingBottom: 0, borderBottom: 'none' }}>
+                              <input ref={fileInputRef} type="file" hidden onChange={handleUpload} />
+                              <button type="button" className="btn btn-ghost btn-sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                                <Icon name="upload" size={13} /> {uploading ? `আপলোড হচ্ছে… ${uploadProgress}%` : documentUrl ? 'Replace Document' : 'Upload Document (PDF/DOC)'}
+                              </button>
+                              {documentUrl && (
+                                <a href={documentUrl} target="_blank" rel="noopener noreferrer" className="sow-doc-link">
+                                  View uploaded document ↗
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="dcard" style={{ marginBottom: 0 }}>
+                          <div className="editor-foot-bar" style={{ marginTop: 0, position: 'static', borderTop: 'none', padding: 0 }}>
+                            <button className="btn btn-ghost" onClick={handleSaveDraft} disabled={saving}>
+                              {saving ? 'সেভ হচ্ছে…' : 'Save Draft'}
+                            </button>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <button className="btn btn-accent" onClick={() => setShowSendConfirm(true)} disabled={sending}>
+                                <Icon name="send" /> Send for Signature
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ---- LIVE PREVIEW ---- */}
+                      <div className="editor-preview-col">
+                        <div className="preview-panel">
+                          <div className="preview-panel-head">
+                            <span className="preview-panel-title">
+                              <span className="preview-live-dot"></span> Live Preview
+                            </span>
+                            <span style={{ fontSize: 10, color: 'var(--ink-faint)' }}>Client will see this</span>
+                          </div>
+                          <div className="preview-panel-body">
+                            <div className="preview-letterhead">FLOW 53</div>
+                            <div className="preview-letterhead-sub">Product Design Studio · Dhaka, Bangladesh</div>
+                            <div className="preview-title">STATEMENT OF WORK</div>
+                            <div className="preview-subtitle">
+                              {project.name} — {client?.company_name}
+                            </div>
+
+                            <div className="preview-h2">1. Parties</div>
+                            <p className="preview-p">
+                              <b>Service Provider:</b> FLOW 53 Design Studio
+                            </p>
+                            <p className="preview-p">
+                              <b>Client:</b> {client?.primary_contact}, {client?.company_name}
+                            </p>
+
+                            <div className="preview-h2">2. Scope of Work</div>
+                            <p className="preview-p">{summary || '—'}</p>
+                            <ul className="preview-list">
+                              {services.filter((s) => s.trim()).length > 0 ? services.filter((s) => s.trim()).map((s, i) => <li key={i}>{s}</li>) : <li style={{ color: 'var(--ink-faint)' }}>No services added yet.</li>}
+                            </ul>
+
+                            <div className="preview-h2">3. Timeline</div>
+                            <ul className="preview-list">
+                              {milestones.filter((m) => m.label.trim()).length > 0 ? (
+                                milestones.filter((m) => m.label.trim()).map((m) => (
+                                  <li key={m.id}>
+                                    {m.label}
+                                    {m.week ? ` — ${m.week}` : ''}
+                                  </li>
+                                ))
+                              ) : (
+                                <li style={{ color: 'var(--ink-faint)' }}>No milestones added yet.</li>
+                              )}
+                            </ul>
+                            {(startDate || deliveryDate) && (
+                              <p className="preview-p">
+                                {startDate && `Start: ${formatDateLong(startDate)}`}
+                                {startDate && deliveryDate && ' · '}
+                                {deliveryDate && `Expected Delivery: ${formatDateLong(deliveryDate)}`}
+                              </p>
+                            )}
+
+                            <div className="preview-h2">4. Payment Terms</div>
+                            <p className="preview-p">{buildPaymentTerms()}</p>
+                            <p className="preview-p">{revisionPolicy}</p>
+
+                            <div className="preview-h2">5. Terms &amp; Conditions</div>
+                            <p className="preview-p">{terms.split('\n').filter(Boolean)[0] || '—'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* ---- PREVIEW & SIGNATURE STATUS ---- */}
+                {mode === 'preview' && selected && (
+                  <>
+                    <div className="page-header-row">
+                      <div>
+                        <h1 className="page-title">Statement of Work</h1>
+                        <p className="page-sub">
+                          {project.name} — {client?.company_name} · v{selected.version}
+                        </p>
+                      </div>
+                      <div className="header-actions">
+                        <span className={`status-pill ${STATUS_META[selected.status]?.cls ?? 'sp-draft'}`}>
+                          <span className="dot" style={{ background: 'currentColor' }}></span>
+                          {STATUS_META[selected.status]?.label ?? selected.status}
+                        </span>
+                      </div>
+                    </div>
+
                     <div className="sow-version-tabs">
                       {versions.map((v) => (
                         <button key={v.id} className={`sow-version-tab${v.id === selectedId ? ' active' : ''}`} onClick={() => selectVersion(v)}>
-                          v{v.version} <span className={`status-pill ${STATUS_META[v.status]?.cls ?? 's-todo'}`}>{STATUS_META[v.status]?.label ?? v.status}</span>
+                          v{v.version} <span className={`status-pill ${STATUS_META[v.status]?.cls ?? 'sp-draft'}`}>{STATUS_META[v.status]?.label ?? v.status}</span>
                         </button>
                       ))}
-                      {selected && selected.status !== 'draft' && selected.status !== 'superseded' && (
+                      {selected.status !== 'draft' && selected.status !== 'superseded' && selected.status !== 'cancelled' && (
                         <button className="btn btn-ghost btn-sm" onClick={handleCreateNewVersion}>
                           <Icon name="plus" size={12} /> New Version
                         </button>
                       )}
                     </div>
 
-                    {selected && form && (
-                      <div className="summary-card">
-                        {selected.status === 'signed' && selected.signed_by_name && (
-                          <div className="sow-signed-banner">
-                            ✓ Signed by <strong>{selected.signed_by_name}</strong> on {formatBnDateLong(selected.signed_at)}
+                    <div className="sow-preview-grid">
+                      <div>
+                        <div className="doc-card">
+                          <div className="doc-letterhead">FLOW 53</div>
+                          <div className="doc-letterhead-sub">Product Design Studio · Dhaka, Bangladesh</div>
+                          <div className="doc-title">STATEMENT OF WORK</div>
+                          <div className="doc-subtitle">
+                            {project.name} — {client?.company_name}
                           </div>
-                        )}
-                        {selected.status === 'superseded' && <div className="sow-meta-banner">এই ভার্সনটা নতুন ভার্সন দিয়ে replace হয়ে গেছে।</div>}
-                        {selected.status === 'cancelled' && <div className="sow-meta-banner sow-meta-danger">এই SOW বাতিল করা হয়েছে।</div>}
 
-                        <div className="sow-meta-row">
-                          <span>{selected.sow_number ?? `SOW-v${selected.version}`}</span>
-                          <span className="dividerdot"></span>
-                          <span>Created by {manager?.full_name ?? 'FLOW 53'}</span>
-                          {selected.sent_at && (
-                            <>
-                              <span className="dividerdot"></span>
-                              <span>Sent {formatBnDateLong(selected.sent_at)}</span>
-                            </>
+                          <div className="doc-h2">1. Parties</div>
+                          <p className="doc-field-line">
+                            <b>Service Provider:</b> FLOW 53 Design Studio
+                          </p>
+                          <p className="doc-field-line">
+                            <b>Client:</b> {client?.primary_contact}, {client?.company_name}
+                          </p>
+
+                          <div className="doc-h2">2. Scope of Work</div>
+                          <p className="doc-p">{summary || '—'}</p>
+                          <ul className="doc-list">
+                            {services.filter((s) => s.trim()).map((s, i) => (
+                              <li key={i}>{s}</li>
+                            ))}
+                          </ul>
+
+                          <div className="doc-h2">3. Timeline</div>
+                          <ul className="doc-list">
+                            {milestones
+                              .filter((m) => m.label.trim())
+                              .map((m) => (
+                                <li key={m.id}>
+                                  {m.label}
+                                  {m.week ? ` — ${m.week}` : ''}
+                                </li>
+                              ))}
+                          </ul>
+                          {(startDate || deliveryDate) && (
+                            <p className="doc-p">
+                              {startDate && `Start: ${formatDateLong(startDate)}`}
+                              {startDate && deliveryDate && ' · '}
+                              {deliveryDate && `Expected Delivery: ${formatDateLong(deliveryDate)}`}
+                            </p>
                           )}
-                          {selected.viewed_at && (
-                            <>
-                              <span className="dividerdot"></span>
-                              <span>Viewed {formatBnDateLong(selected.viewed_at)}</span>
-                            </>
+
+                          <div className="doc-h2">4. Payment Terms</div>
+                          <p className="doc-p">{buildPaymentTerms()}</p>
+                          <p className="doc-p">{revisionPolicy}</p>
+
+                          <div className="doc-h2">5. Terms &amp; Conditions</div>
+                          <p className="doc-p" style={{ whiteSpace: 'pre-wrap' }}>
+                            {terms}
+                          </p>
+                          {documentUrl && (
+                            <a href={documentUrl} target="_blank" rel="noopener noreferrer" className="sow-doc-link">
+                              View attached document ↗
+                            </a>
                           )}
                         </div>
+                      </div>
 
-                        <form onSubmit={handleSaveDraft}>
-                          <div className="sow-doc-row">
-                            <input ref={fileInputRef} type="file" hidden onChange={handleUpload} disabled={!isDraft} />
-                            <button type="button" className="btn btn-ghost btn-sm" onClick={() => fileInputRef.current?.click()} disabled={!isDraft || uploading}>
-                              <Icon name="upload" size={13} /> {uploading ? `আপলোড হচ্ছে… ${uploadProgress}%` : documentUrl ? 'Replace Document' : 'Upload Document (PDF/DOC)'}
-                            </button>
-                            {documentUrl && (
-                              <a href={documentUrl} target="_blank" rel="noopener noreferrer" className="sow-doc-link">
-                                View uploaded document ↗
-                              </a>
-                            )}
-                          </div>
-
-                          <div className="sow-field-grid">
-                            <div className="sow-field">
-                              <label className="field-label">Valid Until</label>
-                              {isDraft ? (
-                                <input className="field-input" type="date" value={form.valid_until ?? ''} onChange={(e) => setForm((f) => (f ? { ...f, valid_until: e.target.value } : f))} />
-                              ) : (
-                                <p className="sow-readonly-text">{formatBnDateLong(selected.valid_until) || '—'}</p>
-                              )}
+                      <div>
+                        <div className="sig-status-card">
+                          <span className="dcard-title">Signature Status</span>
+                          <div className="sig-track-item">
+                            <div className="sig-dot-wrap">
+                              <div className={`sig-dot${selected.sent_at ? '' : ' pending'}`}>
+                                <Icon name={selected.sent_at ? 'check' : 'edit'} size={12} />
+                              </div>
+                              <div className="sig-line"></div>
                             </div>
-                            <div className="sow-field">
-                              <label className="field-label">Project Value (৳)</label>
-                              {isDraft ? (
-                                <input
-                                  className="field-input"
-                                  type="number"
-                                  min="0"
-                                  value={form.project_value ?? ''}
-                                  onChange={(e) => setForm((f) => (f ? { ...f, project_value: e.target.value ? Number(e.target.value) : null } : f))}
-                                />
-                              ) : (
-                                <p className="sow-readonly-text">{selected.project_value ? `৳${selected.project_value.toLocaleString('en-US')}` : '—'}</p>
-                              )}
+                            <div>
+                              <div className="sig-text" style={!selected.sent_at ? { color: 'var(--ink-faint)' } : undefined}>
+                                Sent to client
+                              </div>
+                              <div className="sig-time">{selected.sent_at ? formatBnDateLong(selected.sent_at) : '—'}</div>
                             </div>
                           </div>
-
-                          {(
-                            [
-                              ['objectives', 'Objectives'],
-                              ['scope', 'Scope of Work'],
-                              ['deliverables', 'Deliverables'],
-                              ['timeline', 'Timeline'],
-                              ['payment_terms', 'Payment Terms'],
-                              ['revision_policy', 'Revision Policy'],
-                              ['client_responsibilities', 'Client Responsibilities'],
-                              ['agency_responsibilities', 'Agency Responsibilities'],
-                              ['communication_terms', 'Communication'],
-                              ['terms', 'Terms & Conditions'],
-                            ] as [keyof FormState, string][]
-                          ).map(([key, label]) => (
-                            <div className="sow-field" key={key}>
-                              <label className="field-label">{label}</label>
-                              {isDraft ? (
-                                <textarea
-                                  className="field-input"
-                                  rows={key === 'terms' ? 8 : 3}
-                                  value={(form[key] as string) ?? ''}
-                                  onChange={(e) => setForm((f) => (f ? { ...f, [key]: e.target.value } : f))}
-                                  style={{ resize: 'vertical', fontFamily: 'inherit' }}
-                                />
-                              ) : (
-                                <p className="sow-readonly-text">{(form[key] as string) || '—'}</p>
-                              )}
+                          <div className="sig-track-item">
+                            <div className="sig-dot-wrap">
+                              <div className={`sig-dot${selected.viewed_at ? '' : ' pending'}`}>
+                                <Icon name={selected.viewed_at ? 'eye' : 'edit'} size={12} />
+                              </div>
+                              <div className="sig-line"></div>
                             </div>
-                          ))}
-
-                          {isDraft && (
-                            <div className="sow-actions">
-                              <label className="sow-notify-row">
-                                <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} /> Notify Client
-                              </label>
-                              <div style={{ display: 'flex', gap: 8 }}>
-                                <button type="submit" className="btn btn-ghost btn-sm" disabled={saving}>
-                                  {saving ? 'সেভ হচ্ছে…' : 'Save Draft'}
-                                </button>
-                                <button type="button" className="btn btn-accent btn-sm" disabled={sending} onClick={() => setShowSendConfirm(true)}>
-                                  Send to Client
-                                </button>
+                            <div>
+                              <div className="sig-text" style={!selected.viewed_at ? { color: 'var(--ink-faint)' } : undefined}>
+                                Viewed by {client?.primary_contact}
+                              </div>
+                              <div className="sig-time">{selected.viewed_at ? formatBnDateLong(selected.viewed_at) : '—'}</div>
+                            </div>
+                          </div>
+                          <div className="sig-track-item">
+                            <div className="sig-dot-wrap">
+                              <div className={`sig-dot${selected.signed_at ? '' : ' pending'}`}>
+                                <Icon name={selected.signed_at ? 'check' : 'edit'} size={11} />
                               </div>
                             </div>
-                          )}
-                          {selected.status === 'sent' && (
-                            <div className="sow-actions">
-                              <button type="button" className="btn btn-ghost btn-sm sow-danger-btn" onClick={() => setShowCancelConfirm(true)}>
-                                Cancel SOW
-                              </button>
+                            <div>
+                              <div className="sig-text" style={!selected.signed_at ? { color: 'var(--ink-faint)' } : undefined}>
+                                {selected.signed_at ? `Signed by ${selected.signed_by_name}` : 'Awaiting signature'}
+                              </div>
+                              <div className="sig-time">{selected.signed_at ? formatBnDateLong(selected.signed_at) : '—'}</div>
                             </div>
-                          )}
-                        </form>
+                          </div>
+                        </div>
+
+                        <div className="dcard" style={{ marginTop: 14 }}>
+                          <span className="dcard-title">Actions</span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {selected.status === 'sent' && (
+                              <button className="btn btn-ghost btn-block btn-sm" onClick={() => setShowSendConfirm(true)}>
+                                <Icon name="send" size={12} /> Resend to Client
+                              </button>
+                            )}
+                            {documentUrl && (
+                              <a href={documentUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-block btn-sm">
+                                <Icon name="download" size={12} /> View Document
+                              </a>
+                            )}
+                            {selected.status === 'sent' && (
+                              <button
+                                className="btn btn-ghost btn-block btn-sm"
+                                onClick={() => {
+                                  setMode('editor');
+                                }}
+                              >
+                                <Icon name="edit" size={12} /> Edit SOW
+                              </button>
+                            )}
+                            {(selected.status === 'sent' || selected.status === 'draft') && (
+                              <button className="btn btn-danger-ghost btn-block btn-sm" onClick={() => setShowVoidConfirm(true)}>
+                                <Icon name="close" size={12} /> Void SOW
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    )}
+                    </div>
                   </>
                 )}
               </>
@@ -686,17 +954,17 @@ export default function AdminSowPage() {
         </div>
       )}
 
-      {showCancelConfirm && selected && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowCancelConfirm(false); }}>
+      {showVoidConfirm && selected && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowVoidConfirm(false); }}>
           <div className="modal-box">
-            <h3 style={{ margin: '0 0 10px', fontSize: 15, fontWeight: 700 }}>Cancel this SOW?</h3>
+            <h3 style={{ margin: '0 0 10px', fontSize: 15, fontWeight: 700 }}>Void this SOW?</h3>
             <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 16 }}>{client?.primary_contact ?? client?.company_name} will no longer be able to sign v{selected.version}.</p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowCancelConfirm(false)}>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowVoidConfirm(false)}>
                 Keep SOW
               </button>
-              <button type="button" className="btn btn-ghost btn-sm sow-danger-btn" disabled={cancelling} onClick={handleConfirmCancel}>
-                {cancelling ? 'বাতিল হচ্ছে…' : 'Cancel SOW'}
+              <button type="button" className="btn btn-ghost btn-sm sow-danger-btn" disabled={voiding} onClick={handleConfirmVoid}>
+                {voiding ? 'ভয়েড হচ্ছে…' : 'Void SOW'}
               </button>
             </div>
           </div>
