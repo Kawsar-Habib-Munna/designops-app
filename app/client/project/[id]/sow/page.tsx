@@ -19,7 +19,12 @@ import { formatBnDateLong, todayISO } from '@/lib/format';
 import '../../../client-shared.css';
 import './sow.css';
 
-type ProjectBrief = { id: string; name: string; client_id: string };
+type ProjectBrief = {
+  id: string;
+  name: string;
+  client_id: string;
+  project_manager: { full_name: string; role: string | null } | { full_name: string; role: string | null }[] | null;
+};
 type Sow = {
   id: string;
   version: number;
@@ -39,7 +44,13 @@ type Sow = {
   document_url: string | null;
   signed_at: string | null;
   signed_by_name: string | null;
+  signature_method: string | null;
 };
+
+function toOne<T>(v: T | T[] | null | undefined): T | null {
+  if (!v) return null;
+  return Array.isArray(v) ? (v[0] ?? null) : v;
+}
 
 const CURRENCY_SYMBOL: Record<string, string> = { BDT: '৳', USD: '$', GBP: '£' };
 const WHATSAPP_URL_BASE = 'https://wa.me/8801804409235';
@@ -84,7 +95,7 @@ export default function ClientSowPage() {
           router.replace('/client/sign-in');
           return;
         }
-        const { data: projectData } = await supabase.from('projects').select('id, name, client_id').eq('id', projectId).maybeSingle();
+        const { data: projectData } = await supabase.from('projects').select('id, name, client_id, project_manager:profiles!project_manager_id(full_name, role)').eq('id', projectId).maybeSingle();
         if (!projectData || (projectData as ProjectBrief).client_id !== own.id) {
           router.replace('/client/dashboard');
           return;
@@ -296,26 +307,7 @@ export default function ClientSowPage() {
   const isSigned = sow.status === 'signed';
   const sym = CURRENCY_SYMBOL[sow.currency ?? 'BDT'] ?? sow.currency ?? '';
 
-  if (isSigned && justSigned) {
-    return (
-      <div className="client-portal client-sow-root">
-        <div className="sw-shell">
-          <div className="sw-success-view">
-            <div className="sw-success-icon">
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 6L9 17l-5-5" />
-              </svg>
-            </div>
-            <div className="sw-success-title">SOW Signed — Thank You!</div>
-            <p className="sw-success-sub">Your Statement of Work has been signed and FLOW53 has been notified. Your project will begin on the agreed start date.</p>
-            <Link href={`/client/project/${project.id}`} className="cp-btn cp-btn-primary">
-              Back to Project
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const manager = toOne(project.project_manager);
 
   return (
     <div className="client-portal client-sow-root">
@@ -329,8 +321,19 @@ export default function ClientSowPage() {
             <h1 className="sw-title">Statement of Work</h1>
             <p className="sw-page-sub">{isSigned ? 'This agreement has been signed.' : 'Please review and sign to begin your project.'}</p>
           </div>
-          <span className={`cp-badge ${isSigned ? 'cp-badge-success' : 'cp-badge-pending'}`}>{isSigned ? 'Signed ✓' : 'Awaiting Your Signature'}</span>
+          <div className="sw-header-actions">
+            <span className={`cp-badge ${isSigned ? 'cp-badge-success' : 'cp-badge-pending'}`}>{isSigned ? 'Signed ✓' : 'Awaiting Your Signature'}</span>
+            {isSigned && (
+              <button type="button" className="cp-btn cp-btn-secondary cp-btn-sm" onClick={() => window.print()}>
+                Download Signed PDF
+              </button>
+            )}
+          </div>
         </div>
+
+        {justSigned && (
+          <div className="sw-just-signed-banner">✓ SOW signed successfully — FLOW53 has been notified. Your signature now appears below.</div>
+        )}
 
         <div className="doc-card">
           <div className="doc-letterhead">FLOW 53</div>
@@ -397,14 +400,38 @@ export default function ClientSowPage() {
               📄 View attached document ↗
             </a>
           )}
+
+          <div className="doc-h2">Agreement &amp; Signatures</div>
+          <div className="sig-block-grid">
+            <div className="sig-block">
+              <div className="sig-block-label">Client</div>
+              <div className="sig-block-name">{client.primary_contact}</div>
+              <div className="sig-block-sub">{client.company_name}</div>
+              {isSigned ? (
+                <>
+                  <div className="sig-block-typed">{sow.signed_by_name}</div>
+                  <div className="sig-block-caption">Typed Signature</div>
+                  <div className="sig-block-meta">Signed on {sow.signed_at ? formatBnDateLong(sow.signed_at) : ''}</div>
+                </>
+              ) : (
+                <div className="sig-block-pending">Awaiting Signature</div>
+              )}
+            </div>
+            <div className="sig-block">
+              <div className="sig-block-label">Agency</div>
+              <div className="sig-block-name">{manager?.full_name ?? 'FLOW 53'}</div>
+              <div className="sig-block-sub">{manager?.role ?? 'Project Manager'} · FLOW 53</div>
+              <div className="sig-block-confirmed">Confirmed</div>
+            </div>
+          </div>
+          {isSigned && (
+            <p className="sig-version-line">
+              SOW Version: v{sow.version}.0 · Status: Signed ✓
+            </p>
+          )}
         </div>
 
-        {isSigned ? (
-          <div className="sw-signed-banner">
-            ✓ Signed by <strong>{sow.signed_by_name}</strong>
-            {sow.signed_at ? ` on ${formatBnDateLong(sow.signed_at)}` : ''}
-          </div>
-        ) : (
+        {!isSigned && (
           <div className="sign-panel">
             <div className="sign-panel-title">Sign this Statement of Work</div>
 

@@ -98,6 +98,7 @@ type ProjectBrief = {
   client_id: string | null;
   budget: number | null;
   clients: { company_name: string; primary_contact: string | null } | { company_name: string; primary_contact: string | null }[] | null;
+  project_manager: { full_name: string; role: string | null } | { full_name: string; role: string | null }[] | null;
 };
 type Sow = {
   id: string;
@@ -121,6 +122,7 @@ type Sow = {
   viewed_at: string | null;
   signed_at: string | null;
   signed_by_name: string | null;
+  signature_method: string | null;
 };
 type MilestoneRow = { id: string; label: string; week: string };
 
@@ -230,7 +232,7 @@ export default function AdminSowPage() {
 
     async function run() {
       const [projectRes, sowsRes, profileRes] = await Promise.all([
-        supabase.from('projects').select('id, name, description, client_id, budget, clients(company_name, primary_contact)').eq('id', projectId).maybeSingle(),
+        supabase.from('projects').select('id, name, description, client_id, budget, clients(company_name, primary_contact), project_manager:profiles!project_manager_id(full_name, role)').eq('id', projectId).maybeSingle(),
         supabase.from('sows').select('*').eq('project_id', projectId).order('version', { ascending: false }),
         supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url').eq('id', user!.id).single(),
       ]);
@@ -261,6 +263,7 @@ export default function AdminSowPage() {
 
   const selected = versions.find((v) => v.id === selectedId) ?? null;
   const client = project ? toOne(project.clients) : null;
+  const manager = project ? toOne(project.project_manager) : null;
 
   function addService() {
     setServices((prev) => [...prev, '']);
@@ -832,6 +835,34 @@ export default function AdminSowPage() {
                               View attached document ↗
                             </a>
                           )}
+
+                          <div className="doc-h2">Agreement &amp; Signatures</div>
+                          <div className="sig-block-grid">
+                            <div className="sig-block">
+                              <div className="sig-block-label">Client</div>
+                              <div className="sig-block-name">{client?.primary_contact}</div>
+                              <div className="sig-block-sub">{client?.company_name}</div>
+                              {selected.status === 'signed' ? (
+                                <>
+                                  <div className="sig-block-typed">{selected.signed_by_name}</div>
+                                  <div className="sig-block-caption">Typed Signature</div>
+                                  <div className="sig-block-meta">Signed on {selected.signed_at ? formatBnDateLong(selected.signed_at) : ''}</div>
+                                </>
+                              ) : (
+                                <div className="sig-block-pending">Awaiting Signature</div>
+                              )}
+                            </div>
+                            <div className="sig-block">
+                              <div className="sig-block-label">Agency</div>
+                              <div className="sig-block-name">{manager?.full_name ?? 'FLOW 53'}</div>
+                              <div className="sig-block-sub">{manager?.role ?? 'Project Manager'} · FLOW 53</div>
+                              {selected.status === 'sent' || selected.status === 'signed' ? (
+                                <div className="sig-block-confirmed">Confirmed</div>
+                              ) : (
+                                <div className="sig-block-pending">Not yet sent</div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
 
@@ -879,6 +910,22 @@ export default function AdminSowPage() {
                               <div className="sig-time">{selected.signed_at ? formatBnDateLong(selected.signed_at) : '—'}</div>
                             </div>
                           </div>
+                          {selected.status === 'signed' && (
+                            <div className="sig-status-meta">
+                              <div className="sig-meta-row">
+                                <span>Signature Method</span>
+                                <span style={{ textTransform: 'capitalize' }}>{selected.signature_method ?? 'Typed'}</span>
+                              </div>
+                              <div className="sig-meta-row">
+                                <span>SOW Version</span>
+                                <span>v{selected.version}.0</span>
+                              </div>
+                              <div className="sig-meta-row">
+                                <span>Status</span>
+                                <span style={{ color: 'var(--positive)' }}>Signed</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <div className="dcard" style={{ marginTop: 14 }}>
@@ -889,9 +936,14 @@ export default function AdminSowPage() {
                                 <Icon name="send" size={12} /> Resend to Client
                               </button>
                             )}
+                            {selected.status === 'signed' && (
+                              <button className="btn btn-ghost btn-block btn-sm" onClick={() => window.print()}>
+                                <Icon name="download" size={12} /> Download Signed PDF
+                              </button>
+                            )}
                             {documentUrl && (
                               <a href={documentUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-block btn-sm">
-                                <Icon name="download" size={12} /> View Document
+                                <Icon name="download" size={12} /> View Attached Document
                               </a>
                             )}
                             {selected.status === 'sent' && (

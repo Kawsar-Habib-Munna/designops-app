@@ -16,9 +16,11 @@
 .client-sow-root .sw-back { font-size: 13px; color: var(--ink-faint); font-weight: 600; display: inline-block; margin-bottom: 18px; }
 .client-sow-root .sw-back:hover { color: var(--ink); }
 
-.client-sow-root .page-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.client-sow-root .page-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .client-sow-root .sw-title { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
 .client-sow-root .sw-page-sub { margin: 0; font-size: 13px; color: var(--ink-soft); }
+.client-sow-root .sw-header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.client-sow-root .sw-just-signed-banner { background: var(--positive-soft); color: var(--positive); font-size: 12.5px; font-weight: 600; padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 16px; }
 
 .client-sow-root .doc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 36px 34px; margin-bottom: 20px; }
 .client-sow-root .doc-letterhead { font-size: 19px; font-weight: 800; color: var(--accent); margin-bottom: 2px; }
@@ -34,7 +36,18 @@
 .client-sow-root .sw-doc-link { display: inline-block; font-size: 12.5px; font-weight: 600; color: var(--accent); margin-top: 8px; }
 .client-sow-root .sw-doc-link:hover { text-decoration: underline; }
 
-.client-sow-root .sw-signed-banner { background: var(--positive-soft); color: var(--positive); font-size: 14px; font-weight: 600; padding: 14px 18px; border-radius: var(--radius-md); }
+/* ---- Agreement & Signatures block (inside doc-card) ---- */
+.client-sow-root .sig-block-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 8px; }
+.client-sow-root .sig-block { padding-top: 8px; }
+.client-sow-root .sig-block-label { font-size: 10px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+.client-sow-root .sig-block-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+.client-sow-root .sig-block-sub { font-size: 12px; color: var(--ink-faint); margin-bottom: 10px; }
+.client-sow-root .sig-block-typed { font-family: 'Georgia', serif; font-style: italic; font-size: 24px; color: var(--ink); border-bottom: 1.5px solid var(--border); padding-bottom: 6px; margin-bottom: 4px; }
+.client-sow-root .sig-block-caption { font-size: 10.5px; color: var(--ink-faint); margin-bottom: 6px; }
+.client-sow-root .sig-block-meta { font-size: 12px; color: var(--ink-soft); }
+.client-sow-root .sig-block-pending { font-size: 12px; font-weight: 600; color: var(--warning); background: var(--warning-soft); display: inline-block; padding: 4px 10px; border-radius: 999px; }
+.client-sow-root .sig-block-confirmed { font-size: 12px; font-weight: 600; color: var(--positive); background: var(--positive-soft); display: inline-block; padding: 4px 10px; border-radius: 999px; }
+.client-sow-root .sig-version-line { font-size: 11.5px; color: var(--ink-faint); margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--border); }
 
 .client-sow-root .sign-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 24px; }
 .client-sow-root .sign-panel-title { font-size: 14px; font-weight: 800; margin-bottom: 14px; color: var(--ink); }
@@ -56,12 +69,19 @@
 .client-sow-root .sw-state-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 18px; }
 .client-sow-root .sw-state-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
-.client-sow-root .sw-success-view { text-align: center; padding: 50px 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
-.client-sow-root .sw-success-icon { width: 64px; height: 64px; border-radius: 999px; background: var(--positive-soft); color: var(--positive); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
-.client-sow-root .sw-success-title { font-size: 19px; font-weight: 800; margin-bottom: 8px; color: var(--ink); }
-.client-sow-root .sw-success-sub { font-size: 13px; color: var(--ink-soft); line-height: 1.6; max-width: 380px; margin: 0 auto 26px; }
-
 @media (max-width: 640px) {
   .client-sow-root .doc-card { padding: 26px 20px; }
   .client-sow-root .sign-actions { flex-direction: column; }
+  .client-sow-root .sig-block-grid { grid-template-columns: 1fr; }
+}
+
+@media print {
+  .client-sow-root .sw-back,
+  .client-sow-root .sw-header-actions .cp-btn,
+  .client-sow-root .sw-just-signed-banner,
+  .client-sow-root .sign-panel {
+    display: none !important;
+  }
+  .client-sow-root .sw-shell { max-width: 100%; padding: 0; }
+  .client-sow-root .doc-card { box-shadow: none; border: none; }
 }

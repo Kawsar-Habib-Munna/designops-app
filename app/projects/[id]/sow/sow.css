@@ -106,6 +106,22 @@
 .sow-admin-root .doc-field-line { font-size: 12.5px; margin-bottom: 6px; }
 .sow-admin-root .doc-field-line b { font-weight: 700; }
 
+/* ---- Agreement & Signatures block (inside doc-card) ---- */
+.sow-admin-root .sig-block-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 8px; }
+.sow-admin-root .sig-block { padding-top: 10px; }
+.sow-admin-root .sig-block-label { font-size: 10px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+.sow-admin-root .sig-block-name { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.sow-admin-root .sig-block-sub { font-size: 11.5px; color: var(--ink-faint); margin-bottom: 10px; }
+.sow-admin-root .sig-block-typed { font-family: 'Georgia', serif; font-style: italic; font-size: 22px; color: var(--ink); border-bottom: 1.5px solid var(--border); padding-bottom: 6px; margin-bottom: 4px; }
+.sow-admin-root .sig-block-caption { font-size: 10px; color: var(--ink-faint); margin-bottom: 6px; }
+.sow-admin-root .sig-block-meta { font-size: 11.5px; color: var(--ink-soft); }
+.sow-admin-root .sig-block-pending { font-size: 12px; font-weight: 600; color: var(--warning); background: var(--warning-soft); display: inline-block; padding: 4px 10px; border-radius: 999px; }
+.sow-admin-root .sig-block-confirmed { font-size: 12px; font-weight: 600; color: var(--positive); background: var(--positive-soft); display: inline-block; padding: 4px 10px; border-radius: 999px; }
+
+.sow-admin-root .sig-status-meta { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.sow-admin-root .sig-meta-row { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; padding: 5px 0; color: var(--ink-soft); }
+.sow-admin-root .sig-meta-row span:last-child { font-weight: 600; color: var(--ink); }
+
 .sow-admin-root .sig-status-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 22px; box-shadow: var(--shadow-sm); }
 .sow-admin-root .sig-track-item { display: flex; gap: 10px; padding-bottom: 14px; }
 .sow-admin-root .sig-track-item:last-child { padding-bottom: 0; }
@@ -125,7 +141,21 @@
   .sow-admin-root .sow-preview-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
+  .sow-admin-root .sig-block-grid { grid-template-columns: 1fr; }
   .sow-admin-root .field-grid-2 { grid-template-columns: 1fr; }
   .sow-admin-root .doc-card { padding: 26px 22px; }
   .sow-admin-root .sow-confirm-grid { grid-template-columns: 1fr; }
+}
+
+@media print {
+  .sow-admin-root .sidebar,
+  .sow-admin-root .topbar,
+  .sow-admin-root .breadcrumb,
+  .sow-admin-root .sow-version-tabs,
+  .sow-admin-root .sow-preview-grid > div:last-child {
+    display: none !important;
+  }
+  .sow-admin-root .sow-preview-grid { grid-template-columns: 1fr; }
+  .sow-admin-root .content { max-width: 100%; padding: 0; }
+  .sow-admin-root .doc-card { box-shadow: none; border: none; }
 }
