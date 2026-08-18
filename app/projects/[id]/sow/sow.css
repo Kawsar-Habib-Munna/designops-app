@@ -1,20 +1,35 @@
 /* Screen 10 — SOW (admin)। ../project.css থেকে shell/btn/field-input/summary-card/
-   status-pill সব আসে, এখানে শুধু SOW-স্পেসিফিক ক্লাস। */
+   status-pill/modal-overlay/modal-box সব আসে, এখানে শুধু SOW-স্পেসিফিক ক্লাস। */
 
 .sow-admin-root .sow-version-tabs{display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
 .sow-admin-root .sow-version-tab{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ink-soft);padding:7px 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);}
 .sow-admin-root .sow-version-tab:hover{border-color:var(--accent);}
 .sow-admin-root .sow-version-tab.active{border-color:var(--accent);color:var(--ink);background:var(--accent-soft);}
 
-.sow-admin-root .sow-signed-banner{background:var(--positive-soft);color:var(--positive);font-size:13px;font-weight:500;padding:11px 14px;border-radius:var(--radius-sm);margin-bottom:18px;}
+.sow-admin-root .sow-signed-banner{background:var(--positive-soft);color:var(--positive);font-size:13px;font-weight:500;padding:11px 14px;border-radius:var(--radius-sm);margin-bottom:14px;}
+.sow-admin-root .sow-meta-banner{background:var(--surface-muted);color:var(--ink-soft);font-size:12.5px;font-weight:500;padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:14px;}
+.sow-admin-root .sow-meta-banner.sow-meta-danger{background:var(--danger-soft);color:var(--danger);}
+
+.sow-admin-root .sow-meta-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-faint);margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border-soft);}
+.sow-admin-root .dividerdot{width:3px;height:3px;border-radius:999px;background:var(--ink-faint);flex-shrink:0;}
 
 .sow-admin-root .sow-doc-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--border-soft);}
 .sow-admin-root .sow-doc-link{font-size:12.5px;font-weight:600;color:var(--accent);}
 .sow-admin-root .sow-doc-link:hover{text-decoration:underline;}
 
 .sow-admin-root .sow-field{margin-bottom:6px;}
+.sow-admin-root .sow-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:6px;}
 .sow-admin-root .sow-readonly-text{font-size:13px;color:var(--ink-soft);line-height:1.6;white-space:pre-wrap;margin:0 0 14px;padding:10px 12px;background:var(--surface-muted);border-radius:var(--radius-sm);min-height:20px;}
 
 .sow-admin-root .sow-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-soft);flex-wrap:wrap;}
 .sow-admin-root .sow-notify-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft);}
 .sow-admin-root .sow-notify-row input{width:16px;height:16px;accent-color:var(--accent);}
+.sow-admin-root .sow-danger-btn{color:var(--danger);border-color:var(--danger);}
+.sow-admin-root .sow-danger-btn:hover{background:var(--danger-soft);}
+
+.sow-admin-root .sow-confirm-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+
+@media (max-width:640px){
+  .sow-admin-root .sow-field-grid{grid-template-columns:1fr;}
+  .sow-admin-root .sow-confirm-grid{grid-template-columns:1fr;}
+}

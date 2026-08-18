@@ -1,10 +1,15 @@
 'use client';
 
-// Screen 10 — SOW (Statement of Work), অ্যাডমিন সাইড। প্রতিটা "Create New Version"
-// sows টেবিলে (project_id, version) কম্বিনেশনে নতুন রো ইনসার্ট করে — v1/v2/v3
-// ট্যাব হিসেবে দেখা যায়, পুরনো ভার্সন immutable থাকে। Draft অবস্থায় টাইপ করে বা
-// (Drive পাইপলাইন দিয়ে) PDF/DOC আপলোড করে কনটেন্ট দেওয়া যায়; "Send to Client"
-// চাপলে ক্লায়েন্ট Screen 11 (/client/project/[id]/sow)-এ দেখতে ও সাইন করতে পারবে।
+// Screen 10 — SOW (Statement of Work), অ্যাডমিন সাইড। রিডিজাইন: প্রতিটা
+// "Create New Version" sows টেবিলে (project_id, version) কম্বিনেশনে নতুন রো
+// ইনসার্ট করে — v1/v2/v3 ট্যাব হিসেবে দেখা যায়, পুরনো ভার্সন immutable থাকে।
+// নতুন SOW তৈরির সময় Screen 8-এর project ডেটা (scope_note/deliverables_note/
+// budget/payment_structure) থেকে pre-fill হয় — commercial টার্মগুলো
+// (project_value/currency/payment_structure) SOW-এর নিজের কলামে "স্ন্যাপশট"
+// হিসেবে কপি হয়, প্রজেক্ট টেবিলের সাথে live-bound থাকে না (সাইন করার পরে
+// প্রজেক্টের বাজেট বদলালেও সাইন করা SOW অপরিবর্তিত থাকতে হবে)। "Send to Client"
+// আগে একটা কনফার্মেশন মোডাল দেখায়; পাঠানোর সময় আগের 'sent' ভার্সন থাকলে সেটা
+// 'superseded' হয়ে যায়।
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useParams } from 'next/navigation';
@@ -68,14 +73,68 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
   draft: { label: 'Draft', cls: 's-todo' },
   sent: { label: 'Awaiting Signature', cls: 's-review' },
   signed: { label: 'Signed ✓', cls: 's-done' },
+  superseded: { label: 'Superseded', cls: 's-todo' },
+  cancelled: { label: 'Cancelled', cls: 's-todo' },
 };
 
+const DEFAULT_REVISION_POLICY =
+  'This engagement includes 2 revision rounds per major design milestone. A revision round refers to one consolidated set of feedback submitted by the client. Additional revision rounds beyond what is included may require additional cost and timeline, and will be handled through a Change Request.';
+const DEFAULT_CLIENT_RESP =
+  'The client agrees to:\n• Provide required brand materials.\n• Provide required content.\n• Provide access to relevant systems when needed.\n• Review work within agreed timelines.\n• Provide consolidated feedback.\n• Make payments according to agreed terms.\n• Provide approvals through the Client Portal.';
+const DEFAULT_AGENCY_RESP =
+  'The agency agrees to:\n• Deliver the agreed scope.\n• Provide reasonable project updates.\n• Maintain client communication.\n• Submit work for review.\n• Address included revisions.\n• Deliver final agreed assets.\n• Maintain project confidentiality according to agreed terms.';
+const DEFAULT_COMMUNICATION = 'Primary Channel: Client Portal\nGeneral Response Time: Within 1 business day\nProject Updates: Weekly\nMeetings: As required\nFeedback: Through Client Portal';
+const DEFAULT_TERMS = `## Intellectual Property
+Upon full payment, ownership of final approved deliverables transfers to the client, unless otherwise agreed in writing.
+
+## Confidentiality
+Both parties agree to keep shared project information confidential and not disclose it to third parties without consent.
+
+## Third-Party Services
+Any third-party subscriptions, licenses or services required for the project are the client's responsibility unless otherwise agreed.
+
+## Delays
+Project timelines assume timely feedback and material delivery from the client. Delays in client response may shift the delivery timeline.
+
+## Payment
+Invoices are due according to the agreed payment structure. Work may pause if payments are significantly overdue.
+
+## Cancellation
+Either party may cancel this engagement with written notice. Work completed and costs incurred up to the cancellation date remain payable.
+
+## Ownership Transfer
+Source files and final assets are released upon completion of all outstanding payments.
+
+## Project Suspension
+If a project is inactive for an extended period due to client delay, the agency reserves the right to pause or reprioritize the engagement.`;
+
+const PAYMENT_STRUCTURE_LABEL: Record<string, string> = { full: 'Full Payment', deposit_final: 'Deposit + Final Payment', milestones: 'Milestone Payments', custom: 'Custom' };
+
 type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null; behance_url?: string | null; linkedin_url?: string | null };
-type ProjectBrief = { id: string; name: string; client_id: string | null; clients: { company_name: string } | { company_name: string }[] | null };
+type ProjectBrief = {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  client_id: string | null;
+  start_date: string | null;
+  due_date: string | null;
+  budget: number | null;
+  payment_structure: string | null;
+  scope_note: string | null;
+  deliverables_note: string | null;
+  clients: { company_name: string; primary_contact: string | null } | { company_name: string; primary_contact: string | null }[] | null;
+  project_manager: { full_name: string } | { full_name: string }[] | null;
+};
 type Sow = {
   id: string;
   project_id: string;
   version: number;
+  sow_number: string | null;
+  valid_until: string | null;
+  project_value: number | null;
+  currency: string | null;
+  payment_structure: string | null;
   scope: string | null;
   objectives: string | null;
   deliverables: string | null;
@@ -83,17 +142,52 @@ type Sow = {
   payment_terms: string | null;
   revision_policy: string | null;
   client_responsibilities: string | null;
+  agency_responsibilities: string | null;
+  communication_terms: string | null;
   terms: string | null;
   document_url: string | null;
   status: string;
   notify_client: boolean;
   sent_at: string | null;
+  viewed_at: string | null;
   signed_at: string | null;
   signed_by_name: string | null;
+  superseded_by: string | null;
 };
 
-type FormState = Pick<Sow, 'scope' | 'objectives' | 'deliverables' | 'timeline' | 'payment_terms' | 'revision_policy' | 'client_responsibilities' | 'terms'>;
-const EMPTY_FORM: FormState = { scope: '', objectives: '', deliverables: '', timeline: '', payment_terms: '', revision_policy: '', client_responsibilities: '', terms: '' };
+type FormState = Pick<
+  Sow,
+  | 'valid_until'
+  | 'project_value'
+  | 'payment_structure'
+  | 'scope'
+  | 'objectives'
+  | 'deliverables'
+  | 'timeline'
+  | 'payment_terms'
+  | 'revision_policy'
+  | 'client_responsibilities'
+  | 'agency_responsibilities'
+  | 'communication_terms'
+  | 'terms'
+>;
+function formFromSow(sow: Sow): FormState {
+  return {
+    valid_until: sow.valid_until,
+    project_value: sow.project_value,
+    payment_structure: sow.payment_structure,
+    scope: sow.scope,
+    objectives: sow.objectives,
+    deliverables: sow.deliverables,
+    timeline: sow.timeline,
+    payment_terms: sow.payment_terms,
+    revision_policy: sow.revision_policy,
+    client_responsibilities: sow.client_responsibilities,
+    agency_responsibilities: sow.agency_responsibilities,
+    communication_terms: sow.communication_terms,
+    terms: sow.terms,
+  };
+}
 
 function toOne<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
@@ -116,13 +210,16 @@ export default function AdminSowPage() {
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [form, setForm] = useState<FormState | null>(null);
   const [notify, setNotify] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
+  const [showSendConfirm, setShowSendConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -130,7 +227,11 @@ export default function AdminSowPage() {
 
     async function run() {
       const [projectRes, sowsRes, profileRes] = await Promise.all([
-        supabase.from('projects').select('id, name, client_id, clients(company_name)').eq('id', projectId).maybeSingle(),
+        supabase
+          .from('projects')
+          .select('id, name, description, category, client_id, start_date, due_date, budget, payment_structure, scope_note, deliverables_note, clients(company_name, primary_contact), project_manager:profiles!project_manager_id(full_name)')
+          .eq('id', projectId)
+          .maybeSingle(),
         supabase.from('sows').select('*').eq('project_id', projectId).order('version', { ascending: false }),
         supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url').eq('id', user!.id).single(),
       ]);
@@ -141,16 +242,7 @@ export default function AdminSowPage() {
       setVersions(rows);
       if (rows.length > 0) {
         setSelectedId(rows[0].id);
-        setForm({
-          scope: rows[0].scope ?? '',
-          objectives: rows[0].objectives ?? '',
-          deliverables: rows[0].deliverables ?? '',
-          timeline: rows[0].timeline ?? '',
-          payment_terms: rows[0].payment_terms ?? '',
-          revision_policy: rows[0].revision_policy ?? '',
-          client_responsibilities: rows[0].client_responsibilities ?? '',
-          terms: rows[0].terms ?? '',
-        });
+        setForm(formFromSow(rows[0]));
         setNotify(rows[0].notify_client);
         setDocumentUrl(rows[0].document_url);
       }
@@ -163,53 +255,49 @@ export default function AdminSowPage() {
 
   function selectVersion(sow: Sow) {
     setSelectedId(sow.id);
-    setForm({
-      scope: sow.scope ?? '',
-      objectives: sow.objectives ?? '',
-      deliverables: sow.deliverables ?? '',
-      timeline: sow.timeline ?? '',
-      payment_terms: sow.payment_terms ?? '',
-      revision_policy: sow.revision_policy ?? '',
-      client_responsibilities: sow.client_responsibilities ?? '',
-      terms: sow.terms ?? '',
-    });
+    setForm(formFromSow(sow));
     setNotify(sow.notify_client);
     setDocumentUrl(sow.document_url);
   }
 
   const selected = versions.find((v) => v.id === selectedId) ?? null;
   const isDraft = selected ? selected.status === 'draft' : true;
+  const client = project ? toOne(project.clients) : null;
+  const manager = project ? toOne(project.project_manager) : null;
 
   async function handleCreateFirst() {
-    if (!user) return;
-    const { data, error: createError } = await supabase.from('sows').insert({ project_id: projectId, version: 1, created_by: user.id }).select('*').single();
-    if (createError) {
-      setError(createError.message);
-      return;
-    }
-    setVersions([data as Sow]);
-    setSelectedId((data as Sow).id);
-    setForm(EMPTY_FORM);
-  }
+    if (!user || !project) return;
+    const { count } = await supabase.from('sows').select('id', { count: 'exact', head: true });
+    const sowNumber = `SOW-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(4, '0')}`;
+    const validUntil = new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10);
+    const timelineText =
+      project.start_date && project.due_date
+        ? `Start Date: ${formatBnDateLong(project.start_date)}\nExpected Completion: ${formatBnDateLong(project.due_date)}`
+        : '';
+    const paymentTermsText = project.budget
+      ? `Project Value: ৳${project.budget.toLocaleString('en-US')}\nPayment Structure: ${PAYMENT_STRUCTURE_LABEL[project.payment_structure ?? ''] ?? project.payment_structure ?? 'To be agreed'}`
+      : '';
 
-  async function handleCreateNewVersion() {
-    if (!user) return;
-    const nextVersion = (versions[0]?.version ?? 0) + 1;
     const { data, error: createError } = await supabase
       .from('sows')
       .insert({
         project_id: projectId,
-        version: nextVersion,
+        version: 1,
         created_by: user.id,
-        scope: selected?.scope,
-        objectives: selected?.objectives,
-        deliverables: selected?.deliverables,
-        timeline: selected?.timeline,
-        payment_terms: selected?.payment_terms,
-        revision_policy: selected?.revision_policy,
-        client_responsibilities: selected?.client_responsibilities,
-        terms: selected?.terms,
-        document_url: selected?.document_url,
+        sow_number: sowNumber,
+        valid_until: validUntil,
+        project_value: project.budget,
+        currency: 'BDT',
+        payment_structure: project.payment_structure,
+        scope: project.scope_note,
+        deliverables: project.deliverables_note,
+        timeline: timelineText,
+        payment_terms: paymentTermsText,
+        revision_policy: DEFAULT_REVISION_POLICY,
+        client_responsibilities: DEFAULT_CLIENT_RESP,
+        agency_responsibilities: DEFAULT_AGENCY_RESP,
+        communication_terms: DEFAULT_COMMUNICATION,
+        terms: DEFAULT_TERMS,
       })
       .select('*')
       .single();
@@ -217,13 +305,56 @@ export default function AdminSowPage() {
       setError(createError.message);
       return;
     }
-    setVersions((prev) => [data as Sow, ...prev]);
+    setVersions([data as Sow]);
+    selectVersion(data as Sow);
+  }
+
+  async function handleCreateNewVersion() {
+    if (!user || !selected) return;
+    const nextVersion = (versions[0]?.version ?? 0) + 1;
+    const { data, error: createError } = await supabase
+      .from('sows')
+      .insert({
+        project_id: projectId,
+        version: nextVersion,
+        created_by: user.id,
+        sow_number: selected.sow_number,
+        valid_until: new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10),
+        project_value: selected.project_value,
+        currency: selected.currency,
+        payment_structure: selected.payment_structure,
+        scope: selected.scope,
+        objectives: selected.objectives,
+        deliverables: selected.deliverables,
+        timeline: selected.timeline,
+        payment_terms: selected.payment_terms,
+        revision_policy: selected.revision_policy,
+        client_responsibilities: selected.client_responsibilities,
+        agency_responsibilities: selected.agency_responsibilities,
+        communication_terms: selected.communication_terms,
+        terms: selected.terms,
+        document_url: selected.document_url,
+      })
+      .select('*')
+      .single();
+    if (createError) {
+      setError(createError.message);
+      return;
+    }
+
+    // আগের ভার্সন 'sent' অবস্থায় থাকলে (এখনো সাইন হয়নি) সেটা superseded হয়ে
+    // যায় — সাইন হয়ে যাওয়া ভার্সন কখনো superseded/immutable-ভাঙা হয় না।
+    if (selected.status === 'sent') {
+      await supabase.from('sows').update({ status: 'superseded', superseded_by: (data as Sow).id }).eq('id', selected.id);
+    }
+
+    setVersions((prev) => [data as Sow, ...prev.map((v) => (v.id === selected.id && selected.status === 'sent' ? { ...v, status: 'superseded' } : v))]);
     selectVersion(data as Sow);
   }
 
   async function handleSaveDraft(e: FormEvent) {
     e.preventDefault();
-    if (!selected) return;
+    if (!selected || !form) return;
     setSaving(true);
     const { error: updateError } = await supabase.from('sows').update({ ...form, document_url: documentUrl }).eq('id', selected.id);
     setSaving(false);
@@ -234,20 +365,37 @@ export default function AdminSowPage() {
     setReloadKey((k) => k + 1);
   }
 
-  async function handleSend() {
-    if (!selected || !user) return;
+  async function handleConfirmSend() {
+    if (!selected || !user || !form) return;
     setSending(true);
     const { error: updateError } = await supabase
       .from('sows')
       .update({ ...form, document_url: documentUrl, status: 'sent', sent_at: new Date().toISOString(), notify_client: notify })
       .eq('id', selected.id);
     setSending(false);
+    setShowSendConfirm(false);
     if (updateError) {
       setError(updateError.message);
       return;
     }
     if (project?.client_id) {
-      await supabase.from('activity_log').insert({ actor_id: user.id, action: 'sow_sent', entity_type: 'client', entity_id: project.client_id, detail: `SOW v${selected.version} ক্লায়েন্টকে পাঠানো হয়েছে` });
+      await supabase.from('activity_log').insert({ actor_id: user.id, action: 'sow_sent', entity_type: 'client', entity_id: project.client_id, detail: `SOW ${selected.sow_number ?? `v${selected.version}`} ক্লায়েন্টকে পাঠানো হয়েছে` });
+    }
+    setReloadKey((k) => k + 1);
+  }
+
+  async function handleConfirmCancel() {
+    if (!selected || !user) return;
+    setCancelling(true);
+    const { error: updateError } = await supabase.from('sows').update({ status: 'cancelled' }).eq('id', selected.id);
+    setCancelling(false);
+    setShowCancelConfirm(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    if (project?.client_id) {
+      await supabase.from('activity_log').insert({ actor_id: user.id, action: 'sow_cancelled', entity_type: 'client', entity_id: project.client_id, detail: `SOW ${selected.sow_number ?? `v${selected.version}`} বাতিল করা হয়েছে` });
     }
     setReloadKey((k) => k + 1);
   }
@@ -272,8 +420,6 @@ export default function AdminSowPage() {
 
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
-
-  const client = project ? toOne(project.clients) : null;
 
   return (
     <div className={`projdetail-root sow-admin-root${dark ? ' dark' : ''}`}>
@@ -330,7 +476,9 @@ export default function AdminSowPage() {
             ) : (
               <>
                 <div className="breadcrumb">
-                  <Link href="/projects">Projects</Link>
+                  <Link href="/clients">Clients</Link>
+                  <span className="sep">/</span>
+                  {client && <Link href={`/projects/${project.id}`}>{client.company_name}</Link>}
                   <span className="sep">/</span>
                   <Link href={`/projects/${project.id}`}>{project.name}</Link>
                   <span className="sep">/</span>
@@ -369,20 +517,40 @@ export default function AdminSowPage() {
                           v{v.version} <span className={`status-pill ${STATUS_META[v.status]?.cls ?? 's-todo'}`}>{STATUS_META[v.status]?.label ?? v.status}</span>
                         </button>
                       ))}
-                      {selected && selected.status !== 'draft' && (
+                      {selected && selected.status !== 'draft' && selected.status !== 'superseded' && (
                         <button className="btn btn-ghost btn-sm" onClick={handleCreateNewVersion}>
                           <Icon name="plus" size={12} /> New Version
                         </button>
                       )}
                     </div>
 
-                    {selected && (
+                    {selected && form && (
                       <div className="summary-card">
                         {selected.status === 'signed' && selected.signed_by_name && (
                           <div className="sow-signed-banner">
                             ✓ Signed by <strong>{selected.signed_by_name}</strong> on {formatBnDateLong(selected.signed_at)}
                           </div>
                         )}
+                        {selected.status === 'superseded' && <div className="sow-meta-banner">এই ভার্সনটা নতুন ভার্সন দিয়ে replace হয়ে গেছে।</div>}
+                        {selected.status === 'cancelled' && <div className="sow-meta-banner sow-meta-danger">এই SOW বাতিল করা হয়েছে।</div>}
+
+                        <div className="sow-meta-row">
+                          <span>{selected.sow_number ?? `SOW-v${selected.version}`}</span>
+                          <span className="dividerdot"></span>
+                          <span>Created by {manager?.full_name ?? 'FLOW 53'}</span>
+                          {selected.sent_at && (
+                            <>
+                              <span className="dividerdot"></span>
+                              <span>Sent {formatBnDateLong(selected.sent_at)}</span>
+                            </>
+                          )}
+                          {selected.viewed_at && (
+                            <>
+                              <span className="dividerdot"></span>
+                              <span>Viewed {formatBnDateLong(selected.viewed_at)}</span>
+                            </>
+                          )}
+                        </div>
 
                         <form onSubmit={handleSaveDraft}>
                           <div className="sow-doc-row">
@@ -397,24 +565,57 @@ export default function AdminSowPage() {
                             )}
                           </div>
 
+                          <div className="sow-field-grid">
+                            <div className="sow-field">
+                              <label className="field-label">Valid Until</label>
+                              {isDraft ? (
+                                <input className="field-input" type="date" value={form.valid_until ?? ''} onChange={(e) => setForm((f) => (f ? { ...f, valid_until: e.target.value } : f))} />
+                              ) : (
+                                <p className="sow-readonly-text">{formatBnDateLong(selected.valid_until) || '—'}</p>
+                              )}
+                            </div>
+                            <div className="sow-field">
+                              <label className="field-label">Project Value (৳)</label>
+                              {isDraft ? (
+                                <input
+                                  className="field-input"
+                                  type="number"
+                                  min="0"
+                                  value={form.project_value ?? ''}
+                                  onChange={(e) => setForm((f) => (f ? { ...f, project_value: e.target.value ? Number(e.target.value) : null } : f))}
+                                />
+                              ) : (
+                                <p className="sow-readonly-text">{selected.project_value ? `৳${selected.project_value.toLocaleString('en-US')}` : '—'}</p>
+                              )}
+                            </div>
+                          </div>
+
                           {(
                             [
-                              ['scope', 'Scope'],
                               ['objectives', 'Objectives'],
+                              ['scope', 'Scope of Work'],
                               ['deliverables', 'Deliverables'],
                               ['timeline', 'Timeline'],
                               ['payment_terms', 'Payment Terms'],
                               ['revision_policy', 'Revision Policy'],
                               ['client_responsibilities', 'Client Responsibilities'],
+                              ['agency_responsibilities', 'Agency Responsibilities'],
+                              ['communication_terms', 'Communication'],
                               ['terms', 'Terms & Conditions'],
                             ] as [keyof FormState, string][]
                           ).map(([key, label]) => (
                             <div className="sow-field" key={key}>
                               <label className="field-label">{label}</label>
                               {isDraft ? (
-                                <textarea className="field-input" rows={3} value={form[key] ?? ''} onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))} style={{ resize: 'vertical', fontFamily: 'inherit' }} />
+                                <textarea
+                                  className="field-input"
+                                  rows={key === 'terms' ? 8 : 3}
+                                  value={(form[key] as string) ?? ''}
+                                  onChange={(e) => setForm((f) => (f ? { ...f, [key]: e.target.value } : f))}
+                                  style={{ resize: 'vertical', fontFamily: 'inherit' }}
+                                />
                               ) : (
-                                <p className="sow-readonly-text">{form[key] || '—'}</p>
+                                <p className="sow-readonly-text">{(form[key] as string) || '—'}</p>
                               )}
                             </div>
                           ))}
@@ -428,10 +629,17 @@ export default function AdminSowPage() {
                                 <button type="submit" className="btn btn-ghost btn-sm" disabled={saving}>
                                   {saving ? 'সেভ হচ্ছে…' : 'Save Draft'}
                                 </button>
-                                <button type="button" className="btn btn-accent btn-sm" disabled={sending} onClick={handleSend}>
-                                  {sending ? 'পাঠানো হচ্ছে…' : 'Send to Client'}
+                                <button type="button" className="btn btn-accent btn-sm" disabled={sending} onClick={() => setShowSendConfirm(true)}>
+                                  Send to Client
                                 </button>
                               </div>
+                            </div>
+                          )}
+                          {selected.status === 'sent' && (
+                            <div className="sow-actions">
+                              <button type="button" className="btn btn-ghost btn-sm sow-danger-btn" onClick={() => setShowCancelConfirm(true)}>
+                                Cancel SOW
+                              </button>
                             </div>
                           )}
                         </form>
@@ -444,6 +652,56 @@ export default function AdminSowPage() {
           </main>
         </div>
       </div>
+
+      {showSendConfirm && selected && project && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowSendConfirm(false); }}>
+          <div className="modal-box">
+            <h3 style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700 }}>Send Statement of Work?</h3>
+            <div className="sow-confirm-grid">
+              <div>
+                <span className="field-label">Client</span>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>{client?.primary_contact ?? client?.company_name}</p>
+              </div>
+              <div>
+                <span className="field-label">Project</span>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>{project.name}</p>
+              </div>
+              <div>
+                <span className="field-label">Version</span>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>v{selected.version}</p>
+              </div>
+            </div>
+            <label className="sow-notify-row" style={{ margin: '16px 0' }}>
+              <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} /> Notify Client
+            </label>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowSendConfirm(false)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-accent btn-sm" disabled={sending} onClick={handleConfirmSend}>
+                {sending ? 'পাঠানো হচ্ছে…' : 'Send SOW'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCancelConfirm && selected && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowCancelConfirm(false); }}>
+          <div className="modal-box">
+            <h3 style={{ margin: '0 0 10px', fontSize: 15, fontWeight: 700 }}>Cancel this SOW?</h3>
+            <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 16 }}>{client?.primary_contact ?? client?.company_name} will no longer be able to sign v{selected.version}.</p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowCancelConfirm(false)}>
+                Keep SOW
+              </button>
+              <button type="button" className="btn btn-ghost btn-sm sow-danger-btn" disabled={cancelling} onClick={handleConfirmCancel}>
+                {cancelling ? 'বাতিল হচ্ছে…' : 'Cancel SOW'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

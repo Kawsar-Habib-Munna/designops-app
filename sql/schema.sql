@@ -1462,3 +1462,60 @@ drop policy if exists "client can read own projects" on projects;
 create policy "client can read own projects" on projects for select using (
   client_visible = true and exists (select 1 from clients where clients.id = projects.client_id and clients.user_id = auth.uid())
 );
+
+-- CLIENT PORTAL — ফেজ ১১: Screen 10 (SOW) রিডিজাইন। বিদ্যমান sows টেবিলের
+-- scope/objectives/deliverables/timeline/payment_terms/revision_policy/
+-- client_responsibilities/terms কলামগুলো অক্ষত রেখে (Screen 11-এ sign_sow()
+-- এখনো ওগুলোই ব্যবহার করে) নিচের নতুন কলাম যোগ করা হলো — এগুলো commercial
+-- টার্মের "স্ন্যাপশট" (প্রজেক্টের সাথে live-bound না, তাই সাইন করার পরে project
+-- বদলালেও সাইন করা SOW অপরিবর্তিত থাকে) + admin-অনলি metadata।
+alter table sows add column if not exists sow_number text;
+alter table sows add column if not exists valid_until date;
+alter table sows add column if not exists project_value numeric;
+alter table sows add column if not exists currency text default 'BDT';
+alter table sows add column if not exists payment_structure text;
+alter table sows add column if not exists agency_responsibilities text;
+alter table sows add column if not exists communication_terms text;
+alter table sows add column if not exists viewed_at timestamptz;
+alter table sows add column if not exists superseded_by uuid references sows(id) on delete set null;
+-- status ভ্যালু বাড়লো: draft | sent | signed | superseded | cancelled
+-- (কলামটা আগে থেকেই plain text, নতুন constraint লাগেনি)।
+
+-- আগের RLS পলিসিতে status ফিল্টার ছিল না — মানে client সরাসরি Supabase কল করলে
+-- draft SOW-ও পড়তে পারত (শুধু UI-তে লুকানো ছিল, real সিকিউরিটি না)। এখন draft
+-- বাদে সবকিছু (sent/signed/superseded/cancelled) client পড়তে পারবে, draft
+-- কখনোই RLS লেভেলেই বাইরে যাবে না।
+drop policy if exists "client can read own project sows" on sows;
+create policy "client can read own project sows" on sows for select using (
+  status != 'draft' and exists (select 1 from projects join clients on clients.id = projects.client_id where projects.id = sows.project_id and clients.user_id = auth.uid())
+);
+
+-- Sent→Viewed ট্র্যাকিং real করার জন্য — sign_sow()-এর ঠিক একই security-definer
+-- প্যাটার্ন (ক্লায়েন্টকে সরাসরি sows UPDATE পলিসি না দিয়ে, শুধু viewed_at-টাই
+-- নিজের প্রজেক্টের জন্য সেট করতে দেওয়া হয়)।
+create or replace function public.mark_sow_viewed(p_sow_id uuid)
+returns void
+language plpgsql
+security definer
+as $$
+declare
+  v_project_id uuid;
+  v_client_user_id uuid;
+begin
+  select sows.project_id into v_project_id from sows where sows.id = p_sow_id;
+  if v_project_id is null then
+    raise exception 'SOW not found';
+  end if;
+
+  select clients.user_id into v_client_user_id
+  from projects join clients on clients.id = projects.client_id
+  where projects.id = v_project_id;
+
+  if v_client_user_id is null or v_client_user_id != auth.uid() then
+    raise exception 'Not authorized to view this SOW';
+  end if;
+
+  update sows set viewed_at = now() where id = p_sow_id and viewed_at is null;
+end;
+$$;
+grant execute on function public.mark_sow_viewed(uuid) to authenticated;
