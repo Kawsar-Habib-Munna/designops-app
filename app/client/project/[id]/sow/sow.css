@@ -1,5 +1,7 @@
-/* Screen 10/11 — Statement of Work (client, v2 — combined review+sign)।
-   cp-* প্রিমিটিভ client-shared.css থেকে, এখানে শুধু document/sign-panel লেআউট। */
+/* Screen 10 — Statement of Work (client)। Sidebar/topbar/nav/profile-card/btn/
+   skel/state-view classes হুবহু project-dashboard.css (Screen 9) থেকে কপি করা —
+   পুরো ক্লায়েন্ট পোর্টাল প্রজেক্ট-সেকশনে একই app-shell। doc / sig / sign-panel
+   ক্লাসগুলো এই পাতার নিজস্ব — SOW ডকুমেন্টের ভিজ্যুয়াল লেআউট। */
 
 .client-sow-root {
   --warning: #f5a524;
@@ -12,29 +14,111 @@
   }
 }
 
-.client-sow-root .sw-shell { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; }
-.client-sow-root .sw-back { font-size: 13px; color: var(--ink-faint); font-weight: 600; display: inline-block; margin-bottom: 18px; }
-.client-sow-root .sw-back:hover { color: var(--ink); }
+/* ---------- shell (sidebar/topbar — identical to Screen 9) ---------- */
+.client-sow-root .shell { display: flex; min-height: 100vh; }
 
-.client-sow-root .page-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-.client-sow-root .sw-title { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
-.client-sow-root .sw-page-sub { margin: 0; font-size: 13px; color: var(--ink-soft); }
-.client-sow-root .sw-header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.client-sow-root .sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 14px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.client-sow-root .sidebar-close-btn {
+  display: none;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-faint);
+  background: transparent;
+  border: none;
+}
+.client-sow-root .sidebar-close-btn:hover { background: var(--bg); color: var(--ink); }
+.client-sow-root .nav-group { display: flex; flex-direction: column; gap: 2px; }
+.client-sow-root .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius-sm); font-size: 13.5px; color: var(--ink-soft); font-weight: 500; }
+.client-sow-root .nav-item.active { background: var(--accent-soft); color: var(--accent); }
+.client-sow-root .profile-card { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg); width: 100%; text-align: left; }
+.client-sow-root .profile-card:hover { background: var(--accent-soft); }
+.client-sow-root .avatar { border-radius: 999px; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; color: #fff; background: var(--accent); }
+.client-sow-root .profile-meta { flex: 1; min-width: 0; }
+.client-sow-root .profile-name { font-size: 13px; font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.client-sow-root .profile-role { font-size: 11px; color: var(--ink-faint); line-height: 1.2; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.client-sow-root .mobile-backdrop { display: none; }
+
+.client-sow-root .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.client-sow-root .topbar { display: none; height: 56px; border-bottom: 1px solid var(--border); background: var(--surface); align-items: center; gap: 10px; padding: 0 16px; position: sticky; top: 0; z-index: 20; }
+.client-sow-root .icon-btn { width: 32px; height: 32px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; color: var(--ink-soft); flex-shrink: 0; }
+.client-sow-root .topbar-title { font-size: 14px; font-weight: 700; }
+.client-sow-root .content { max-width: 1240px; width: 100%; margin: 0 auto; padding: 32px 40px 64px; }
+.client-sow-root .breadcrumb { font-size: 12px; color: var(--ink-faint); margin-bottom: 14px; }
+.client-sow-root .breadcrumb a:hover { color: var(--ink); }
+.client-sow-root .block { margin-bottom: 18px; }
+
+/* ---------- buttons (identical to Screen 9) ---------- */
+.client-sow-root .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-size: 13px; font-weight: 600; padding: 10px 18px; min-height: 40px; border-radius: var(--radius-sm); border: 1px solid transparent; }
+.client-sow-root .btn-sm { padding: 7px 13px; min-height: 34px; font-size: 12.5px; }
+.client-sow-root .btn-accent { background: var(--accent); color: #fff; }
+.client-sow-root .btn-accent:hover { background: var(--accent-hover); }
+.client-sow-root .btn-ghost { background: var(--bg); border-color: var(--border); color: var(--ink); }
+.client-sow-root .btn-ghost:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+/* ---------- project header row (identical to Screen 9) ---------- */
+.client-sow-root .ph-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.client-sow-root .ph-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.client-sow-root .ph-title { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+.client-sow-root .ph-company { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
+.client-sow-root .status-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; padding: 5px 11px; border-radius: 999px; }
+.client-sow-root .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.client-sow-root .status-badge.b-hold { background: var(--warning-soft); color: var(--warning); }
+.client-sow-root .status-badge.b-done { background: var(--positive-soft); color: var(--positive); }
+.client-sow-root .welcome-sub { margin: 4px 0 18px; font-size: 13.5px; color: var(--ink-soft); }
+
+/* ---------- skeleton / bare error state ---------- */
+.client-sow-root .skel { background: linear-gradient(90deg, var(--surface) 25%, var(--bg) 37%, var(--surface) 63%); background-size: 400% 100%; animation: sw-shimmer 1.4s ease infinite; border-radius: var(--radius-md); }
+@keyframes sw-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+.client-sow-root .sw-bare-shell { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+
+/* ---------- document ---------- */
+.client-sow-root .sw-doc-wrap { max-width: 760px; margin: 0 auto; }
+
 .client-sow-root .sw-just-signed-banner { background: var(--positive-soft); color: var(--positive); font-size: 12.5px; font-weight: 600; padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 16px; }
 
-.client-sow-root .doc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 36px 34px; margin-bottom: 20px; }
-.client-sow-root .doc-letterhead { font-size: 19px; font-weight: 800; color: var(--accent); margin-bottom: 2px; }
-.client-sow-root .doc-letterhead-sub { font-size: 11px; color: var(--ink-faint); margin-bottom: 22px; }
-.client-sow-root .doc-title { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 4px; color: var(--ink); }
-.client-sow-root .doc-subtitle { font-size: 12px; color: var(--ink-faint); text-align: center; font-style: italic; margin-bottom: 26px; }
-.client-sow-root .doc-h2 { font-size: 13.5px; font-weight: 700; color: var(--accent); margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
-.client-sow-root .doc-p { font-size: 13px; line-height: 1.75; color: var(--ink-soft); margin: 0 0 10px; }
+.client-sow-root .doc-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 40px 38px 36px; margin-bottom: 20px; overflow: hidden; }
+.client-sow-root .doc-topbar { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); }
+.client-sow-root .doc-letterhead-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.client-sow-root .doc-brand-mark { width: 34px; height: 34px; flex-shrink: 0; background-image: url("/flow53-logo.svg"); background-size: contain; background-position: center; background-repeat: no-repeat; }
+.client-sow-root .doc-letterhead { font-size: 17px; font-weight: 800; color: var(--accent); line-height: 1.2; }
+.client-sow-root .doc-letterhead-sub { font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
+.client-sow-root .doc-title { font-size: 21px; font-weight: 800; text-align: center; letter-spacing: 0.02em; margin-bottom: 4px; color: var(--ink); }
+.client-sow-root .doc-subtitle { font-size: 12.5px; color: var(--ink-faint); text-align: center; font-style: italic; margin-bottom: 30px; }
+
+.client-sow-root .doc-h2 { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: 0.03em; margin: 30px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.client-sow-root .doc-h2-num { width: 20px; height: 20px; flex-shrink: 0; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 10.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; text-transform: none; letter-spacing: 0; }
+.client-sow-root .doc-p { font-size: 13.5px; line-height: 1.8; color: var(--ink-soft); margin: 0 0 10px; }
 .client-sow-root .doc-list { margin: 0 0 10px 18px; padding: 0; }
-.client-sow-root .doc-list li { font-size: 13px; line-height: 1.8; color: var(--ink-soft); }
-.client-sow-root .doc-field-line { font-size: 13px; margin-bottom: 6px; color: var(--ink); }
-.client-sow-root .doc-field-line b { font-weight: 700; }
+.client-sow-root .doc-list li { font-size: 13.5px; line-height: 1.9; color: var(--ink-soft); }
 .client-sow-root .sw-doc-link { display: inline-block; font-size: 12.5px; font-weight: 600; color: var(--accent); margin-top: 8px; }
 .client-sow-root .sw-doc-link:hover { text-decoration: underline; }
+
+.client-sow-root .doc-kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+.client-sow-root .doc-kv { display: flex; flex-direction: column; gap: 3px; }
+.client-sow-root .doc-kv-label { font-size: 10.5px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; }
+.client-sow-root .doc-kv-value { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+
+.client-sow-root .doc-value-card { display: flex; align-items: center; justify-content: space-between; background: var(--accent-soft); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 14px; }
+.client-sow-root .doc-value-label { font-size: 12px; font-weight: 600; color: var(--accent); }
+.client-sow-root .doc-value-amount { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: -0.01em; }
 
 /* ---- Agreement & Signatures block (inside doc-card) ---- */
 .client-sow-root .sig-block-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 8px; }
@@ -55,29 +139,44 @@
 .client-sow-root .sw-sign-cta-text { font-size: 13px; color: var(--ink-soft); margin: 0 0 16px; }
 
 .client-sow-root .sign-actions { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
-.client-sow-root .sign-actions .cp-btn { flex: 1; min-width: 160px; justify-content: center; }
+.client-sow-root .sign-actions .btn { flex: 1; min-width: 160px; }
 
 .client-sow-root .request-changes-box { margin-top: 14px; }
 .client-sow-root .sw-changes-sent { font-size: 12.5px; color: var(--positive); font-weight: 600; margin: 0; }
 
-.client-sow-root .sw-state-card { text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 48px 24px; }
+.client-sow-root .sw-state-card { text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 48px 24px; max-width: 480px; margin: 40px auto 0; }
 .client-sow-root .sw-state-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
 .client-sow-root .sw-state-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 18px; }
 .client-sow-root .sw-state-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
+/* ---------- responsive (identical breakpoint to Screen 9) ---------- */
+@media (max-width: 860px) {
+  .client-sow-root .topbar { display: flex; }
+  .client-sow-root .menu-btn { display: flex; }
+  .client-sow-root .sidebar-close-btn { display: flex; }
+  .client-sow-root .content { padding: 22px 18px 48px; }
+  .client-sow-root .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; z-index: 200; transform: translateX(-100%); transition: transform 0.2s ease; box-shadow: var(--shadow-lg); }
+  .client-sow-root .sidebar.open { transform: translateX(0); }
+  .client-sow-root .mobile-backdrop { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); z-index: 190; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+  .client-sow-root .mobile-backdrop.open { opacity: 1; pointer-events: auto; }
+}
 @media (max-width: 640px) {
   .client-sow-root .doc-card { padding: 26px 20px; }
+  .client-sow-root .doc-kv-grid { grid-template-columns: 1fr; }
   .client-sow-root .sign-actions { flex-direction: column; }
   .client-sow-root .sig-block-grid { grid-template-columns: 1fr; }
 }
 
 @media print {
-  .client-sow-root .sw-back,
-  .client-sow-root .sw-header-actions .cp-btn,
+  .client-sow-root .sidebar,
+  .client-sow-root .topbar,
+  .client-sow-root .breadcrumb,
+  .client-sow-root .ph-row .btn,
   .client-sow-root .sw-just-signed-banner,
   .client-sow-root .sign-panel {
     display: none !important;
   }
-  .client-sow-root .sw-shell { max-width: 100%; padding: 0; }
+  .client-sow-root .content { max-width: 100%; padding: 0; }
+  .client-sow-root .sw-doc-wrap { max-width: 100%; }
   .client-sow-root .doc-card { box-shadow: none; border: none; }
 }
