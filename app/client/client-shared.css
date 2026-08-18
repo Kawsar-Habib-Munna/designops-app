@@ -319,6 +319,11 @@
   background: var(--surface);
   color: var(--ink);
 }
+.client-portal .cp-btn-sm {
+  padding: 8px 14px;
+  min-height: 36px;
+  font-size: 12.5px;
+}
 
 .client-portal .cp-spinner {
   width: 15px;

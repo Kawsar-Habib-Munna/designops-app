@@ -1519,3 +1519,69 @@ begin
 end;
 $$;
 grant execute on function public.mark_sow_viewed(uuid) to authenticated;
+
+-- CLIENT PORTAL — ফেজ ১২: Screen 11 (SOW Signature) রিডিজাইন। sows-কে একটা
+-- আলাদা "sow_signatures" audit টেবিল না বানিয়ে (একটা SOW ভার্সন একবারই সাইন
+-- হয় — 1:1 সম্পর্ক, আলাদা টেবিল শুধু ডুপ্লিকেশন হতো) নিজের কলামেই signature
+-- method/image/confirmation রেকর্ড রাখা হলো।
+alter table sows add column if not exists signature_method text; -- typed | drawn | uploaded
+alter table sows add column if not exists signature_image_url text;
+alter table sows add column if not exists confirmation_statements text;
+
+-- sign_sow()-এর পুরনো ৩-প্যারামিটার সিগনেচার নতুনটার সাথে coexist করত (Postgres
+-- ওভারলোড আলাদা ফাংশন হিসেবে গণ্য করে), তাই আগেরটা explicit drop করে reuse করা
+-- হলো — এখন version-mismatch protection (client যে ভার্সন দেখেছে ঠিক সেটাই
+-- সাইন হচ্ছে কিনা) + signature method/image/confirmation সবই এক কলে যায়।
+drop function if exists public.sign_sow(uuid, text, text);
+
+create or replace function public.sign_sow(
+  p_sow_id uuid,
+  p_full_name text,
+  p_signature text,
+  p_signature_method text default 'typed',
+  p_signature_image_url text default null,
+  p_confirmation_statements text default null,
+  p_expected_version int default null
+)
+returns void
+language plpgsql
+security definer
+as $$
+declare
+  v_project_id uuid;
+  v_client_user_id uuid;
+  v_current_version int;
+begin
+  select sows.project_id, sows.version into v_project_id, v_current_version from sows where sows.id = p_sow_id;
+  if v_project_id is null then
+    raise exception 'SOW not found';
+  end if;
+
+  select clients.user_id into v_client_user_id
+  from projects join clients on clients.id = projects.client_id
+  where projects.id = v_project_id;
+
+  if v_client_user_id is null or v_client_user_id != auth.uid() then
+    raise exception 'Not authorized to sign this SOW';
+  end if;
+
+  if p_expected_version is not null and p_expected_version != v_current_version then
+    raise exception 'VERSION_MISMATCH';
+  end if;
+
+  update sows
+  set status = 'signed',
+      signed_at = now(),
+      signed_by_name = p_full_name,
+      signature_text = p_signature,
+      signature_method = p_signature_method,
+      signature_image_url = p_signature_image_url,
+      confirmation_statements = p_confirmation_statements
+  where id = p_sow_id and status = 'sent';
+
+  if not found then
+    raise exception 'This SOW is not awaiting signature';
+  end if;
+end;
+$$;
+grant execute on function public.sign_sow(uuid, text, text, text, text, text, int) to authenticated;

@@ -38,7 +38,7 @@
 .client-sow-root .sw-toc-select { width: 100%; font-size: 13px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font-family: inherit; }
 
 .client-sow-root .sw-document { min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 8px 32px; }
-.client-sow-root .sw-section { max-width: 740px; padding: 26px 0; border-bottom: 1px solid var(--border-soft); }
+.client-sow-root .sw-section { max-width: 740px; padding: 26px 0; border-bottom: 1px solid var(--border); }
 .client-sow-root .sw-section:last-child { border-bottom: none; }
 .client-sow-root .sw-section-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 14px; color: var(--ink); scroll-margin-top: 24px; }
 .client-sow-root .sw-body-text { font-size: 13.5px; line-height: 1.75; color: var(--ink-soft); white-space: pre-wrap; margin: 0 0 10px; }
@@ -76,12 +76,12 @@
 .client-sow-root .sw-inline-link { font-size: 12.5px; font-weight: 600; color: var(--accent); }
 .client-sow-root .sw-inline-link:hover { text-decoration: underline; }
 
-.client-sow-root .sw-terms-item { padding: 10px 0; border-bottom: 1px solid var(--border-soft); }
+.client-sow-root .sw-terms-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
 .client-sow-root .sw-terms-item:last-child { border-bottom: none; }
 .client-sow-root .sw-terms-heading { font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; padding: 4px 0; }
 .client-sow-root .sw-terms-body { margin-top: 8px; }
 
-.client-sow-root .sw-agreement-card { text-align: center; background: var(--accent-soft); border: 1px solid var(--accent-soft-2); border-radius: var(--radius-lg); padding: 28px 24px; margin-top: 24px; }
+.client-sow-root .sw-agreement-card { text-align: center; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--radius-lg); padding: 28px 24px; margin-top: 24px; }
 .client-sow-root .sw-agreement-label { font-size: 10.5px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
 .client-sow-root .sw-agreement-status { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
 .client-sow-root .sw-agreement-status.sw-agreement-signed { color: var(--positive); }
