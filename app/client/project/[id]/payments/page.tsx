@@ -9,8 +9,12 @@
 // (./confirm) রুটে নিয়ে যায় — সেখানেই আসল submit_payment RPC কল হয়, proof
 // আপলোড, correction/resubmit ফ্লো ইত্যাদি। internal_note কলাম এখানে কখনো
 // select করা হয় না — client-safe কলাম লিস্টই একমাত্র সুরক্ষা।
+//
+// v2: Screen 9/10-এর ঠিক একই sidebar/topbar app-shell (আগে এই পাতা bare
+// "back link + centered content" লেআউটে ছিল, প্রজেক্ট সেকশনের বাকি পাতাগুলোর
+// সাথে বিচ্ছিন্ন লাগত)।
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
@@ -18,6 +22,21 @@ import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
 import { formatBnDateLong, todayISO } from '@/lib/format';
 import '../../../client-shared.css';
 import './payments.css';
+
+const ICONS: Record<string, string> = {
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
+  folder: '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/>',
+  file: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>',
+  doc: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M9 13h6"/><path d="M9 17h6"/>',
+  card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+  message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+  menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
+  close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+};
+function Icon({ name, size = 14 }: { name: string; size?: number }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICONS[name] }} />;
+}
 
 type ProjectBrief = { id: string; name: string; client_id: string; budget: number | null };
 type SowBrief = { id: string; sow_number: string | null; version: number; status: string; project_value: number | null };
@@ -47,6 +66,86 @@ function humanizeType(slug: string) {
   return slug.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// ---- shared sidebar/topbar shell (identical structure to Screen 9/10) ----
+function PaymentsShell({
+  project,
+  client,
+  mobileNavOpen,
+  setMobileNavOpen,
+  onSignOut,
+  children,
+}: {
+  project: { id: string; name: string };
+  client: ClientRecord;
+  mobileNavOpen: boolean;
+  setMobileNavOpen: (v: boolean) => void;
+  onSignOut: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="shell">
+      <div className={`mobile-backdrop${mobileNavOpen ? ' open' : ''}`} onClick={() => setMobileNavOpen(false)}></div>
+      <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
+        <div>
+          <div className="cp-brand" style={{ padding: '6px 10px 22px' }}>
+            <div className="cp-brand-mark" aria-hidden="true"></div>
+            <div className="cp-brand-text">FLOW 53</div>
+            <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন">
+              <Icon name="close" size={16} />
+            </button>
+          </div>
+          <nav className="nav-group">
+            <Link href="/client/dashboard" className="nav-item">
+              <Icon name="grid" /> Overview
+            </Link>
+            <Link href={`/client/project/${project.id}`} className="nav-item">
+              <Icon name="folder" /> My Project
+            </Link>
+            <Link href={`/client/project/${project.id}/messages`} className="nav-item">
+              <Icon name="message" /> Messages
+            </Link>
+            <Link href={`/client/project/${project.id}/files`} className="nav-item">
+              <Icon name="file" /> Files
+            </Link>
+            <Link href={`/client/project/${project.id}/sow`} className="nav-item">
+              <Icon name="doc" /> SOW
+            </Link>
+            <Link href={`/client/project/${project.id}/payments`} className="nav-item active">
+              <Icon name="card" /> Payments
+            </Link>
+          </nav>
+        </div>
+        <button type="button" className="profile-card" onClick={onSignOut} title="Sign out">
+          <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
+            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+          </div>
+          <div className="profile-meta">
+            <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
+            <div className="profile-role">{client.company_name}</div>
+          </div>
+          <Icon name="logout" />
+        </button>
+      </aside>
+
+      <div className="main">
+        <header className="topbar">
+          <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="মেনু খুলুন">
+            <Icon name="menu" />
+          </button>
+          <span className="topbar-title">Payments</span>
+        </header>
+
+        <main className="content">
+          <div className="breadcrumb">
+            <Link href="/client/dashboard">Client Portal</Link> / <Link href={`/client/project/${project.id}`}>{project.name}</Link> / Payments
+          </div>
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+
 export default function ClientPaymentsPage() {
   const params = useParams();
   const projectId = params.id as string;
@@ -54,12 +153,12 @@ export default function ClientPaymentsPage() {
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [project, setProject] = useState<ProjectBrief | null>(null);
   const [client, setClient] = useState<ClientRecord | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [sows, setSows] = useState<SowBrief[]>([]);
-  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     async function load() {
@@ -105,12 +204,27 @@ export default function ClientPaymentsPage() {
     }
 
     load();
-  }, [router, projectId, reloadKey]);
+  }, [router, projectId]);
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    router.push('/client');
+  }
 
   if (loading) {
     return (
       <div className="client-portal client-payments-root">
-        <div className="cp-loading-shell">লোড হচ্ছে…</div>
+        <div className="shell">
+          <aside className="sidebar">
+            <div style={{ height: 30 }} />
+          </aside>
+          <div className="main">
+            <main className="content">
+              <div className="skel" style={{ height: 60, marginBottom: 18 }} />
+              <div className="skel" style={{ height: 320, marginBottom: 18 }} />
+            </main>
+          </div>
+        </div>
       </div>
     );
   }
@@ -118,7 +232,7 @@ export default function ClientPaymentsPage() {
   if (loadError || !project || !client) {
     return (
       <div className="client-portal client-payments-root">
-        <div className="pm-shell">
+        <div className="pm-bare-shell">
           <div className="pm-state-card">
             <div className="pm-state-title">Unable to load payment request</div>
             <p className="pm-state-sub">Please try again.</p>
@@ -139,10 +253,7 @@ export default function ClientPaymentsPage() {
   if (invoices.length === 0) {
     return (
       <div className="client-portal client-payments-root">
-        <div className="pm-shell">
-          <Link href={`/client/project/${project.id}`} className="pm-back">
-            ← {project.name}
-          </Link>
+        <PaymentsShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
           <div className="pm-state-card">
             <div className="pm-state-title">No payment request currently available</div>
             <p className="pm-state-sub">Payment requests will appear here when action is required.</p>
@@ -152,7 +263,7 @@ export default function ClientPaymentsPage() {
               </Link>
             </div>
           </div>
-        </div>
+        </PaymentsShell>
       </div>
     );
   }
@@ -172,10 +283,8 @@ export default function ClientPaymentsPage() {
 
   return (
     <div className="client-portal client-payments-root">
-      <div className="pm-shell">
-        <Link href={`/client/project/${project.id}`} className="pm-back">
-          ← {project.name}
-        </Link>
+      <PaymentsShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
+        <div className="pm-doc-wrap">
         <div className="pm-breadcrumb">My Project / Payments / Payment Request</div>
         <h1 className="pm-title">Payment Required</h1>
         <p className="pm-page-sub">Review the payment details and complete the required payment.</p>
@@ -335,7 +444,8 @@ export default function ClientPaymentsPage() {
             Message your project manager
           </a>
         </p>
-      </div>
+        </div>
+      </PaymentsShell>
     </div>
   );
 }
