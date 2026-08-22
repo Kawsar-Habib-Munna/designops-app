@@ -89,6 +89,7 @@ type Sow = {
 };
 
 type SowDocument = { id: string; file_name: string; file_url: string; file_size: number | null };
+type SowTabKey = 'parties' | 'scope' | 'timeline' | 'payment' | 'terms' | 'documents' | 'signatures';
 
 function toOne<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
@@ -213,6 +214,7 @@ export default function ClientSowPage() {
   const [client, setClient] = useState<ClientRecord | null>(null);
   const [sow, setSow] = useState<Sow | null>(null);
   const [documents, setDocuments] = useState<SowDocument[]>([]);
+  const [activeTab, setActiveTab] = useState<SowTabKey>(justSigned ? 'signatures' : 'parties');
 
   const [signError, setSignError] = useState<string | null>(null);
 
@@ -263,6 +265,13 @@ export default function ClientSowPage() {
 
     load();
   }, [router, projectId, viewVersion]);
+
+  useEffect(() => {
+    if (activeTab === 'documents' && documents.length === 0) {
+      const timer = setTimeout(() => setActiveTab('parties'), 0);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, documents]);
 
   async function handleSubmitChanges() {
     if (!client || !project || !changesText.trim()) return;
@@ -441,14 +450,30 @@ export default function ClientSowPage() {
 
           {justSigned && <div className="sw-just-signed-banner">✓ SOW signed successfully — your signature now appears below.</div>}
 
-          <nav className="sw-toc" aria-label="Jump to section">
-            <a href="#sec-parties">Parties</a>
-            <a href="#sec-scope">Scope</a>
-            <a href="#sec-timeline">Timeline</a>
-            <a href="#sec-payment">Payment</a>
-            <a href="#sec-terms">Terms</a>
-            {documents.length > 0 && <a href="#sec-documents">Documents</a>}
-            <a href="#sec-signatures">Signatures</a>
+          <nav className="sw-toc" aria-label="Document sections" role="tablist">
+            <button type="button" role="tab" aria-selected={activeTab === 'parties'} className={`sw-toc-tab${activeTab === 'parties' ? ' active' : ''}`} onClick={() => setActiveTab('parties')}>
+              Parties
+            </button>
+            <button type="button" role="tab" aria-selected={activeTab === 'scope'} className={`sw-toc-tab${activeTab === 'scope' ? ' active' : ''}`} onClick={() => setActiveTab('scope')}>
+              Scope
+            </button>
+            <button type="button" role="tab" aria-selected={activeTab === 'timeline'} className={`sw-toc-tab${activeTab === 'timeline' ? ' active' : ''}`} onClick={() => setActiveTab('timeline')}>
+              Timeline
+            </button>
+            <button type="button" role="tab" aria-selected={activeTab === 'payment'} className={`sw-toc-tab${activeTab === 'payment' ? ' active' : ''}`} onClick={() => setActiveTab('payment')}>
+              Payment
+            </button>
+            <button type="button" role="tab" aria-selected={activeTab === 'terms'} className={`sw-toc-tab${activeTab === 'terms' ? ' active' : ''}`} onClick={() => setActiveTab('terms')}>
+              Terms
+            </button>
+            {documents.length > 0 && (
+              <button type="button" role="tab" aria-selected={activeTab === 'documents'} className={`sw-toc-tab${activeTab === 'documents' ? ' active' : ''}`} onClick={() => setActiveTab('documents')}>
+                Documents
+              </button>
+            )}
+            <button type="button" role="tab" aria-selected={activeTab === 'signatures'} className={`sw-toc-tab${activeTab === 'signatures' ? ' active' : ''}`} onClick={() => setActiveTab('signatures')}>
+              Signatures
+            </button>
           </nav>
 
           <div className="doc-card">
@@ -465,93 +490,102 @@ export default function ClientSowPage() {
               {project.name} — {client.company_name}
             </div>
 
-            <div className="doc-h2" id="sec-parties">
-              <span className="doc-h2-num">1</span>Parties
-            </div>
-            <div className="doc-kv-grid">
-              <div className="doc-kv">
-                <span className="doc-kv-label">Service Provider</span>
-                <span className="doc-kv-value">FLOW 53 Design Studio</span>
+            <div className={`sw-tab-panel${activeTab === 'parties' ? '' : ' sw-tab-hidden'}`}>
+              <div className="doc-h2">
+                <span className="doc-h2-num">1</span>Parties
               </div>
-              <div className="doc-kv">
-                <span className="doc-kv-label">Client</span>
-                <span className="doc-kv-value">
-                  {client.primary_contact}, {client.company_name}
-                </span>
-              </div>
-              {sow.sow_number && (
+              <div className="doc-kv-grid">
                 <div className="doc-kv">
-                  <span className="doc-kv-label">SOW Reference</span>
+                  <span className="doc-kv-label">Service Provider</span>
+                  <span className="doc-kv-value">FLOW 53 Design Studio</span>
+                </div>
+                <div className="doc-kv">
+                  <span className="doc-kv-label">Client</span>
                   <span className="doc-kv-value">
-                    {sow.sow_number} · v{sow.version}.0
+                    {client.primary_contact}, {client.company_name}
                   </span>
                 </div>
+                {sow.sow_number && (
+                  <div className="doc-kv">
+                    <span className="doc-kv-label">SOW Reference</span>
+                    <span className="doc-kv-value">
+                      {sow.sow_number} · v{sow.version}.0
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className={`sw-tab-panel${activeTab === 'scope' ? '' : ' sw-tab-hidden'}`}>
+              <div className="doc-h2">
+                <span className="doc-h2-num">2</span>Scope of Work
+              </div>
+              {sow.objectives && <p className="doc-p">{sow.objectives}</p>}
+              {services.length > 0 && (
+                <ul className="doc-list">
+                  {services.map((s) => (
+                    <li key={s}>{s}</li>
+                  ))}
+                </ul>
               )}
             </div>
 
-            <div className="doc-h2" id="sec-scope">
-              <span className="doc-h2-num">2</span>Scope of Work
-            </div>
-            {sow.objectives && <p className="doc-p">{sow.objectives}</p>}
-            {services.length > 0 && (
-              <ul className="doc-list">
-                {services.map((s) => (
-                  <li key={s}>{s}</li>
-                ))}
-              </ul>
-            )}
-
-            <div className="doc-h2" id="sec-timeline">
-              <span className="doc-h2-num">3</span>Timeline
-            </div>
-            {milestones.length > 0 && (
-              <ul className="doc-list">
-                {milestones.map((m) => (
-                  <li key={m}>{m}</li>
-                ))}
-              </ul>
-            )}
-            {(sow.start_date || sow.delivery_date) && (
-              <p className="doc-p">
-                {sow.start_date && `Start: ${formatBnDateLong(sow.start_date)}`}
-                {sow.start_date && sow.delivery_date && ' · '}
-                {sow.delivery_date && `Expected Delivery: ${formatBnDateLong(sow.delivery_date)}`}
-              </p>
-            )}
-
-            <div className="doc-h2" id="sec-payment">
-              <span className="doc-h2-num">4</span>Payment Terms
-            </div>
-            {sow.project_value != null && (
-              <div className="doc-value-card">
-                <span className="doc-value-label">Total Project Value</span>
-                <span className="doc-value-amount">
-                  {sym}
-                  {sow.project_value.toLocaleString('en-US')}
-                </span>
+            <div className={`sw-tab-panel${activeTab === 'timeline' ? '' : ' sw-tab-hidden'}`}>
+              <div className="doc-h2">
+                <span className="doc-h2-num">3</span>Timeline
               </div>
-            )}
-            {sow.payment_terms && <p className="doc-p">{sow.payment_terms.replace(/^Total project value:.*?\.\s*/, '')}</p>}
-            {sow.revision_policy && <p className="doc-p">{sow.revision_policy}</p>}
-
-            <div className="doc-h2" id="sec-terms">
-              <span className="doc-h2-num">5</span>Terms &amp; Conditions
+              {milestones.length > 0 && (
+                <ul className="doc-list">
+                  {milestones.map((m) => (
+                    <li key={m}>{m}</li>
+                  ))}
+                </ul>
+              )}
+              {(sow.start_date || sow.delivery_date) && (
+                <p className="doc-p">
+                  {sow.start_date && `Start: ${formatBnDateLong(sow.start_date)}`}
+                  {sow.start_date && sow.delivery_date && ' · '}
+                  {sow.delivery_date && `Expected Delivery: ${formatBnDateLong(sow.delivery_date)}`}
+                </p>
+              )}
             </div>
-            {sow.terms && (
-              <p className="doc-p" style={{ whiteSpace: 'pre-wrap' }}>
-                {sow.terms}
-              </p>
-            )}
 
-            {sow.document_url && (
-              <a href={sow.document_url} target="_blank" rel="noopener noreferrer" className="sw-doc-link">
-                📄 View attached document ↗
-              </a>
-            )}
+            <div className={`sw-tab-panel${activeTab === 'payment' ? '' : ' sw-tab-hidden'}`}>
+              <div className="doc-h2">
+                <span className="doc-h2-num">4</span>Payment Terms
+              </div>
+              {sow.project_value != null && (
+                <div className="doc-value-card">
+                  <span className="doc-value-label">Total Project Value</span>
+                  <span className="doc-value-amount">
+                    {sym}
+                    {sow.project_value.toLocaleString('en-US')}
+                  </span>
+                </div>
+              )}
+              {sow.payment_terms && <p className="doc-p">{sow.payment_terms.replace(/^Total project value:.*?\.\s*/, '')}</p>}
+              {sow.revision_policy && <p className="doc-p">{sow.revision_policy}</p>}
+            </div>
+
+            <div className={`sw-tab-panel${activeTab === 'terms' ? '' : ' sw-tab-hidden'}`}>
+              <div className="doc-h2">
+                <span className="doc-h2-num">5</span>Terms &amp; Conditions
+              </div>
+              {sow.terms && (
+                <p className="doc-p" style={{ whiteSpace: 'pre-wrap' }}>
+                  {sow.terms}
+                </p>
+              )}
+              {sow.document_url && (
+                <a href={sow.document_url} target="_blank" rel="noopener noreferrer" className="sw-doc-link">
+                  📄 View attached document ↗
+                </a>
+              )}
+            </div>
 
             {documents.length > 0 && (
-              <>
-                <div className="doc-h2" id="sec-documents">
+              <div className={`sw-tab-panel${activeTab === 'documents' ? '' : ' sw-tab-hidden'}`}>
+                <div className="doc-h2">
                   <span className="doc-h2-num">6</span>Documents &amp; Attachments
                 </div>
                 <div className="sw-doc-list">
@@ -566,53 +600,55 @@ export default function ClientSowPage() {
                     </a>
                   ))}
                 </div>
-              </>
+              </div>
             )}
 
-            <div className="doc-h2" id="sec-signatures">
-              <span className="doc-h2-num">✓</span>Agreement &amp; Signatures
-            </div>
-            <div className="sig-block-grid">
-              <div className="sig-block">
-                <div className="sig-block-label">Client</div>
-                <div className="sig-block-name">{client.primary_contact}</div>
-                <div className="sig-block-sub">{client.company_name}</div>
-                {isSigned ? (
-                  <>
-                    {sow.signature_image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img className="sig-block-image" src={driveThumbnailUrl(sow.signature_image_url)} alt={`${sow.signed_by_name} signature`} />
-                    ) : (
-                      <div className="sig-block-typed">{sow.signed_by_name}</div>
-                    )}
-                    <div className="sig-block-caption">{sow.signature_method === 'drawn' ? 'Drawn Signature' : sow.signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
-                    <div className="sig-block-meta">Signed on {sow.signed_at ? formatBnDateLong(sow.signed_at) : ''}</div>
-                  </>
-                ) : (
-                  <div className="sig-block-pending">Awaiting Signature</div>
-                )}
+            <div className={`sw-tab-panel${activeTab === 'signatures' ? '' : ' sw-tab-hidden'}`}>
+              <div className="doc-h2">
+                <span className="doc-h2-num">✓</span>Agreement &amp; Signatures
               </div>
-              <div className="sig-block">
-                <div className="sig-block-label">Agency</div>
-                <div className="sig-block-name">{sow.agency_signer_name ?? manager?.full_name ?? 'FLOW 53'}</div>
-                <div className="sig-block-sub">{manager?.role ?? 'Project Manager'} · FLOW 53</div>
-                {sow.agency_signed_at ? (
-                  <>
-                    {sow.agency_signature_image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img className="sig-block-image" src={driveThumbnailUrl(sow.agency_signature_image_url)} alt={`${sow.agency_signer_name} signature`} />
-                    ) : (
-                      <div className="sig-block-typed">{sow.agency_signer_name}</div>
-                    )}
-                    <div className="sig-block-caption">{sow.agency_signature_method === 'drawn' ? 'Drawn Signature' : sow.agency_signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
-                    <div className="sig-block-meta">Signed on {formatBnDateLong(sow.agency_signed_at)}</div>
-                  </>
-                ) : (
-                  <div className="sig-block-pending">Pending Agency Signature</div>
-                )}
+              <div className="sig-block-grid">
+                <div className="sig-block">
+                  <div className="sig-block-label">Client</div>
+                  <div className="sig-block-name">{client.primary_contact}</div>
+                  <div className="sig-block-sub">{client.company_name}</div>
+                  {isSigned ? (
+                    <>
+                      {sow.signature_image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img className="sig-block-image" src={driveThumbnailUrl(sow.signature_image_url)} alt={`${sow.signed_by_name} signature`} />
+                      ) : (
+                        <div className="sig-block-typed">{sow.signed_by_name}</div>
+                      )}
+                      <div className="sig-block-caption">{sow.signature_method === 'drawn' ? 'Drawn Signature' : sow.signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
+                      <div className="sig-block-meta">Signed on {sow.signed_at ? formatBnDateLong(sow.signed_at) : ''}</div>
+                    </>
+                  ) : (
+                    <div className="sig-block-pending">Awaiting Signature</div>
+                  )}
+                </div>
+                <div className="sig-block">
+                  <div className="sig-block-label">Agency</div>
+                  <div className="sig-block-name">{sow.agency_signer_name ?? manager?.full_name ?? 'FLOW 53'}</div>
+                  <div className="sig-block-sub">{manager?.role ?? 'Project Manager'} · FLOW 53</div>
+                  {sow.agency_signed_at ? (
+                    <>
+                      {sow.agency_signature_image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img className="sig-block-image" src={driveThumbnailUrl(sow.agency_signature_image_url)} alt={`${sow.agency_signer_name} signature`} />
+                      ) : (
+                        <div className="sig-block-typed">{sow.agency_signer_name}</div>
+                      )}
+                      <div className="sig-block-caption">{sow.agency_signature_method === 'drawn' ? 'Drawn Signature' : sow.agency_signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
+                      <div className="sig-block-meta">Signed on {formatBnDateLong(sow.agency_signed_at)}</div>
+                    </>
+                  ) : (
+                    <div className="sig-block-pending">Pending Agency Signature</div>
+                  )}
+                </div>
               </div>
+              {isSigned && <p className="sig-version-line">SOW Version: v{sow.version}.0 · Status: Signed ✓</p>}
             </div>
-            {isSigned && <p className="sig-version-line">SOW Version: v{sow.version}.0 · Status: Signed ✓</p>}
           </div>
 
           {!viewVersion && !isSigned && sow.status === 'sent' && (

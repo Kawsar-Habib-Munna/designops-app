@@ -93,8 +93,11 @@
 .client-sow-root .sw-doc-wrap { width: 100%; }
 
 .client-sow-root .sw-toc { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; padding-bottom: 2px; scrollbar-width: thin; }
-.client-sow-root .sw-toc a { flex-shrink: 0; font-size: 12px; font-weight: 600; color: var(--ink-soft); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; white-space: nowrap; }
-.client-sow-root .sw-toc a:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.client-sow-root .sw-toc-tab { flex-shrink: 0; font-size: 12px; font-weight: 600; font-family: inherit; color: var(--ink-soft); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 7px 15px; white-space: nowrap; cursor: pointer; }
+.client-sow-root .sw-toc-tab:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.client-sow-root .sw-toc-tab.active { border-color: var(--accent); color: #fff; background: var(--accent); }
+
+.client-sow-root .sw-tab-hidden { display: none; }
 
 .client-sow-root .sw-just-signed-banner { background: var(--positive-soft); color: var(--positive); font-size: 12.5px; font-weight: 600; padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 16px; }
 
@@ -193,10 +196,12 @@
   .client-sow-root .breadcrumb,
   .client-sow-root .ph-row .btn,
   .client-sow-root .sw-just-signed-banner,
-  .client-sow-root .sign-panel {
+  .client-sow-root .sign-panel,
+  .client-sow-root .sw-toc {
     display: none !important;
   }
   .client-sow-root .content { max-width: 100%; padding: 0; }
   .client-sow-root .sw-doc-wrap { max-width: 100%; }
   .client-sow-root .doc-card { box-shadow: none; border: none; }
+  .client-sow-root .sw-tab-hidden { display: block !important; }
 }

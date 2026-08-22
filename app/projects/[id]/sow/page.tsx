@@ -24,6 +24,12 @@
 // v5: Locked SOW banner (SOW-09) + "Jump to section" TOC (SOW-03) — preview
 // মোডে সিগনেচার হয়ে গেলে কেন Edit বাটন নেই সেটা স্পষ্ট করে, আর anchor-link
 // pill nav দিয়ে দ্রুত সেকশনে জাম্প করা যায়।
+//
+// v6: TOC pill-nav → real tabs (SOW-02) — এখন activeTab state দিয়ে একবারে
+// একটা সেকশন দেখায় (আগে anchor-scroll সব সেকশন একসাথে দেখাত)। print/PDF-এর
+// জন্য .sow-tab-hidden { display:block !important } — নাহলে "Download Signed
+// PDF" শুধু বর্তমান ট্যাবই প্রিন্ট করত, বাকিটা বাদ পড়ে যেত। "All SOWs" লিঙ্ক
+// (নতুন /sows পাতা, SOW-01) header-এ যোগ হলো।
 
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { useParams } from 'next/navigation';
@@ -159,6 +165,7 @@ function fileExtension(name: string): string {
   const parts = name.split('.');
   return parts.length > 1 ? (parts.pop() as string).toUpperCase() : 'FILE';
 }
+type SowDetailTabKey = 'parties' | 'scope' | 'timeline' | 'payment' | 'terms' | 'signatures';
 
 function toOne<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
@@ -220,6 +227,7 @@ export default function AdminSowPage() {
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [mode, setMode] = useState<'overview' | 'editor' | 'preview'>('overview');
+  const [activeTab, setActiveTab] = useState<SowDetailTabKey>('parties');
 
   // ---- editable form state ----
   const [summary, setSummary] = useState('');
@@ -329,6 +337,7 @@ export default function AdminSowPage() {
     setSelectedId(sow.id);
     loadFormFrom(sow);
     setMode(sow.status === 'draft' ? 'editor' : 'preview');
+    setActiveTab('parties');
   }
 
   const selected = versions.find((v) => v.id === selectedId) ?? null;
@@ -793,6 +802,11 @@ export default function AdminSowPage() {
                           {project.name} — {client?.company_name}
                         </p>
                       </div>
+                      <div className="header-actions">
+                        <Link href="/sows" className="btn btn-ghost btn-sm">
+                          All SOWs
+                        </Link>
+                      </div>
                     </div>
                     <div className="dcard">
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -1060,6 +1074,9 @@ export default function AdminSowPage() {
                         </p>
                       </div>
                       <div className="header-actions">
+                        <Link href="/sows" className="btn btn-ghost btn-sm">
+                          All SOWs
+                        </Link>
                         <span className={`status-pill ${STATUS_META[selected.status]?.cls ?? 'sp-draft'}`}>
                           <span className="dot" style={{ background: 'currentColor' }}></span>
                           {STATUS_META[selected.status]?.label ?? selected.status}
@@ -1086,13 +1103,25 @@ export default function AdminSowPage() {
                       </div>
                     )}
 
-                    <nav className="sow-toc" aria-label="Jump to section">
-                      <a href="#a-sec-parties">Parties</a>
-                      <a href="#a-sec-scope">Scope</a>
-                      <a href="#a-sec-timeline">Timeline</a>
-                      <a href="#a-sec-payment">Payment</a>
-                      <a href="#a-sec-terms">Terms</a>
-                      <a href="#a-sec-signatures">Signatures</a>
+                    <nav className="sow-toc" aria-label="Document sections" role="tablist">
+                      <button type="button" role="tab" aria-selected={activeTab === 'parties'} className={`sow-toc-tab${activeTab === 'parties' ? ' active' : ''}`} onClick={() => setActiveTab('parties')}>
+                        Parties
+                      </button>
+                      <button type="button" role="tab" aria-selected={activeTab === 'scope'} className={`sow-toc-tab${activeTab === 'scope' ? ' active' : ''}`} onClick={() => setActiveTab('scope')}>
+                        Scope
+                      </button>
+                      <button type="button" role="tab" aria-selected={activeTab === 'timeline'} className={`sow-toc-tab${activeTab === 'timeline' ? ' active' : ''}`} onClick={() => setActiveTab('timeline')}>
+                        Timeline
+                      </button>
+                      <button type="button" role="tab" aria-selected={activeTab === 'payment'} className={`sow-toc-tab${activeTab === 'payment' ? ' active' : ''}`} onClick={() => setActiveTab('payment')}>
+                        Payment
+                      </button>
+                      <button type="button" role="tab" aria-selected={activeTab === 'terms'} className={`sow-toc-tab${activeTab === 'terms' ? ' active' : ''}`} onClick={() => setActiveTab('terms')}>
+                        Terms
+                      </button>
+                      <button type="button" role="tab" aria-selected={activeTab === 'signatures'} className={`sow-toc-tab${activeTab === 'signatures' ? ' active' : ''}`} onClick={() => setActiveTab('signatures')}>
+                        Signatures
+                      </button>
                     </nav>
 
                     <div className="sow-preview-grid">
@@ -1105,94 +1134,106 @@ export default function AdminSowPage() {
                             {project.name} — {client?.company_name}
                           </div>
 
-                          <div className="doc-h2" id="a-sec-parties">1. Parties</div>
-                          <p className="doc-field-line">
-                            <b>Service Provider:</b> FLOW 53 Design Studio
-                          </p>
-                          <p className="doc-field-line">
-                            <b>Client:</b> {client?.primary_contact}, {client?.company_name}
-                          </p>
-
-                          <div className="doc-h2" id="a-sec-scope">2. Scope of Work</div>
-                          <p className="doc-p">{summary || '—'}</p>
-                          <ul className="doc-list">
-                            {services.filter((s) => s.trim()).map((s, i) => (
-                              <li key={i}>{s}</li>
-                            ))}
-                          </ul>
-
-                          <div className="doc-h2" id="a-sec-timeline">3. Timeline</div>
-                          <ul className="doc-list">
-                            {milestones
-                              .filter((m) => m.label.trim())
-                              .map((m) => (
-                                <li key={m.id}>
-                                  {m.label}
-                                  {m.week ? ` — ${m.week}` : ''}
-                                </li>
-                              ))}
-                          </ul>
-                          {(startDate || deliveryDate) && (
-                            <p className="doc-p">
-                              {startDate && `Start: ${formatDateLong(startDate)}`}
-                              {startDate && deliveryDate && ' · '}
-                              {deliveryDate && `Expected Delivery: ${formatDateLong(deliveryDate)}`}
+                          <div className={`sow-tab-panel${activeTab === 'parties' ? '' : ' sow-tab-hidden'}`}>
+                            <div className="doc-h2">1. Parties</div>
+                            <p className="doc-field-line">
+                              <b>Service Provider:</b> FLOW 53 Design Studio
                             </p>
-                          )}
+                            <p className="doc-field-line">
+                              <b>Client:</b> {client?.primary_contact}, {client?.company_name}
+                            </p>
+                          </div>
 
-                          <div className="doc-h2" id="a-sec-payment">4. Payment Terms</div>
-                          <p className="doc-p">{buildPaymentTerms()}</p>
-                          <p className="doc-p">{revisionPolicy}</p>
+                          <div className={`sow-tab-panel${activeTab === 'scope' ? '' : ' sow-tab-hidden'}`}>
+                            <div className="doc-h2">2. Scope of Work</div>
+                            <p className="doc-p">{summary || '—'}</p>
+                            <ul className="doc-list">
+                              {services.filter((s) => s.trim()).map((s, i) => (
+                                <li key={i}>{s}</li>
+                              ))}
+                            </ul>
+                          </div>
 
-                          <div className="doc-h2" id="a-sec-terms">5. Terms &amp; Conditions</div>
-                          <p className="doc-p" style={{ whiteSpace: 'pre-wrap' }}>
-                            {terms}
-                          </p>
-                          {documentUrl && (
-                            <a href={documentUrl} target="_blank" rel="noopener noreferrer" className="sow-doc-link">
-                              View attached document ↗
-                            </a>
-                          )}
+                          <div className={`sow-tab-panel${activeTab === 'timeline' ? '' : ' sow-tab-hidden'}`}>
+                            <div className="doc-h2">3. Timeline</div>
+                            <ul className="doc-list">
+                              {milestones
+                                .filter((m) => m.label.trim())
+                                .map((m) => (
+                                  <li key={m.id}>
+                                    {m.label}
+                                    {m.week ? ` — ${m.week}` : ''}
+                                  </li>
+                                ))}
+                            </ul>
+                            {(startDate || deliveryDate) && (
+                              <p className="doc-p">
+                                {startDate && `Start: ${formatDateLong(startDate)}`}
+                                {startDate && deliveryDate && ' · '}
+                                {deliveryDate && `Expected Delivery: ${formatDateLong(deliveryDate)}`}
+                              </p>
+                            )}
+                          </div>
 
-                          <div className="doc-h2" id="a-sec-signatures">Agreement &amp; Signatures</div>
-                          <div className="sig-block-grid">
-                            <div className="sig-block">
-                              <div className="sig-block-label">Client</div>
-                              <div className="sig-block-name">{client?.primary_contact}</div>
-                              <div className="sig-block-sub">{client?.company_name}</div>
-                              {selected.status === 'signed' ? (
-                                <>
-                                  {selected.signature_image_url ? (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img className="sig-block-image" src={driveThumbnailUrl(selected.signature_image_url)} alt={`${selected.signed_by_name} signature`} />
-                                  ) : (
-                                    <div className="sig-block-typed">{selected.signed_by_name}</div>
-                                  )}
-                                  <div className="sig-block-caption">{selected.signature_method === 'drawn' ? 'Drawn Signature' : selected.signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
-                                  <div className="sig-block-meta">Signed on {selected.signed_at ? formatBnDateLong(selected.signed_at) : ''}</div>
-                                </>
-                              ) : (
-                                <div className="sig-block-pending">Awaiting Signature</div>
-                              )}
-                            </div>
-                            <div className="sig-block">
-                              <div className="sig-block-label">Agency</div>
-                              <div className="sig-block-name">{selected.agency_signer_name ?? manager?.full_name ?? 'FLOW 53'}</div>
-                              <div className="sig-block-sub">{manager?.role ?? 'Project Manager'} · FLOW 53</div>
-                              {selected.agency_signed_at ? (
-                                <>
-                                  {selected.agency_signature_image_url ? (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img className="sig-block-image" src={driveThumbnailUrl(selected.agency_signature_image_url)} alt={`${selected.agency_signer_name} signature`} />
-                                  ) : (
-                                    <div className="sig-block-typed">{selected.agency_signer_name}</div>
-                                  )}
-                                  <div className="sig-block-caption">{selected.agency_signature_method === 'drawn' ? 'Drawn Signature' : selected.agency_signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
-                                  <div className="sig-block-meta">Signed on {formatBnDateLong(selected.agency_signed_at)}</div>
-                                </>
-                              ) : (
-                                <div className="sig-block-pending">Pending Agency Signature</div>
-                              )}
+                          <div className={`sow-tab-panel${activeTab === 'payment' ? '' : ' sow-tab-hidden'}`}>
+                            <div className="doc-h2">4. Payment Terms</div>
+                            <p className="doc-p">{buildPaymentTerms()}</p>
+                            <p className="doc-p">{revisionPolicy}</p>
+                          </div>
+
+                          <div className={`sow-tab-panel${activeTab === 'terms' ? '' : ' sow-tab-hidden'}`}>
+                            <div className="doc-h2">5. Terms &amp; Conditions</div>
+                            <p className="doc-p" style={{ whiteSpace: 'pre-wrap' }}>
+                              {terms}
+                            </p>
+                            {documentUrl && (
+                              <a href={documentUrl} target="_blank" rel="noopener noreferrer" className="sow-doc-link">
+                                View attached document ↗
+                              </a>
+                            )}
+                          </div>
+
+                          <div className={`sow-tab-panel${activeTab === 'signatures' ? '' : ' sow-tab-hidden'}`}>
+                            <div className="doc-h2">Agreement &amp; Signatures</div>
+                            <div className="sig-block-grid">
+                              <div className="sig-block">
+                                <div className="sig-block-label">Client</div>
+                                <div className="sig-block-name">{client?.primary_contact}</div>
+                                <div className="sig-block-sub">{client?.company_name}</div>
+                                {selected.status === 'signed' ? (
+                                  <>
+                                    {selected.signature_image_url ? (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img className="sig-block-image" src={driveThumbnailUrl(selected.signature_image_url)} alt={`${selected.signed_by_name} signature`} />
+                                    ) : (
+                                      <div className="sig-block-typed">{selected.signed_by_name}</div>
+                                    )}
+                                    <div className="sig-block-caption">{selected.signature_method === 'drawn' ? 'Drawn Signature' : selected.signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
+                                    <div className="sig-block-meta">Signed on {selected.signed_at ? formatBnDateLong(selected.signed_at) : ''}</div>
+                                  </>
+                                ) : (
+                                  <div className="sig-block-pending">Awaiting Signature</div>
+                                )}
+                              </div>
+                              <div className="sig-block">
+                                <div className="sig-block-label">Agency</div>
+                                <div className="sig-block-name">{selected.agency_signer_name ?? manager?.full_name ?? 'FLOW 53'}</div>
+                                <div className="sig-block-sub">{manager?.role ?? 'Project Manager'} · FLOW 53</div>
+                                {selected.agency_signed_at ? (
+                                  <>
+                                    {selected.agency_signature_image_url ? (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img className="sig-block-image" src={driveThumbnailUrl(selected.agency_signature_image_url)} alt={`${selected.agency_signer_name} signature`} />
+                                    ) : (
+                                      <div className="sig-block-typed">{selected.agency_signer_name}</div>
+                                    )}
+                                    <div className="sig-block-caption">{selected.agency_signature_method === 'drawn' ? 'Drawn Signature' : selected.agency_signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
+                                    <div className="sig-block-meta">Signed on {formatBnDateLong(selected.agency_signed_at)}</div>
+                                  </>
+                                ) : (
+                                  <div className="sig-block-pending">Pending Agency Signature</div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
