@@ -20,6 +20,10 @@
 // v5: Agency sig-block আগে হার্ডকোডেড "Confirmed" ব্যাজ দেখাত (sent হলেই,
 // কোনো real action ছাড়াই) — এখন admin পেজ থেকে real "Sign as Agency" একশন
 // (Type/Draw/Upload, ফেজ ১৮) থেকে সেভ হওয়া আসল ডেটা দেখায়।
+//
+// v6: Documents & Attachments (SOW-11) — আগে sows.document_url-এ একটাই MSA
+// ফাইল থাকতে পারত। এখন নতুন sow_documents টেবিল (ফেজ ১৯) থেকে একাধিক real
+// Drive ফাইল দেখায় (admin পেজ থেকে আপলোড হয়), document_url আলাদাভাবে থেকে যায়।
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -80,9 +84,22 @@ type Sow = {
   agency_signature_image_url: string | null;
 };
 
+type SowDocument = { id: string; file_name: string; file_url: string; file_size: number | null };
+
 function toOne<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
   return Array.isArray(v) ? (v[0] ?? null) : v;
+}
+function formatBytes(bytes: number | null): string {
+  if (!bytes) return '0 B';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+function fileExtension(name: string): string {
+  const parts = name.split('.');
+  return parts.length > 1 ? (parts.pop() as string).toUpperCase() : 'FILE';
 }
 
 const CURRENCY_SYMBOL: Record<string, string> = { BDT: '৳', USD: '$', GBP: '£' };
@@ -191,6 +208,7 @@ export default function ClientSowPage() {
   const [project, setProject] = useState<ProjectBrief | null>(null);
   const [client, setClient] = useState<ClientRecord | null>(null);
   const [sow, setSow] = useState<Sow | null>(null);
+  const [documents, setDocuments] = useState<SowDocument[]>([]);
 
   const [signError, setSignError] = useState<string | null>(null);
 
@@ -222,6 +240,11 @@ export default function ClientSowPage() {
           : await sowQuery.order('version', { ascending: false }).limit(1).maybeSingle();
         const sowRow = (sowData as Sow) ?? null;
         setSow(sowRow);
+
+        if (sowRow) {
+          const { data: docsData } = await supabase.from('sow_documents').select('id, file_name, file_url, file_size').eq('sow_id', sowRow.id).order('uploaded_at', { ascending: false });
+          setDocuments((docsData as SowDocument[]) ?? []);
+        }
 
         if (sowRow && sowRow.status === 'sent' && !(sowRow as unknown as { viewed_at: string | null }).viewed_at) {
           await supabase.rpc('mark_sow_viewed', { p_sow_id: sowRow.id });
@@ -510,6 +533,26 @@ export default function ClientSowPage() {
               <a href={sow.document_url} target="_blank" rel="noopener noreferrer" className="sw-doc-link">
                 📄 View attached document ↗
               </a>
+            )}
+
+            {documents.length > 0 && (
+              <>
+                <div className="doc-h2">
+                  <span className="doc-h2-num">6</span>Documents &amp; Attachments
+                </div>
+                <div className="sw-doc-list">
+                  {documents.map((d) => (
+                    <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="sw-doc-item" key={d.id}>
+                      <span className="sw-doc-ext">{fileExtension(d.file_name)}</span>
+                      <div className="sw-doc-item-meta">
+                        <span className="sw-doc-item-name">{d.file_name}</span>
+                        <span className="sw-doc-item-size">{formatBytes(d.file_size)}</span>
+                      </div>
+                      <Icon name="download" size={13} />
+                    </a>
+                  ))}
+                </div>
+              </>
             )}
 
             <div className="doc-h2">

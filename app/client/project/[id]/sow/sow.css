@@ -125,6 +125,17 @@
 .client-sow-root .doc-value-label { font-size: 12px; font-weight: 600; color: var(--accent); }
 .client-sow-root .doc-value-amount { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: -0.01em; }
 
+/* ---- Documents & Attachments (SOW-11) ---- */
+.client-sow-root .sw-doc-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.client-sow-root .sw-doc-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); }
+.client-sow-root .sw-doc-item:hover { border-color: var(--accent); background: var(--accent-soft); }
+.client-sow-root .sw-doc-ext { flex-shrink: 0; font-size: 10px; font-weight: 800; color: var(--accent); background: var(--accent-soft); border-radius: 5px; padding: 3px 7px; letter-spacing: 0.02em; }
+.client-sow-root .sw-doc-item:hover .sw-doc-ext { background: var(--surface); }
+.client-sow-root .sw-doc-item-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.client-sow-root .sw-doc-item-name { font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.client-sow-root .sw-doc-item-size { font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
+.client-sow-root .sw-doc-item svg { flex-shrink: 0; color: var(--ink-faint); }
+
 /* ---- Agreement & Signatures block (inside doc-card) ---- */
 .client-sow-root .sig-block-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 8px; }
 .client-sow-root .sig-block { padding-top: 8px; }

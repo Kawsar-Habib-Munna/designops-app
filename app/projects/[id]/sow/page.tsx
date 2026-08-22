@@ -15,6 +15,11 @@
 // Type/Draw/Upload, canvas Pointer Events দিয়ে) যা sows.agency_* কলামে
 // (ফেজ ১৮) সেভ করে — RPC না, direct .update() (admin-এর নিজস্ব রো, আগে থেকেই
 // "team can update sows" RLS পলিসি আছে)।
+//
+// v4: Documents & Attachments (SOW-11) — নতুন sow_documents টেবিল (ফেজ ১৯,
+// প্রতি SOW ভার্সনে একাধিক real Drive ফাইল)। "Attach MSA" toggle (single
+// document_url) আগের মতোই থেকে যায় — এটা আলাদা, reference/contract ফাইলের
+// জন্য মাল্টি-আপলোড লিস্ট।
 
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { useParams } from 'next/navigation';
@@ -138,6 +143,18 @@ type Sow = {
 type MilestoneRow = { id: string; label: string; week: string };
 type AgencySigMethod = 'typed' | 'drawn' | 'uploaded';
 const MAX_AGENCY_SIGNATURE_BYTES = 5 * 1024 * 1024;
+type SowDocument = { id: string; sow_id: string; file_name: string; file_url: string; file_size: number | null; file_type: string | null; uploaded_at: string };
+function formatBytes(bytes: number | null): string {
+  if (!bytes) return '0 B';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+function fileExtension(name: string): string {
+  const parts = name.split('.');
+  return parts.length > 1 ? (parts.pop() as string).toUpperCase() : 'FILE';
+}
 
 function toOne<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
@@ -241,6 +258,12 @@ export default function AdminSowPage() {
   const [agencySigning, setAgencySigning] = useState(false);
   const [agencySignError, setAgencySignError] = useState<string | null>(null);
 
+  // ---- Documents / Attachments (SOW-11) ----
+  const [documents, setDocuments] = useState<SowDocument[]>([]);
+  const [docUploading, setDocUploading] = useState(false);
+  const [docUploadProgress, setDocUploadProgress] = useState(0);
+  const docFileInputRef = useRef<HTMLInputElement>(null);
+
   function loadFormFrom(sow: Sow) {
     setSummary(sow.objectives ?? '');
     setServices(parseServices(sow.scope));
@@ -284,6 +307,19 @@ export default function AdminSowPage() {
 
     run();
   }, [user, projectId, reloadKey]);
+
+  useEffect(() => {
+    if (!selectedId) {
+      const timer = setTimeout(() => setDocuments([]), 0);
+      return () => clearTimeout(timer);
+    }
+    const sowId = selectedId;
+    async function loadDocuments() {
+      const { data } = await supabase.from('sow_documents').select('id, sow_id, file_name, file_url, file_size, file_type, uploaded_at').eq('sow_id', sowId).order('uploaded_at', { ascending: false });
+      setDocuments((data as SowDocument[]) ?? []);
+    }
+    loadDocuments();
+  }, [selectedId]);
 
   function selectVersion(sow: Sow) {
     setSelectedId(sow.id);
@@ -466,6 +502,40 @@ export default function AdminSowPage() {
       setError(err instanceof Error ? err.message : 'আপলোড ব্যর্থ হয়েছে।');
     }
     setUploading(false);
+  }
+
+  async function handleDocUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    if (files.length === 0 || !selected || !user) return;
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (!accessToken) return;
+    setDocUploading(true);
+    setDocUploadProgress(0);
+    try {
+      for (const file of files) {
+        const result = await uploadFileToDrive(file, accessToken, setDocUploadProgress);
+        const { data } = await supabase
+          .from('sow_documents')
+          .insert({ sow_id: selected.id, file_name: file.name, file_url: result.webViewLink, file_size: file.size, file_type: file.type, uploaded_by: user.id })
+          .select('id, sow_id, file_name, file_url, file_size, file_type, uploaded_at')
+          .single();
+        if (data) setDocuments((prev) => [data as SowDocument, ...prev]);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'আপলোড ব্যর্থ হয়েছে।');
+    }
+    setDocUploading(false);
+  }
+
+  async function handleDocRemove(docId: string) {
+    const { error: deleteError } = await supabase.from('sow_documents').delete().eq('id', docId);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+    setDocuments((prev) => prev.filter((d) => d.id !== docId));
   }
 
   // ---- Agency signature: canvas drawing ----
@@ -869,6 +939,33 @@ export default function AdminSowPage() {
                           )}
                         </div>
 
+                        <div className="dcard">
+                          <span className="dcard-title">Documents &amp; Attachments</span>
+                          <p style={{ fontSize: 11.5, color: 'var(--ink-faint)', margin: '0 0 12px' }}>Reference files, contracts, or other documents attached to this SOW version — visible to the client once sent.</p>
+                          {documents.length > 0 && (
+                            <div className="sow-doc-list">
+                              {documents.map((d) => (
+                                <div className="sow-doc-item" key={d.id}>
+                                  <span className="sow-doc-ext">{fileExtension(d.file_name)}</span>
+                                  <div className="sow-doc-item-meta">
+                                    <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="sow-doc-item-name">
+                                      {d.file_name}
+                                    </a>
+                                    <span className="sow-doc-item-size">{formatBytes(d.file_size)}</span>
+                                  </div>
+                                  <button type="button" className="deliverable-remove" onClick={() => handleDocRemove(d.id)} aria-label="সরান">
+                                    <Icon name="close" size={12} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <input ref={docFileInputRef} type="file" multiple hidden onChange={handleDocUpload} />
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => docFileInputRef.current?.click()} disabled={docUploading}>
+                            <Icon name="upload" size={13} /> {docUploading ? `আপলোড হচ্ছে… ${docUploadProgress}%` : 'Upload Document(s)'}
+                          </button>
+                        </div>
+
                         <div className="dcard" style={{ marginBottom: 0 }}>
                           <div className="editor-foot-bar" style={{ marginTop: 0, position: 'static', borderTop: 'none', padding: 0 }}>
                             <button className="btn btn-ghost" onClick={handleSaveDraft} disabled={saving}>
@@ -1143,6 +1240,25 @@ export default function AdminSowPage() {
                             </div>
                           )}
                         </div>
+
+                        {documents.length > 0 && (
+                          <div className="dcard" style={{ marginTop: 14 }}>
+                            <span className="dcard-title">Documents</span>
+                            <div className="sow-doc-list">
+                              {documents.map((d) => (
+                                <div className="sow-doc-item" key={d.id}>
+                                  <span className="sow-doc-ext">{fileExtension(d.file_name)}</span>
+                                  <div className="sow-doc-item-meta">
+                                    <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="sow-doc-item-name">
+                                      {d.file_name}
+                                    </a>
+                                    <span className="sow-doc-item-size">{formatBytes(d.file_size)}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                         <div className="dcard" style={{ marginTop: 14 }}>
                           <span className="dcard-title">Actions</span>

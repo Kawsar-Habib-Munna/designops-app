@@ -123,6 +123,15 @@
 .sow-admin-root .sig-meta-row { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; padding: 5px 0; color: var(--ink-soft); }
 .sow-admin-root .sig-meta-row span:last-child { font-weight: 600; color: var(--ink); }
 
+/* ---- Documents / Attachments (SOW-11) ---- */
+.sow-admin-root .sow-doc-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.sow-admin-root .sow-doc-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-muted); }
+.sow-admin-root .sow-doc-ext { flex-shrink: 0; font-size: 9.5px; font-weight: 800; color: var(--accent); background: var(--accent-soft); border-radius: 5px; padding: 3px 6px; letter-spacing: 0.02em; }
+.sow-admin-root .sow-doc-item-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sow-admin-root .sow-doc-item-name { font-size: 12px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sow-admin-root .sow-doc-item-name:hover { color: var(--accent); text-decoration: underline; }
+.sow-admin-root .sow-doc-item-size { font-size: 10.5px; color: var(--ink-faint); margin-top: 1px; }
+
 /* ---- Sign as Agency modal ---- */
 .sow-admin-root .agsig-tabs { display: flex; gap: 6px; margin: 4px 0 12px; }
 .sow-admin-root .agsig-tab { flex: 1; font-size: 12.5px; font-weight: 600; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-muted); color: var(--ink-soft); }

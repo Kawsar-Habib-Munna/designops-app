@@ -1768,3 +1768,35 @@ alter table sows add column if not exists agency_signed_at timestamptz;
 alter table sows add column if not exists agency_signer_name text;
 alter table sows add column if not exists agency_signature_method text; -- typed | drawn | uploaded
 alter table sows add column if not exists agency_signature_image_url text;
+
+-- SOW Module rebuild — ফেজ ১৯: Documents/Attachments (SOW-11)। sows.document_url
+-- একটাই ফাইল ধরে রাখতে পারত (MSA)। এখন multi-file real সাপোর্টের জন্য আলাদা
+-- sow_documents টেবিল — প্রতিটা SOW ভার্সনে একাধিক real Drive ফাইল অ্যাটাচ করা
+-- যাবে (reference material, additional contracts, ইত্যাদি), sows.document_url
+-- আগের মতোই MSA-এর জন্য থেকে যায়।
+create table if not exists sow_documents (
+  id uuid default gen_random_uuid() primary key,
+  sow_id uuid not null references sows(id) on delete cascade,
+  file_name text not null,
+  file_url text not null,
+  file_size bigint,
+  file_type text,
+  uploaded_by uuid references profiles(id),
+  uploaded_at timestamptz default now()
+);
+create index if not exists idx_sow_documents_sow on sow_documents(sow_id);
+
+alter table sow_documents enable row level security;
+drop policy if exists "team can read sow_documents" on sow_documents;
+drop policy if exists "team can write sow_documents" on sow_documents;
+drop policy if exists "team can delete sow_documents" on sow_documents;
+drop policy if exists "client can read own project sow_documents" on sow_documents;
+create policy "team can read sow_documents" on sow_documents for select using (public.is_team_member());
+create policy "team can write sow_documents" on sow_documents for insert with check (public.is_team_member());
+create policy "team can delete sow_documents" on sow_documents for delete using (public.is_team_member());
+create policy "client can read own project sow_documents" on sow_documents for select using (
+  exists (
+    select 1 from sows join projects on projects.id = sows.project_id join clients on clients.id = projects.client_id
+    where sows.id = sow_documents.sow_id and sows.status != 'draft' and clients.user_id = auth.uid()
+  )
+);
