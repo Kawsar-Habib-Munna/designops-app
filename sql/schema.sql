@@ -1310,6 +1310,26 @@ create policy "client can update own messages" on client_messages for update usi
   exists (select 1 from clients where clients.id = client_messages.client_id and clients.user_id = auth.uid())
 );
 
+-- CLIENT PORTAL — ফেজ ১৬: Screen 18 (Messages) রিডিজাইন। real sender_id দিয়ে
+-- conversation গ্রুপিং (নতুন কোনো ডুপ্লিকেট conversation/thread টেবিল লাগেনি —
+-- একই project-এর একটাই real থ্রেড, sender অনুযায়ী client-side গ্রুপ করা হয়,
+-- "Starred" localStorage-এ, ডিভাইস-লোকাল — কোনো fake server-side sync দাবি করা
+-- হচ্ছে না)। attachment এখন real filename/size/type সহ (আগে শুধু URL ছিল)।
+alter table client_messages add column if not exists attachment_name text;
+alter table client_messages add column if not exists attachment_size bigint;
+alter table client_messages add column if not exists attachment_type text;
+
+-- ক্লায়েন্ট এখন যেকোনো real sender-এর প্রোফাইল (নাম/role/avatar) দেখতে পারবে যে
+-- তাকে অন্তত একটা মেসেজ পাঠিয়েছে (আগে শুধু project_manager-এর প্রোফাইল দেখা যেত,
+-- অন্য টিম মেম্বার রিপ্লাই করলে নাম না পেয়ে জেনেরিক ফলব্যাকে পড়ে যেত)।
+drop policy if exists "client can read message sender profiles" on profiles;
+create policy "client can read message sender profiles" on profiles for select using (
+  exists (
+    select 1 from client_messages join clients on clients.id = client_messages.client_id
+    where client_messages.sender_id = profiles.id and clients.user_id = auth.uid()
+  )
+);
+
 -- Screen 20 — APPROVALS
 create table if not exists client_approvals (
   id uuid default gen_random_uuid() primary key,
