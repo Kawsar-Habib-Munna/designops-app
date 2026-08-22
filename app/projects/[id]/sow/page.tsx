@@ -20,6 +20,10 @@
 // প্রতি SOW ভার্সনে একাধিক real Drive ফাইল)। "Attach MSA" toggle (single
 // document_url) আগের মতোই থেকে যায় — এটা আলাদা, reference/contract ফাইলের
 // জন্য মাল্টি-আপলোড লিস্ট।
+//
+// v5: Locked SOW banner (SOW-09) + "Jump to section" TOC (SOW-03) — preview
+// মোডে সিগনেচার হয়ে গেলে কেন Edit বাটন নেই সেটা স্পষ্ট করে, আর anchor-link
+// pill nav দিয়ে দ্রুত সেকশনে জাম্প করা যায়।
 
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { useParams } from 'next/navigation';
@@ -1082,6 +1086,15 @@ export default function AdminSowPage() {
                       </div>
                     )}
 
+                    <nav className="sow-toc" aria-label="Jump to section">
+                      <a href="#a-sec-parties">Parties</a>
+                      <a href="#a-sec-scope">Scope</a>
+                      <a href="#a-sec-timeline">Timeline</a>
+                      <a href="#a-sec-payment">Payment</a>
+                      <a href="#a-sec-terms">Terms</a>
+                      <a href="#a-sec-signatures">Signatures</a>
+                    </nav>
+
                     <div className="sow-preview-grid">
                       <div>
                         <div className="doc-card">
@@ -1092,7 +1105,7 @@ export default function AdminSowPage() {
                             {project.name} — {client?.company_name}
                           </div>
 
-                          <div className="doc-h2">1. Parties</div>
+                          <div className="doc-h2" id="a-sec-parties">1. Parties</div>
                           <p className="doc-field-line">
                             <b>Service Provider:</b> FLOW 53 Design Studio
                           </p>
@@ -1100,7 +1113,7 @@ export default function AdminSowPage() {
                             <b>Client:</b> {client?.primary_contact}, {client?.company_name}
                           </p>
 
-                          <div className="doc-h2">2. Scope of Work</div>
+                          <div className="doc-h2" id="a-sec-scope">2. Scope of Work</div>
                           <p className="doc-p">{summary || '—'}</p>
                           <ul className="doc-list">
                             {services.filter((s) => s.trim()).map((s, i) => (
@@ -1108,7 +1121,7 @@ export default function AdminSowPage() {
                             ))}
                           </ul>
 
-                          <div className="doc-h2">3. Timeline</div>
+                          <div className="doc-h2" id="a-sec-timeline">3. Timeline</div>
                           <ul className="doc-list">
                             {milestones
                               .filter((m) => m.label.trim())
@@ -1127,11 +1140,11 @@ export default function AdminSowPage() {
                             </p>
                           )}
 
-                          <div className="doc-h2">4. Payment Terms</div>
+                          <div className="doc-h2" id="a-sec-payment">4. Payment Terms</div>
                           <p className="doc-p">{buildPaymentTerms()}</p>
                           <p className="doc-p">{revisionPolicy}</p>
 
-                          <div className="doc-h2">5. Terms &amp; Conditions</div>
+                          <div className="doc-h2" id="a-sec-terms">5. Terms &amp; Conditions</div>
                           <p className="doc-p" style={{ whiteSpace: 'pre-wrap' }}>
                             {terms}
                           </p>
@@ -1141,7 +1154,7 @@ export default function AdminSowPage() {
                             </a>
                           )}
 
-                          <div className="doc-h2">Agreement &amp; Signatures</div>
+                          <div className="doc-h2" id="a-sec-signatures">Agreement &amp; Signatures</div>
                           <div className="sig-block-grid">
                             <div className="sig-block">
                               <div className="sig-block-label">Client</div>

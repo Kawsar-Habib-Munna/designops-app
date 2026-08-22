@@ -24,6 +24,10 @@
 // v6: Documents & Attachments (SOW-11) — আগে sows.document_url-এ একটাই MSA
 // ফাইল থাকতে পারত। এখন নতুন sow_documents টেবিল (ফেজ ১৯) থেকে একাধিক real
 // Drive ফাইল দেখায় (admin পেজ থেকে আপলোড হয়), document_url আলাদাভাবে থেকে যায়।
+//
+// v7: Sticky-free "Jump to section" TOC (SOW-03) — বিদ্যমান single-scroll
+// ডকুমেন্ট লেআউট অক্ষত রেখে (কোনো screenshot/মকআপ ছাড়া বড় tabbed রিডিজাইন করা
+// রিস্কি), শুধু anchor-link pill nav যোগ হলো যা প্রতিটা #sec-* সেকশনে জাম্প করে।
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -437,6 +441,16 @@ export default function ClientSowPage() {
 
           {justSigned && <div className="sw-just-signed-banner">✓ SOW signed successfully — your signature now appears below.</div>}
 
+          <nav className="sw-toc" aria-label="Jump to section">
+            <a href="#sec-parties">Parties</a>
+            <a href="#sec-scope">Scope</a>
+            <a href="#sec-timeline">Timeline</a>
+            <a href="#sec-payment">Payment</a>
+            <a href="#sec-terms">Terms</a>
+            {documents.length > 0 && <a href="#sec-documents">Documents</a>}
+            <a href="#sec-signatures">Signatures</a>
+          </nav>
+
           <div className="doc-card">
             <div className="doc-topbar"></div>
             <div className="doc-letterhead-row">
@@ -451,7 +465,7 @@ export default function ClientSowPage() {
               {project.name} — {client.company_name}
             </div>
 
-            <div className="doc-h2">
+            <div className="doc-h2" id="sec-parties">
               <span className="doc-h2-num">1</span>Parties
             </div>
             <div className="doc-kv-grid">
@@ -475,7 +489,7 @@ export default function ClientSowPage() {
               )}
             </div>
 
-            <div className="doc-h2">
+            <div className="doc-h2" id="sec-scope">
               <span className="doc-h2-num">2</span>Scope of Work
             </div>
             {sow.objectives && <p className="doc-p">{sow.objectives}</p>}
@@ -487,7 +501,7 @@ export default function ClientSowPage() {
               </ul>
             )}
 
-            <div className="doc-h2">
+            <div className="doc-h2" id="sec-timeline">
               <span className="doc-h2-num">3</span>Timeline
             </div>
             {milestones.length > 0 && (
@@ -505,7 +519,7 @@ export default function ClientSowPage() {
               </p>
             )}
 
-            <div className="doc-h2">
+            <div className="doc-h2" id="sec-payment">
               <span className="doc-h2-num">4</span>Payment Terms
             </div>
             {sow.project_value != null && (
@@ -520,7 +534,7 @@ export default function ClientSowPage() {
             {sow.payment_terms && <p className="doc-p">{sow.payment_terms.replace(/^Total project value:.*?\.\s*/, '')}</p>}
             {sow.revision_policy && <p className="doc-p">{sow.revision_policy}</p>}
 
-            <div className="doc-h2">
+            <div className="doc-h2" id="sec-terms">
               <span className="doc-h2-num">5</span>Terms &amp; Conditions
             </div>
             {sow.terms && (
@@ -537,7 +551,7 @@ export default function ClientSowPage() {
 
             {documents.length > 0 && (
               <>
-                <div className="doc-h2">
+                <div className="doc-h2" id="sec-documents">
                   <span className="doc-h2-num">6</span>Documents &amp; Attachments
                 </div>
                 <div className="sw-doc-list">
@@ -555,7 +569,7 @@ export default function ClientSowPage() {
               </>
             )}
 
-            <div className="doc-h2">
+            <div className="doc-h2" id="sec-signatures">
               <span className="doc-h2-num">✓</span>Agreement &amp; Signatures
             </div>
             <div className="sig-block-grid">
