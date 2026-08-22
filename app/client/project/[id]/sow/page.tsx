@@ -12,6 +12,10 @@
 // "Review & Sign" CTA যেটা ওখানে নিয়ে যায়। "Request Changes" বিদ্যমান
 // client_feedback টেবিল রিইউজ করে। Draft SOW RLS-এই ফিল্টার হয়ে যায় (ফেজ ১১),
 // Sent→Viewed ট্র্যাকিং real (mark_sow_viewed RPC, Screen 11 পাতাতেও একই কল হয়)।
+//
+// v4: ./history (Version History) পাতা থেকে ?v=N দিয়ে নির্দিষ্ট পুরনো ভার্সন
+// read-only দেখানোর সাপোর্ট — RLS আগে থেকেই সব non-draft ভার্সন রিটার্ন করত
+// (শুধু latest না), তাই নতুন কোনো schema/RLS ছাড়াই এই ফিচার সম্ভব হলো।
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -170,6 +174,8 @@ export default function ClientSowPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const justSigned = searchParams.get('signed') === '1';
+  const viewVersionParam = searchParams.get('v');
+  const viewVersion = viewVersionParam ? Number(viewVersionParam) : null;
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -202,7 +208,10 @@ export default function ClientSowPage() {
         setProject(projectData as ProjectBrief);
         setClient(own);
 
-        const { data: sowData } = await supabase.from('sows').select('*').eq('project_id', projectId).order('version', { ascending: false }).limit(1).maybeSingle();
+        const sowQuery = supabase.from('sows').select('*').eq('project_id', projectId);
+        const { data: sowData } = viewVersion
+          ? await sowQuery.eq('version', viewVersion).maybeSingle()
+          : await sowQuery.order('version', { ascending: false }).limit(1).maybeSingle();
         const sowRow = (sowData as Sow) ?? null;
         setSow(sowRow);
 
@@ -218,7 +227,7 @@ export default function ClientSowPage() {
     }
 
     load();
-  }, [router, projectId]);
+  }, [router, projectId, viewVersion]);
 
   async function handleSubmitChanges() {
     if (!client || !project || !changesText.trim()) return;
@@ -288,8 +297,15 @@ export default function ClientSowPage() {
       <div className="client-portal client-sow-root">
         <SowShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
           <div className="sw-state-card">
-            <div className="sw-state-title">Statement of Work is being prepared</div>
-            <p className="sw-state-sub">Our team is currently preparing your project agreement.</p>
+            <div className="sw-state-title">{viewVersion ? `Version v${viewVersion} not found` : 'Statement of Work is being prepared'}</div>
+            <p className="sw-state-sub">{viewVersion ? 'This version does not exist or is not available to view.' : 'Our team is currently preparing your project agreement.'}</p>
+            {viewVersion && (
+              <div className="sw-state-actions">
+                <Link href={`/client/project/${projectId}/sow`} className="btn btn-accent">
+                  View Latest Version
+                </Link>
+              </div>
+            )}
           </div>
         </SowShell>
       </div>
@@ -309,7 +325,7 @@ export default function ClientSowPage() {
     );
   }
 
-  if (sow.status === 'superseded') {
+  if (sow.status === 'superseded' && !viewVersion) {
     return (
       <div className="client-portal client-sow-root">
         <SowShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
@@ -367,7 +383,10 @@ export default function ClientSowPage() {
                 </span>
               </div>
               <div className="ph-company">
-                {sow.sow_number ?? `v${sow.version}`} · {project.name}
+                {sow.sow_number ?? `v${sow.version}`} · {project.name} ·{' '}
+                <Link href={`/client/project/${project.id}/sow/history`} className="sw-history-link">
+                  Version History
+                </Link>
               </div>
             </div>
             {isSigned && (
@@ -377,6 +396,13 @@ export default function ClientSowPage() {
             )}
           </div>
           <p className="welcome-sub">{isSigned ? 'This agreement has been signed.' : 'Please review and sign to begin your project.'}</p>
+
+          {viewVersion && (
+            <div className="sw-history-banner">
+              You&apos;re viewing v{sow.version} — a previous version of this document.{' '}
+              <Link href={`/client/project/${project.id}/sow`}>View the latest version →</Link>
+            </div>
+          )}
 
           {justSigned && <div className="sw-just-signed-banner">✓ SOW signed successfully — your signature now appears below.</div>}
 
@@ -511,7 +537,7 @@ export default function ClientSowPage() {
             {isSigned && <p className="sig-version-line">SOW Version: v{sow.version}.0 · Status: Signed ✓</p>}
           </div>
 
-          {!isSigned && sow.status === 'sent' && (
+          {!viewVersion && !isSigned && sow.status === 'sent' && (
             <div className="sign-panel">
               <div className="sign-panel-title">Ready to proceed?</div>
               <p className="sw-sign-cta-text">Review the agreement above, then sign electronically to begin your project.</p>
