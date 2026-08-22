@@ -34,6 +34,7 @@ type Invoice = {
   payment_method: string | null;
   status: string;
   sow_id: string | null;
+  client_instructions: string | null;
 };
 type Payment = {
   id: string;
@@ -106,7 +107,7 @@ export default function ConfirmPaymentPage() {
 
         const { data: invoicesData } = await supabase
           .from('invoices')
-          .select('id, request_number, payment_type, description, amount, currency, due_date, payment_method, status, sow_id')
+          .select('id, request_number, payment_type, description, amount, currency, due_date, payment_method, status, sow_id, client_instructions')
           .eq('project_id', projectId)
           .order('created_at', { ascending: false });
         const invoiceRows = (invoicesData as Invoice[]) ?? [];
@@ -415,6 +416,15 @@ export default function ConfirmPaymentPage() {
             </div>
           </div>
         </div>
+
+        {invoice.client_instructions && (
+          <div className="cf-sow-card">
+            <span className="cf-sow-label">How to Pay</span>
+            <p className="cf-instructions" style={{ whiteSpace: 'pre-wrap' }}>
+              {invoice.client_instructions}
+            </p>
+          </div>
+        )}
 
         {linkedSow && (
           <div className="cf-sow-card">

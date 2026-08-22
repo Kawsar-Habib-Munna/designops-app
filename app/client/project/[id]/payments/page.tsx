@@ -1,18 +1,17 @@
 'use client';
 
-// Screen 12 — Payment Request (client)। বিদ্যমান invoices/payments টেবিল রিইউজ
-// (ফেজ ১৪)। সবচেয়ে জরুরি ইনভয়েস (pending/processing, না থাকলে সাম্প্রতিকতম)
-// হিরো কার্ডে বড় করে দেখায় — বাকিগুলো নিচে কমপ্যাক্ট হিস্ট্রি হিসেবে (Screen 14
-// এখানে বানানো হয়নি, শুধু ডেটা লুকানো হচ্ছে না)।
+// Screen 12 — Payments (client)। v3: এখন একটা কনসোলিডেটেড payments hub —
+// Payment Schedule (timeline, বিদ্যমান SOW-signed project value থেকে), Payment
+// Summary counts, ফিল্টারযোগ্য Payment History টেবিল (real CSV export সহ),
+// আর একটা "View Payment Request" বাটন যেটা বর্তমান actionable (pending/
+// processing) রিকোয়েস্টে নিয়ে যায় — Screen 14 (Payment History)-এর ডেটা
+// এখানেই দেখানো হচ্ছে যেহেতু ইউজার এক্সপ্লিসিটলি এই কনসোলিডেটেড ভিউ চেয়েছেন,
+// কোনো নতুন টেবিল/মডেল লাগেনি, বিদ্যমান invoices/payments-ই একমাত্র সোর্স।
 //
-// "Continue to Payment"/"I Have Made the Payment" এখন dedicated Screen 13
-// (./confirm) রুটে নিয়ে যায় — সেখানেই আসল submit_payment RPC কল হয়, proof
-// আপলোড, correction/resubmit ফ্লো ইত্যাদি। internal_note কলাম এখানে কখনো
-// select করা হয় না — client-safe কলাম লিস্টই একমাত্র সুরক্ষা।
-//
-// v2: Screen 9/10-এর ঠিক একই sidebar/topbar app-shell (আগে এই পাতা bare
-// "back link + centered content" লেআউটে ছিল, প্রজেক্ট সেকশনের বাকি পাতাগুলোর
-// সাথে বিচ্ছিন্ন লাগত)।
+// "Continue to Payment"/সাবমিশন এখনো dedicated Screen 13 (./confirm) রুটেই হয়
+// (submit_payment RPC, proof আপলোড, correction/resubmit ফ্লো) — এই পাতা শুধু
+// দেখায়/লিংক করে, কোনো ডুপ্লিকেট ফর্ম না। internal_note কলাম এখানে কখনো select
+// করা হয় না — client-safe কলাম লিস্টই একমাত্র সুরক্ষা।
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -33,13 +32,21 @@ const ICONS: Record<string, string> = {
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
   menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
   close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  check: '<path d="M20 6L9 17l-5-5"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+  wallet: '<path d="M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H8"/><circle cx="16" cy="14" r="1.5"/>',
+  shield: '<path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5z"/>',
+  lock: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17h.01"/>',
+  download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
+  alert: '<path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/>',
 };
 function Icon({ name, size = 14 }: { name: string; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICONS[name] }} />;
 }
 
 type ProjectBrief = { id: string; name: string; client_id: string; budget: number | null };
-type SowBrief = { id: string; sow_number: string | null; version: number; status: string; project_value: number | null };
+type SowBrief = { id: string; sow_number: string | null; version: number; status: string; project_value: number | null; currency: string | null };
 type Invoice = {
   id: string;
   request_number: string | null;
@@ -51,19 +58,47 @@ type Invoice = {
   due_date: string | null;
   payment_method: string | null;
   status: string;
-  client_instructions: string | null;
   sow_id: string | null;
-  document_url: string | null;
-  sent_at: string | null;
-  viewed_at: string | null;
   created_at: string;
 };
-type Payment = { id: string; invoice_id: string; payment_method: string | null; transaction_id: string | null; payment_date: string | null; notes: string | null; confirmed_at: string | null; status: string; correction_reason: string | null };
+type Payment = { id: string; invoice_id: string; payment_method: string | null; transaction_id: string | null; payment_date: string | null; confirmed_at: string | null; status: string; receipt_number: string | null };
 
 const WHATSAPP_URL_BASE = 'https://wa.me/8801804409235';
+const CURRENCY_SYMBOL: Record<string, string> = { BDT: '৳', USD: '$', GBP: '£' };
+const TABS = [
+  { key: 'all', label: 'All' },
+  { key: 'paid', label: 'Paid' },
+  { key: 'pending', label: 'Pending' },
+  { key: 'upcoming', label: 'Upcoming' },
+  { key: 'overdue', label: 'Overdue' },
+] as const;
+type TabKey = (typeof TABS)[number]['key'];
 
 function humanizeType(slug: string) {
   return slug.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+type ScheduleKey = Exclude<TabKey, 'all'> | 'other';
+function scheduleStatus(inv: Invoice, today: string): { key: ScheduleKey; label: string } {
+  if (inv.status === 'paid') return { key: 'paid', label: 'Paid' };
+  if (inv.status === 'processing') return { key: 'pending', label: 'Pending' };
+  if (inv.status === 'cancelled') return { key: 'other', label: 'Cancelled' };
+  if (inv.status === 'failed') return { key: 'other', label: 'Failed' };
+  if (inv.due_date && inv.due_date < today) return { key: 'overdue', label: 'Overdue' };
+  return { key: 'upcoming', label: 'Upcoming' };
+}
+
+function downloadCsv(filename: string, rows: string[][]) {
+  const csv = rows.map((r) => r.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ---- shared sidebar/topbar shell (identical structure to Screen 9/10) ----
@@ -137,7 +172,7 @@ function PaymentsShell({
 
         <main className="content">
           <div className="breadcrumb">
-            <Link href="/client/dashboard">Client Portal</Link> / <Link href={`/client/project/${project.id}`}>{project.name}</Link> / Payments
+            <Link href="/client/dashboard">Client Portal</Link> / Payments
           </div>
           {children}
         </main>
@@ -159,6 +194,7 @@ export default function ClientPaymentsPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [sows, setSows] = useState<SowBrief[]>([]);
+  const [filterTab, setFilterTab] = useState<TabKey>('all');
 
   useEffect(() => {
     async function load() {
@@ -180,11 +216,11 @@ export default function ClientPaymentsPage() {
         const [invoicesRes, paymentsRes, sowsRes] = await Promise.all([
           supabase
             .from('invoices')
-            .select('id, request_number, payment_type, description, amount, currency, percentage, due_date, payment_method, status, client_instructions, sow_id, document_url, sent_at, viewed_at, created_at')
+            .select('id, request_number, payment_type, description, amount, currency, percentage, due_date, payment_method, status, sow_id, created_at')
             .eq('project_id', projectId)
-            .order('created_at', { ascending: false }),
-          supabase.from('payments').select('id, invoice_id, payment_method, transaction_id, payment_date, notes, confirmed_at, status, correction_reason').eq('project_id', projectId).order('created_at', { ascending: false }),
-          supabase.from('sows').select('id, sow_number, version, status, project_value').eq('project_id', projectId),
+            .order('created_at', { ascending: true }),
+          supabase.from('payments').select('id, invoice_id, payment_method, transaction_id, payment_date, confirmed_at, status, receipt_number').eq('project_id', projectId).order('created_at', { ascending: false }),
+          supabase.from('sows').select('id, sow_number, version, status, project_value, currency').eq('project_id', projectId),
         ]);
         const invoiceRows = (invoicesRes.data as Invoice[]) ?? [];
         setInvoices(invoiceRows);
@@ -192,7 +228,7 @@ export default function ClientPaymentsPage() {
         setSows((sowsRes.data as SowBrief[]) ?? []);
 
         const actionable = invoiceRows.find((i) => i.status === 'pending' || i.status === 'processing');
-        if (actionable && actionable.status === 'pending' && !actionable.viewed_at) {
+        if (actionable && actionable.status === 'pending') {
           await supabase.rpc('mark_invoice_viewed', { p_invoice_id: actionable.id });
         }
 
@@ -234,7 +270,7 @@ export default function ClientPaymentsPage() {
       <div className="client-portal client-payments-root">
         <div className="pm-bare-shell">
           <div className="pm-state-card">
-            <div className="pm-state-title">Unable to load payment request</div>
+            <div className="pm-state-title">Unable to load payments</div>
             <p className="pm-state-sub">Please try again.</p>
             <div className="pm-state-actions">
               <button type="button" className="cp-btn cp-btn-primary" onClick={() => window.location.reload()}>
@@ -255,7 +291,7 @@ export default function ClientPaymentsPage() {
       <div className="client-portal client-payments-root">
         <PaymentsShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
           <div className="pm-state-card">
-            <div className="pm-state-title">No payment request currently available</div>
+            <div className="pm-state-title">No payments yet</div>
             <p className="pm-state-sub">Payment requests will appear here when action is required.</p>
             <div className="pm-state-actions">
               <Link href={`/client/project/${project.id}`} className="cp-btn cp-btn-primary">
@@ -268,182 +304,311 @@ export default function ClientPaymentsPage() {
     );
   }
 
-  const primary = invoices.find((i) => i.status === 'pending' || i.status === 'processing') ?? invoices.find((i) => i.status !== 'cancelled') ?? invoices[0];
-  const history = invoices.filter((i) => i.id !== primary.id);
-  const linkedSow = primary.sow_id ? (sows.find((s) => s.id === primary.sow_id) ?? null) : (sows.find((s) => s.status === 'signed') ?? null);
-  const submission = payments.find((p) => p.invoice_id === primary.id);
+  const today = todayISO();
+  const signedSow = sows.find((s) => s.status === 'signed') ?? null;
+  const currency = signedSow?.currency ?? invoices[0]?.currency ?? 'BDT';
+  const sym = CURRENCY_SYMBOL[currency] ?? currency;
+  const totalValue = signedSow?.project_value ?? project.budget ?? null;
+  const totalPaid = invoices.filter((i) => i.status === 'paid').reduce((sum, i) => sum + i.amount, 0);
+  const outstanding = totalValue != null ? Math.max(0, totalValue - totalPaid) : null;
+  const paymentPct = totalValue && totalValue > 0 ? Math.min(100, Math.round((totalPaid / totalValue) * 100)) : 0;
 
-  const totalValue = linkedSow?.project_value ?? project.budget ?? null;
-  const paidSum = invoices.filter((i) => i.status === 'paid').reduce((sum, i) => sum + i.amount, 0);
-  const alreadyPaid = primary.status === 'paid' ? paidSum - primary.amount : paidSum;
-  const currentPayment = primary.status === 'cancelled' || primary.status === 'failed' ? 0 : primary.amount;
-  const remainingAfter = totalValue != null ? Math.max(0, totalValue - alreadyPaid - currentPayment) : null;
+  const actionable = invoices.find((i) => i.status === 'pending' || i.status === 'processing');
 
-  const isOverdue = primary.status === 'pending' && !!primary.due_date && primary.due_date < todayISO();
+  const counts = { paid: 0, pending: 0, upcoming: 0, overdue: 0 };
+  invoices.forEach((inv) => {
+    const key = scheduleStatus(inv, today).key;
+    if (key !== 'other') counts[key] += 1;
+  });
+
+  const filteredInvoices = filterTab === 'all' ? invoices : invoices.filter((inv) => scheduleStatus(inv, today).key === filterTab);
+  const tableRows = [...filteredInvoices].reverse();
+
+  function handleExport() {
+    if (!project) return;
+    const rows: string[][] = [['Payment', 'Description', 'Amount', 'Currency', 'Date', 'Method', 'Status', 'Receipt']];
+    invoices.forEach((inv) => {
+      const pay = payments.find((p) => p.invoice_id === inv.id);
+      const status = scheduleStatus(inv, today);
+      rows.push([inv.request_number ?? '', inv.description || humanizeType(inv.payment_type), inv.amount.toFixed(2), inv.currency, pay?.payment_date ?? inv.due_date ?? '', pay?.payment_method ?? inv.payment_method ?? '', status.label, pay?.receipt_number ?? '']);
+    });
+    downloadCsv(`payments-${project.name.replace(/\s+/g, '-').toLowerCase()}.csv`, rows);
+  }
 
   return (
     <div className="client-portal client-payments-root">
       <PaymentsShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
-        <div className="pm-doc-wrap">
-        <div className="pm-breadcrumb">My Project / Payments / Payment Request</div>
-        <h1 className="pm-title">Payment Required</h1>
-        <p className="pm-page-sub">Review the payment details and complete the required payment.</p>
-
-        {/* ---- hero ---- */}
-        <div className={`pm-hero${isOverdue ? ' overdue' : ''}`}>
-          <div className="pm-hero-top">
-            {primary.request_number && <span className="pm-hero-ref">{primary.request_number}</span>}
-            <span className={`cp-badge ${primary.status === 'paid' ? 'cp-badge-success' : isOverdue ? 'pm-badge-overdue' : primary.status === 'cancelled' ? 'pm-badge-neutral' : 'cp-badge-pending'}`}>
-              {primary.status === 'paid' ? 'Payment Complete ✓' : primary.status === 'processing' ? 'Under Review' : primary.status === 'cancelled' ? 'Cancelled' : primary.status === 'failed' ? 'Failed' : isOverdue ? 'Overdue' : 'Pending Payment'}
-            </span>
+        <div className="pm-top-row">
+          <div>
+            <h1 className="pm-title">Payments</h1>
+            <p className="pm-page-sub">Track your project payments, balances and receipts.</p>
           </div>
-
-          <div className="pm-hero-amount tabular">
-            {primary.currency} {primary.amount.toLocaleString('en-US')}
-          </div>
-          <div className="pm-hero-desc">{primary.description || humanizeType(primary.payment_type)}</div>
-          {primary.due_date && (
-            <div className="pm-hero-due">{isOverdue ? `This payment was due on ${formatBnDateLong(primary.due_date)}.` : `Due ${formatBnDateLong(primary.due_date)}`}</div>
-          )}
-
-          {primary.status === 'processing' && (
-            <div className="pm-hero-note">
-              <div className="pm-hero-note-title">Payment Under Review</div>
-              <p>Your payment confirmation has been received and is being verified.</p>
-              {submission && (
-                <div className="pm-submitted-note">
-                  Submitted: {submission.payment_method} · {submission.transaction_id} · {submission.payment_date ? formatBnDateLong(submission.payment_date) : ''}
-                </div>
-              )}
-              <Link href={`/client/project/${project.id}/payments/confirm`} className="cp-btn cp-btn-secondary cp-btn-sm" style={{ marginTop: 10 }}>
-                View Payment Details
+          <div className="pm-top-actions">
+            {actionable && (
+              <Link href={`/client/project/${project.id}/payments/confirm`} className="cp-btn cp-btn-primary cp-btn-sm">
+                <Icon name="doc" size={13} /> View Payment Request
               </Link>
-            </div>
-          )}
-
-          {primary.status === 'cancelled' && <div className="pm-hero-note">This payment request is no longer active.</div>}
-
-          {primary.status === 'paid' && submission && (
-            <Link href={`/client/project/${project.id}/payments/${submission.id}/receipt`} className="cp-btn cp-btn-primary" style={{ marginTop: 12 }}>
-              View Receipt
-            </Link>
-          )}
-
-          {primary.status === 'pending' && submission?.status === 'correction_requested' && (
-            <div className="pm-hero-note pm-hero-note-warning">
-              <div className="pm-hero-note-title">Action Required</div>
-              <p>{submission.correction_reason || 'Please review your payment details and resubmit.'}</p>
-            </div>
-          )}
-          {primary.status === 'pending' && submission?.status === 'unable_to_verify' && (
-            <div className="pm-hero-note pm-hero-note-warning">
-              <div className="pm-hero-note-title">Unable to Verify</div>
-              <p>We couldn&apos;t verify the payment using the information you provided. Please check the details and resubmit.</p>
-            </div>
-          )}
-
-          {primary.status === 'pending' && (
-            <Link href={`/client/project/${project.id}/payments/confirm`} className="cp-btn cp-btn-primary cp-btn-block" style={{ marginTop: 14 }}>
-              {submission?.status === 'correction_requested' || submission?.status === 'unable_to_verify' ? 'Update Payment Details' : primary.payment_method === 'Bank Transfer' ? 'I Have Made the Payment' : 'Continue to Payment'}
-            </Link>
-          )}
+            )}
+            <a
+              href={`${WHATSAPP_URL_BASE}?text=${encodeURIComponent(`Hi FLOW53, I have a question about my payments for ${project.name}.`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pm-help-link"
+            >
+              <Icon name="help" size={13} /> Need help? Contact your project manager
+            </a>
+          </div>
         </div>
 
-        {/* ---- breakdown ---- */}
-        {totalValue != null && (
-          <div className="cp-dash-card pm-summary-grid">
-            <div>
-              <div className="pm-summary-label">Project Value</div>
-              <div className="pm-summary-value tabular">
-                {primary.currency} {totalValue.toLocaleString('en-US')}
-              </div>
+        {/* ---- stat strip ---- */}
+        <div className="pm-stat-strip">
+          <div className="pm-stat">
+            <div className="pm-stat-icon">
+              <Icon name="card" size={16} />
             </div>
             <div>
-              <div className="pm-summary-label">Already Paid</div>
-              <div className="pm-summary-value tabular" style={{ color: 'var(--positive)' }}>
-                {primary.currency} {alreadyPaid.toLocaleString('en-US')}
-              </div>
+              <div className="pm-stat-label">Project Value</div>
+              <div className="pm-stat-value tabular">{totalValue != null ? `${sym}${totalValue.toLocaleString('en-US')}` : '—'}</div>
+            </div>
+          </div>
+          <div className="pm-stat">
+            <div className="pm-stat-icon positive">
+              <Icon name="wallet" size={16} />
             </div>
             <div>
-              <div className="pm-summary-label">Current Payment</div>
-              <div className="pm-summary-value tabular">
-                {primary.currency} {currentPayment.toLocaleString('en-US')}
-              </div>
-            </div>
-            <div>
-              <div className="pm-summary-label">Remaining After</div>
-              <div className="pm-summary-value tabular" style={{ color: remainingAfter && remainingAfter > 0 ? 'var(--accent)' : 'var(--ink)' }}>
-                {remainingAfter != null ? `${primary.currency} ${remainingAfter.toLocaleString('en-US')}` : '—'}
+              <div className="pm-stat-label">Total Paid</div>
+              <div className="pm-stat-value tabular" style={{ color: 'var(--positive)' }}>
+                {sym}
+                {totalPaid.toLocaleString('en-US')}
               </div>
             </div>
           </div>
-        )}
-
-        {/* ---- how to pay ---- */}
-        {(primary.status === 'pending' || isOverdue) && (
-          <div className="cp-dash-card">
-            <div className="pm-block-title">How to Pay</div>
-            {primary.payment_method && <p className="pm-method-line">{primary.payment_method}</p>}
-            {primary.client_instructions ? (
-              <p className="pm-instructions" style={{ whiteSpace: 'pre-wrap' }}>
-                {primary.client_instructions}
-              </p>
-            ) : (
-              <p className="pm-instructions">Our team will share payment details with you separately, or contact your project manager for instructions.</p>
+          <div className="pm-stat">
+            <div className="pm-stat-icon warning">
+              <Icon name="clock" size={16} />
+            </div>
+            <div>
+              <div className="pm-stat-label">Outstanding</div>
+              <div className="pm-stat-value tabular" style={{ color: outstanding && outstanding > 0 ? 'var(--warning)' : 'var(--ink)' }}>
+                {outstanding != null ? `${sym}${outstanding.toLocaleString('en-US')}` : '—'}
+              </div>
+            </div>
+          </div>
+          <div className="pm-progress-block">
+            <div className="pm-progress-top">
+              <span className="pm-progress-label">Payment Progress</span>
+              <span className="pm-progress-pct">{paymentPct}% Paid</span>
+            </div>
+            <div className="pm-progress-track">
+              <div className="pm-progress-fill" style={{ width: `${paymentPct}%` }} />
+            </div>
+            {outstanding != null && (
+              <div className="pm-progress-caption">
+                {sym}
+                {totalPaid.toLocaleString('en-US')} paid · {sym}
+                {outstanding.toLocaleString('en-US')} remaining
+              </div>
             )}
-            <p className="pm-instructions-note">After you have sent the payment, tap the button above and enter your transaction reference so our team can verify it.</p>
           </div>
-        )}
+        </div>
 
-        {/* ---- related SOW ---- */}
-        {linkedSow && (
-          <div className="cp-dash-card pm-sow-card">
-            <div className="pm-block-title">Related Agreement</div>
-            <div className="pm-sow-row">
+        <div className="pm-main-grid">
+          {/* ---- Payment Schedule ---- */}
+          <div className="pm-card">
+            <div className="pm-card-head">
               <div>
-                <div className="pm-sow-number">{linkedSow.sow_number ?? `v${linkedSow.version}`}</div>
-                <div className="pm-sow-sub">
-                  v{linkedSow.version}.0 · {linkedSow.status === 'signed' ? 'Signed ✓' : humanizeType(linkedSow.status)}
-                </div>
+                <div className="pm-card-title">Payment Schedule</div>
+                {signedSow && (
+                  <div className="pm-card-sub">
+                    Based on signed {signedSow.sow_number ?? `v${signedSow.version}`} · v{signedSow.version}.0
+                  </div>
+                )}
               </div>
-              <Link href={`/client/project/${project.id}/sow`} className="cp-btn cp-btn-secondary cp-btn-sm">
-                View Signed SOW
-              </Link>
+              {signedSow && (
+                <Link href={`/client/project/${project.id}/sow`} className="cp-btn cp-btn-secondary cp-btn-sm">
+                  View Signed SOW
+                </Link>
+              )}
             </div>
-          </div>
-        )}
 
-        {/* ---- history ---- */}
-        {history.length > 0 && (
-          <div className="pm-history">
-            <div className="pm-block-title">Other Payment Requests</div>
-            <div className="pm-invoice-list">
-              {history.map((inv) => (
-                <div className="cp-dash-card pm-invoice-card" key={inv.id}>
-                  <div className="pm-invoice-top">
-                    <div>
-                      <div className="pm-invoice-type">{inv.request_number ?? humanizeType(inv.payment_type)}</div>
-                      <div className="pm-invoice-amount tabular">
-                        {inv.currency} {inv.amount.toLocaleString('en-US')}
+            <div className="pm-schedule-list">
+              {invoices.map((inv, i) => {
+                const status = scheduleStatus(inv, today);
+                const pay = payments.find((p) => p.invoice_id === inv.id);
+                return (
+                  <div className="pm-schedule-item" key={inv.id}>
+                    <div className="pm-schedule-marker">
+                      <div className={`pm-schedule-dot ${status.key}`}>{status.key === 'paid' ? '✓' : status.key === 'pending' ? '⏱' : ''}</div>
+                      {i < invoices.length - 1 && <div className="pm-schedule-line" />}
+                    </div>
+                    <div className="pm-schedule-body">
+                      <div className="pm-schedule-top">
+                        <div>
+                          <div className="pm-schedule-name">{inv.description || humanizeType(inv.payment_type)}</div>
+                          <div className="pm-schedule-pct">{inv.percentage != null ? `${inv.percentage}% of project value` : humanizeType(inv.payment_type)}</div>
+                        </div>
+                        <div className="pm-schedule-right">
+                          <span className="pm-schedule-amount tabular">
+                            {inv.currency} {inv.amount.toLocaleString('en-US')}
+                          </span>
+                          <span className={`pm-status-pill ${status.key}`}>{status.label}</span>
+                        </div>
+                      </div>
+                      <div className="pm-schedule-meta">
+                        {status.key === 'paid' && pay?.payment_date ? `Paid on ${formatBnDateLong(pay.payment_date)}` : inv.due_date ? `Due ${formatBnDateLong(inv.due_date)}` : 'Due before project completion'}
+                        {pay?.receipt_number && (
+                          <Link href={`/client/project/${project.id}/payments/${pay.id}/receipt`} className="pm-receipt-link">
+                            Receipt: {pay.receipt_number}
+                          </Link>
+                        )}
                       </div>
                     </div>
-                    <span className={`cp-badge ${inv.status === 'paid' ? 'cp-badge-success' : inv.status === 'cancelled' ? 'pm-badge-neutral' : 'cp-badge-pending'}`}>
-                      {inv.status === 'paid' ? 'Paid ✓' : inv.status === 'processing' ? 'Under Review' : inv.status === 'cancelled' ? 'Cancelled' : 'Pending'}
-                    </span>
                   </div>
-                  {inv.due_date && <p className="pm-invoice-due">Due {formatBnDateLong(inv.due_date)}</p>}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
-        )}
 
-        <p className="pm-support-line">
-          Questions about this payment?{' '}
-          <a href={`${WHATSAPP_URL_BASE}?text=${encodeURIComponent(`Hi FLOW53, I have a question about my payment for ${project.name}${primary.request_number ? ` (${primary.request_number})` : ''}.`)}`} target="_blank" rel="noopener noreferrer">
-            Message your project manager
-          </a>
-        </p>
+          {/* ---- Payment Summary counts ---- */}
+          <div className="pm-card">
+            <div className="pm-card-title">Payment Summary</div>
+            <div className="pm-count-row">
+              <div className="pm-count-icon positive">
+                <Icon name="check" size={13} />
+              </div>
+              <span>Paid</span>
+              <strong>{counts.paid}</strong>
+            </div>
+            <div className="pm-count-row">
+              <div className="pm-count-icon warning">
+                <Icon name="clock" size={13} />
+              </div>
+              <span>Pending</span>
+              <strong>{counts.pending}</strong>
+            </div>
+            <div className="pm-count-row">
+              <div className="pm-count-icon accent">
+                <Icon name="clock" size={13} />
+              </div>
+              <span>Upcoming</span>
+              <strong>{counts.upcoming}</strong>
+            </div>
+            <div className="pm-count-row">
+              <div className="pm-count-icon danger">
+                <Icon name="alert" size={13} />
+              </div>
+              <span>Overdue</span>
+              <strong>{counts.overdue}</strong>
+            </div>
+            <p className="pm-currency-note">
+              All amounts are in {currency} ({sym})
+            </p>
+          </div>
+        </div>
+
+        {/* ---- Payment History table ---- */}
+        <div className="pm-card pm-history-card">
+          <div className="pm-card-head">
+            <div>
+              <div className="pm-card-title">Payment History</div>
+              <div className="pm-card-sub">A record of all payment requests and transactions.</div>
+            </div>
+            <div className="pm-history-actions">
+              <div className="pm-tabs">
+                {TABS.map((t) => (
+                  <button key={t.key} type="button" className={`pm-tab${filterTab === t.key ? ' active' : ''}`} onClick={() => setFilterTab(t.key)}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <button type="button" className="cp-btn cp-btn-secondary cp-btn-sm" onClick={handleExport}>
+                <Icon name="download" size={13} /> Export
+              </button>
+            </div>
+          </div>
+
+          <div className="pm-table-wrap">
+            <table className="pm-table">
+              <thead>
+                <tr>
+                  <th>Payment</th>
+                  <th>Description</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                  <th>Method</th>
+                  <th>Status</th>
+                  <th>Receipt</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tableRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="pm-table-empty">
+                      No payments in this category.
+                    </td>
+                  </tr>
+                ) : (
+                  tableRows.map((inv) => {
+                    const status = scheduleStatus(inv, today);
+                    const pay = payments.find((p) => p.invoice_id === inv.id);
+                    return (
+                      <tr key={inv.id}>
+                        <td>
+                          <div className="pm-table-payment">
+                            <div className={`pm-table-icon ${status.key}`}>
+                              <Icon name={status.key === 'paid' ? 'check' : 'clock'} size={13} />
+                            </div>
+                            <div>
+                              <div className="pm-table-type">{humanizeType(inv.payment_type)}</div>
+                              {inv.request_number && <div className="pm-table-ref">{inv.request_number}</div>}
+                            </div>
+                          </div>
+                        </td>
+                        <td>{inv.description || '—'}</td>
+                        <td className="tabular">
+                          {inv.currency} {inv.amount.toLocaleString('en-US')}
+                        </td>
+                        <td>{status.key === 'paid' && pay?.payment_date ? formatBnDateLong(pay.payment_date) : inv.due_date ? formatBnDateLong(inv.due_date) : '—'}</td>
+                        <td>{pay?.payment_method ?? inv.payment_method ?? '—'}</td>
+                        <td>
+                          <span className={`pm-status-pill ${status.key}`}>{status.label}</span>
+                        </td>
+                        <td>{pay?.receipt_number ?? '—'}</td>
+                        <td>
+                          {status.key === 'paid' && pay ? (
+                            <Link href={`/client/project/${project.id}/payments/${pay.id}/receipt`} className="pm-table-action">
+                              View Receipt
+                            </Link>
+                          ) : inv.status === 'pending' || inv.status === 'processing' ? (
+                            <Link href={`/client/project/${project.id}/payments/confirm`} className="pm-table-action">
+                              View Payment
+                            </Link>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ---- trust banner ---- */}
+        <div className="pm-trust-banner">
+          <div className="pm-trust-icon">
+            <Icon name="shield" size={18} />
+          </div>
+          <div className="pm-trust-body">
+            <div className="pm-trust-title">Secure &amp; Transparent</div>
+            <p className="pm-trust-desc">Your payment information is only ever visible to you and your project team. Receipts are available once payments are confirmed.</p>
+          </div>
+          <div className="pm-trust-lock">
+            <Icon name="lock" size={13} /> We never store your card or bank details.
+          </div>
         </div>
       </PaymentsShell>
     </div>

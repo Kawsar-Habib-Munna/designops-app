@@ -39,6 +39,7 @@
 .client-confirm-root .cf-sow-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .client-confirm-root .cf-sow-number { font-size: 13.5px; font-weight: 700; color: var(--ink); }
 .client-confirm-root .cf-sow-sub { font-size: 11.5px; color: var(--ink-faint); margin-top: 2px; }
+.client-confirm-root .cf-instructions { font-size: 13px; line-height: 1.7; color: var(--ink-soft); margin: 0; }
 
 /* ---- form ---- */
 .client-confirm-root .cf-form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 24px; margin-bottom: 16px; }
