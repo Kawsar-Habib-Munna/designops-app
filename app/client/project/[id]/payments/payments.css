@@ -75,14 +75,14 @@
 .client-payments-root .pm-help-link:hover { color: var(--accent); }
 
 /* ---- stat strip ---- */
-.client-payments-root .pm-stat-strip { display: grid; grid-template-columns: repeat(3, auto) 1fr; align-items: center; gap: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 20px 26px; margin-bottom: 20px; }
-.client-payments-root .pm-stat { display: flex; align-items: center; gap: 12px; }
+.client-payments-root .pm-stat-strip { display: flex; align-items: center; flex-wrap: wrap; gap: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 20px 26px; margin-bottom: 20px; }
+.client-payments-root .pm-stat { display: flex; align-items: center; gap: 12px; padding-right: 28px; border-right: 1px solid var(--border); }
 .client-payments-root .pm-stat-icon { width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .client-payments-root .pm-stat-icon.positive { background: var(--positive-soft); color: var(--positive); }
 .client-payments-root .pm-stat-icon.warning { background: var(--warning-soft); color: var(--warning); }
 .client-payments-root .pm-stat-label { font-size: 11px; color: var(--ink-faint); margin-bottom: 3px; }
 .client-payments-root .pm-stat-value { font-size: 18px; font-weight: 700; color: var(--ink); }
-.client-payments-root .pm-progress-block { min-width: 200px; }
+.client-payments-root .pm-progress-block { flex: 1; min-width: 220px; }
 .client-payments-root .pm-progress-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
 .client-payments-root .pm-progress-label { font-size: 11px; color: var(--ink-faint); }
 .client-payments-root .pm-progress-pct { font-size: 13px; font-weight: 700; color: var(--ink); }
@@ -185,11 +185,14 @@
   .client-payments-root .mobile-backdrop.open { opacity: 1; pointer-events: auto; }
 }
 @media (max-width: 1000px) {
-  .client-payments-root .pm-stat-strip { grid-template-columns: 1fr 1fr; }
   .client-payments-root .pm-main-grid { grid-template-columns: 1fr; }
 }
+@media (max-width: 700px) {
+  .client-payments-root .pm-stat-strip { flex-direction: column; align-items: stretch; gap: 14px; }
+  .client-payments-root .pm-stat { border-right: none; border-bottom: 1px solid var(--border); padding-right: 0; padding-bottom: 14px; }
+  .client-payments-root .pm-progress-block { min-width: 0; }
+}
 @media (max-width: 600px) {
-  .client-payments-root .pm-stat-strip { grid-template-columns: 1fr; }
   .client-payments-root .pm-top-row { flex-direction: column; }
   .client-payments-root .pm-top-actions { align-items: flex-start; }
 }
