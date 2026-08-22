@@ -1734,3 +1734,22 @@ begin
 end;
 $$;
 grant execute on function public.submit_payment(uuid, numeric, text, text, date, text, text, text) to authenticated;
+
+-- CLIENT PORTAL — ফেজ ১৭: Screen 19 (Files) রিডিজাইন। client_files-এই real
+-- uploaded_by_id যোগ হলো (Messages-এ sender_id-এর ঠিক same প্যাটার্ন) — এখন
+-- "Shared By" কলামে real আপলোডকারী টিম মেম্বারের নাম/role/avatar দেখানো যাবে,
+-- আগের মতো জেনেরিক "Team" না। "Folders" real category কলাম থেকেই আসে (নতুন
+-- কোনো folders টেবিল বানানো হয়নি) — শুধু যে category-তে আসলেই ফাইল আছে সেটাই
+-- একটা "folder" হিসেবে দেখায়।
+alter table client_files add column if not exists uploaded_by_id uuid references profiles(id);
+
+-- ক্লায়েন্ট এখন যেকোনো real uploader-এর প্রোফাইল (নাম/role/avatar) দেখতে পারবে
+-- যে তাকে অন্তত একটা ফাইল শেয়ার করেছে (Messages-এর sender-profile পলিসির
+-- সাথে সামঞ্জস্যপূর্ণ)।
+drop policy if exists "client can read file uploader profiles" on profiles;
+create policy "client can read file uploader profiles" on profiles for select using (
+  exists (
+    select 1 from client_files join clients on clients.id = client_files.client_id
+    where client_files.uploaded_by_id = profiles.id and clients.user_id = auth.uid()
+  )
+);

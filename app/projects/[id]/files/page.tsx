@@ -116,7 +116,7 @@ export default function AdminProjectFilesPage() {
   async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (!file || !project?.client_id) return;
+    if (!file || !project?.client_id || !user) return;
     const { data: sessionData } = await supabase.auth.getSession();
     const accessToken = sessionData.session?.access_token;
     if (!accessToken) return;
@@ -133,6 +133,7 @@ export default function AdminProjectFilesPage() {
         drive_url: result.webViewLink,
         category: 'deliverable',
         uploaded_by: 'team',
+        uploaded_by_id: user.id,
       });
       setReloadKey((k) => k + 1);
     } catch {
