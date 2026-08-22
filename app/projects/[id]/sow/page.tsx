@@ -1076,6 +1076,12 @@ export default function AdminSowPage() {
                       )}
                     </div>
 
+                    {selected.status === 'signed' && (
+                      <div className="sow-locked-banner">
+                        🔒 This SOW version is signed and locked — it can no longer be edited. To change scope, terms, or pricing, create a new version.
+                      </div>
+                    )}
+
                     <div className="sow-preview-grid">
                       <div>
                         <div className="doc-card">
