@@ -1753,3 +1753,18 @@ create policy "client can read file uploader profiles" on profiles for select us
     where client_files.uploaded_by_id = profiles.id and clients.user_id = auth.uid()
   )
 );
+
+-- SOW Module rebuild — ফেজ ১৮: Agency (agency-side) সিগনেচার। আগে "Agency"
+-- sig-block-এ একটা হার্ডকোডেড "Confirmed" ব্যাজ দেখাত (SOW sent হলেই, কোনো
+-- real signature action ছাড়াই) — যেটা client-এর real সিগনেচার ব্লকের পাশে
+-- বসে থাকায় বিভ্রান্তিকর ছিল। এখন client-এর মতোই real capture (Type/Draw/
+-- Upload) — admin টিম মেম্বার "Sign as Agency" চাপলে এই কলামগুলো real ডেটা
+-- দিয়ে ভরে। কোনো নতুন RLS পলিসি লাগেনি — sows-এ team-এর আগে থেকেই পূর্ণ
+-- read/write আছে ("team can update sows"), আর client-এর "client can read own
+-- project sows" পলিসি পুরো রো (select *) রিটার্ন করে বলে নতুন কলামগুলোও এমনিতেই
+-- দেখা যাবে।
+alter table sows add column if not exists agency_signed_by uuid references profiles(id);
+alter table sows add column if not exists agency_signed_at timestamptz;
+alter table sows add column if not exists agency_signer_name text;
+alter table sows add column if not exists agency_signature_method text; -- typed | drawn | uploaded
+alter table sows add column if not exists agency_signature_image_url text;

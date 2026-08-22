@@ -9,8 +9,14 @@
 // ফরম্যাটেড বুলেট হিসেবে সেভ হয় (নতুন কোনো array/jsonb কলাম লাগেনি) — শুধু
 // Start/Delivery Date real কলামে (sows.start_date/delivery_date, ফেজ ১৩)
 // যাতে ফর্ম রিলোড করলে ঠিকভাবে দেখা যায়, টেক্সট পার্স করতে না হয়।
+//
+// v3: Agency sig-block আগে "sent হলেই Confirmed" — কোনো real signature action
+// ছাড়াই। এখন real "Sign as Agency" মোডাল (client-এর সাইনিং ফ্লোর মতোই
+// Type/Draw/Upload, canvas Pointer Events দিয়ে) যা sows.agency_* কলামে
+// (ফেজ ১৮) সেভ করে — RPC না, direct .update() (admin-এর নিজস্ব রো, আগে থেকেই
+// "team can update sows" RLS পলিসি আছে)।
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import '../project.css';
@@ -124,8 +130,14 @@ type Sow = {
   signed_by_name: string | null;
   signature_method: string | null;
   signature_image_url: string | null;
+  agency_signed_at: string | null;
+  agency_signer_name: string | null;
+  agency_signature_method: string | null;
+  agency_signature_image_url: string | null;
 };
 type MilestoneRow = { id: string; label: string; week: string };
+type AgencySigMethod = 'typed' | 'drawn' | 'uploaded';
+const MAX_AGENCY_SIGNATURE_BYTES = 5 * 1024 * 1024;
 
 function toOne<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
@@ -211,6 +223,23 @@ export default function AdminSowPage() {
   const [showSendConfirm, setShowSendConfirm] = useState(false);
   const [showVoidConfirm, setShowVoidConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ---- Agency Signature modal (Type/Draw/Upload — same real capture as client signing) ----
+  const [showAgencySignModal, setShowAgencySignModal] = useState(false);
+  const [agencyFullName, setAgencyFullName] = useState('');
+  const [agencySigMethod, setAgencySigMethod] = useState<AgencySigMethod>('typed');
+  const [agencyHasDrawn, setAgencyHasDrawn] = useState(false);
+  const [agencyStrokeCount, setAgencyStrokeCount] = useState(0);
+  const [agencyDrawing, setAgencyDrawing] = useState(false);
+  const agencyStrokesRef = useRef<{ x: number; y: number }[][]>([]);
+  const agencyCurrentStrokeRef = useRef<{ x: number; y: number }[]>([]);
+  const agencyCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [agencyUploadedUrl, setAgencyUploadedUrl] = useState<string | null>(null);
+  const [agencyUploading, setAgencyUploading] = useState(false);
+  const [agencyUploadError, setAgencyUploadError] = useState<string | null>(null);
+  const agencyFileInputRef = useRef<HTMLInputElement>(null);
+  const [agencySigning, setAgencySigning] = useState(false);
+  const [agencySignError, setAgencySignError] = useState<string | null>(null);
 
   function loadFormFrom(sow: Sow) {
     setSummary(sow.objectives ?? '');
@@ -438,6 +467,178 @@ export default function AdminSowPage() {
     }
     setUploading(false);
   }
+
+  // ---- Agency signature: canvas drawing ----
+  const redrawAgencyCanvas = useCallback((liveStroke?: { x: number; y: number }[]) => {
+    const canvas = agencyCanvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    const dpr = window.devicePixelRatio || 1;
+    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#232128';
+    const strokes = liveStroke ? [...agencyStrokesRef.current, liveStroke] : agencyStrokesRef.current;
+    for (const stroke of strokes) {
+      if (stroke.length < 2) continue;
+      ctx.beginPath();
+      ctx.moveTo(stroke[0].x, stroke[0].y);
+      for (let i = 1; i < stroke.length; i++) ctx.lineTo(stroke[i].x, stroke[i].y);
+      ctx.stroke();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!showAgencySignModal || agencySigMethod !== 'drawn') return;
+    const canvas = agencyCanvasRef.current;
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx?.scale(dpr, dpr);
+    redrawAgencyCanvas();
+  }, [showAgencySignModal, agencySigMethod, redrawAgencyCanvas]);
+
+  function agencyCanvasPoint(e: ReactPointerEvent<HTMLCanvasElement>) {
+    const canvas = agencyCanvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+  function handleAgencyPointerDown(e: ReactPointerEvent<HTMLCanvasElement>) {
+    e.preventDefault();
+    agencyCanvasRef.current?.setPointerCapture(e.pointerId);
+    agencyCurrentStrokeRef.current = [agencyCanvasPoint(e)];
+    setAgencyDrawing(true);
+  }
+  function handleAgencyPointerMove(e: ReactPointerEvent<HTMLCanvasElement>) {
+    if (!agencyDrawing) return;
+    e.preventDefault();
+    agencyCurrentStrokeRef.current.push(agencyCanvasPoint(e));
+    redrawAgencyCanvas(agencyCurrentStrokeRef.current);
+  }
+  function handleAgencyPointerUp(e: ReactPointerEvent<HTMLCanvasElement>) {
+    if (!agencyDrawing) return;
+    agencyCanvasRef.current?.releasePointerCapture(e.pointerId);
+    if (agencyCurrentStrokeRef.current.length > 1) {
+      agencyStrokesRef.current = [...agencyStrokesRef.current, agencyCurrentStrokeRef.current];
+      setAgencyHasDrawn(true);
+      setAgencyStrokeCount(agencyStrokesRef.current.length);
+    }
+    agencyCurrentStrokeRef.current = [];
+    setAgencyDrawing(false);
+    redrawAgencyCanvas();
+  }
+  function undoAgencyStroke() {
+    agencyStrokesRef.current = agencyStrokesRef.current.slice(0, -1);
+    setAgencyHasDrawn(agencyStrokesRef.current.length > 0);
+    setAgencyStrokeCount(agencyStrokesRef.current.length);
+    redrawAgencyCanvas();
+  }
+  function clearAgencyCanvas() {
+    agencyStrokesRef.current = [];
+    setAgencyHasDrawn(false);
+    setAgencyStrokeCount(0);
+    redrawAgencyCanvas();
+  }
+
+  async function handleAgencyUploadFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setAgencyUploadError(null);
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      setAgencyUploadError('Please upload a PNG or JPG image.');
+      return;
+    }
+    if (file.size > MAX_AGENCY_SIGNATURE_BYTES) {
+      setAgencyUploadError('Image is too large — please upload a file under 5MB.');
+      return;
+    }
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (!accessToken) return;
+    setAgencyUploading(true);
+    try {
+      const result = await uploadFileToDrive(file, accessToken);
+      setAgencyUploadedUrl(result.webViewLink);
+    } catch {
+      setAgencyUploadError('Upload failed — please try again.');
+    }
+    setAgencyUploading(false);
+  }
+
+  function openAgencySignModal() {
+    setAgencyFullName(profile?.full_name ?? '');
+    setAgencySigMethod('typed');
+    agencyStrokesRef.current = [];
+    setAgencyHasDrawn(false);
+    setAgencyStrokeCount(0);
+    setAgencyUploadedUrl(null);
+    setAgencyUploadError(null);
+    setAgencySignError(null);
+    setShowAgencySignModal(true);
+  }
+
+  async function handleAgencySignSubmit() {
+    if (!selected || !user || !agencyFullName.trim()) return;
+    setAgencySigning(true);
+    setAgencySignError(null);
+
+    let signatureImageUrl: string | null = null;
+    if (agencySigMethod === 'drawn') {
+      const canvas = agencyCanvasRef.current;
+      if (!canvas) {
+        setAgencySigning(false);
+        return;
+      }
+      const blob: Blob | null = await new Promise((resolve) => canvas.toBlob((b) => resolve(b), 'image/png'));
+      if (blob) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        if (accessToken) {
+          try {
+            const file = new File([blob], `agency-signature-${Date.now()}.png`, { type: 'image/png' });
+            const result = await uploadFileToDrive(file, accessToken);
+            signatureImageUrl = result.webViewLink;
+          } catch {
+            setAgencySigning(false);
+            setAgencySignError('Could not save the drawn signature. Please try again.');
+            return;
+          }
+        }
+      }
+    } else if (agencySigMethod === 'uploaded') {
+      signatureImageUrl = agencyUploadedUrl;
+    }
+
+    const { error: updateError } = await supabase
+      .from('sows')
+      .update({
+        agency_signed_by: user.id,
+        agency_signed_at: new Date().toISOString(),
+        agency_signer_name: agencyFullName.trim(),
+        agency_signature_method: agencySigMethod,
+        agency_signature_image_url: signatureImageUrl,
+      })
+      .eq('id', selected.id);
+
+    setAgencySigning(false);
+    if (updateError) {
+      setAgencySignError(updateError.message);
+      return;
+    }
+    if (project?.client_id) {
+      await supabase.from('activity_log').insert({ actor_id: user.id, action: 'sow_agency_signed', entity_type: 'client', entity_id: project.client_id, detail: `${agencyFullName.trim()} SOW ${selected.sow_number ?? `v${selected.version}`}-এ agency-side সাইন করেছেন` });
+    }
+    setShowAgencySignModal(false);
+    setReloadKey((k) => k + 1);
+  }
+
+  const agencyHasValidSignature = agencySigMethod === 'typed' ? agencyFullName.trim().length > 0 : agencySigMethod === 'drawn' ? agencyHasDrawn : !!agencyUploadedUrl;
+  const canAgencySign = agencyFullName.trim().length > 0 && agencyHasValidSignature && !agencySigning;
 
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
@@ -860,12 +1061,21 @@ export default function AdminSowPage() {
                             </div>
                             <div className="sig-block">
                               <div className="sig-block-label">Agency</div>
-                              <div className="sig-block-name">{manager?.full_name ?? 'FLOW 53'}</div>
+                              <div className="sig-block-name">{selected.agency_signer_name ?? manager?.full_name ?? 'FLOW 53'}</div>
                               <div className="sig-block-sub">{manager?.role ?? 'Project Manager'} · FLOW 53</div>
-                              {selected.status === 'sent' || selected.status === 'signed' ? (
-                                <div className="sig-block-confirmed">Confirmed</div>
+                              {selected.agency_signed_at ? (
+                                <>
+                                  {selected.agency_signature_image_url ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img className="sig-block-image" src={driveThumbnailUrl(selected.agency_signature_image_url)} alt={`${selected.agency_signer_name} signature`} />
+                                  ) : (
+                                    <div className="sig-block-typed">{selected.agency_signer_name}</div>
+                                  )}
+                                  <div className="sig-block-caption">{selected.agency_signature_method === 'drawn' ? 'Drawn Signature' : selected.agency_signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
+                                  <div className="sig-block-meta">Signed on {formatBnDateLong(selected.agency_signed_at)}</div>
+                                </>
                               ) : (
-                                <div className="sig-block-pending">Not yet sent</div>
+                                <div className="sig-block-pending">Pending Agency Signature</div>
                               )}
                             </div>
                           </div>
@@ -937,6 +1147,11 @@ export default function AdminSowPage() {
                         <div className="dcard" style={{ marginTop: 14 }}>
                           <span className="dcard-title">Actions</span>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {!selected.agency_signed_at && selected.status !== 'cancelled' && selected.status !== 'superseded' && (
+                              <button className="btn btn-accent btn-block btn-sm" onClick={openAgencySignModal}>
+                                <Icon name="edit" size={12} /> Sign as Agency
+                              </button>
+                            )}
                             {selected.status === 'sent' && (
                               <button className="btn btn-ghost btn-block btn-sm" onClick={() => setShowSendConfirm(true)}>
                                 <Icon name="send" size={12} /> Resend to Client
@@ -1023,6 +1238,105 @@ export default function AdminSowPage() {
               </button>
               <button type="button" className="btn btn-ghost btn-sm sow-danger-btn" disabled={voiding} onClick={handleConfirmVoid}>
                 {voiding ? 'ভয়েড হচ্ছে…' : 'Void SOW'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAgencySignModal && selected && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !agencySigning) setShowAgencySignModal(false);
+          }}
+        >
+          <div className="modal-box" style={{ maxWidth: 480 }}>
+            <h3 style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 700 }}>Sign as Agency</h3>
+            <p style={{ margin: '0 0 16px', fontSize: 12.5, color: 'var(--ink-soft)' }}>
+              Countersign {selected.sow_number ?? `v${selected.version}`} on behalf of FLOW 53.
+            </p>
+
+            <div className="field">
+              <label className="field-label">Full Name</label>
+              <input className="field-input" value={agencyFullName} onChange={(e) => setAgencyFullName(e.target.value)} placeholder="Your full name" />
+            </div>
+
+            <div className="agsig-tabs" role="tablist">
+              <button type="button" role="tab" aria-selected={agencySigMethod === 'typed'} className={`agsig-tab${agencySigMethod === 'typed' ? ' active' : ''}`} onClick={() => setAgencySigMethod('typed')}>
+                Type
+              </button>
+              <button type="button" role="tab" aria-selected={agencySigMethod === 'drawn'} className={`agsig-tab${agencySigMethod === 'drawn' ? ' active' : ''}`} onClick={() => setAgencySigMethod('drawn')}>
+                Draw
+              </button>
+              <button type="button" role="tab" aria-selected={agencySigMethod === 'uploaded'} className={`agsig-tab${agencySigMethod === 'uploaded' ? ' active' : ''}`} onClick={() => setAgencySigMethod('uploaded')}>
+                Upload
+              </button>
+            </div>
+
+            {agencySigMethod === 'typed' && (
+              <div className="agsig-interface">
+                <div className="agsig-typed-preview">{agencyFullName.trim() || 'Your Signature'}</div>
+                <div className="agsig-caption">Typed Signature — a visual representation only.</div>
+              </div>
+            )}
+
+            {agencySigMethod === 'drawn' && (
+              <div className="agsig-interface">
+                <canvas
+                  ref={agencyCanvasRef}
+                  className="agsig-canvas"
+                  onPointerDown={handleAgencyPointerDown}
+                  onPointerMove={handleAgencyPointerMove}
+                  onPointerUp={handleAgencyPointerUp}
+                  onPointerLeave={handleAgencyPointerUp}
+                  aria-label="Signature drawing area"
+                />
+                <div className="agsig-canvas-actions">
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={undoAgencyStroke} disabled={agencyStrokeCount === 0}>
+                    Undo
+                  </button>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={clearAgencyCanvas} disabled={agencyStrokeCount === 0}>
+                    Clear
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {agencySigMethod === 'uploaded' && (
+              <div className="agsig-interface">
+                {agencyUploadError && <div style={{ marginBottom: 10, padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: 12 }}>{agencyUploadError}</div>}
+                {agencyUploadedUrl ? (
+                  <div className="agsig-upload-preview">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={driveThumbnailUrl(agencyUploadedUrl)} alt="Uploaded signature" />
+                    <div className="agsig-canvas-actions">
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => agencyFileInputRef.current?.click()}>
+                        Replace
+                      </button>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAgencyUploadedUrl(null)}>
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button type="button" className="btn btn-ghost btn-sm" style={{ width: '100%' }} onClick={() => agencyFileInputRef.current?.click()} disabled={agencyUploading}>
+                    {agencyUploading ? 'আপলোড হচ্ছে…' : 'Upload Signature'}
+                  </button>
+                )}
+                <input ref={agencyFileInputRef} type="file" accept="image/png,image/jpeg" hidden onChange={handleAgencyUploadFile} />
+                <div className="agsig-caption">PNG or JPG, up to 5MB.</div>
+              </div>
+            )}
+
+            {agencySignError && <div style={{ margin: '10px 0 0', padding: '8px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: 12 }}>{agencySignError}</div>}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 18 }}>
+              <button type="button" className="btn btn-ghost btn-sm" disabled={agencySigning} onClick={() => setShowAgencySignModal(false)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-accent btn-sm" disabled={!canAgencySign} onClick={handleAgencySignSubmit}>
+                {agencySigning ? 'সাইন হচ্ছে…' : 'Sign & Confirm'}
               </button>
             </div>
           </div>

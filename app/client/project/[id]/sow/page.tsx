@@ -16,6 +16,10 @@
 // v4: ./history (Version History) পাতা থেকে ?v=N দিয়ে নির্দিষ্ট পুরনো ভার্সন
 // read-only দেখানোর সাপোর্ট — RLS আগে থেকেই সব non-draft ভার্সন রিটার্ন করত
 // (শুধু latest না), তাই নতুন কোনো schema/RLS ছাড়াই এই ফিচার সম্ভব হলো।
+//
+// v5: Agency sig-block আগে হার্ডকোডেড "Confirmed" ব্যাজ দেখাত (sent হলেই,
+// কোনো real action ছাড়াই) — এখন admin পেজ থেকে real "Sign as Agency" একশন
+// (Type/Draw/Upload, ফেজ ১৮) থেকে সেভ হওয়া আসল ডেটা দেখায়।
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -70,6 +74,10 @@ type Sow = {
   signed_by_name: string | null;
   signature_method: string | null;
   signature_image_url: string | null;
+  agency_signed_at: string | null;
+  agency_signer_name: string | null;
+  agency_signature_method: string | null;
+  agency_signature_image_url: string | null;
 };
 
 function toOne<T>(v: T | T[] | null | undefined): T | null {
@@ -529,9 +537,22 @@ export default function ClientSowPage() {
               </div>
               <div className="sig-block">
                 <div className="sig-block-label">Agency</div>
-                <div className="sig-block-name">{manager?.full_name ?? 'FLOW 53'}</div>
+                <div className="sig-block-name">{sow.agency_signer_name ?? manager?.full_name ?? 'FLOW 53'}</div>
                 <div className="sig-block-sub">{manager?.role ?? 'Project Manager'} · FLOW 53</div>
-                <div className="sig-block-confirmed">Confirmed</div>
+                {sow.agency_signed_at ? (
+                  <>
+                    {sow.agency_signature_image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img className="sig-block-image" src={driveThumbnailUrl(sow.agency_signature_image_url)} alt={`${sow.agency_signer_name} signature`} />
+                    ) : (
+                      <div className="sig-block-typed">{sow.agency_signer_name}</div>
+                    )}
+                    <div className="sig-block-caption">{sow.agency_signature_method === 'drawn' ? 'Drawn Signature' : sow.agency_signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
+                    <div className="sig-block-meta">Signed on {formatBnDateLong(sow.agency_signed_at)}</div>
+                  </>
+                ) : (
+                  <div className="sig-block-pending">Pending Agency Signature</div>
+                )}
               </div>
             </div>
             {isSigned && <p className="sig-version-line">SOW Version: v{sow.version}.0 · Status: Signed ✓</p>}
