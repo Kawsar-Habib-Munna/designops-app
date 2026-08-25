@@ -12,7 +12,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
-import { formatBudgetRange } from '@/lib/budgetFormat';
+import { formatBudgetRange, formatBudgetAmount } from '@/lib/budgetFormat';
 import { formatBnDateLong } from '@/lib/format';
 import { MESSAGE_STYLE_LABEL, type MessageStyle } from '@/lib/budgetMessage';
 import SignInScreen from '@/app/components/SignInScreen';
@@ -38,6 +38,7 @@ type QuoteDetail = {
   advanced_min_snapshot: number | null;
   advanced_max_snapshot: number | null;
   currency_snapshot: string;
+  exchange_rate_used: number | null;
   selected_packages: string[];
   discount: number | null;
   custom_note: string | null;
@@ -187,6 +188,11 @@ export default function QuoteDetailPage() {
             </div>
           ))}
         </div>
+        {quote.exchange_rate_used != null && (
+          <p className="field-hint" style={{ marginTop: 12 }}>
+            Converted at 1 {quote.currency_snapshot} ≈ {formatBudgetAmount(quote.exchange_rate_used, 'BDT')} — the rate in effect when this quote was generated, frozen here even if Settings has since changed.
+          </p>
+        )}
       </div>
 
       <div className="dcard">

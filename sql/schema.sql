@@ -2065,3 +2065,20 @@ For *{{service_name}}*, here's our estimated pricing:
 Let me know if you'd like more details!
 — {{team_name}}$t$, true)
 on conflict (type) do nothing;
+
+-- ============================================
+-- BUDGET & QUOTE GENERATOR — ফেজ ২৩ (currency conversion)
+--
+-- সব সার্ভিস BDT-তে প্রাইস করা থাকে (স্পেক §11-এর নিয়ম মেনে — "do NOT
+-- silently perform live currency conversion... never pretend a converted
+-- price is exact without a defined exchange-rate source")। তাই কোনো লাইভ
+-- FX API না — এডমিন Settings-এ রেট সেট করে (admin can write budget_settings
+-- পলিসি আগে থেকেই আছে, নতুন কিছু লাগেনি), আর প্রতিটা quote সেভ হওয়ার সময়
+-- যে রেট ব্যবহার হয়েছে সেটাও সেভ থাকে (exchange_rate_used) — যাতে পরে
+-- এডমিন রেট বদলালেও পুরনো quote-এর কনভার্টেড দাম কখনো চুপচাপ বদলে না যায়
+-- (ঠিক প্রাইস স্ন্যাপশটের মতোই একই নীতি)।
+alter table budget_settings add column if not exists exchange_rate_usd numeric;
+alter table budget_settings add column if not exists exchange_rate_gbp numeric;
+alter table budget_settings add column if not exists exchange_rate_inr numeric;
+
+alter table budget_quotes add column if not exists exchange_rate_used numeric;

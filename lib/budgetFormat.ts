@@ -22,3 +22,23 @@ export function formatBudgetRange(min: number | null, max: number | null, curren
   const only = min ?? max;
   return `${formatBudgetAmount(only as number, currency)}${suffix}`;
 }
+
+// ---- currency conversion (BDT → USD/GBP/INR) ----
+// সব সার্ভিস BDT-তে প্রাইস করা। এডমিন Settings-এ রেট সেট না করলে সেই কারেন্সিতে
+// কনভার্শন করাই যাবে না (null রিটার্ন করে) — কখনো কোনো লাইভ API বা আন্দাজি
+// রেট ব্যবহার হয় না (স্পেক §11)।
+
+export type ConvertibleCurrency = 'USD' | 'GBP' | 'INR';
+export type ExchangeRates = { USD: number | null; GBP: number | null; INR: number | null };
+
+export function getExchangeRate(currency: ConvertibleCurrency, rates: ExchangeRates): number | null {
+  return rates[currency] ?? null;
+}
+
+// rate = "১ ইউনিট ওই কারেন্সি = কত BDT" (যেমন USD রেট ১২২ মানে ১ ডলার ≈ ১২২ টাকা)
+export function convertFromBdt(amountBdt: number, targetCurrency: string, rates: ExchangeRates): number | null {
+  if (targetCurrency === 'BDT') return amountBdt;
+  const rate = getExchangeRate(targetCurrency as ConvertibleCurrency, rates);
+  if (!rate) return null;
+  return Math.round(amountBdt / rate);
+}

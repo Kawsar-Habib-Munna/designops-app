@@ -20,7 +20,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
-import { formatBudgetRange } from '@/lib/budgetFormat';
+import { formatBudgetRange, convertFromBdt, getExchangeRate, formatBudgetAmount, type ExchangeRates, type ConvertibleCurrency } from '@/lib/budgetFormat';
 import { buildGreetingLine, buildPriceBlock, renderBudgetMessage, DEFAULT_MESSAGE_TEMPLATES, MESSAGE_STYLE_LABEL, type BudgetPackageKey, type MessageStyle } from '@/lib/budgetMessage';
 import { todayISO, formatBnDateLong } from '@/lib/format';
 import SignInScreen from '@/app/components/SignInScreen';
@@ -42,6 +42,9 @@ type SettingsRow = {
   contact_email: string | null;
   brand_accent: string;
   logo_url: string | null;
+  exchange_rate_usd: number | null;
+  exchange_rate_gbp: number | null;
+  exchange_rate_inr: number | null;
 };
 
 type Step = 'service' | 'client' | 'pricing' | 'review' | 'card';
@@ -79,6 +82,7 @@ function GenerateQuoteBody({ profile, email, onProfileUpdated }: { profile: Prof
   const [companyName, setCompanyName] = useState('');
   const [projectName, setProjectName] = useState('');
 
+  const [displayCurrency, setDisplayCurrency] = useState<string>('BDT');
   const [includeStarter, setIncludeStarter] = useState(true);
   const [includeStandard, setIncludeStandard] = useState(true);
   const [includeAdvanced, setIncludeAdvanced] = useState(true);
@@ -98,7 +102,11 @@ function GenerateQuoteBody({ profile, email, onProfileUpdated }: { profile: Prof
       const [servicesRes, templatesRes, settingsRes] = await Promise.all([
         supabase.from('budget_services').select('id, name, brief, keywords, starter_min, starter_max, standard_min, standard_max, advanced_min, advanced_max, currency').eq('status', 'active').order('name'),
         supabase.from('budget_message_templates').select('type, template').eq('active', true),
-        supabase.from('budget_settings').select('team_name, default_validity_days, default_message_style, show_starter_default, show_standard_default, show_advanced_default, website, contact_email, brand_accent, logo_url').eq('id', true).maybeSingle(),
+        supabase
+          .from('budget_settings')
+          .select('team_name, default_validity_days, default_message_style, show_starter_default, show_standard_default, show_advanced_default, website, contact_email, brand_accent, logo_url, exchange_rate_usd, exchange_rate_gbp, exchange_rate_inr')
+          .eq('id', true)
+          .maybeSingle(),
       ]);
       setServices((servicesRes.data as ServiceRow[]) ?? []);
       setTemplates((templatesRes.data as TemplateRow[]) ?? []);
@@ -115,6 +123,8 @@ function GenerateQuoteBody({ profile, email, onProfileUpdated }: { profile: Prof
       }
       if (preselectServiceId) {
         setSelectedServiceId(preselectServiceId);
+        const preselected = (servicesRes.data as ServiceRow[] | null)?.find((row) => row.id === preselectServiceId);
+        setDisplayCurrency(preselected?.currency ?? 'BDT');
         setStep('client');
       }
       if (preselectClient) setClientName(preselectClient);
@@ -127,6 +137,55 @@ function GenerateQuoteBody({ profile, email, onProfileUpdated }: { profile: Prof
   }, []);
 
   const selectedService = useMemo(() => services.find((s) => s.id === selectedServiceId) ?? null, [services, selectedServiceId]);
+
+  function selectService(id: string) {
+    setSelectedServiceId(id);
+    const s = services.find((row) => row.id === id);
+    setDisplayCurrency(s?.currency ?? 'BDT');
+  }
+
+  const rates: ExchangeRates = useMemo(
+    () => ({ USD: settings?.exchange_rate_usd ?? null, GBP: settings?.exchange_rate_gbp ?? null, INR: settings?.exchange_rate_inr ?? null }),
+    [settings],
+  );
+
+  // সব সার্ভিস BDT-তে প্রাইস করা — তাই কনভার্শন শুধু BDT সার্ভিসের জন্যই
+  // অফার করা হয় (Settings-এর রেট "1 X = N BDT" এই দিকেই সংজ্ঞায়িত)।
+  const availableCurrencies = useMemo(() => {
+    if (!selectedService || selectedService.currency !== 'BDT') return [selectedService?.currency ?? 'BDT'];
+    const list = ['BDT'];
+    (['USD', 'GBP', 'INR'] as ConvertibleCurrency[]).forEach((c) => {
+      if (getExchangeRate(c, rates) != null) list.push(c);
+    });
+    return list;
+  }, [selectedService, rates]);
+
+  const convertedPricing = useMemo(() => {
+    if (!selectedService) return null;
+    if (displayCurrency === selectedService.currency) {
+      return {
+        currency: selectedService.currency,
+        rateUsed: null as number | null,
+        starter_min: selectedService.starter_min,
+        starter_max: selectedService.starter_max,
+        standard_min: selectedService.standard_min,
+        standard_max: selectedService.standard_max,
+        advanced_min: selectedService.advanced_min,
+        advanced_max: selectedService.advanced_max,
+      };
+    }
+    const conv = (v: number | null) => (v == null ? null : convertFromBdt(v, displayCurrency, rates));
+    return {
+      currency: displayCurrency,
+      rateUsed: getExchangeRate(displayCurrency as ConvertibleCurrency, rates),
+      starter_min: conv(selectedService.starter_min),
+      starter_max: conv(selectedService.starter_max),
+      standard_min: conv(selectedService.standard_min),
+      standard_max: conv(selectedService.standard_max),
+      advanced_min: conv(selectedService.advanced_min),
+      advanced_max: conv(selectedService.advanced_max),
+    };
+  }, [selectedService, displayCurrency, rates]);
 
   const filteredServices = useMemo(() => {
     const q = serviceSearch.trim().toLowerCase();
@@ -145,12 +204,13 @@ function GenerateQuoteBody({ profile, email, onProfileUpdated }: { profile: Prof
   const activeTemplate = useMemo(() => templates.find((t) => t.type === messageStyle)?.template ?? DEFAULT_MESSAGE_TEMPLATES[messageStyle], [templates, messageStyle]);
 
   const generatedMessage = useMemo(() => {
-    if (!selectedService) return '';
+    if (!selectedService || !convertedPricing) return '';
+    const cp = convertedPricing;
     const priceBlock = buildPriceBlock(
       [
-        { key: 'starter', label: 'Starter', range: formatBudgetRange(selectedService.starter_min, selectedService.starter_max, selectedService.currency) },
-        { key: 'standard', label: 'Standard', range: formatBudgetRange(selectedService.standard_min, selectedService.standard_max, selectedService.currency) },
-        { key: 'advanced', label: 'Advanced', range: formatBudgetRange(selectedService.advanced_min, selectedService.advanced_max, selectedService.currency, true) },
+        { key: 'starter', label: 'Starter', range: formatBudgetRange(cp.starter_min, cp.starter_max, cp.currency) },
+        { key: 'standard', label: 'Standard', range: formatBudgetRange(cp.standard_min, cp.standard_max, cp.currency) },
+        { key: 'advanced', label: 'Advanced', range: formatBudgetRange(cp.advanced_min, cp.advanced_max, cp.currency, true) },
       ],
       selectedPackages,
     );
@@ -158,24 +218,25 @@ function GenerateQuoteBody({ profile, email, onProfileUpdated }: { profile: Prof
       client_name: clientName.trim(),
       service_name: selectedService.name,
       service_brief: selectedService.brief ?? '',
-      starter_price: formatBudgetRange(selectedService.starter_min, selectedService.starter_max, selectedService.currency),
-      standard_price: formatBudgetRange(selectedService.standard_min, selectedService.standard_max, selectedService.currency),
-      advanced_price: formatBudgetRange(selectedService.advanced_min, selectedService.advanced_max, selectedService.currency, true),
+      starter_price: formatBudgetRange(cp.starter_min, cp.starter_max, cp.currency),
+      standard_price: formatBudgetRange(cp.standard_min, cp.standard_max, cp.currency),
+      advanced_price: formatBudgetRange(cp.advanced_min, cp.advanced_max, cp.currency, true),
       team_name: settings?.team_name ?? 'FLOW 53',
       price_block: priceBlock,
       greeting_line: buildGreetingLine(clientName),
     });
-  }, [selectedService, selectedPackages, activeTemplate, clientName, settings]);
+  }, [selectedService, convertedPricing, selectedPackages, activeTemplate, clientName, settings]);
 
   const cardTiers = useMemo<CardTier[]>(() => {
-    if (!selectedService) return [];
+    if (!convertedPricing) return [];
+    const cp = convertedPricing;
     const all: CardTier[] = [
-      { key: 'starter', label: 'Starter', range: formatBudgetRange(selectedService.starter_min, selectedService.starter_max, selectedService.currency) },
-      { key: 'standard', label: 'Standard', range: formatBudgetRange(selectedService.standard_min, selectedService.standard_max, selectedService.currency), recommended: true },
-      { key: 'advanced', label: 'Advanced', range: formatBudgetRange(selectedService.advanced_min, selectedService.advanced_max, selectedService.currency, true) },
+      { key: 'starter', label: 'Starter', range: formatBudgetRange(cp.starter_min, cp.starter_max, cp.currency) },
+      { key: 'standard', label: 'Standard', range: formatBudgetRange(cp.standard_min, cp.standard_max, cp.currency), recommended: true },
+      { key: 'advanced', label: 'Advanced', range: formatBudgetRange(cp.advanced_min, cp.advanced_max, cp.currency, true) },
     ];
     return all.filter((t) => selectedPackages.includes(t.key));
-  }, [selectedService, selectedPackages]);
+  }, [convertedPricing, selectedPackages]);
 
   async function handleCopy() {
     try {
@@ -188,7 +249,7 @@ function GenerateQuoteBody({ profile, email, onProfileUpdated }: { profile: Prof
   }
 
   async function handleSave() {
-    if (!selectedService) return;
+    if (!selectedService || !convertedPricing) return;
     if (selectedPackages.length === 0) {
       setSaveError('Select at least one package to include in this quote.');
       return;
@@ -213,13 +274,14 @@ function GenerateQuoteBody({ profile, email, onProfileUpdated }: { profile: Prof
         service_id: selectedService.id,
         service_name_snapshot: selectedService.name,
         service_brief_snapshot: selectedService.brief,
-        starter_min_snapshot: selectedService.starter_min,
-        starter_max_snapshot: selectedService.starter_max,
-        standard_min_snapshot: selectedService.standard_min,
-        standard_max_snapshot: selectedService.standard_max,
-        advanced_min_snapshot: selectedService.advanced_min,
-        advanced_max_snapshot: selectedService.advanced_max,
-        currency_snapshot: selectedService.currency,
+        starter_min_snapshot: convertedPricing.starter_min,
+        starter_max_snapshot: convertedPricing.starter_max,
+        standard_min_snapshot: convertedPricing.standard_min,
+        standard_max_snapshot: convertedPricing.standard_max,
+        advanced_min_snapshot: convertedPricing.advanced_min,
+        advanced_max_snapshot: convertedPricing.advanced_max,
+        currency_snapshot: convertedPricing.currency,
+        exchange_rate_used: convertedPricing.rateUsed,
         selected_packages: selectedPackages,
         discount: discount.trim() ? Number(discount) : null,
         custom_note: customNote.trim() || null,
@@ -329,7 +391,7 @@ function GenerateQuoteBody({ profile, email, onProfileUpdated }: { profile: Prof
           ) : (
             <div className="service-pick-list">
               {filteredServices.map((s) => (
-                <button type="button" key={s.id} className={`service-pick-item${s.id === selectedServiceId ? ' active' : ''}`} onClick={() => setSelectedServiceId(s.id)}>
+                <button type="button" key={s.id} className={`service-pick-item${s.id === selectedServiceId ? ' active' : ''}`} onClick={() => selectService(s.id)}>
                   <div>
                     <div className="service-pick-name">{s.name}</div>
                     {s.brief && <div className="service-pick-brief">{s.brief}</div>}
@@ -379,35 +441,53 @@ function GenerateQuoteBody({ profile, email, onProfileUpdated }: { profile: Prof
         </div>
       )}
 
-      {step === 'pricing' && selectedService && (
+      {step === 'pricing' && selectedService && convertedPricing && (
         <div className="dcard">
           <span className="dcard-title">Pricing &amp; Packages</span>
           <p style={{ fontSize: 12, color: 'var(--ink-faint)', margin: '-6px 0 16px' }}>Choose which packages to include in the client quotation.</p>
+
+          {availableCurrencies.length > 1 && (
+            <div className="field" style={{ maxWidth: 220 }}>
+              <label className="field-label">Show pricing in</label>
+              <select className="field-select" value={displayCurrency} onChange={(e) => setDisplayCurrency(e.target.value)}>
+                {availableCurrencies.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              {convertedPricing.rateUsed != null && (
+                <p className="field-hint">
+                  Converted at 1 {convertedPricing.currency} ≈ {formatBudgetAmount(convertedPricing.rateUsed, 'BDT')} (rate set in Settings) — an estimate, not an exact conversion.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="package-pick-grid">
             <label className={`package-pick${includeStarter ? ' checked' : ''}`}>
               <input type="checkbox" checked={includeStarter} onChange={(e) => setIncludeStarter(e.target.checked)} />
               <span className="service-tier-label">Starter</span>
-              <span className="service-tier-price tabular">{formatBudgetRange(selectedService.starter_min, selectedService.starter_max, selectedService.currency)}</span>
+              <span className="service-tier-price tabular">{formatBudgetRange(convertedPricing.starter_min, convertedPricing.starter_max, convertedPricing.currency)}</span>
             </label>
             <label className={`package-pick${includeStandard ? ' checked' : ''} recommended`}>
               <input type="checkbox" checked={includeStandard} onChange={(e) => setIncludeStandard(e.target.checked)} />
               <span className="service-tier-label">
                 Standard <span className="recommended-badge">Recommended</span>
               </span>
-              <span className="service-tier-price tabular">{formatBudgetRange(selectedService.standard_min, selectedService.standard_max, selectedService.currency)}</span>
+              <span className="service-tier-price tabular">{formatBudgetRange(convertedPricing.standard_min, convertedPricing.standard_max, convertedPricing.currency)}</span>
             </label>
             <label className={`package-pick${includeAdvanced ? ' checked' : ''}`}>
               <input type="checkbox" checked={includeAdvanced} onChange={(e) => setIncludeAdvanced(e.target.checked)} />
               <span className="service-tier-label">Advanced</span>
-              <span className="service-tier-price tabular">{formatBudgetRange(selectedService.advanced_min, selectedService.advanced_max, selectedService.currency, true)}</span>
+              <span className="service-tier-price tabular">{formatBudgetRange(convertedPricing.advanced_min, convertedPricing.advanced_max, convertedPricing.currency, true)}</span>
             </label>
           </div>
 
           <div className="field-grid-2" style={{ marginTop: 18 }}>
             <div className="field">
               <label className="field-label">Discount (optional)</label>
-              <input className="field-input" type="number" min="0" value={discount} onChange={(e) => setDiscount(e.target.value)} placeholder={`Amount in ${selectedService.currency}`} />
+              <input className="field-input" type="number" min="0" value={discount} onChange={(e) => setDiscount(e.target.value)} placeholder={`Amount in ${convertedPricing.currency}`} />
             </div>
             <div className="field">
               <label className="field-label">Quote Valid Until</label>

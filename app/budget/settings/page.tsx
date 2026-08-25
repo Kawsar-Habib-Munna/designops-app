@@ -35,6 +35,9 @@ type SettingsForm = {
   show_starter_default: boolean;
   show_standard_default: boolean;
   show_advanced_default: boolean;
+  exchange_rate_usd: string;
+  exchange_rate_gbp: string;
+  exchange_rate_inr: string;
 };
 
 type TemplateRow = { type: MessageStyle; name: string; template: string };
@@ -102,6 +105,9 @@ export default function BudgetSettingsPage() {
           show_starter_default: (s.show_starter_default as boolean) ?? true,
           show_standard_default: (s.show_standard_default as boolean) ?? true,
           show_advanced_default: (s.show_advanced_default as boolean) ?? true,
+          exchange_rate_usd: s.exchange_rate_usd != null ? String(s.exchange_rate_usd) : '',
+          exchange_rate_gbp: s.exchange_rate_gbp != null ? String(s.exchange_rate_gbp) : '',
+          exchange_rate_inr: s.exchange_rate_inr != null ? String(s.exchange_rate_inr) : '',
         });
       }
       const tRows = (templatesRes.data as TemplateRow[]) ?? [];
@@ -153,6 +159,9 @@ export default function BudgetSettingsPage() {
         show_starter_default: form.show_starter_default,
         show_standard_default: form.show_standard_default,
         show_advanced_default: form.show_advanced_default,
+        exchange_rate_usd: form.exchange_rate_usd.trim() ? Number(form.exchange_rate_usd) : null,
+        exchange_rate_gbp: form.exchange_rate_gbp.trim() ? Number(form.exchange_rate_gbp) : null,
+        exchange_rate_inr: form.exchange_rate_inr.trim() ? Number(form.exchange_rate_inr) : null,
         updated_by: user!.id,
         updated_at: new Date().toISOString(),
       })
@@ -262,6 +271,28 @@ export default function BudgetSettingsPage() {
                 ))}
               </select>
               <p className="field-hint">New services default to this currency — existing services keep their own.</p>
+            </div>
+          </div>
+
+          <div className="dcard">
+            <span className="dcard-title">Currency &amp; Exchange Rates</span>
+            <p style={{ fontSize: 12, color: 'var(--ink-faint)', margin: '-6px 0 16px' }}>
+              All services are priced in BDT. Set a rate here to let the quote wizard convert a quote into that currency for a client — leave a rate blank to keep that currency unavailable. Rates are never fetched automatically; each saved quote
+              records the exact rate used, so an old quote&apos;s converted price never changes later even if you update the rate.
+            </p>
+            <div className="field-grid-2">
+              <div className="field">
+                <label className="field-label">1 USD = ___ BDT</label>
+                <input className="field-input" type="number" min="0" step="0.01" value={form.exchange_rate_usd} onChange={(e) => setForm({ ...form, exchange_rate_usd: e.target.value })} placeholder="e.g. 122" />
+              </div>
+              <div className="field">
+                <label className="field-label">1 GBP = ___ BDT</label>
+                <input className="field-input" type="number" min="0" step="0.01" value={form.exchange_rate_gbp} onChange={(e) => setForm({ ...form, exchange_rate_gbp: e.target.value })} placeholder="e.g. 155" />
+              </div>
+            </div>
+            <div className="field" style={{ marginBottom: 0, maxWidth: 'calc(50% - 6px)' }}>
+              <label className="field-label">1 INR = ___ BDT</label>
+              <input className="field-input" type="number" min="0" step="0.01" value={form.exchange_rate_inr} onChange={(e) => setForm({ ...form, exchange_rate_inr: e.target.value })} placeholder="e.g. 1.47" />
             </div>
           </div>
 
