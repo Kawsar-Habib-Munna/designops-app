@@ -2009,3 +2009,59 @@ from (values
 ) as v(category_slug, name, slug, brief, keywords, starter_min, starter_max, standard_min, standard_max, advanced_min, advanced_max)
 join budget_categories c on c.slug = v.category_slug
 on conflict (slug) do nothing;
+
+-- ============================================
+-- BUDGET & QUOTE GENERATOR — ফেজ ২২ (Phase 3/4: message templates seed)
+-- lib/budgetMessage.ts-এর DEFAULT_MESSAGE_TEMPLATES-এর সাথে হুবহু মিল রেখে —
+-- অ্যাডমিন পরে Settings (Phase 7)-এ এসে এডিট করতে পারবে, কিন্তু এখনই কোট
+-- জেনারেট করার সময় real টেমপ্লেট থেকে মেসেজ বানাতে হবে।
+insert into budget_message_templates (type, name, template, active) values
+  ('professional', 'Professional', $t${{greeting_line}}
+
+Thank you for sharing your requirements with us.
+
+Based on your requirements, we recommend our {{service_name}} service.
+
+{{service_brief}}
+
+Estimated Budget
+{{price_block}}
+
+The final quotation may vary depending on the number of pages/screens, functionality, user flows, responsive requirements and overall project complexity.
+
+Once we review the complete requirements, we can provide a fixed quotation and estimated timeline.
+
+Best regards,
+{{team_name}}$t$, true),
+  ('friendly', 'Friendly', $t${{greeting_line}}
+
+Thanks so much for reaching out about your project!
+
+Based on what you're looking for, our {{service_name}} package would be a great fit.
+
+{{service_brief}}
+
+Here's a quick look at the investment:
+{{price_block}}
+
+Keep in mind these are estimated ranges — once we go over the full details together, we'll lock in an exact price and timeline.
+
+Talk soon,
+{{team_name}}$t$, true),
+  ('short', 'Short', $t${{greeting_line}}
+
+For {{service_name}}, our estimated pricing is:
+{{price_block}}
+
+Happy to share more details or hop on a quick call — just let us know!
+
+{{team_name}}$t$, true),
+  ('whatsapp', 'WhatsApp', $t${{greeting_line}}
+
+For *{{service_name}}*, here's our estimated pricing:
+
+{{price_block}}
+
+Let me know if you'd like more details!
+— {{team_name}}$t$, true)
+on conflict (type) do nothing;
