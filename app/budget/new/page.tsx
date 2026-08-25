@@ -1,13 +1,15 @@
 'use client';
 
-// Generate Quote flow (Phase 3/4) — Search→Select→Generate→Copy, in under a
-// minute (স্পেক §33)। ৪ ধাপ: Service → Client → Pricing/Packages →
-// Message+Save। মেসেজ real deterministic টেমপ্লেট (lib/budgetMessage.ts)
+// Generate Quote flow (Phase 3/4/5) — Search→Select→Generate→Copy, in under
+// a minute (স্পেক §33)। ৫ ধাপ: Service → Client → Pricing/Packages →
+// Message → Card। মেসেজ real deterministic টেমপ্লেট (lib/budgetMessage.ts)
 // থেকে রেন্ডার হয় — budget_message_templates টেবিল (ফেজ ২২) থেকে লোড হয়,
-// টেবিল খালি/না-পাওয়া গেলে DEFAULT_MESSAGE_TEMPLATES ফলব্যাক। সেভ করলে
-// budget_quotes-এ পুরো প্রাইস স্ন্যাপশট যায় (ফেজ ২০ ডিজাইন — পুরনো quote
-// কখনো বর্তমান সার্ভিস প্রাইসের সাথে বদলাবে না), quote_number DB-সাইড
-// generate_budget_quote_number() থেকে আসে (রেস-কন্ডিশন-মুক্ত)।
+// টেবিল খালি/না-পাওয়া গেলে DEFAULT_MESSAGE_TEMPLATES ফলব্যাক। Save বাটন
+// শেষ ধাপে (Card) — স্পেকের MVP ফ্লো অনুযায়ী (§34): message → card preview →
+// copy/download → save। সেভ করলে budget_quotes-এ পুরো প্রাইস স্ন্যাপশট যায়
+// (ফেজ ২০ ডিজাইন — পুরনো quote কখনো বর্তমান সার্ভিস প্রাইসের সাথে বদলাবে
+// না), quote_number DB-সাইড generate_budget_quote_number() থেকে আসে
+// (রেস-কন্ডিশন-মুক্ত)।
 //
 // useSearchParams() static route-এ Suspense ছাড়া build-time এরর দেয়
 // (Phase 1-এ একবার হিট হয়েছিল) — তাই সার্চ-প্যারাম পড়া অংশ আলাদা child
@@ -20,21 +22,35 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
 import { formatBudgetRange } from '@/lib/budgetFormat';
 import { buildGreetingLine, buildPriceBlock, renderBudgetMessage, DEFAULT_MESSAGE_TEMPLATES, MESSAGE_STYLE_LABEL, type BudgetPackageKey, type MessageStyle } from '@/lib/budgetMessage';
-import { todayISO } from '@/lib/format';
+import { todayISO, formatBnDateLong } from '@/lib/format';
 import SignInScreen from '@/app/components/SignInScreen';
 import BudgetShell, { Icon, type ProfileRow } from '../components/BudgetShell';
 import type { ServiceCardData } from '../components/ServiceCard';
+import QuoteCardPanel from '../components/QuoteCardPanel';
+import type { CardTier } from '@/lib/budgetCard';
 
 type ServiceRow = ServiceCardData & { keywords: string | null };
 type TemplateRow = { type: MessageStyle; template: string };
-type SettingsRow = { team_name: string; default_validity_days: number; default_message_style: string; show_starter_default: boolean; show_standard_default: boolean; show_advanced_default: boolean };
+type SettingsRow = {
+  team_name: string;
+  default_validity_days: number;
+  default_message_style: string;
+  show_starter_default: boolean;
+  show_standard_default: boolean;
+  show_advanced_default: boolean;
+  website: string | null;
+  contact_email: string | null;
+  brand_accent: string;
+  logo_url: string | null;
+};
 
-type Step = 'service' | 'client' | 'pricing' | 'review';
+type Step = 'service' | 'client' | 'pricing' | 'review' | 'card';
 const STEPS: { key: Step; label: string }[] = [
   { key: 'service', label: 'Service' },
   { key: 'client', label: 'Client' },
   { key: 'pricing', label: 'Pricing' },
   { key: 'review', label: 'Message' },
+  { key: 'card', label: 'Card' },
 ];
 
 function addDays(iso: string, days: number): string {
@@ -82,7 +98,7 @@ function GenerateQuoteBody({ profile, email, onProfileUpdated }: { profile: Prof
       const [servicesRes, templatesRes, settingsRes] = await Promise.all([
         supabase.from('budget_services').select('id, name, brief, keywords, starter_min, starter_max, standard_min, standard_max, advanced_min, advanced_max, currency').eq('status', 'active').order('name'),
         supabase.from('budget_message_templates').select('type, template').eq('active', true),
-        supabase.from('budget_settings').select('team_name, default_validity_days, default_message_style, show_starter_default, show_standard_default, show_advanced_default').eq('id', true).maybeSingle(),
+        supabase.from('budget_settings').select('team_name, default_validity_days, default_message_style, show_starter_default, show_standard_default, show_advanced_default, website, contact_email, brand_accent, logo_url').eq('id', true).maybeSingle(),
       ]);
       setServices((servicesRes.data as ServiceRow[]) ?? []);
       setTemplates((templatesRes.data as TemplateRow[]) ?? []);
@@ -150,6 +166,16 @@ function GenerateQuoteBody({ profile, email, onProfileUpdated }: { profile: Prof
       greeting_line: buildGreetingLine(clientName),
     });
   }, [selectedService, selectedPackages, activeTemplate, clientName, settings]);
+
+  const cardTiers = useMemo<CardTier[]>(() => {
+    if (!selectedService) return [];
+    const all: CardTier[] = [
+      { key: 'starter', label: 'Starter', range: formatBudgetRange(selectedService.starter_min, selectedService.starter_max, selectedService.currency) },
+      { key: 'standard', label: 'Standard', range: formatBudgetRange(selectedService.standard_min, selectedService.standard_max, selectedService.currency), recommended: true },
+      { key: 'advanced', label: 'Advanced', range: formatBudgetRange(selectedService.advanced_min, selectedService.advanced_max, selectedService.currency, true) },
+    ];
+    return all.filter((t) => selectedPackages.includes(t.key));
+  }, [selectedService, selectedPackages]);
 
   async function handleCopy() {
     try {
@@ -421,20 +447,52 @@ function GenerateQuoteBody({ profile, email, onProfileUpdated }: { profile: Prof
 
           <div className="message-preview">{generatedMessage}</div>
 
-          {saveError && <div className="error-banner" style={{ marginTop: 14 }}>{saveError}</div>}
-
           <div className="wizard-nav">
-            <button type="button" className="btn btn-ghost" onClick={() => setStep('pricing')} disabled={saving}>
+            <button type="button" className="btn btn-ghost" onClick={() => setStep('pricing')}>
               Back
             </button>
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" className="btn btn-ghost" onClick={handleCopy}>
                 {copied ? 'Copied ✓' : 'Copy Message'}
               </button>
-              <button type="button" className="btn btn-accent" disabled={saving} onClick={handleSave}>
-                {saving ? 'সেভ হচ্ছে…' : 'Save Quote'}
+              <button type="button" className="btn btn-accent" onClick={() => setStep('card')}>
+                Next: Card
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {step === 'card' && selectedService && (
+        <div className="dcard">
+          <span className="dcard-title">Quote Card</span>
+          <p style={{ fontSize: 12, color: 'var(--ink-faint)', margin: '-6px 0 16px' }}>Download or share a branded image with this pricing — then save the quote.</p>
+
+          <QuoteCardPanel
+            data={{
+              teamName: settings?.team_name ?? 'FLOW 53',
+              logoUrl: settings?.logo_url ?? null,
+              serviceName: selectedService.name,
+              serviceBrief: selectedService.brief ?? '',
+              clientName: clientName.trim(),
+              companyName: companyName.trim(),
+              validUntilLabel: validUntil ? formatBnDateLong(validUntil) : null,
+              tiers: cardTiers,
+              website: settings?.website ?? '',
+              contactEmail: settings?.contact_email ?? '',
+              brandAccent: settings?.brand_accent ?? '#5B4FE8',
+            }}
+          />
+
+          {saveError && <div className="error-banner" style={{ marginTop: 14 }}>{saveError}</div>}
+
+          <div className="wizard-nav">
+            <button type="button" className="btn btn-ghost" onClick={() => setStep('review')} disabled={saving}>
+              Back
+            </button>
+            <button type="button" className="btn btn-accent" disabled={saving} onClick={handleSave}>
+              {saving ? 'সেভ হচ্ছে…' : 'Save Quote'}
+            </button>
           </div>
         </div>
       )}

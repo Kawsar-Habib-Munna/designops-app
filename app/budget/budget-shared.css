@@ -240,6 +240,17 @@
   .budget-root .quote-detail-grid{grid-template-columns:1fr 1fr;}
 }
 
+/* ---- quote card panel (Phase 5) ---- */
+.budget-root .card-panel-grid{display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start;}
+.budget-root .card-config{display:flex;flex-direction:column;gap:4px;}
+.budget-root .card-preview-wrap{display:flex;align-items:center;justify-content:center;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-md);padding:24px;}
+.budget-root .card-preview-canvas{width:100%;height:auto;background:#fff;box-shadow:var(--shadow-md);border-radius:6px;}
+.budget-root .card-preview-canvas.card-preview-square{max-width:360px;}
+.budget-root .card-preview-canvas.card-preview-portrait{max-width:300px;}
+@media (max-width:760px){
+  .budget-root .card-panel-grid{grid-template-columns:1fr;}
+}
+
 /* ---- empty state ---- */
 .budget-root .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--ink-faint);}
 .budget-root .empty-icon{width:42px;height:42px;border-radius:12px;background:var(--surface-muted);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:12px;color:var(--ink-faint);}

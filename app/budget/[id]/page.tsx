@@ -1,11 +1,11 @@
 'use client';
 
-// Quote Detail (Phase 6, minimal)। budget_quotes-এর একটা রো-ই পুরো সত্য —
-// snapshot কলাম থেকে সরাসরি রেন্ডার হয়, বর্তমান budget_services-এর সাথে
-// কখনো join করা হয় না (ফেজ ২০-এর মূল ডিজাইন সিদ্ধান্ত)। Duplicate Quote
-// শুধু service+client/company/project প্রি-ফিল করে নতুন wizard খোলে —
-// প্যাকেজ/নোট/discount ইচ্ছাকৃতভাবে ক্যারি হয় না, কারণ সেগুলো প্রতি quote-এ
-// আলাদা হওয়াই স্বাভাবিক।
+// Quote Detail (Phase 6, minimal; card panel added Phase 5)। budget_quotes-এর
+// একটা রো-ই পুরো সত্য — snapshot কলাম থেকে সরাসরি রেন্ডার হয়, বর্তমান
+// budget_services-এর সাথে কখনো join করা হয় না (ফেজ ২০-এর মূল ডিজাইন
+// সিদ্ধান্ত)। Duplicate Quote শুধু service+client/company/project প্রি-ফিল
+// করে নতুন wizard খোলে — প্যাকেজ/নোট/discount ইচ্ছাকৃতভাবে ক্যারি হয় না,
+// কারণ সেগুলো প্রতি quote-এ আলাদা হওয়াই স্বাভাবিক।
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -17,6 +17,10 @@ import { formatBnDateLong } from '@/lib/format';
 import { MESSAGE_STYLE_LABEL, type MessageStyle } from '@/lib/budgetMessage';
 import SignInScreen from '@/app/components/SignInScreen';
 import BudgetShell, { Icon, type ProfileRow } from '../components/BudgetShell';
+import QuoteCardPanel from '../components/QuoteCardPanel';
+import type { CardTier } from '@/lib/budgetCard';
+
+type SettingsRow = { team_name: string; website: string | null; contact_email: string | null; brand_accent: string; logo_url: string | null };
 
 type QuoteDetail = {
   id: string;
@@ -59,14 +63,16 @@ export default function QuoteDetailPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [quote, setQuote] = useState<QuoteDetail | null>(null);
+  const [settings, setSettings] = useState<SettingsRow | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     async function run() {
-      const [profileRes, quoteRes] = await Promise.all([
+      const [profileRes, quoteRes, settingsRes] = await Promise.all([
         supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url, is_admin').eq('id', user!.id).single(),
         supabase.from('budget_quotes').select('*, creator:profiles!created_by(full_name)').eq('id', quoteId).maybeSingle(),
+        supabase.from('budget_settings').select('team_name, website, contact_email, brand_accent, logo_url').eq('id', true).maybeSingle(),
       ]);
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);
       if (!quoteRes.data) {
@@ -74,6 +80,7 @@ export default function QuoteDetailPage() {
       } else {
         setQuote(quoteRes.data as unknown as QuoteDetail);
       }
+      setSettings(settingsRes.data as SettingsRow | null);
       setLoading(false);
     }
     run();
@@ -135,6 +142,14 @@ export default function QuoteDetailPage() {
     { key: 'standard', label: 'Standard', min: quote.standard_min_snapshot, max: quote.standard_max_snapshot },
     { key: 'advanced', label: 'Advanced', min: quote.advanced_min_snapshot, max: quote.advanced_max_snapshot, openEnded: true },
   ];
+  const cardTiers: CardTier[] = tiers
+    .filter((t) => quote.selected_packages.includes(t.key))
+    .map((t) => ({
+      key: t.key as CardTier['key'],
+      label: t.label,
+      range: formatBudgetRange(t.min, t.max, quote.currency_snapshot, t.openEnded),
+      recommended: t.key === 'standard',
+    }));
 
   return (
     <BudgetShell active="history" topbarTitle="Quote" profile={profile} email={user.email ?? ''} onProfileUpdated={setProfile}>
@@ -212,9 +227,28 @@ export default function QuoteDetailPage() {
         )}
       </div>
 
-      <div className="dcard" style={{ marginBottom: 0 }}>
+      <div className="dcard">
         <span className="dcard-title">Message · {MESSAGE_STYLE_LABEL[quote.message_style as MessageStyle] ?? quote.message_style}</span>
         <div className="message-preview">{quote.generated_message}</div>
+      </div>
+
+      <div className="dcard" style={{ marginBottom: 0 }}>
+        <span className="dcard-title">Quote Card</span>
+        <QuoteCardPanel
+          data={{
+            teamName: settings?.team_name ?? 'FLOW 53',
+            logoUrl: settings?.logo_url ?? null,
+            serviceName: quote.service_name_snapshot,
+            serviceBrief: quote.service_brief_snapshot ?? '',
+            clientName: quote.client_name ?? '',
+            companyName: quote.company_name ?? '',
+            validUntilLabel: quote.valid_until ? formatBnDateLong(quote.valid_until) : null,
+            tiers: cardTiers,
+            website: settings?.website ?? '',
+            contactEmail: settings?.contact_email ?? '',
+            brandAccent: settings?.brand_accent ?? '#5B4FE8',
+          }}
+        />
       </div>
     </BudgetShell>
   );
