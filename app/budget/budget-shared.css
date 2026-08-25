@@ -251,6 +251,12 @@
   .budget-root .card-panel-grid{grid-template-columns:1fr;}
 }
 
+/* ---- settings: message template editor ---- */
+.budget-root .template-editor-block{padding:16px 0;border-top:1px solid var(--border-soft);}
+.budget-root .template-editor-block:first-of-type{border-top:none;padding-top:0;}
+.budget-root .template-preview{margin-top:10px;}
+.budget-root code{font-family:monospace;font-size:11.5px;background:var(--surface-muted);border:1px solid var(--border);border-radius:5px;padding:1px 5px;}
+
 /* ---- empty state ---- */
 .budget-root .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--ink-faint);}
 .budget-root .empty-icon{width:42px;height:42px;border-radius:12px;background:var(--surface-muted);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:12px;color:var(--ink-faint);}

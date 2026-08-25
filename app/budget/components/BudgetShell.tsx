@@ -27,6 +27,7 @@ const ICON_PATHS: Record<string, string> = {
   back: '<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
   edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/>',
+  upload: '<path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
 };
 type IconName = keyof typeof ICON_PATHS;
 export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
