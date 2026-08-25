@@ -1973,3 +1973,39 @@ drop policy if exists "team can read budget_settings" on budget_settings;
 drop policy if exists "admin can write budget_settings" on budget_settings;
 create policy "team can read budget_settings" on budget_settings for select using (public.is_team_member());
 create policy "admin can write budget_settings" on budget_settings for update using (public.is_admin());
+
+-- ============================================
+-- BUDGET & QUOTE GENERATOR — ফেজ ২১ (Phase 2: real seed data)
+-- ইউজারের শেয়ার করা আসল প্রাইসিং শিট থেকে ৭টা ক্যাটাগরি + ১৪টা সার্ভিস।
+-- idempotent (slug-এ conflict হলে কিছুই করবে না) — একাধিকবার রান করলেও
+-- ডুপ্লিকেট হবে না।
+insert into budget_categories (name, slug) values
+  ('Website', 'website'),
+  ('Landing Page', 'landing-page'),
+  ('Dashboard', 'dashboard'),
+  ('Web App', 'web-app'),
+  ('Mobile App', 'mobile-app'),
+  ('E-commerce', 'ecommerce'),
+  ('SaaS', 'saas')
+on conflict (slug) do nothing;
+
+insert into budget_services (category_id, name, slug, brief, keywords, starter_min, starter_max, standard_min, standard_max, advanced_min, advanced_max, currency)
+select c.id, v.name, v.slug, v.brief, v.keywords, v.starter_min, v.starter_max, v.standard_min, v.standard_max, v.advanced_min, v.advanced_max, 'BDT'
+from (values
+  ('website', 'Single Page UI Design', 'single-page-ui-design', 'One individual page such as About, Contact, Services, Pricing, Profile, etc.', 'single page, one page, about page, contact page', 5000, 7000, 7000, 10000, 10000, 15000),
+  ('landing-page', 'Landing Page UI/UX', 'landing-page-ui-ux', 'Conversion-focused landing page with hero, features, benefits, CTA, testimonials, FAQ and other sections.', 'landing page, conversion, marketing page', 8000, 12000, 12000, 18000, 18000, 30000),
+  ('website', 'Small Website — 3–5 Pages', 'small-website-3-5-pages', 'Small business, portfolio, agency or service website with essential pages and consistent visual design.', 'small website, portfolio site, agency website', 20000, 30000, 30000, 45000, 45000, 65000),
+  ('website', 'Business Website — 6–10 Pages', 'business-website-6-10-pages', 'Larger company website with multiple services, content pages, forms and responsive layouts.', 'business website, company website, corporate site', 40000, 55000, 55000, 80000, 80000, 120000),
+  ('ecommerce', 'E-commerce Website UI/UX', 'ecommerce-website-ui-ux', 'Online store including homepage, product listing, product details, cart, checkout and account-related flows.', 'ecommerce, online shop, online store, shopping cart', 35000, 50000, 50000, 80000, 80000, 130000),
+  ('dashboard', 'Dashboard UI/UX', 'dashboard-ui-ux', 'Admin, analytics or management dashboard with navigation, cards, charts, tables, filters and common states.', 'dashboard, admin panel, analytics, management system', 25000, 35000, 35000, 55000, 55000, 90000),
+  ('web-app', 'Small Web App — 5–10 Screens', 'small-web-app-5-10-screens', 'Focused web application with login, dashboard, profile, forms, settings and basic user workflows.', 'small web app, small application', 35000, 50000, 50000, 75000, 75000, 100000),
+  ('web-app', 'Medium Web App — 10–20 Screens', 'medium-web-app-10-20-screens', 'Multi-feature product with dashboards, forms, tables, account management and multiple user flows.', 'medium web app, mid size application', 65000, 85000, 85000, 120000, 120000, 170000),
+  ('web-app', 'Large Web App — 20–30+ Screens', 'large-web-app-20-30-screens', 'Larger digital platform with multiple modules, permissions, complex workflows and extensive UI states.', 'large web app, enterprise application, platform', 100000, 130000, 130000, 180000, 180000, 250000),
+  ('mobile-app', 'Mobile App — 5–10 Screens', 'mobile-app-5-10-screens', 'Small mobile application covering onboarding/login and the primary user journey.', 'mobile app, small app, ios, android', 25000, 35000, 35000, 50000, 50000, 70000),
+  ('mobile-app', 'Mobile App — 10–20 Screens', 'mobile-app-10-20-screens', 'Complete mobile experience with multiple features, flows, navigation, states and reusable components.', 'mobile app, medium app, ios, android', 45000, 60000, 60000, 90000, 90000, 130000),
+  ('mobile-app', 'Large Mobile App — 20–30+ Screens', 'large-mobile-app-20-30-screens', 'Larger mobile product with multiple modules, roles, complex flows and extensive interaction design.', 'large mobile app, enterprise mobile, ios, android', 75000, 100000, 100000, 140000, 140000, 200000),
+  ('saas', 'SaaS Product UI/UX', 'saas-product-ui-ux', 'End-to-end SaaS product with dashboards, account management, settings, subscriptions and workflows.', 'saas, software as a service, subscription product', 80000, 120000, 120000, 180000, 180000, 300000),
+  ('saas', 'Complex Digital Product', 'complex-digital-product', 'Marketplace, FinTech, ERP, CRM or multi-role platform requiring extensive UX planning and complex workflows.', 'complex product, marketplace, fintech, erp, crm', 120000, 160000, 160000, 250000, 250000, 400000)
+) as v(category_slug, name, slug, brief, keywords, starter_min, starter_max, standard_min, standard_max, advanced_min, advanced_max)
+join budget_categories c on c.slug = v.category_slug
+on conflict (slug) do nothing;

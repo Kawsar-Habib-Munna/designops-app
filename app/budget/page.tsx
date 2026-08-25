@@ -1,9 +1,9 @@
 'use client';
 
-// Budget & Quote Generator — Overview (Phase 1: foundation)। এখনো
-// budget_services খালি (Phase 2-এ ইউজারের শেয়ার করা প্রাইসিং শিট দিয়ে ভরা
-// হবে), তাই সার্চ real query চালায় কিন্তু স্বাভাবিকভাবেই এখনো কোনো রেজাল্ট
-// দেখাবে না — এটা fake না, honest empty state, ডেটা তৈরি হলেই কাজ করবে।
+// Budget & Quote Generator — Overview (Phase 2)। budget_services এখন real
+// প্রাইসিং শিট থেকে সিড করা ১৪টা সার্ভিস ধরে রাখে (ফেজ ২১) — সার্চ এখন সত্যিই
+// রেজাল্ট দেখাবে। কার্ড রেন্ডারিং ServiceCard কম্পোনেন্ট রিইউজ করে (Services
+// লাইব্রেরি পাতার সাথে শেয়ার্ড, ডুপ্লিকেট মার্কআপ না)।
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -14,18 +14,11 @@ import { formatBnDateLong } from '@/lib/format';
 import { formatBudgetRange } from '@/lib/budgetFormat';
 import SignInScreen from '@/app/components/SignInScreen';
 import BudgetShell, { Icon, type ProfileRow } from './components/BudgetShell';
+import ServiceCard, { type ServiceCardData } from './components/ServiceCard';
 
 const CATEGORY_CHIPS = ['Website', 'Landing Page', 'Dashboard', 'Web App', 'Mobile App', 'E-commerce', 'SaaS'];
 
-type ServiceRow = {
-  id: string;
-  name: string;
-  brief: string | null;
-  keywords: string | null;
-  standard_min: number | null;
-  standard_max: number | null;
-  currency: string;
-};
+type ServiceRow = ServiceCardData & { keywords: string | null };
 
 type QuoteRow = {
   id: string;
@@ -74,7 +67,7 @@ export default function BudgetOverviewPage() {
 
       const [profileRes, servicesRes, quotesRes, monthQuotesRes, activeServicesRes, teamRes] = await Promise.all([
         supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url, is_admin').eq('id', user!.id).single(),
-        supabase.from('budget_services').select('id, name, brief, keywords, standard_min, standard_max, currency').eq('status', 'active').order('name'),
+        supabase.from('budget_services').select('id, name, brief, keywords, starter_min, starter_max, standard_min, standard_max, advanced_min, advanced_max, currency').eq('status', 'active').order('name'),
         supabase
           .from('budget_quotes')
           .select('id, quote_number, client_name, company_name, service_name_snapshot, standard_min_snapshot, standard_max_snapshot, currency_snapshot, created_at, creator:profiles!created_by(full_name)')
@@ -173,20 +166,7 @@ export default function BudgetOverviewPage() {
                 </p>
               </div>
             ) : (
-              filteredServices.map((s) => (
-                <div key={s.id} className="dcard" style={{ marginBottom: 10, boxShadow: 'none' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 13.5 }}>{s.name}</div>
-                      {s.brief && <p style={{ fontSize: 12, color: 'var(--ink-soft)', margin: '4px 0 0', maxWidth: 480 }}>{s.brief}</p>}
-                      <p style={{ fontSize: 12.5, color: 'var(--ink)', margin: '6px 0 0', fontWeight: 600 }}>{formatBudgetRange(s.standard_min, s.standard_max, s.currency)}</p>
-                    </div>
-                    <Link href={`/budget/new?service=${s.id}`} className="btn btn-accent btn-sm">
-                      Generate Quote
-                    </Link>
-                  </div>
-                </div>
-              ))
+              filteredServices.map((s) => <ServiceCard key={s.id} service={s} />)
             )}
           </div>
         )}

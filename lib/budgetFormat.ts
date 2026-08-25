@@ -9,12 +9,16 @@ export function formatBudgetAmount(amount: number, currency: string): string {
   return `${sym}${amount.toLocaleString('en-US')}`;
 }
 
-export function formatBudgetRange(min: number | null, max: number | null, currency: string): string {
+// openEnded=true শুধু ডিসপ্লে-তে একটা "+" জোড়া দেয় (Advanced tier-এর জন্য —
+// প্রাইসিং শিটে প্রতিটা Advanced ম্যাক্সের পাশে "+" ছিল, মানে "এর বেশিও হতে
+// পারে")। DB-তে সবসময় প্লেইন সংখ্যাই সেভ থাকে, "+" কখনো ডেটার অংশ না।
+export function formatBudgetRange(min: number | null, max: number | null, currency: string, openEnded = false): string {
   if (min == null && max == null) return 'Not set';
+  const suffix = openEnded ? '+' : '';
   if (min != null && max != null) {
-    if (min === max) return formatBudgetAmount(min, currency);
-    return `${formatBudgetAmount(min, currency)} – ${formatBudgetAmount(max, currency)}`;
+    if (min === max) return `${formatBudgetAmount(min, currency)}${suffix}`;
+    return `${formatBudgetAmount(min, currency)} – ${formatBudgetAmount(max, currency)}${suffix}`;
   }
   const only = min ?? max;
-  return formatBudgetAmount(only as number, currency);
+  return `${formatBudgetAmount(only as number, currency)}${suffix}`;
 }
