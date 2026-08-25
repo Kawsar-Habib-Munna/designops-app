@@ -1800,3 +1800,176 @@ create policy "client can read own project sow_documents" on sow_documents for s
     where sows.id = sow_documents.sow_id and sows.status != 'draft' and clients.user_id = auth.uid()
   )
 );
+
+-- ============================================
+-- BUDGET & QUOTE GENERATOR — ফেজ ২০ (Phase 1: foundation)
+--
+-- নতুন ইন্টারনাল টুল: যেকোনো টিম মেম্বার এক মিনিটের মধ্যে ক্লায়েন্টকে
+-- consistent, approved প্রাইসিং সহ প্রফেশনাল কোট দিতে পারবে। বিদ্যমান
+-- profiles.is_admin-ই এখানে Admin/Member পার্মিশন — নতুন কোনো role টেবিল
+-- বানানো হয়নি। is_team_member()-এর প্যাটার্নেই একটা নতুন is_admin() SQL
+-- ফাংশন যোগ হলো, কারণ এখন প্রথমবারের মতো সত্যিকারের "শুধু admin লিখতে
+-- পারবে, বাকি team member শুধু পড়তে পারবে" এর দরকার হচ্ছে (আগে কোনো টেবিলেই
+-- RLS-লেভেলে admin-vs-member আলাদা করা হয়নি, শুধু UI-তে লুকানো হতো অথবা
+-- /api/team/* এর মতো service-role API route ব্যবহার হতো)।
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+stable
+as $$
+  select exists (
+    select 1 from public.profiles where id = auth.uid() and is_admin = true
+  );
+$$;
+
+-- Quote number রেস-কন্ডিশন-মুক্ত করতে real sequence + security-definer
+-- ফাংশন — SOW/Payment নাম্বারের মতো ক্লায়েন্ট-সাইড count() থেকে হিসাব করা
+-- না (যেটাতে থিওরিটিক্যালি দুইজন একসাথে সেভ করলে ডুপ্লিকেট নাম্বার হতে
+-- পারত)। বছর অনুযায়ী রিসেট হয় না, সবসময় বাড়তেই থাকে — কিন্তু কখনো collide
+-- করবে না, যেটাই এখানে আসল প্রায়োরিটি।
+create sequence if not exists budget_quote_number_seq;
+create or replace function public.generate_budget_quote_number()
+returns text
+language plpgsql
+security definer
+as $$
+declare
+  v_num bigint;
+begin
+  v_num := nextval('budget_quote_number_seq');
+  return 'QT-' || to_char(now(), 'YYYY') || '-' || lpad(v_num::text, 4, '0');
+end;
+$$;
+
+create table if not exists budget_categories (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  slug text not null unique,
+  created_at timestamptz default now()
+);
+
+create table if not exists budget_services (
+  id uuid default gen_random_uuid() primary key,
+  category_id uuid references budget_categories(id),
+  name text not null,
+  slug text not null unique,
+  brief text,
+  keywords text,
+  starter_min numeric check (starter_min is null or starter_min >= 0),
+  starter_max numeric check (starter_max is null or starter_max >= 0),
+  standard_min numeric check (standard_min is null or standard_min >= 0),
+  standard_max numeric check (standard_max is null or standard_max >= 0),
+  advanced_min numeric check (advanced_min is null or advanced_min >= 0),
+  advanced_max numeric check (advanced_max is null or advanced_max >= 0),
+  currency text not null default 'BDT' check (currency in ('BDT', 'INR', 'USD', 'GBP')),
+  status text not null default 'active' check (status in ('active', 'archived')),
+  created_by uuid references profiles(id),
+  updated_by uuid references profiles(id),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  constraint budget_services_starter_range check (starter_min is null or starter_max is null or starter_min <= starter_max),
+  constraint budget_services_standard_range check (standard_min is null or standard_max is null or standard_min <= standard_max),
+  constraint budget_services_advanced_range check (advanced_min is null or advanced_max is null or advanced_min <= advanced_max)
+);
+create index if not exists idx_budget_services_category on budget_services(category_id);
+
+create table if not exists budget_quotes (
+  id uuid default gen_random_uuid() primary key,
+  quote_number text not null unique default public.generate_budget_quote_number(),
+  client_name text,
+  company_name text,
+  project_name text,
+  service_id uuid references budget_services(id),
+  -- historical snapshot — sql/schema.sql-এর ফেজ ২০ ডিজাইন নোট: পুরনো quote
+  -- কখনোই বর্তমান budget_services প্রাইসের সাথে join করে দেখানো হবে না,
+  -- তৈরির সময়কার দাম এখানেই স্থায়ীভাবে থেকে যায়।
+  service_name_snapshot text not null,
+  service_brief_snapshot text,
+  starter_min_snapshot numeric,
+  starter_max_snapshot numeric,
+  standard_min_snapshot numeric,
+  standard_max_snapshot numeric,
+  advanced_min_snapshot numeric,
+  advanced_max_snapshot numeric,
+  currency_snapshot text not null,
+  selected_packages text[] not null default '{starter,standard,advanced}',
+  discount numeric,
+  custom_note text,
+  estimated_timeline text,
+  valid_until date,
+  generated_message text,
+  message_style text not null default 'professional',
+  created_by uuid references profiles(id) not null,
+  created_at timestamptz default now()
+);
+create index if not exists idx_budget_quotes_created_by on budget_quotes(created_by);
+create index if not exists idx_budget_quotes_service on budget_quotes(service_id);
+
+create table if not exists budget_message_templates (
+  id uuid default gen_random_uuid() primary key,
+  type text not null unique check (type in ('professional', 'friendly', 'short', 'whatsapp')),
+  name text not null,
+  template text not null,
+  active boolean not null default true,
+  updated_at timestamptz default now()
+);
+
+-- singleton row (id সবসময় true) — টিম-লেভেল ব্র্যান্ডিং/ডিফল্ট সেটিংস
+create table if not exists budget_settings (
+  id boolean primary key default true check (id),
+  team_name text not null default 'FLOW 53',
+  website text,
+  contact_email text,
+  contact_phone text,
+  default_currency text not null default 'BDT' check (default_currency in ('BDT', 'INR', 'USD', 'GBP')),
+  logo_url text,
+  brand_accent text not null default '#5B4FE8',
+  card_footer text,
+  default_validity_days integer not null default 14,
+  default_message_style text not null default 'professional',
+  show_starter_default boolean not null default true,
+  show_standard_default boolean not null default true,
+  show_advanced_default boolean not null default true,
+  updated_at timestamptz default now(),
+  updated_by uuid references profiles(id)
+);
+insert into budget_settings (id) values (true) on conflict do nothing;
+
+alter table budget_categories enable row level security;
+alter table budget_services enable row level security;
+alter table budget_quotes enable row level security;
+alter table budget_message_templates enable row level security;
+alter table budget_settings enable row level security;
+
+drop policy if exists "team can read budget_categories" on budget_categories;
+drop policy if exists "admin can write budget_categories" on budget_categories;
+drop policy if exists "admin can update budget_categories" on budget_categories;
+create policy "team can read budget_categories" on budget_categories for select using (public.is_team_member());
+create policy "admin can write budget_categories" on budget_categories for insert with check (public.is_admin());
+create policy "admin can update budget_categories" on budget_categories for update using (public.is_admin());
+
+drop policy if exists "team can read budget_services" on budget_services;
+drop policy if exists "admin can write budget_services" on budget_services;
+drop policy if exists "admin can update budget_services" on budget_services;
+create policy "team can read budget_services" on budget_services for select using (public.is_team_member());
+create policy "admin can write budget_services" on budget_services for insert with check (public.is_admin());
+create policy "admin can update budget_services" on budget_services for update using (public.is_admin());
+
+drop policy if exists "team can read budget_quotes" on budget_quotes;
+drop policy if exists "team can create budget_quotes" on budget_quotes;
+create policy "team can read budget_quotes" on budget_quotes for select using (public.is_team_member());
+create policy "team can create budget_quotes" on budget_quotes for insert with check (public.is_team_member() and created_by = auth.uid());
+-- ইচ্ছাকৃতভাবে কোনো update/delete পলিসি নেই — quote একবার সেভ হলে immutable
+-- audit রেকর্ড থাকে (তাই স্ন্যাপশট কলামগুলো), Duplicate Quote ফিচার সবসময়
+-- নতুন রো বানাবে, পুরনোটা এডিট করবে না।
+
+drop policy if exists "team can read budget_message_templates" on budget_message_templates;
+drop policy if exists "admin can write budget_message_templates" on budget_message_templates;
+create policy "team can read budget_message_templates" on budget_message_templates for select using (public.is_team_member());
+create policy "admin can write budget_message_templates" on budget_message_templates for update using (public.is_admin());
+
+drop policy if exists "team can read budget_settings" on budget_settings;
+drop policy if exists "admin can write budget_settings" on budget_settings;
+create policy "team can read budget_settings" on budget_settings for select using (public.is_team_member());
+create policy "admin can write budget_settings" on budget_settings for update using (public.is_admin());

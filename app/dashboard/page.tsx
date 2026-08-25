@@ -61,6 +61,7 @@ const ICON_PATHS: Record<string, string> = {
     '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/>',
   "more-horizontal":
     '<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
+  dollar: '<path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
 };
 
 type IconName = keyof typeof ICON_PATHS;
@@ -116,6 +117,7 @@ const NAV_ITEMS_BOTTOM: { icon: IconName; label: string; href: string }[] = [
 const QUICK_ACTIONS: { icon: IconName; label: string; href?: string }[] = [
   { icon: "folder-plus", label: "নতুন প্রজেক্ট" },
   { icon: "plus", label: "টাস্ক তৈরি", href: "/tasks" },
+  { icon: "dollar", label: "Budget", href: "/budget" },
   { icon: "user-plus", label: "মেম্বার ইনভাইট" },
   { icon: "upload", label: "ফাইল আপলোড" },
   { icon: "video", label: "মিটিং শুরু" },
