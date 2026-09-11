@@ -61,6 +61,10 @@ const ICON_PATHS: Record<string, string> = {
   eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
   'check-circle': '<circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/>',
   list: '<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
+  'chevron-left': '<path d="M15 6l-6 6 6 6"/>',
+  trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+  users2: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
 };
 
 type IconName = keyof typeof ICON_PATHS;
@@ -176,6 +180,30 @@ function matchesView(t: TaskRow, view: SmartView, userId: string, today: string)
 const TASK_SELECT =
   'id, title, description, status, workflow_stage, priority, is_blocked, due_date, estimated_hours, progress, updated_at, project_id, assignee_id, projects(name), profiles!assignee_id(full_name, avatar_color, avatar_url)';
 
+// ---- Weekly Tasks / Weekly Plan (added alongside the existing table view,
+// which becomes the "List" tab — no existing functionality removed) ----
+type MainTab = 'list' | 'weekly-tasks' | 'weekly-plan';
+type WeeklyScope = 'mine' | 'team';
+type PlanItem = { id: string; plan_date: string; title: string; created_by: string | null; created_at: string };
+
+const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
+function isoDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+function startOfWeek(offset: number): Date {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun..6=Sat
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday + offset * 7);
+  return monday;
+}
+function formatWeekRange(start: Date, end: Date): string {
+  const fmt = (d: Date) => d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+  const year = end.getFullYear();
+  return `${fmt(start)} – ${fmt(end)} ${year}`;
+}
+
 export default function TasksPage() {
   return (
     <Suspense fallback={null}>
@@ -216,6 +244,47 @@ function TasksPageInner() {
   const [newPriority, setNewPriority] = useState<TaskPriority>('normal');
   const [newDueDate, setNewDueDate] = useState('');
   const [creating, setCreating] = useState(false);
+
+  // ---- Weekly Tasks / Weekly Plan ----
+  const [mainTab, setMainTab] = useState<MainTab>('list');
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [weeklyScope, setWeeklyScope] = useState<WeeklyScope>('team');
+
+  const [planItems, setPlanItems] = useState<PlanItem[]>([]);
+  const [planLoading, setPlanLoading] = useState(false);
+  const [addingPlanDate, setAddingPlanDate] = useState<string | null>(null);
+  const [planDraft, setPlanDraft] = useState('');
+  const [showAddPlanModal, setShowAddPlanModal] = useState(false);
+  const [modalPlanDate, setModalPlanDate] = useState('');
+  const [modalPlanTitle, setModalPlanTitle] = useState('');
+  const [planSaving, setPlanSaving] = useState(false);
+
+  const weekStart = useMemo(() => startOfWeek(weekOffset), [weekOffset]);
+  const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i)), [weekStart]);
+  const weekStartISO = isoDate(weekDays[0]);
+  const weekEndISO = isoDate(weekDays[6]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    async function loadPlans() {
+      setPlanLoading(true);
+      const { data, error: err } = await supabase
+        .from('weekly_plan_items')
+        .select('id, plan_date, title, created_by, created_at')
+        .gte('plan_date', weekStartISO)
+        .lte('plan_date', weekEndISO)
+        .order('created_at');
+      if (!cancelled) {
+        if (!err) setPlanItems((data as PlanItem[]) ?? []);
+        setPlanLoading(false);
+      }
+    }
+    loadPlans();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, weekStartISO, weekEndISO]);
 
   useEffect(() => {
     function applyAssigneeParam() {
@@ -358,6 +427,49 @@ function TasksPageInner() {
     const q = search.trim().toLowerCase();
     return tasks.filter((t) => matchesView(t, activeView, user.id, today) && (!q || t.title.toLowerCase().includes(q)));
   }, [tasks, activeView, search, user, today]);
+
+  const weeklyScopedTasks = useMemo(() => (weeklyScope === 'mine' && user ? tasks.filter((t) => t.assignee_id === user.id) : tasks), [tasks, weeklyScope, user]);
+
+  const tasksByDate = useMemo(() => {
+    const map = new Map<string, TaskRow[]>();
+    for (const t of weeklyScopedTasks) {
+      if (!t.due_date) continue;
+      const arr = map.get(t.due_date) ?? [];
+      arr.push(t);
+      map.set(t.due_date, arr);
+    }
+    return map;
+  }, [weeklyScopedTasks]);
+
+  const noDueDateCount = useMemo(() => weeklyScopedTasks.filter((t) => !t.due_date && t.status !== 'done').length, [weeklyScopedTasks]);
+
+  function openTaskFromWeek(taskId: string) {
+    setMainTab('list');
+    setExpandedId(taskId);
+  }
+
+  async function handleAddPlanItem(dateISO: string, title: string) {
+    const trimmed = title.trim();
+    if (!trimmed || !user) return;
+    setPlanSaving(true);
+    const { data, error: err } = await supabase
+      .from('weekly_plan_items')
+      .insert({ plan_date: dateISO, title: trimmed, created_by: user.id })
+      .select('id, plan_date, title, created_by, created_at')
+      .single();
+    setPlanSaving(false);
+    if (err || !data) {
+      setError(err?.message ?? 'প্ল্যান আইটেম যোগ করা যায়নি।');
+      return;
+    }
+    setPlanItems((prev) => [...prev, data as PlanItem]);
+  }
+
+  async function handleDeletePlanItem(id: string) {
+    setPlanItems((prev) => prev.filter((p) => p.id !== id));
+    const { error: err } = await supabase.from('weekly_plan_items').delete().eq('id', id);
+    if (err) setError(err.message);
+  }
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -697,12 +809,26 @@ function TasksPageInner() {
               </div>
             </div>
 
+            <nav className="main-tabs" aria-label="View">
+              <button className={`main-tab${mainTab === 'list' ? ' active' : ''}`} onClick={() => setMainTab('list')}>
+                <Icon name="list" size={14} /> List
+              </button>
+              <button className={`main-tab${mainTab === 'weekly-tasks' ? ' active' : ''}`} onClick={() => setMainTab('weekly-tasks')}>
+                <Icon name="calendar" size={14} /> Weekly Tasks
+              </button>
+              <button className={`main-tab${mainTab === 'weekly-plan' ? ' active' : ''}`} onClick={() => setMainTab('weekly-plan')}>
+                <Icon name="calendar" size={14} /> Weekly Plan
+              </button>
+            </nav>
+
             {error && (
               <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: 13 }}>
                 {error}
               </div>
             )}
 
+            {mainTab === 'list' && (
+            <>
             {/* KPI summary */}
             <div className="kpi-grid">
               <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon"><Icon name="list" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--accent)' }}>{loading ? '—' : kpis.total}</div><div className="kpi-label">Total Tasks</div><div className="kpi-deco"><Icon name="list" size={56} /></div></div>
@@ -1040,6 +1166,170 @@ function TasksPageInner() {
                 </table>
               </div>
             )}
+            </>
+            )}
+
+            {mainTab === 'weekly-tasks' && (
+              <div>
+                <div className="week-nav">
+                  <button className="week-nav-btn" onClick={() => setWeekOffset((w) => w - 1)} aria-label="আগের সপ্তাহ">
+                    <Icon name="chevron-left" size={16} />
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setWeekOffset(0)}>এই সপ্তাহ</button>
+                  <span className="week-range">{formatWeekRange(weekDays[0], weekDays[6])}</span>
+                  <button className="week-nav-btn" onClick={() => setWeekOffset((w) => w + 1)} aria-label="পরের সপ্তাহ">
+                    <Icon name="chevron-right" size={16} />
+                  </button>
+                  <div className="toolbar-spacer"></div>
+                  <div className="scope-toggle">
+                    <button className={`scope-btn${weeklyScope === 'mine' ? ' active' : ''}`} onClick={() => setWeeklyScope('mine')}>
+                      <Icon name="user" size={13} /> My tasks
+                    </button>
+                    <button className={`scope-btn${weeklyScope === 'team' ? ' active' : ''}`} onClick={() => setWeeklyScope('team')}>
+                      <Icon name="users2" size={13} /> Team tasks
+                    </button>
+                  </div>
+                </div>
+
+                <div className="week-grid">
+                  {weekDays.map((d, i) => {
+                    const dateISO = isoDate(d);
+                    const dayTasks = (tasksByDate.get(dateISO) ?? []).filter((t) => t.status !== 'done');
+                    const isToday = dateISO === today;
+                    return (
+                      <div className={`week-day-col${isToday ? ' is-today' : ''}`} key={dateISO}>
+                        <div className="week-day-head">
+                          <span className="week-day-label">{DAY_LABELS[i]}</span>
+                          <span className="week-day-num">{d.getDate()}</span>
+                          <span className="week-day-count tabular">{dayTasks.length} tasks</span>
+                        </div>
+                        <div className="week-day-body">
+                          {dayTasks.length === 0 ? (
+                            <div className="week-empty">No tasks planned</div>
+                          ) : (
+                            dayTasks.map((t) => {
+                              const priority = PRIORITY_META[t.priority];
+                              return (
+                                <button className="week-task-card" key={t.id} onClick={() => openTaskFromWeek(t.id)}>
+                                  <span className={`pri-dot pri-${t.priority}`} style={{ display: 'inline-block' }}></span>
+                                  <span className="week-task-title">{t.title}</span>
+                                  {t.profiles && <Avatar person={t.profiles} size={18} />}
+                                  <span className={`priority-pill ${priority.cls}`} style={{ fontSize: 9.5, padding: '1px 6px' }}>{priority.label}</span>
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {noDueDateCount > 0 && (
+                  <div className="week-footnote">
+                    <Icon name="calendar" size={13} /> {noDueDateCount} task{noDueDateCount > 1 ? 's' : ''} {noDueDateCount > 1 ? 'have' : 'has'} no due date and appear in List view.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {mainTab === 'weekly-plan' && (
+              <div>
+                <div className="page-header-row" style={{ marginBottom: 18 }}>
+                  <div>
+                    <h1 className="page-title" style={{ fontSize: 20 }}>Weekly Plan</h1>
+                    <p className="page-sub">টিমের শেয়ার্ড ফোকাস আর এই সপ্তাহের অ্যাক্টিভিটি।</p>
+                  </div>
+                  <div className="header-actions">
+                    <button
+                      className="btn btn-accent"
+                      onClick={() => {
+                        setModalPlanDate(weekStartISO);
+                        setModalPlanTitle('');
+                        setShowAddPlanModal(true);
+                      }}
+                    >
+                      <Icon name="plus" /> Add plan item
+                    </button>
+                  </div>
+                </div>
+
+                <div className="week-nav">
+                  <button className="week-nav-btn" onClick={() => setWeekOffset((w) => w - 1)} aria-label="আগের সপ্তাহ">
+                    <Icon name="chevron-left" size={16} />
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setWeekOffset(0)}>এই সপ্তাহ</button>
+                  <span className="week-range">{formatWeekRange(weekDays[0], weekDays[6])}</span>
+                  <button className="week-nav-btn" onClick={() => setWeekOffset((w) => w + 1)} aria-label="পরের সপ্তাহ">
+                    <Icon name="chevron-right" size={16} />
+                  </button>
+                </div>
+
+                <div className="week-grid">
+                  {weekDays.map((d, i) => {
+                    const dateISO = isoDate(d);
+                    const dayPlans = planItems.filter((p) => p.plan_date === dateISO);
+                    const isToday = dateISO === today;
+                    const isAdding = addingPlanDate === dateISO;
+                    return (
+                      <div className={`week-day-col${isToday ? ' is-today' : ''}`} key={dateISO}>
+                        <div className="week-day-head">
+                          <span className="week-day-label">{DAY_LABELS[i]}</span>
+                          <span className="week-day-num">{d.getDate()}</span>
+                          <span className="week-day-count tabular">{dayPlans.length} plans</span>
+                        </div>
+                        <div className="week-day-body">
+                          {planLoading ? (
+                            <div className="week-empty">লোড হচ্ছে…</div>
+                          ) : dayPlans.length === 0 && !isAdding ? (
+                            <div className="week-empty">No plans yet</div>
+                          ) : (
+                            dayPlans.map((p) => (
+                              <div className="plan-item" key={p.id}>
+                                <span className="plan-item-title">{p.title}</span>
+                                <button className="plan-item-delete" onClick={() => handleDeletePlanItem(p.id)} aria-label="মুছুন">
+                                  <Icon name="trash" size={12} />
+                                </button>
+                              </div>
+                            ))
+                          )}
+
+                          {isAdding ? (
+                            <div className="plan-add-input-row">
+                              <input
+                                className="field-input"
+                                style={{ marginBottom: 0 }}
+                                autoFocus
+                                value={planDraft}
+                                onChange={(e) => setPlanDraft(e.target.value)}
+                                placeholder="প্ল্যান লিখুন..."
+                                onKeyDown={async (e) => {
+                                  if (e.key === 'Enter') {
+                                    await handleAddPlanItem(dateISO, planDraft);
+                                    setPlanDraft('');
+                                    setAddingPlanDate(null);
+                                  } else if (e.key === 'Escape') {
+                                    setAddingPlanDate(null);
+                                    setPlanDraft('');
+                                  }
+                                }}
+                                onBlur={() => {
+                                  if (!planDraft.trim()) setAddingPlanDate(null);
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <button className="plan-add-btn" onClick={() => { setAddingPlanDate(dateISO); setPlanDraft(''); }} disabled={planSaving}>
+                              <Icon name="plus" size={12} /> Add
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </main>
         </div>
       </div>
@@ -1096,6 +1386,55 @@ function TasksPageInner() {
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowCreate(false)}>বাতিল</button>
                 <button type="submit" className="btn btn-accent btn-sm" disabled={creating || !newTitle.trim()}>
                   {creating ? 'তৈরি হচ্ছে…' : 'টাস্ক তৈরি করুন'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* add plan item modal */}
+      {showAddPlanModal && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAddPlanModal(false);
+          }}
+        >
+          <div className="modal-box">
+            <div className="modal-title">নতুন প্ল্যান আইটেম</div>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!modalPlanTitle.trim() || !modalPlanDate) return;
+                await handleAddPlanItem(modalPlanDate, modalPlanTitle);
+                setShowAddPlanModal(false);
+              }}
+            >
+              <label className="field-label">দিন</label>
+              <select className="field-input" value={modalPlanDate} onChange={(e) => setModalPlanDate(e.target.value)}>
+                {weekDays.map((d, i) => (
+                  <option key={isoDate(d)} value={isoDate(d)}>
+                    {DAY_LABELS[i]} · {d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                  </option>
+                ))}
+              </select>
+
+              <label className="field-label">শিরোনাম</label>
+              <input
+                className="field-input"
+                type="text"
+                value={modalPlanTitle}
+                onChange={(e) => setModalPlanTitle(e.target.value)}
+                placeholder="যেমন: Client review call — 3pm"
+                autoFocus
+                required
+              />
+
+              <div className="modal-foot">
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowAddPlanModal(false)}>বাতিল</button>
+                <button type="submit" className="btn btn-accent btn-sm" disabled={planSaving || !modalPlanTitle.trim()}>
+                  {planSaving ? 'যোগ হচ্ছে…' : 'যোগ করুন'}
                 </button>
               </div>
             </form>

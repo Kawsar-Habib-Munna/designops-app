@@ -2095,3 +2095,26 @@ alter table budget_quotes add column if not exists exchange_rate_used numeric;
 -- (আগে থেকেই থাকা "team can update projects" পলিসি অপরিবর্তিত)।
 drop policy if exists "admin can delete projects" on projects;
 create policy "admin can delete projects" on projects for delete using (public.is_admin());
+
+-- ============================================
+-- WEEKLY PLAN — /tasks পাতার নতুন "Weekly Plan" ট্যাব। কোনো নির্দিষ্ট
+-- প্রজেক্ট/টাস্কের সাথে বাঁধা না — টিমের শেয়ার্ড "এই সপ্তাহে আমরা এটায়
+-- ফোকাস করছি" ধরনের ছোট নোট, নির্দিষ্ট একটা তারিখে (plan_date) বসে। যেকোনো
+-- team member add/delete করতে পারবে (এডমিন-অনলি না — এটা সবার শেয়ার্ড
+-- প্ল্যানিং বোর্ড, কারো একার প্রজেক্ট না)।
+create table if not exists weekly_plan_items (
+  id uuid default gen_random_uuid() primary key,
+  plan_date date not null,
+  title text not null,
+  created_by uuid references profiles(id),
+  created_at timestamptz default now()
+);
+create index if not exists idx_weekly_plan_items_date on weekly_plan_items(plan_date);
+
+alter table weekly_plan_items enable row level security;
+drop policy if exists "team can read weekly_plan_items" on weekly_plan_items;
+drop policy if exists "team can write weekly_plan_items" on weekly_plan_items;
+drop policy if exists "team can delete weekly_plan_items" on weekly_plan_items;
+create policy "team can read weekly_plan_items" on weekly_plan_items for select using (public.is_team_member());
+create policy "team can write weekly_plan_items" on weekly_plan_items for insert with check (public.is_team_member());
+create policy "team can delete weekly_plan_items" on weekly_plan_items for delete using (public.is_team_member());

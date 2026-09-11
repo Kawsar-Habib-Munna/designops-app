@@ -253,6 +253,45 @@
 .tasklist-root .field-input:focus{border-color:var(--accent);}
 .tasklist-root .modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
 
+/* ---- main tabs (List / Weekly Tasks / Weekly Plan) ---- */
+.tasklist-root .main-tabs{display:flex;gap:6px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-md);padding:4px;margin-bottom:18px;width:fit-content;}
+.tasklist-root .main-tab{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:var(--radius-sm);font-size:12.5px;font-weight:600;color:var(--ink-soft);background:transparent;border:none;}
+.tasklist-root .main-tab:hover{color:var(--ink);}
+.tasklist-root .main-tab.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow-sm);border:1px solid var(--accent);}
+
+/* ---- week nav (shared by Weekly Tasks / Weekly Plan) ---- */
+.tasklist-root .week-nav{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.tasklist-root .week-nav-btn{width:32px;height:32px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);}
+.tasklist-root .week-nav-btn:hover{background:var(--surface-muted);color:var(--ink);}
+.tasklist-root .week-range{font-size:13px;font-weight:700;color:var(--ink);}
+.tasklist-root .scope-toggle{display:flex;gap:4px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px;}
+.tasklist-root .scope-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;color:var(--ink-soft);background:transparent;border:none;}
+.tasklist-root .scope-btn.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow-sm);}
+
+/* ---- week grid ---- */
+.tasklist-root .week-grid{display:grid;grid-template-columns:repeat(7,1fr);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--surface);}
+.tasklist-root .week-day-col{border-right:1px solid var(--border);min-height:260px;display:flex;flex-direction:column;}
+.tasklist-root .week-day-col:last-child{border-right:none;}
+.tasklist-root .week-day-col.is-today{background:var(--accent-soft);}
+.tasklist-root .week-day-head{padding:14px 12px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;}
+.tasklist-root .week-day-label{font-size:10.5px;font-weight:800;color:var(--ink-faint);letter-spacing:.03em;}
+.tasklist-root .week-day-num{font-size:16px;font-weight:800;color:var(--ink);}
+.tasklist-root .week-day-count{margin-left:auto;font-size:10px;color:var(--ink-faint);}
+.tasklist-root .week-day-body{padding:10px;display:flex;flex-direction:column;gap:6px;flex:1;}
+.tasklist-root .week-empty{font-size:11px;color:var(--ink-faint);text-align:center;padding:24px 4px;}
+.tasklist-root .week-task-card{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 9px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);text-align:left;font-family:inherit;}
+.tasklist-root .week-task-card:hover{border-color:var(--accent);background:var(--accent-soft);}
+.tasklist-root .week-task-title{font-size:11.5px;font-weight:600;color:var(--ink);flex:1;min-width:80px;}
+.tasklist-root .week-footnote{display:flex;align-items:center;gap:7px;margin-top:14px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--surface-muted);border:1px solid var(--border);font-size:12px;color:var(--ink-soft);}
+
+/* ---- weekly plan items ---- */
+.tasklist-root .plan-item{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:7px 9px;border-radius:var(--radius-sm);background:var(--surface-muted);font-size:11.5px;color:var(--ink);}
+.tasklist-root .plan-item-delete{width:20px;height:20px;flex-shrink:0;border-radius:5px;border:none;background:transparent;color:var(--ink-faint);display:flex;align-items:center;justify-content:center;}
+.tasklist-root .plan-item-delete:hover{background:var(--danger-soft);color:var(--danger);}
+.tasklist-root .plan-add-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:var(--radius-sm);border:1.5px dashed var(--border);background:transparent;color:var(--ink-faint);font-size:11.5px;font-weight:600;margin-top:auto;}
+.tasklist-root .plan-add-btn:hover{border-color:var(--accent);color:var(--accent);}
+.tasklist-root .plan-add-input-row{margin-top:4px;}
+
 /* skeleton */
 .tasklist-root .skeleton{position:relative;overflow:hidden;background:var(--border-soft);border-radius:6px;color:transparent !important;}
 .tasklist-root .skeleton::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:tl-shimmer 1.3s infinite;}
@@ -266,6 +305,9 @@
   .tasklist-root .kpi-grid{grid-template-columns:repeat(3,1fr);}
   .tasklist-root .search-box{display:none;}
   .tasklist-root .expand-grid{grid-template-columns:1fr;}
+  .tasklist-root .week-grid{grid-template-columns:1fr;}
+  .tasklist-root .week-day-col{border-right:none;border-bottom:1px solid var(--border);min-height:0;}
+  .tasklist-root .week-day-col:last-child{border-bottom:none;}
   .tasklist-root .sidebar{position:fixed;top:0;left:0;height:100vh;z-index:200;transform:translateX(-100%);transition:transform .2s ease;box-shadow:var(--shadow-lg);}
   .tasklist-root .sidebar.open{transform:translateX(0);}
   .tasklist-root .mobile-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:190;opacity:0;pointer-events:none;transition:opacity .2s ease;}
