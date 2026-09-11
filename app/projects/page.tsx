@@ -6,6 +6,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import "./projects.css";
 import { supabase } from "@/lib/supabaseClient";
 import { useSession } from "@/lib/useSession";
@@ -41,6 +42,9 @@ const ICON_PATHS: Record<string, string> = {
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
   menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
   close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  more: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
+  edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/>',
+  trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
 };
 
 type IconName = keyof typeof ICON_PATHS;
@@ -98,6 +102,7 @@ type ProfileRow = {
   role: string | null;
   avatar_color: string | null;
   avatar_url?: string | null;
+  is_admin?: boolean;
 };
 
 type ProjectRow = {
@@ -117,6 +122,7 @@ type ProjectRow = {
 type ClientOption = { id: string; company_name: string };
 
 export default function ProjectsListPage() {
+  const router = useRouter();
   const { user, loading: sessionLoading } = useSession();
   const unreadCount = useUnreadCount(user);
   const [dark, setDark] = useState(false);
@@ -144,6 +150,28 @@ export default function ProjectsListPage() {
     Record<string, { done: number; total: number }>
   >({});
 
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    category: "",
+    clientId: "",
+    status: "active",
+    startDate: "",
+    dueDate: "",
+    budget: "",
+    description: "",
+  });
+
+  const [deleteTarget, setDeleteTarget] = useState<ProjectRow | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!user) return;
 
@@ -162,7 +190,7 @@ export default function ProjectsListPage() {
             .order("company_name"),
           supabase
             .from("profiles")
-            .select("id, full_name, role, avatar_color, avatar_url")
+            .select("id, full_name, role, avatar_color, avatar_url, is_admin")
             .eq("id", user!.id)
             .single(),
           supabase
@@ -290,6 +318,107 @@ export default function ProjectsListPage() {
     setNewDescription("");
     setCreating(false);
     setShowCreate(false);
+  }
+
+  useEffect(() => {
+    if (!openMenuId) return;
+    function closeMenu() {
+      setOpenMenuId(null);
+    }
+    document.addEventListener("click", closeMenu);
+    return () => document.removeEventListener("click", closeMenu);
+  }, [openMenuId]);
+
+  async function openEditModal(p: ProjectRow) {
+    setOpenMenuId(null);
+    setEditError(null);
+    setEditingId(p.id);
+    setEditLoading(true);
+    const { data, error } = await supabase
+      .from("projects")
+      .select("id, name, category, client_id, status, start_date, due_date, budget, description")
+      .eq("id", p.id)
+      .single();
+    setEditLoading(false);
+    if (error || !data) {
+      setEditError(error?.message ?? "লোড করা যায়নি।");
+      return;
+    }
+    setEditForm({
+      name: data.name ?? "",
+      category: data.category ?? "",
+      clientId: data.client_id ?? "",
+      status: data.status ?? "active",
+      startDate: data.start_date ?? "",
+      dueDate: data.due_date ?? "",
+      budget: data.budget != null ? String(data.budget) : "",
+      description: data.description ?? "",
+    });
+  }
+
+  async function handleEditSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!editingId || !editForm.name.trim() || !user) return;
+
+    setEditSaving(true);
+    setEditError(null);
+    const { data, error } = await supabase
+      .from("projects")
+      .update({
+        name: editForm.name.trim(),
+        category: editForm.category.trim() || null,
+        client_id: editForm.clientId || null,
+        status: editForm.status,
+        start_date: editForm.startDate || null,
+        due_date: editForm.dueDate || null,
+        budget: editForm.budget ? Number(editForm.budget) : null,
+        description: editForm.description.trim() || null,
+      })
+      .eq("id", editingId)
+      .select("id, name, status, progress, due_date, description, clients(company_name)")
+      .single();
+    setEditSaving(false);
+
+    if (error) {
+      setEditError(error.message);
+      return;
+    }
+
+    if (data) {
+      const updated = data as unknown as Pick<ProjectRow, "id" | "name" | "status" | "progress" | "due_date" | "description" | "clients">;
+      setProjects((prev) => prev.map((row) => (row.id === editingId ? { ...row, ...updated } : row)));
+      await supabase.from("activity_log").insert({
+        actor_id: user.id,
+        action: "project_updated",
+        entity_type: "project",
+        entity_id: editingId,
+        detail: `"${editForm.name.trim()}" প্রজেক্ট আপডেট করা হয়েছে`,
+      });
+    }
+
+    setEditingId(null);
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deleteTarget || !user || deleteConfirmText.trim() !== deleteTarget.name) return;
+    setDeleting(true);
+    setDeleteError(null);
+    const { error } = await supabase.from("projects").delete().eq("id", deleteTarget.id);
+    setDeleting(false);
+    if (error) {
+      setDeleteError(error.message);
+      return;
+    }
+    setProjects((prev) => prev.filter((row) => row.id !== deleteTarget.id));
+    await supabase.from("activity_log").insert({
+      actor_id: user.id,
+      action: "project_deleted",
+      entity_type: "project",
+      entity_id: deleteTarget.id,
+      detail: `"${deleteTarget.name}" প্রজেক্ট স্থায়ীভাবে মুছে ফেলা হয়েছে`,
+    });
+    setDeleteTarget(null);
+    setDeleteConfirmText("");
   }
 
   const visibleProjects = useMemo(() => {
@@ -474,11 +603,51 @@ export default function ProjectsListPage() {
                   const visibleAvatars = p.avatars.slice(0, 3);
                   const extraAvatars = p.avatars.length - visibleAvatars.length;
                   return (
-                    <Link
+                    <div
                       className="proj-card"
                       key={p.id}
-                      href={`/projects/${p.id}`}
+                      role="link"
+                      tabIndex={0}
+                      onClick={() => router.push(`/projects/${p.id}`)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") router.push(`/projects/${p.id}`);
+                      }}
                     >
+                      <button
+                        type="button"
+                        className="proj-card-menu-btn"
+                        aria-label="আরও অপশন"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId((id) => (id === p.id ? null : p.id));
+                        }}
+                      >
+                        <Icon name="more" size={15} />
+                      </button>
+                      {openMenuId === p.id && (
+                        <div className="proj-card-menu" onClick={(e) => e.stopPropagation()}>
+                          <button type="button" className="proj-card-menu-item" onClick={() => openEditModal(p)}>
+                            <Icon name="edit" size={13} /> Edit Project
+                          </button>
+                          {profile?.is_admin && (
+                            <>
+                              <div className="proj-card-menu-divider" />
+                              <button
+                                type="button"
+                                className="proj-card-menu-item danger"
+                                onClick={() => {
+                                  setOpenMenuId(null);
+                                  setDeleteTarget(p);
+                                  setDeleteConfirmText("");
+                                  setDeleteError(null);
+                                }}
+                              >
+                                <Icon name="trash" size={13} /> Delete Project
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                       <div className="proj-card-top">
                         <div className="proj-card-icon">
                           {p.name.charAt(0).toUpperCase()}
@@ -528,7 +697,7 @@ export default function ProjectsListPage() {
                           <Icon name="calendar" size={12} /> {formatBnDate(p.due_date) || "—"}
                         </span>
                       </div>
-                    </Link>
+                    </div>
                   );
                 })}
               </div>
@@ -652,6 +821,196 @@ export default function ProjectsListPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {editingId && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !editSaving) setEditingId(null);
+          }}
+        >
+          <div className="modal-box">
+            <div className="modal-title">প্রজেক্ট এডিট করুন</div>
+            {editLoading ? (
+              <p style={{ fontSize: 13, color: "var(--ink-faint)", padding: "8px 0 4px" }}>লোড হচ্ছে…</p>
+            ) : (
+              <form onSubmit={handleEditSubmit}>
+                <label className="field-label">প্রজেক্টের নাম</label>
+                <input
+                  className="field-input"
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  autoFocus
+                  required
+                />
+
+                <label className="field-label">ক্যাটাগরি</label>
+                <input
+                  className="field-input"
+                  type="text"
+                  value={editForm.category}
+                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                  placeholder="ঐচ্ছিক"
+                />
+
+                <label className="field-label">ক্লায়েন্ট</label>
+                <select
+                  className="field-input"
+                  value={editForm.clientId}
+                  onChange={(e) => setEditForm({ ...editForm, clientId: e.target.value })}
+                >
+                  <option value="">কোনো ক্লায়েন্ট নেই</option>
+                  {clientOptions.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.company_name}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="field-label">স্ট্যাটাস</label>
+                <select
+                  className="field-input"
+                  value={editForm.status}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                >
+                  {Object.entries(PROJECT_STATUS_META).map(([value, meta]) => (
+                    <option key={value} value={value}>
+                      {meta.label}
+                    </option>
+                  ))}
+                </select>
+
+                <div className="field-row">
+                  <div>
+                    <label className="field-label">শুরুর তারিখ</label>
+                    <input
+                      className="field-input"
+                      type="date"
+                      value={editForm.startDate}
+                      onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="field-label">ডেডলাইন</label>
+                    <input
+                      className="field-input"
+                      type="date"
+                      value={editForm.dueDate}
+                      onChange={(e) => setEditForm({ ...editForm, dueDate: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <label className="field-label">বাজেট (৳)</label>
+                <input
+                  className="field-input"
+                  type="number"
+                  min="0"
+                  value={editForm.budget}
+                  onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })}
+                  placeholder="ঐচ্ছিক"
+                />
+
+                <label className="field-label">বিবরণ</label>
+                <textarea
+                  className="field-input"
+                  rows={3}
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  placeholder="ঐচ্ছিক"
+                  style={{ resize: "vertical", fontFamily: "inherit" }}
+                />
+
+                {editError && (
+                  <div
+                    style={{
+                      marginBottom: 12,
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                      background: "var(--danger-soft)",
+                      color: "var(--danger)",
+                      fontSize: 12.5,
+                    }}
+                  >
+                    {editError}
+                  </div>
+                )}
+
+                <div className="modal-foot">
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingId(null)} disabled={editSaving}>
+                    বাতিল
+                  </button>
+                  <button type="submit" className="btn btn-accent btn-sm" disabled={editSaving || !editForm.name.trim()}>
+                    {editSaving ? "সেভ হচ্ছে…" : "সেভ করুন"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !deleting) setDeleteTarget(null);
+          }}
+        >
+          <div className="modal-box">
+            <div className="modal-title">প্রজেক্ট স্থায়ীভাবে ডিলিট করবেন?</div>
+            <div className="delete-warning">
+              এটা অপরিবর্তনীয়। &quot;{deleteTarget.name}&quot;-এর সাথে যুক্ত সব Task, Milestone, SOW, Invoice, Payment, Client Message, Approval, Change Request এবং Update স্থায়ীভাবে মুছে যাবে।
+            </div>
+            <label className="field-label">
+              নিশ্চিত করতে প্রজেক্টের নাম টাইপ করুন: <b>{deleteTarget.name}</b>
+            </label>
+            <input
+              className="field-input"
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              autoFocus
+            />
+            {deleteError && (
+              <div
+                style={{
+                  marginBottom: 12,
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  background: "var(--danger-soft)",
+                  color: "var(--danger)",
+                  fontSize: 12.5,
+                }}
+              >
+                {deleteError}
+              </div>
+            )}
+            <div className="modal-foot">
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => {
+                  setDeleteTarget(null);
+                  setDeleteConfirmText("");
+                }}
+                disabled={deleting}
+              >
+                বাতিল
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                disabled={deleting || deleteConfirmText.trim() !== deleteTarget.name}
+                onClick={handleDeleteConfirm}
+              >
+                {deleting ? "ডিলিট হচ্ছে…" : "স্থায়ীভাবে ডিলিট করুন"}
+              </button>
+            </div>
           </div>
         </div>
       )}

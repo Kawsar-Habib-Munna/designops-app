@@ -2082,3 +2082,16 @@ alter table budget_settings add column if not exists exchange_rate_gbp numeric;
 alter table budget_settings add column if not exists exchange_rate_inr numeric;
 
 alter table budget_quotes add column if not exists exchange_rate_used numeric;
+
+-- ============================================
+-- PROJECTS — Edit/Delete from the /projects list card menu।
+-- এতদিন কোনো "team can delete projects" পলিসি ছিলই না (RLS-এ delete পলিসি
+-- না থাকলে ডিফল্ট deny), তাই কেউই প্রজেক্ট ডিলিট করতে পারত না — এখন প্রথমবার
+-- যোগ হলো। প্রজেক্ট ডিলিট করলে on delete cascade-এর কারণে tasks/milestones/
+-- sows/invoices/payments/client_feedback/client_messages/client_approvals/
+-- change_requests/project_updates সব স্থায়ীভাবে মুছে যায় — এত বড় ব্লাস্ট
+-- রেডিয়াসের কাজ তাই শুধু is_admin() (Budget মডিউলে যোগ হওয়া হেল্পার)
+-- প্রোফাইলদের জন্য, বাকি যেকোনো team member-এর মতোই সবাই Edit করতে পারবে
+-- (আগে থেকেই থাকা "team can update projects" পলিসি অপরিবর্তিত)।
+drop policy if exists "admin can delete projects" on projects;
+create policy "admin can delete projects" on projects for delete using (public.is_admin());
