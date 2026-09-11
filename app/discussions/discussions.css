@@ -374,7 +374,7 @@
   align-self: flex-start;
   position: sticky;
   top: 60px;
-  max-height: calc(100vh - 60px);
+  height: calc(100vh - 60px);
   border-right: 1px solid var(--border);
   background: var(--surface);
   padding: 18px 12px;
