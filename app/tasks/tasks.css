@@ -211,6 +211,8 @@
 .tasklist-root .due-cell.overdue{color:var(--danger);font-weight:600;}
 .tasklist-root .mini-progress-track{width:70px;height:5px;border-radius:999px;background:var(--border-soft);overflow:hidden;}
 .tasklist-root .mini-progress-fill{height:100%;border-radius:999px;background:var(--accent);}
+.tasklist-root .progress-track{width:100%;height:5px;border-radius:999px;background:var(--border-soft);overflow:hidden;}
+.tasklist-root .progress-fill{height:100%;border-radius:999px;background:var(--accent);}
 .tasklist-root .progress-num{font-size:10.5px;color:var(--ink-faint);margin-top:3px;}
 .tasklist-root .updated-cell{font-size:11.5px;color:var(--ink-faint);white-space:nowrap;}
 .tasklist-root .expand-chevron{color:var(--ink-faint);transition:transform .15s ease;display:inline-flex;}
@@ -245,13 +247,57 @@
 .tasklist-root .empty-sub{font-size:12.5px;max-width:280px;line-height:1.6;margin-bottom:16px;}
 
 /* modal */
-.tasklist-root .modal-overlay{position:fixed;inset:0;background:rgba(14,14,18,0.45);display:flex;align-items:flex-start;justify-content:center;padding-top:10vh;z-index:100;}
+.tasklist-root .modal-overlay{position:fixed;inset:0;background:rgba(14,14,18,0.45);display:flex;align-items:flex-start;justify-content:center;padding-top:10vh;z-index:100;overflow-y:auto;padding-bottom:6vh;}
 .tasklist-root .modal-box{width:100%;max-width:440px;background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);box-shadow:var(--shadow-lg);padding:20px;}
+.tasklist-root .modal-box-lg{max-width:660px;}
 .tasklist-root .modal-title{font-size:16px;font-weight:600;margin-bottom:16px;}
 .tasklist-root .field-label{font-size:12px;font-weight:500;color:var(--ink-soft);margin-bottom:5px;display:block;}
 .tasklist-root .field-input{width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;background:var(--surface);color:var(--ink);outline:none;font-family:inherit;margin-bottom:12px;}
 .tasklist-root .field-input:focus{border-color:var(--accent);}
-.tasklist-root .modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
+.tasklist-root .modal-foot{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:6px;}
+.tasklist-root .edit-field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* assignee multi-select (create task modal) */
+.tasklist-root .assignee-check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-bottom:6px;}
+.tasklist-root .assignee-check-item{display:flex;align-items:center;gap:7px;padding:7px 9px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);font-size:12px;font-weight:500;color:var(--ink);text-align:left;font-family:inherit;}
+.tasklist-root .assignee-check-item.checked{border-color:var(--accent);background:var(--accent-soft);}
+.tasklist-root .assignee-check-item .cb{pointer-events:none;}
+
+/* per-person card grid (List tab) */
+.tasklist-root .person-card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;}
+.tasklist-root .person-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;gap:12px;}
+.tasklist-root .person-card-head{display:flex;align-items:center;gap:10px;}
+.tasklist-root .person-card-name-wrap{flex:1;min-width:0;}
+.tasklist-root .person-card-name{font-size:13.5px;font-weight:700;color:var(--ink);}
+.tasklist-root .person-card-sub{font-size:11px;color:var(--ink-faint);margin-top:2px;}
+.tasklist-root .person-card-count{font-size:15px;font-weight:800;color:var(--accent);}
+.tasklist-root .person-progress-wrap{display:grid;grid-template-columns:1fr auto;column-gap:8px;align-items:center;}
+.tasklist-root .person-progress-label{font-size:10.5px;color:var(--ink-faint);font-weight:600;}
+.tasklist-root .person-progress-pct{font-size:10.5px;color:var(--ink-soft);font-weight:700;}
+.tasklist-root .person-progress-wrap .progress-track{grid-column:1 / -1;}
+.tasklist-root .person-card-empty{display:flex;align-items:center;gap:8px;padding:10px 2px;color:var(--ink-faint);}
+.tasklist-root .person-card-empty-icon{width:26px;height:26px;border-radius:8px;background:var(--positive-soft);color:var(--positive);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tasklist-root .person-card-empty-title{font-size:12px;font-weight:600;}
+.tasklist-root .person-task-list{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;}
+.tasklist-root .person-task-item{border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:9px 10px;background:var(--surface-muted);}
+.tasklist-root .person-task-top{display:flex;align-items:flex-start;gap:8px;}
+.tasklist-root .person-task-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px;background:var(--ink-faint);}
+.tasklist-root .person-task-dot.s-todo{background:var(--ink-faint);}
+.tasklist-root .person-task-dot.s-progress{background:var(--accent);}
+.tasklist-root .person-task-dot.s-review{background:var(--warning);}
+.tasklist-root .person-task-dot.s-done{background:var(--positive);}
+.tasklist-root .person-task-main{flex:1;min-width:0;}
+.tasklist-root .person-task-title{font-size:12.5px;font-weight:600;color:var(--ink);line-height:1.4;}
+.tasklist-root .person-task-title.done{color:var(--ink-faint);text-decoration:line-through;}
+.tasklist-root .person-task-meta{font-size:10.5px;color:var(--ink-faint);margin-top:3px;}
+.tasklist-root .person-task-action{width:22px;height:22px;flex-shrink:0;border-radius:6px;border:none;background:transparent;color:var(--ink-faint);display:flex;align-items:center;justify-content:center;}
+.tasklist-root .person-task-action:hover{background:var(--surface);color:var(--accent);}
+.tasklist-root .person-task-action.danger:hover{background:var(--danger-soft);color:var(--danger);}
+.tasklist-root .person-task-checklist{margin-top:7px;padding-top:7px;border-top:1px dashed var(--border);display:flex;flex-direction:column;gap:2px;}
+.tasklist-root .person-checklist-item{display:flex;align-items:center;gap:7px;padding:2px 0;font-size:11px;background:none;border:none;width:100%;text-align:left;color:var(--ink-soft);}
+.tasklist-root .person-checklist-item .icb{width:12px;height:12px;border-radius:3px;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.tasklist-root .person-checklist-item.done{color:var(--ink-faint);text-decoration:line-through;}
+.tasklist-root .person-checklist-item.done .icb{background:var(--positive);border-color:var(--positive);}
 
 /* ---- main tabs (List / Weekly Tasks / Weekly Plan) ---- */
 .tasklist-root .main-tabs{display:flex;gap:6px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-md);padding:4px;margin-bottom:18px;width:fit-content;}
@@ -285,7 +331,11 @@
 .tasklist-root .week-footnote{display:flex;align-items:center;gap:7px;margin-top:14px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--surface-muted);border:1px solid var(--border);font-size:12px;color:var(--ink-soft);}
 
 /* ---- weekly plan items ---- */
-.tasklist-root .plan-item{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:7px 9px;border-radius:var(--radius-sm);background:var(--surface-muted);font-size:11.5px;color:var(--ink);}
+.tasklist-root .plan-item{display:flex;align-items:flex-start;gap:8px;padding:9px 10px;border-radius:var(--radius-sm);background:var(--surface-muted);border:1px solid var(--border-soft);color:var(--ink);}
+.tasklist-root .plan-item-badge{width:18px;height:18px;flex-shrink:0;border-radius:6px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.tasklist-root .plan-item-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.tasklist-root .plan-item-title{font-size:12px;font-weight:700;color:var(--ink);line-height:1.4;}
+.tasklist-root .plan-item-details{font-size:11px;color:var(--ink-faint);line-height:1.5;}
 .tasklist-root .plan-item-delete{width:20px;height:20px;flex-shrink:0;border-radius:5px;border:none;background:transparent;color:var(--ink-faint);display:flex;align-items:center;justify-content:center;}
 .tasklist-root .plan-item-delete:hover{background:var(--danger-soft);color:var(--danger);}
 .tasklist-root .plan-add-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:var(--radius-sm);border:1.5px dashed var(--border);background:transparent;color:var(--ink-faint);font-size:11.5px;font-weight:600;margin-top:auto;}

@@ -10,15 +10,15 @@
 // (disabled), ব্যাকএন্ডে কিছু করে না। Favorites ভিউ-ও তাই — schema-তে
 // favorite/starred কলাম নেই বলে সবসময় খালি দেখাবে।
 
-import { Fragment, Suspense, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Suspense, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import './tasks.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
 import { useUnreadCount } from '@/lib/useUnreadCount';
-import { dueMeta, relativeTimeBn, todayISO } from '@/lib/format';
-import { STATUS_META, PRIORITY_META, STAGE_LABEL, reviewChip, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
+import { relativeTimeBn, todayISO } from '@/lib/format';
+import { STATUS_META, PRIORITY_META, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
 import { sendNotifications } from '@/lib/notify';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
@@ -65,6 +65,7 @@ const ICON_PATHS: Record<string, string> = {
   trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
   users2: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  edit: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
 };
 
 type IconName = keyof typeof ICON_PATHS;
@@ -184,7 +185,7 @@ const TASK_SELECT =
 // which becomes the "List" tab — no existing functionality removed) ----
 type MainTab = 'list' | 'weekly-tasks' | 'weekly-plan';
 type WeeklyScope = 'mine' | 'team';
-type PlanItem = { id: string; plan_date: string; title: string; created_by: string | null; created_at: string };
+type PlanItem = { id: string; plan_date: string; title: string; details: string | null; created_by: string | null; created_at: string };
 
 const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
@@ -223,6 +224,7 @@ function TasksPageInner() {
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
   const [assigneeOptions, setAssigneeOptions] = useState<AssigneeOption[]>([]);
+  const [checklistByTask, setChecklistByTask] = useState<Map<string, ChecklistItem[]>>(new Map());
   const [loading, setLoading] = useState(true);
   const [reloading, setReloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -231,8 +233,6 @@ function TasksPageInner() {
   const [search, setSearch] = useState('');
   const [advOpen, setAdvOpen] = useState(false);
 
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandData, setExpandData] = useState<Record<string, ExpandData>>({});
   const [newComment, setNewComment] = useState<Record<string, string>>({});
   const [newChecklistItem, setNewChecklistItem] = useState<Record<string, string>>({});
@@ -240,10 +240,16 @@ function TasksPageInner() {
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newProjectId, setNewProjectId] = useState('');
-  const [newAssigneeId, setNewAssigneeId] = useState('');
+  const [newAssigneeIds, setNewAssigneeIds] = useState<string[]>([]);
   const [newPriority, setNewPriority] = useState<TaskPriority>('normal');
   const [newDueDate, setNewDueDate] = useState('');
   const [creating, setCreating] = useState(false);
+
+  // ---- List tab: per-person card view ----
+  const [editTaskId, setEditTaskId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ title: '', projectId: '', assigneeId: '', priority: 'normal' as TaskPriority, status: 'todo' as TaskStatus, dueDate: '', description: '' });
+  const [editSaving, setEditSaving] = useState(false);
+  const editingTask = tasks.find((t) => t.id === editTaskId) ?? null;
 
   // ---- Weekly Tasks / Weekly Plan ----
   const [mainTab, setMainTab] = useState<MainTab>('list');
@@ -257,6 +263,7 @@ function TasksPageInner() {
   const [showAddPlanModal, setShowAddPlanModal] = useState(false);
   const [modalPlanDate, setModalPlanDate] = useState('');
   const [modalPlanTitle, setModalPlanTitle] = useState('');
+  const [modalPlanDetails, setModalPlanDetails] = useState('');
   const [planSaving, setPlanSaving] = useState(false);
 
   const weekStart = useMemo(() => startOfWeek(weekOffset), [weekOffset]);
@@ -271,7 +278,7 @@ function TasksPageInner() {
       setPlanLoading(true);
       const { data, error: err } = await supabase
         .from('weekly_plan_items')
-        .select('id, plan_date, title, created_by, created_at')
+        .select('id, plan_date, title, details, created_by, created_at')
         .gte('plan_date', weekStartISO)
         .lte('plan_date', weekEndISO)
         .order('created_at');
@@ -286,301 +293,7 @@ function TasksPageInner() {
     };
   }, [user, weekStartISO, weekEndISO]);
 
-  useEffect(() => {
-    function applyAssigneeParam() {
-      const assigneeParam = searchParams.get('assignee');
-      if (assigneeParam) {
-        setNewAssigneeId(assigneeParam);
-        setShowCreate(true);
-      }
-    }
-    applyAssigneeParam();
-  }, [searchParams]);
-
-  // ড্যাশবোর্ডের "My Tasks" থেকে ?task=<id> দিয়ে এলে সেই টাস্কটা এক্সপ্যান্ড করে দেখানো হয়
-  useEffect(() => {
-    const taskParam = searchParams.get('task');
-    if (!taskParam) return;
-
-    function run() {
-      setExpandedId(taskParam);
-      setExpandData((prev) => (prev[taskParam!] ? prev : { ...prev, [taskParam!]: { checklist: [], comments: [], attachments: [], activity: [], loading: true } }));
-
-      async function load() {
-        const [checklistRes, commentsRes, attachmentsRes, activityRes] = await Promise.all([
-          supabase.from('checklist_items').select('id, label, is_done, position').eq('task_id', taskParam!).order('position'),
-          supabase.from('comments').select('id, body, created_at, profiles(full_name, avatar_color, avatar_url)').eq('task_id', taskParam!).order('created_at'),
-          supabase.from('attachments').select('id, file_name, file_type, drive_url').eq('task_id', taskParam!).order('uploaded_at', { ascending: false }),
-          supabase
-            .from('activity_log')
-            .select('id, detail, created_at, profiles(full_name)')
-            .eq('entity_type', 'task')
-            .eq('entity_id', taskParam!)
-            .order('created_at', { ascending: false })
-            .limit(10),
-        ]);
-        setExpandData((prev) => ({
-          ...prev,
-          [taskParam!]: {
-            checklist: (checklistRes.data as ChecklistItem[]) ?? [],
-            comments: (commentsRes.data as unknown as CommentRow[]) ?? [],
-            attachments: (attachmentsRes.data as AttachmentRow[]) ?? [],
-            activity: (activityRes.data as unknown as TaskActivityRow[]) ?? [],
-            loading: false,
-          },
-        }));
-      }
-      load();
-    }
-    run();
-  }, [searchParams]);
-
-  // এক্সপ্যান্ড হওয়া রো-টা স্ক্রল করে দৃশ্যমান জায়গায় আনে (URL দিয়ে সরাসরি টাস্কে আসার সময় কাজে লাগে)
-  useEffect(() => {
-    if (!expandedId) return;
-    function run() {
-      document.getElementById(`task-row-${expandedId}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    }
-    run();
-  }, [expandedId]);
-
-  async function fetchTasksData(uid: string) {
-    const [tasksRes, commentsRes, attachmentsRes, projectsRes, teamRes, profileRes] = await Promise.all([
-      supabase.from('tasks').select(TASK_SELECT).order('updated_at', { ascending: false }),
-      supabase.from('comments').select('task_id'),
-      supabase.from('attachments').select('task_id'),
-      supabase.from('projects').select('id, name').order('name'),
-      supabase.from('profiles').select('id, full_name, avatar_color, avatar_url').order('full_name'),
-      supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url').eq('id', uid).single(),
-    ]);
-
-    const firstErrored = [tasksRes, commentsRes, attachmentsRes, projectsRes, teamRes, profileRes].find((r) => r.error);
-
-    const commentCounts = new Map<string, number>();
-    for (const row of (commentsRes.data as { task_id: string }[]) ?? []) {
-      commentCounts.set(row.task_id, (commentCounts.get(row.task_id) ?? 0) + 1);
-    }
-    const attachmentCounts = new Map<string, number>();
-    for (const row of (attachmentsRes.data as { task_id: string }[]) ?? []) {
-      attachmentCounts.set(row.task_id, (attachmentCounts.get(row.task_id) ?? 0) + 1);
-    }
-
-    const rows = ((tasksRes.data as unknown as Omit<TaskRow, 'commentCount' | 'attachmentCount'>[]) ?? []).map((t) => ({
-      ...t,
-      commentCount: commentCounts.get(t.id) ?? 0,
-      attachmentCount: attachmentCounts.get(t.id) ?? 0,
-    }));
-
-    return {
-      errorMessage: firstErrored?.error?.message ?? null,
-      tasks: rows,
-      projectOptions: (projectsRes.data as ProjectOption[]) ?? [],
-      assigneeOptions: (teamRes.data as AssigneeOption[]) ?? [],
-      profile: (profileRes.data as ProfileRow | null) ?? null,
-    };
-  }
-
-  useEffect(() => {
-    if (!user) return;
-
-    async function run() {
-      const result = await fetchTasksData(user!.id);
-      setError(result.errorMessage);
-      setTasks(result.tasks);
-      setProjectOptions(result.projectOptions);
-      setAssigneeOptions(result.assigneeOptions);
-      if (result.profile) setProfile(result.profile);
-      setLoading(false);
-    }
-
-    run();
-  }, [user]);
-
-  async function handleReload() {
-    if (!user) return;
-    setReloading(true);
-    const result = await fetchTasksData(user.id);
-    setError(result.errorMessage);
-    setTasks(result.tasks);
-    setProjectOptions(result.projectOptions);
-    setAssigneeOptions(result.assigneeOptions);
-    if (result.profile) setProfile(result.profile);
-    setReloading(false);
-  }
-
-  const today = todayISO();
-
-  const kpis = useMemo(() => {
-    if (!user) return { total: 0, mine: 0, dueToday: 0, overdue: 0, review: 0, completedThisWeek: 0 };
-    return {
-      total: tasks.length,
-      mine: tasks.filter((t) => t.assignee_id === user.id && t.status !== 'done').length,
-      dueToday: tasks.filter((t) => t.due_date === today && t.status !== 'done').length,
-      overdue: tasks.filter((t) => !!t.due_date && t.due_date < today && t.status !== 'done').length,
-      review: tasks.filter((t) => matchesView(t, 'review', user.id, today)).length,
-      completedThisWeek: tasks.filter((t) => t.status === 'done' && isCompletedThisWeek(t.updated_at)).length,
-    };
-  }, [tasks, user, today]);
-
-  const filtered = useMemo(() => {
-    if (!user) return [];
-    const q = search.trim().toLowerCase();
-    return tasks.filter((t) => matchesView(t, activeView, user.id, today) && (!q || t.title.toLowerCase().includes(q)));
-  }, [tasks, activeView, search, user, today]);
-
-  const weeklyScopedTasks = useMemo(() => (weeklyScope === 'mine' && user ? tasks.filter((t) => t.assignee_id === user.id) : tasks), [tasks, weeklyScope, user]);
-
-  const tasksByDate = useMemo(() => {
-    const map = new Map<string, TaskRow[]>();
-    for (const t of weeklyScopedTasks) {
-      if (!t.due_date) continue;
-      const arr = map.get(t.due_date) ?? [];
-      arr.push(t);
-      map.set(t.due_date, arr);
-    }
-    return map;
-  }, [weeklyScopedTasks]);
-
-  const noDueDateCount = useMemo(() => weeklyScopedTasks.filter((t) => !t.due_date && t.status !== 'done').length, [weeklyScopedTasks]);
-
-  function openTaskFromWeek(taskId: string) {
-    setMainTab('list');
-    setExpandedId(taskId);
-  }
-
-  async function handleAddPlanItem(dateISO: string, title: string) {
-    const trimmed = title.trim();
-    if (!trimmed || !user) return;
-    setPlanSaving(true);
-    const { data, error: err } = await supabase
-      .from('weekly_plan_items')
-      .insert({ plan_date: dateISO, title: trimmed, created_by: user.id })
-      .select('id, plan_date, title, created_by, created_at')
-      .single();
-    setPlanSaving(false);
-    if (err || !data) {
-      setError(err?.message ?? 'প্ল্যান আইটেম যোগ করা যায়নি।');
-      return;
-    }
-    setPlanItems((prev) => [...prev, data as PlanItem]);
-  }
-
-  async function handleDeletePlanItem(id: string) {
-    setPlanItems((prev) => prev.filter((p) => p.id !== id));
-    const { error: err } = await supabase.from('weekly_plan_items').delete().eq('id', id);
-    if (err) setError(err.message);
-  }
-
-  function toggleSelect(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleSelectAll() {
-    setSelected((prev) => (prev.size === filtered.length ? new Set() : new Set(filtered.map((t) => t.id))));
-  }
-
-  function clearSelection() {
-    setSelected(new Set());
-  }
-
-  async function bulkMarkDone() {
-    const ids = Array.from(selected);
-    if (ids.length === 0 || !user) return;
-    setTasks((prev) => prev.map((t) => (ids.includes(t.id) ? { ...t, status: 'done' as TaskStatus } : t)));
-    await supabase.from('tasks').update({ status: 'done' }).in('id', ids);
-    await Promise.all(
-      ids.map((id) =>
-        supabase.from('activity_log').insert({
-          actor_id: user.id,
-          action: 'status_changed',
-          entity_type: 'task',
-          entity_id: id,
-          detail: 'একটা টাস্ক সম্পন্ন করা হয়েছে',
-        })
-      )
-    );
-    clearSelection();
-  }
-
-  async function bulkDelete() {
-    const ids = Array.from(selected);
-    if (ids.length === 0) return;
-    if (!window.confirm(`${ids.length}টা টাস্ক ডিলিট করতে চান? এটা ফিরিয়ে আনা যাবে না।`)) return;
-    setTasks((prev) => prev.filter((t) => !ids.includes(t.id)));
-    const { error } = await supabase.from('tasks').delete().in('id', ids);
-    if (error) setError(error.message);
-    clearSelection();
-  }
-
-  async function changeStatus(taskId: string, newStatus: TaskStatus) {
-    if (!user) return;
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
-    const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
-    if (error) {
-      setError(error.message);
-      return;
-    }
-    await supabase.from('activity_log').insert({
-      actor_id: user.id,
-      action: 'status_changed',
-      entity_type: 'task',
-      entity_id: taskId,
-      detail: `স্ট্যাটাস "${STATUS_META[newStatus].label}" করা হয়েছে`,
-    });
-  }
-
-  async function changeAssignee(taskId: string, newAssigneeId: string) {
-    if (!user) return;
-    const assignee = assigneeOptions.find((a) => a.id === newAssigneeId) ?? null;
-
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId
-          ? { ...t, assignee_id: newAssigneeId || null, profiles: assignee ? { full_name: assignee.full_name, avatar_color: assignee.avatar_color, avatar_url: assignee.avatar_url } : null }
-          : t
-      )
-    );
-
-    const { error } = await supabase.from('tasks').update({ assignee_id: newAssigneeId || null }).eq('id', taskId);
-    if (error) {
-      setError(error.message);
-      return;
-    }
-
-    await supabase.from('activity_log').insert({
-      actor_id: user.id,
-      action: 'assignee_changed',
-      entity_type: 'task',
-      entity_id: taskId,
-      detail: assignee ? `"${assignee.full_name}"-কে অ্যাসাইন করা হয়েছে` : 'অ্যাসাইনি সরানো হয়েছে',
-    });
-
-    if (newAssigneeId) {
-      const task = tasks.find((t) => t.id === taskId);
-      sendNotifications([{
-        recipient_id: newAssigneeId,
-        actor_id: user.id,
-        type: 'task_assigned',
-        title: `${profile?.full_name?.trim() || user.email || 'কেউ একজন'} আপনাকে একটা টাস্ক অ্যাসাইন করেছে`,
-        subtitle: task?.title ?? null,
-        link: '/tasks',
-      }]);
-    }
-  }
-
-  async function toggleExpand(taskId: string) {
-    if (expandedId === taskId) {
-      setExpandedId(null);
-      return;
-    }
-    setExpandedId(taskId);
-    if (expandData[taskId]) return;
-
+  async function loadExpandData(taskId: string) {
     setExpandData((prev) => ({ ...prev, [taskId]: { checklist: [], comments: [], attachments: [], activity: [], loading: true } }));
 
     const [checklistRes, commentsRes, attachmentsRes, activityRes] = await Promise.all([
@@ -608,9 +321,203 @@ function TasksPageInner() {
     }));
   }
 
-  async function changeDescription(taskId: string, newDescription: string) {
-    const { error } = await supabase.from('tasks').update({ description: newDescription || null }).eq('id', taskId);
-    if (error) setError(error.message);
+  useEffect(() => {
+    function applyAssigneeParam() {
+      const assigneeParam = searchParams.get('assignee');
+      if (assigneeParam) {
+        setNewAssigneeIds([assigneeParam]);
+        setShowCreate(true);
+      }
+    }
+    applyAssigneeParam();
+  }, [searchParams]);
+
+  // ড্যাশবোর্ডের "My Tasks" থেকে ?task=<id> দিয়ে এলে সেই টাস্কের এডিট মোডাল খোলে।
+  // সরাসরি effect-এর ভেতর setState কল করলে react-hooks/set-state-in-effect লিন্ট
+  // রুল ধরে — তাই setTimeout(fn, 0) দিয়ে মাইক্রোটাস্ক পরে কল করা হচ্ছে।
+  useEffect(() => {
+    const taskParam = searchParams.get('task');
+    if (!taskParam) return;
+    const timer = setTimeout(() => setEditTaskId(taskParam), 0);
+    return () => clearTimeout(timer);
+  }, [searchParams]);
+
+  // editTaskId/tasks বদলালে ফর্ম আর কমেন্ট/অ্যাটাচমেন্ট/অ্যাক্টিভিটি রিফ্রেশ হয় —
+  // কার্ড ক্লিক আর ?task= URL প্যারাম দুটো পথই এখানে মিলে যায়
+  useEffect(() => {
+    if (!editTaskId) return;
+    const t = tasks.find((x) => x.id === editTaskId);
+    const timer = setTimeout(() => {
+      if (t) {
+        setEditForm({
+          title: t.title,
+          projectId: t.project_id ?? '',
+          assigneeId: t.assignee_id ?? '',
+          priority: t.priority,
+          status: t.status,
+          dueDate: t.due_date ?? '',
+          description: t.description ?? '',
+        });
+      }
+      if (!expandData[editTaskId]) loadExpandData(editTaskId);
+    }, 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadExpandData/expandData intentionally excluded, would refetch on every keystroke elsewhere
+  }, [editTaskId, tasks]);
+
+
+  async function fetchTasksData(uid: string) {
+    const [tasksRes, commentsRes, attachmentsRes, projectsRes, teamRes, profileRes, checklistRes] = await Promise.all([
+      supabase.from('tasks').select(TASK_SELECT).order('updated_at', { ascending: false }),
+      supabase.from('comments').select('task_id'),
+      supabase.from('attachments').select('task_id'),
+      supabase.from('projects').select('id, name').order('name'),
+      supabase.from('profiles').select('id, full_name, avatar_color, avatar_url').order('full_name'),
+      supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url').eq('id', uid).single(),
+      supabase.from('checklist_items').select('id, task_id, label, is_done, position').order('position'),
+    ]);
+
+    const firstErrored = [tasksRes, commentsRes, attachmentsRes, projectsRes, teamRes, profileRes].find((r) => r.error);
+
+    const commentCounts = new Map<string, number>();
+    for (const row of (commentsRes.data as { task_id: string }[]) ?? []) {
+      commentCounts.set(row.task_id, (commentCounts.get(row.task_id) ?? 0) + 1);
+    }
+    const attachmentCounts = new Map<string, number>();
+    for (const row of (attachmentsRes.data as { task_id: string }[]) ?? []) {
+      attachmentCounts.set(row.task_id, (attachmentCounts.get(row.task_id) ?? 0) + 1);
+    }
+    const checklistByTask = new Map<string, ChecklistItem[]>();
+    for (const row of (checklistRes.data as (ChecklistItem & { task_id: string })[]) ?? []) {
+      const arr = checklistByTask.get(row.task_id) ?? [];
+      arr.push(row);
+      checklistByTask.set(row.task_id, arr);
+    }
+
+    const rows = ((tasksRes.data as unknown as Omit<TaskRow, 'commentCount' | 'attachmentCount'>[]) ?? []).map((t) => ({
+      ...t,
+      commentCount: commentCounts.get(t.id) ?? 0,
+      attachmentCount: attachmentCounts.get(t.id) ?? 0,
+    }));
+
+    return {
+      errorMessage: firstErrored?.error?.message ?? null,
+      tasks: rows,
+      projectOptions: (projectsRes.data as ProjectOption[]) ?? [],
+      assigneeOptions: (teamRes.data as AssigneeOption[]) ?? [],
+      profile: (profileRes.data as ProfileRow | null) ?? null,
+      checklistByTask,
+    };
+  }
+
+  useEffect(() => {
+    if (!user) return;
+
+    async function run() {
+      const result = await fetchTasksData(user!.id);
+      setError(result.errorMessage);
+      setTasks(result.tasks);
+      setProjectOptions(result.projectOptions);
+      setAssigneeOptions(result.assigneeOptions);
+      setChecklistByTask(result.checklistByTask);
+      if (result.profile) setProfile(result.profile);
+      setLoading(false);
+    }
+
+    run();
+  }, [user]);
+
+  async function handleReload() {
+    if (!user) return;
+    setReloading(true);
+    const result = await fetchTasksData(user.id);
+    setError(result.errorMessage);
+    setTasks(result.tasks);
+    setProjectOptions(result.projectOptions);
+    setAssigneeOptions(result.assigneeOptions);
+    setChecklistByTask(result.checklistByTask);
+    if (result.profile) setProfile(result.profile);
+    setReloading(false);
+  }
+
+  const today = todayISO();
+
+  const kpis = useMemo(() => {
+    if (!user) return { total: 0, mine: 0, dueToday: 0, overdue: 0, review: 0, completedThisWeek: 0 };
+    return {
+      total: tasks.length,
+      mine: tasks.filter((t) => t.assignee_id === user.id && t.status !== 'done').length,
+      dueToday: tasks.filter((t) => t.due_date === today && t.status !== 'done').length,
+      overdue: tasks.filter((t) => !!t.due_date && t.due_date < today && t.status !== 'done').length,
+      review: tasks.filter((t) => matchesView(t, 'review', user.id, today)).length,
+      completedThisWeek: tasks.filter((t) => t.status === 'done' && isCompletedThisWeek(t.updated_at)).length,
+    };
+  }, [tasks, user, today]);
+
+  const filtered = useMemo(() => {
+    if (!user) return [];
+    const q = search.trim().toLowerCase();
+    return tasks.filter((t) => matchesView(t, activeView, user.id, today) && (!q || t.title.toLowerCase().includes(q)));
+  }, [tasks, activeView, search, user, today]);
+
+  // ---- List tab: per-person card grid (ঠিক /todos-এর member-grid
+  // প্যাটার্নে, কিন্তু আসল tasks+checklist_items ডেটা দিয়ে)। প্রতি কার্ডের
+  // progress/count real personTasks থেকে (সবসময়), তালিকায় দেখানো আইটেমগুলো
+  // বর্তমান Smart View + সার্চ দিয়ে ফিল্টার করা (filtered থেকে) — যাতে
+  // "My Tasks"/"Overdue" ইত্যাদি pill এখানেও কাজ করে। ----
+  const memberTaskCards = useMemo(() => {
+    const noConstraint = activeView === 'all' && !search.trim();
+    return assigneeOptions
+      .map((p) => {
+        const personTasks = tasks.filter((t) => t.assignee_id === p.id);
+        const shown = filtered.filter((t) => t.assignee_id === p.id);
+        const active = personTasks.filter((t) => t.status !== 'done');
+        const avgProgress = personTasks.length > 0 ? Math.round(personTasks.reduce((sum, t) => sum + (t.progress ?? 0), 0) / personTasks.length) : 0;
+        return { profile: p, personTasks, shown, activeCount: active.length, avgProgress };
+      })
+      .filter((m) => noConstraint || m.shown.length > 0);
+  }, [assigneeOptions, tasks, filtered, activeView, search]);
+
+  const weeklyScopedTasks = useMemo(() => (weeklyScope === 'mine' && user ? tasks.filter((t) => t.assignee_id === user.id) : tasks), [tasks, weeklyScope, user]);
+
+  const tasksByDate = useMemo(() => {
+    const map = new Map<string, TaskRow[]>();
+    for (const t of weeklyScopedTasks) {
+      if (!t.due_date) continue;
+      const arr = map.get(t.due_date) ?? [];
+      arr.push(t);
+      map.set(t.due_date, arr);
+    }
+    return map;
+  }, [weeklyScopedTasks]);
+
+  const noDueDateCount = useMemo(() => weeklyScopedTasks.filter((t) => !t.due_date && t.status !== 'done').length, [weeklyScopedTasks]);
+
+  function openTaskFromWeek(taskId: string) {
+    setEditTaskId(taskId);
+  }
+
+  async function handleAddPlanItem(dateISO: string, title: string, details?: string) {
+    const trimmed = title.trim();
+    if (!trimmed || !user) return;
+    setPlanSaving(true);
+    const { data, error: err } = await supabase
+      .from('weekly_plan_items')
+      .insert({ plan_date: dateISO, title: trimmed, details: details?.trim() || null, created_by: user.id })
+      .select('id, plan_date, title, details, created_by, created_at')
+      .single();
+    setPlanSaving(false);
+    if (err || !data) {
+      setError(err?.message ?? 'প্ল্যান আইটেম যোগ করা যায়নি।');
+      return;
+    }
+    setPlanItems((prev) => [...prev, data as PlanItem]);
+  }
+
+  async function handleDeletePlanItem(id: string) {
+    setPlanItems((prev) => prev.filter((p) => p.id !== id));
+    const { error: err } = await supabase.from('weekly_plan_items').delete().eq('id', id);
+    if (err) setError(err.message);
   }
 
   async function toggleChecklistItem(taskId: string, item: ChecklistItem) {
@@ -671,35 +578,41 @@ function TasksPageInner() {
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, commentCount: t.commentCount + 1 } : t)));
   }
 
+  // একাধিক অ্যাসাইনি বেছে নিলে প্রতিজনের জন্য আলাদা real রো তৈরি হয় (একই টাইটেল/
+  // প্রজেক্ট/প্রায়োরিটি/ডিউ ডেট) — "Assign to N selected" মকআপ অনুযায়ী, কোনো
+  // fake "multi-assignee" কলাম বানানো হয়নি, কারণ tasks.assignee_id একজনের।
   async function handleCreateTask(e: FormEvent) {
     e.preventDefault();
     if (!newTitle.trim() || !user) return;
 
     setCreating(true);
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert({
-        title: newTitle.trim(),
-        project_id: newProjectId || null,
-        assignee_id: newAssigneeId || null,
-        priority: newPriority,
-        due_date: newDueDate || null,
-        status: 'todo',
-        workflow_stage: 'backlog',
-        created_by: user.id,
-      })
-      .select(TASK_SELECT)
-      .single();
+    const assigneeIds = newAssigneeIds.length > 0 ? newAssigneeIds : [null];
+    const createdRows: (Omit<TaskRow, 'commentCount' | 'attachmentCount'> & { commentCount: 0; attachmentCount: 0 })[] = [];
 
-    if (error) {
-      setError(error.message);
-      setCreating(false);
-      return;
-    }
+    for (const assigneeId of assigneeIds) {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert({
+          title: newTitle.trim(),
+          project_id: newProjectId || null,
+          assignee_id: assigneeId,
+          priority: newPriority,
+          due_date: newDueDate || null,
+          status: 'todo',
+          workflow_stage: 'backlog',
+          created_by: user.id,
+        })
+        .select(TASK_SELECT)
+        .single();
 
-    if (data) {
+      if (error) {
+        setError(error.message);
+        continue;
+      }
+      if (!data) continue;
+
       const row = data as unknown as Omit<TaskRow, 'commentCount' | 'attachmentCount'>;
-      setTasks((prev) => [{ ...row, commentCount: 0, attachmentCount: 0 }, ...prev]);
+      createdRows.push({ ...row, commentCount: 0, attachmentCount: 0 });
       await supabase.from('activity_log').insert({
         actor_id: user.id,
         action: 'task_created',
@@ -707,10 +620,9 @@ function TasksPageInner() {
         entity_id: row.id,
         detail: `"${row.title}" তৈরি করা হয়েছে`,
       });
-
-      if (newAssigneeId) {
+      if (assigneeId) {
         sendNotifications([{
-          recipient_id: newAssigneeId,
+          recipient_id: assigneeId,
           actor_id: user.id,
           type: 'task_assigned',
           title: `${profile?.full_name?.trim() || user.email || 'কেউ একজন'} আপনাকে একটা টাস্ক অ্যাসাইন করেছে`,
@@ -720,19 +632,86 @@ function TasksPageInner() {
       }
     }
 
+    if (createdRows.length > 0) {
+      setTasks((prev) => [...createdRows, ...prev]);
+    }
+
     setNewTitle('');
     setNewProjectId('');
-    setNewAssigneeId('');
+    setNewAssigneeIds([]);
     setNewPriority('normal');
     setNewDueDate('');
     setCreating(false);
     setShowCreate(false);
   }
 
+  function toggleNewAssignee(id: string) {
+    setNewAssigneeIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  // ---- List tab: single task edit / delete ----
+  function openEditTask(task: TaskRow) {
+    setEditForm({
+      title: task.title,
+      projectId: task.project_id ?? '',
+      assigneeId: task.assignee_id ?? '',
+      priority: task.priority,
+      status: task.status,
+      dueDate: task.due_date ?? '',
+      description: task.description ?? '',
+    });
+    setEditTaskId(task.id);
+  }
+
+  async function handleEditTaskSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!editTaskId || !editForm.title.trim()) return;
+    setEditSaving(true);
+    const assignee = assigneeOptions.find((a) => a.id === editForm.assigneeId) ?? null;
+    const { data, error: err } = await supabase
+      .from('tasks')
+      .update({
+        title: editForm.title.trim(),
+        project_id: editForm.projectId || null,
+        assignee_id: editForm.assigneeId || null,
+        priority: editForm.priority,
+        status: editForm.status,
+        due_date: editForm.dueDate || null,
+        description: editForm.description.trim() || null,
+      })
+      .eq('id', editTaskId)
+      .select(TASK_SELECT)
+      .single();
+    setEditSaving(false);
+    if (err || !data) {
+      setError(err?.message ?? 'টাস্ক আপডেট করা যায়নি।');
+      return;
+    }
+    const row = data as unknown as Omit<TaskRow, 'commentCount' | 'attachmentCount'>;
+    setTasks((prev) => prev.map((t) => (t.id === editTaskId ? { ...t, ...row, profiles: assignee ? { full_name: assignee.full_name, avatar_color: assignee.avatar_color, avatar_url: assignee.avatar_url } : row.profiles } : t)));
+    setEditTaskId(null);
+  }
+
+  async function handleDeleteSingleTask(id: string) {
+    if (!window.confirm('এই টাস্ক ডিলিট করতে চান? এটা ফিরিয়ে আনা যাবে না।')) return;
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+    const { error: err } = await supabase.from('tasks').delete().eq('id', id);
+    if (err) setError(err.message);
+  }
+
+  async function toggleChecklistItemCard(taskId: string, item: ChecklistItem) {
+    const newDone = !item.is_done;
+    setChecklistByTask((prev) => {
+      const next = new Map(prev);
+      const items = (next.get(taskId) ?? []).map((c) => (c.id === item.id ? { ...c, is_done: newDone } : c));
+      next.set(taskId, items);
+      return next;
+    });
+    await supabase.from('checklist_items').update({ is_done: newDone }).eq('id', item.id);
+  }
+
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
-
-  const allSelected = filtered.length > 0 && selected.size === filtered.length;
 
   return (
     <div className={`tasklist-root${dark ? ' dark' : ''}`}>
@@ -887,28 +866,12 @@ function TasksPageInner() {
               </div>
             </div>
 
-            {/* bulk action bar */}
-            <div className={`bulk-bar${selected.size > 0 ? ' show' : ''}`}>
-              <span className="bulk-count">{selected.size} নির্বাচিত</span>
-              <button className="bulk-btn" disabled title="শীঘ্রই আসছে">Assign</button>
-              <button className="bulk-btn" onClick={bulkMarkDone}>Status → সম্পন্ন</button>
-              <button className="bulk-btn" disabled title="শীঘ্রই আসছে">Stage</button>
-              <button className="bulk-btn" disabled title="শীঘ্রই আসছে">Label</button>
-              <button className="bulk-btn" disabled title="শীঘ্রই আসছে">Priority</button>
-              <button className="bulk-btn" disabled title="শীঘ্রই আসছে">Deadline</button>
-              <button className="bulk-btn" disabled title="শীঘ্রই আসছে">Archive</button>
-              <button className="bulk-btn" disabled title="শীঘ্রই আসছে">Export</button>
-              <div className="bulk-spacer"></div>
-              <button className="bulk-btn" style={{ background: 'rgba(229,72,77,.25)' }} onClick={bulkDelete}>Delete</button>
-              <button className="bulk-btn" onClick={clearSelection}>✕</button>
-            </div>
-
-            {/* table */}
+            {/* per-person card list */}
             {loading ? (
               <div className="table-scroll">
                 <div style={{ padding: 40, textAlign: 'center', fontSize: 13, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</div>
               </div>
-            ) : filtered.length === 0 ? (
+            ) : memberTaskCards.length === 0 ? (
               <div className="empty-state show">
                 <div className="empty-icon"><Icon name="search" /></div>
                 <div className="empty-title">কোনো টাস্ক পাওয়া যায়নি</div>
@@ -918,252 +881,72 @@ function TasksPageInner() {
                 </button>
               </div>
             ) : (
-              <div className="table-scroll">
-                <table className="task-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: 32 }}>
-                        <span className={`cb${allSelected ? ' checked' : ''}`} onClick={toggleSelectAll}>
-                          {allSelected && <Icon name="tick" size={9} color="#fff" />}
-                        </span>
-                      </th>
-                      <th>Preview</th>
-                      <th>Task Name</th>
-                      <th>Project</th>
-                      <th>Assignee</th>
-                      <th>Priority</th>
-                      <th>Status / Stage</th>
-                      <th>Due Date</th>
-                      <th>Est. Time</th>
-                      <th>Progress</th>
-                      <th>Last Updated</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((task) => {
-                      const chip = reviewChip(task.workflow_stage, task.is_blocked);
-                      const status = STATUS_META[task.status];
-                      const priority = PRIORITY_META[task.priority];
-                      const due = dueMeta(task.due_date, task.status);
-                      const isSelected = selected.has(task.id);
-                      const isExpanded = expandedId === task.id;
-                      const detail = expandData[task.id];
+              <div className="person-card-grid">
+                {memberTaskCards.map((m) => (
+                  <div className="person-card" key={m.profile.id}>
+                    <div className="person-card-head">
+                      <Avatar person={m.profile} size={34} />
+                      <div className="person-card-name-wrap">
+                        <div className="person-card-name">{m.profile.full_name}</div>
+                        <div className="person-card-sub">{m.activeCount === 0 ? 'No active To-Dos' : `${m.activeCount} active To-Do${m.activeCount > 1 ? 's' : ''}`}</div>
+                      </div>
+                      <span className="person-card-count tabular">{m.activeCount}</span>
+                    </div>
 
-                      return (
-                        <Fragment key={task.id}>
-                          <tr id={`task-row-${task.id}`} className={`task-row${isExpanded ? ' expanded' : ''}${isSelected ? ' selected' : ''}`} onClick={() => toggleExpand(task.id)}>
-                            <td onClick={(e) => e.stopPropagation()}>
-                              <span className={`cb${isSelected ? ' checked' : ''}`} onClick={() => toggleSelect(task.id)}>
-                                {isSelected && <Icon name="tick" size={9} color="#fff" />}
-                              </span>
-                            </td>
-                            <td><div className="preview-thumb"><Icon name="figma" size={12} /></div></td>
-                            <td>
-                              <div className="task-name-cell">
-                                <div className="task-name-main">
-                                  <div className="task-title-row">
-                                    <span className={`task-title${task.status === 'done' ? ' done' : ''}`}>{task.title}</span>
-                                    {chip && <span className={`review-chip ${chip.cls}`}>{chip.label}</span>}
-                                  </div>
-                                  {task.description && <div className="task-desc">{task.description}</div>}
-                                  <div className="task-icon-row">
-                                    <span className="icon-count"><Icon name="message" size={11} />{task.commentCount}</span>
-                                    <span className="icon-count"><Icon name="paperclip" size={11} />{task.attachmentCount}</span>
+                    {m.personTasks.length > 0 && (
+                      <div className="person-progress-wrap">
+                        <span className="person-progress-label">Overall progress</span>
+                        <span className="person-progress-pct tabular">{m.avgProgress}%</span>
+                        <div className="progress-track"><div className="progress-fill" style={{ width: `${m.avgProgress}%`, background: m.avgProgress === 100 ? 'var(--positive)' : undefined }}></div></div>
+                      </div>
+                    )}
+
+                    {m.personTasks.length === 0 ? (
+                      <div className="person-card-empty">
+                        <div className="person-card-empty-icon"><Icon name="check" size={16} /></div>
+                        <div className="person-card-empty-title">All clear</div>
+                      </div>
+                    ) : m.shown.length === 0 ? (
+                      <p style={{ fontSize: 12, color: 'var(--ink-faint)', padding: '8px 2px' }}>এই ফিল্টারে কিছু নেই।</p>
+                    ) : (
+                      <div className="person-task-list">
+                        {m.shown.map((task) => {
+                          const status = STATUS_META[task.status];
+                          const checklist = checklistByTask.get(task.id) ?? [];
+                          return (
+                            <div className="person-task-item" key={task.id}>
+                              <div className="person-task-top">
+                                <span className={`person-task-dot ${status.cls}`}></span>
+                                <div className="person-task-main">
+                                  <div className={`person-task-title${task.status === 'done' ? ' done' : ''}`}>{task.title}</div>
+                                  <div className="person-task-meta tabular">
+                                    {task.progress ?? 0}% · {status.label}{task.due_date ? ` · Due ${task.due_date.slice(8, 10)}/${task.due_date.slice(5, 7)}/${task.due_date.slice(0, 4)}` : ''}
                                   </div>
                                 </div>
+                                <button className="person-task-action" onClick={() => openEditTask(task)} aria-label="এডিট করুন">
+                                  <Icon name="edit" size={13} />
+                                </button>
+                                <button className="person-task-action danger" onClick={() => handleDeleteSingleTask(task.id)} aria-label="ডিলিট করুন">
+                                  <Icon name="trash" size={13} />
+                                </button>
                               </div>
-                            </td>
-                            <td>{task.projects?.name ?? '—'}</td>
-                            <td>
-                              {task.profiles ? (
-                                <div className="avatar-cell">
-                                  <Avatar person={task.profiles} size={20} />
-                                  {task.profiles.full_name}
+                              {checklist.length > 0 && (
+                                <div className="person-task-checklist">
+                                  {checklist.map((item) => (
+                                    <button key={item.id} className={`person-checklist-item${item.is_done ? ' done' : ''}`} onClick={() => toggleChecklistItemCard(task.id, item)}>
+                                      <span className="icb">{item.is_done && <Icon name="tick" size={7} color="#fff" />}</span>
+                                      {item.label}
+                                    </button>
+                                  ))}
                                 </div>
-                              ) : (
-                                <span style={{ color: 'var(--ink-faint)' }}>অনির্ধারিত</span>
                               )}
-                            </td>
-                            <td><span className={`priority-pill ${priority.cls}`}>{priority.label}</span></td>
-                            <td>
-                              <div className="stage-stack">
-                                <span className={`status-pill ${status.cls}`}>{status.label}</span>
-                                <span className="stage-text">{STAGE_LABEL[task.workflow_stage] ?? task.workflow_stage}</span>
-                              </div>
-                            </td>
-                            <td className={`due-cell tabular${due.cls ? ` ${due.cls}` : ''}`}>{due.text || '—'}</td>
-                            <td className="tabular">{task.estimated_hours ? `${task.estimated_hours}h` : '—'}</td>
-                            <td>
-                              <div className="mini-progress-track"><div className="mini-progress-fill" style={{ width: `${task.progress ?? 0}%` }}></div></div>
-                              <div className="progress-num tabular">{task.progress ?? 0}%</div>
-                            </td>
-                            <td className="updated-cell">{relativeTimeBn(task.updated_at)}</td>
-                            <td><span className="expand-chevron"><Icon name="chevron-right" /></span></td>
-                          </tr>
-
-                          {isExpanded && (
-                            <tr className="expand-row">
-                              <td colSpan={12}>
-                                <div className="expand-content" onClick={(e) => e.stopPropagation()}>
-                                  <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                      <span className="expand-label" style={{ marginBottom: 0 }}>স্ট্যাটাস</span>
-                                      <select
-                                        className="field-input"
-                                        style={{ marginBottom: 0, width: 'auto', padding: '4px 8px' }}
-                                        value={task.status}
-                                        onChange={(e) => changeStatus(task.id, e.target.value as TaskStatus)}
-                                      >
-                                        {(Object.keys(STATUS_META) as TaskStatus[]).map((s) => (
-                                          <option key={s} value={s}>{STATUS_META[s].label}</option>
-                                        ))}
-                                      </select>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                      <span className="expand-label" style={{ marginBottom: 0 }}>অ্যাসাইনি</span>
-                                      <select
-                                        className="field-input"
-                                        style={{ marginBottom: 0, width: 'auto', padding: '4px 8px' }}
-                                        value={task.assignee_id ?? ''}
-                                        onChange={(e) => changeAssignee(task.id, e.target.value)}
-                                      >
-                                        <option value="">অনির্ধারিত</option>
-                                        {assigneeOptions.map((a) => (
-                                          <option key={a.id} value={a.id}>{a.full_name}</option>
-                                        ))}
-                                      </select>
-                                    </div>
-                                  </div>
-
-                                  <div className="expand-grid">
-                                    <div>
-                                      <div className="expand-label">Description</div>
-                                      <textarea
-                                        className="field-input"
-                                        style={{ minHeight: 64, resize: 'vertical', marginBottom: 16 }}
-                                        placeholder="একটা বিবরণ যোগ করুন..."
-                                        value={task.description ?? ''}
-                                        onChange={(e) => {
-                                          const value = e.target.value;
-                                          setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, description: value } : t)));
-                                        }}
-                                        onBlur={(e) => changeDescription(task.id, e.target.value)}
-                                      />
-
-                                      <div className="expand-label">
-                                        Checklist{detail && detail.checklist.length > 0 ? ` · ${detail.checklist.filter((c) => c.is_done).length}/${detail.checklist.length}` : ''}
-                                      </div>
-                                      {!detail || detail.loading ? (
-                                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
-                                      ) : (
-                                        <>
-                                          {detail.checklist.length === 0 ? (
-                                            <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>কোনো চেকলিস্ট আইটেম নেই।</p>
-                                          ) : (
-                                            detail.checklist.map((item) => (
-                                              <button key={item.id} className={`checklist-item${item.is_done ? ' done' : ''}`} onClick={() => toggleChecklistItem(task.id, item)}>
-                                                <span className="icb">{item.is_done && <Icon name="tick" size={8} color="#fff" />}</span>
-                                                {item.label}
-                                              </button>
-                                            ))
-                                          )}
-                                          <div className="comment-form">
-                                            <input
-                                              type="text"
-                                              placeholder="নতুন আইটেম যোগ করুন..."
-                                              value={newChecklistItem[task.id] ?? ''}
-                                              onChange={(e) => setNewChecklistItem((prev) => ({ ...prev, [task.id]: e.target.value }))}
-                                              onKeyDown={(e) => {
-                                                if (e.key === 'Enter') addChecklistItem(task.id);
-                                              }}
-                                            />
-                                            <button className="btn btn-ghost btn-sm" onClick={() => addChecklistItem(task.id)}>যোগ করুন</button>
-                                          </div>
-                                        </>
-                                      )}
-                                    </div>
-
-                                    <div>
-                                      <div className="expand-label">Attachments</div>
-                                      {!detail || detail.loading ? (
-                                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
-                                      ) : detail.attachments.length === 0 ? (
-                                        <div className="design-preview-card" style={{ opacity: 0.6 }}>
-                                          <div className="dp-row">
-                                            <div className="dp-thumb"><Icon name="figma" size={14} /></div>
-                                            <div className="dp-meta">কোনো ফাইল আপলোড হয়নি</div>
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        detail.attachments.map((a) => (
-                                          <div className="design-preview-card" key={a.id}>
-                                            <div className="dp-row">
-                                              <div className="dp-thumb"><Icon name="figma" size={14} /></div>
-                                              <div className="dp-meta">
-                                                {a.file_name} {a.file_type ? `· ${a.file_type}` : ''}
-                                                <br />
-                                                <a href={a.drive_url} target="_blank" rel="noopener noreferrer">Drive-এ দেখুন</a>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        ))
-                                      )}
-
-                                      <div className="expand-label">Comments{detail && detail.comments.length > 0 ? ` · ${detail.comments.length}` : ''}</div>
-                                      {!detail || detail.loading ? (
-                                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
-                                      ) : (
-                                        <>
-                                          {detail.comments.length === 0 && <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>এখনো কোনো কমেন্ট নেই।</p>}
-                                          {detail.comments.map((c) => (
-                                            <div className="expand-comment" key={c.id}>
-                                              <Avatar person={c.profiles} size={20} />
-                                              <div className="expand-comment-bubble">
-                                                <b>{c.profiles?.full_name ?? 'কেউ একজন'}:</b> {c.body}
-                                              </div>
-                                            </div>
-                                          ))}
-                                          <div className="comment-form">
-                                            <input
-                                              type="text"
-                                              placeholder="কমেন্ট লিখুন..."
-                                              value={newComment[task.id] ?? ''}
-                                              onChange={(e) => setNewComment((prev) => ({ ...prev, [task.id]: e.target.value }))}
-                                              onKeyDown={(e) => {
-                                                if (e.key === 'Enter') submitComment(task.id);
-                                              }}
-                                            />
-                                            <button className="btn btn-ghost btn-sm" onClick={() => submitComment(task.id)}>পাঠান</button>
-                                          </div>
-                                        </>
-                                      )}
-
-                                      <div className="expand-label" style={{ marginTop: 14 }}>Activity Timeline</div>
-                                      {!detail || detail.loading ? (
-                                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
-                                      ) : detail.activity.length === 0 ? (
-                                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>এখনো কোনো অ্যাক্টিভিটি নেই।</p>
-                                      ) : (
-                                        <div style={{ fontSize: 11, color: 'var(--ink-soft)', lineHeight: 2 }}>
-                                          {detail.activity.map((a) => (
-                                            <div key={a.id}>
-                                              {a.profiles?.full_name ?? 'কেউ একজন'} — {a.detail} · {relativeTimeBn(a.created_at)}
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
             </>
@@ -1211,7 +994,6 @@ function TasksPageInner() {
                               const priority = PRIORITY_META[t.priority];
                               return (
                                 <button className="week-task-card" key={t.id} onClick={() => openTaskFromWeek(t.id)}>
-                                  <span className={`pri-dot pri-${t.priority}`} style={{ display: 'inline-block' }}></span>
                                   <span className="week-task-title">{t.title}</span>
                                   {t.profiles && <Avatar person={t.profiles} size={18} />}
                                   <span className={`priority-pill ${priority.cls}`} style={{ fontSize: 9.5, padding: '1px 6px' }}>{priority.label}</span>
@@ -1246,6 +1028,7 @@ function TasksPageInner() {
                       onClick={() => {
                         setModalPlanDate(weekStartISO);
                         setModalPlanTitle('');
+                        setModalPlanDetails('');
                         setShowAddPlanModal(true);
                       }}
                     >
@@ -1284,9 +1067,13 @@ function TasksPageInner() {
                           ) : dayPlans.length === 0 && !isAdding ? (
                             <div className="week-empty">No plans yet</div>
                           ) : (
-                            dayPlans.map((p) => (
+                            dayPlans.map((p, idx) => (
                               <div className="plan-item" key={p.id}>
-                                <span className="plan-item-title">{p.title}</span>
+                                <span className="plan-item-badge tabular">{idx + 1}</span>
+                                <div className="plan-item-body">
+                                  <span className="plan-item-title">{p.title}</span>
+                                  {p.details && <span className="plan-item-details">{p.details}</span>}
+                                </div>
                                 <button className="plan-item-delete" onClick={() => handleDeletePlanItem(p.id)} aria-label="মুছুন">
                                   <Icon name="trash" size={12} />
                                 </button>
@@ -1364,13 +1151,20 @@ function TasksPageInner() {
                 ))}
               </select>
 
-              <label className="field-label">কাকে অ্যাসাইন করবেন</label>
-              <select className="field-input" value={newAssigneeId} onChange={(e) => setNewAssigneeId(e.target.value)}>
-                <option value="">অনির্ধারিত</option>
-                {assigneeOptions.map((a) => (
-                  <option key={a.id} value={a.id}>{a.full_name}</option>
-                ))}
-              </select>
+              <label className="field-label">Assign to {newAssigneeIds.length > 0 ? `— ${newAssigneeIds.length} selected` : ''}</label>
+              <div className="assignee-check-grid">
+                {assigneeOptions.map((a) => {
+                  const checked = newAssigneeIds.includes(a.id);
+                  return (
+                    <button type="button" key={a.id} className={`assignee-check-item${checked ? ' checked' : ''}`} onClick={() => toggleNewAssignee(a.id)}>
+                      <span className={`cb${checked ? ' checked' : ''}`}>{checked && <Icon name="tick" size={9} color="#fff" />}</span>
+                      <Avatar person={a} size={20} />
+                      {a.full_name}
+                    </button>
+                  );
+                })}
+              </div>
+              {newAssigneeIds.length === 0 && <p style={{ fontSize: 11.5, color: 'var(--ink-faint)', margin: '2px 0 14px' }}>কাউকে না বাছলে টাস্কটা অনির্ধারিত থাকবে।</p>}
 
               <label className="field-label">প্রায়োরিটি</label>
               <select className="field-input" value={newPriority} onChange={(e) => setNewPriority(e.target.value as TaskPriority)}>
@@ -1385,7 +1179,209 @@ function TasksPageInner() {
               <div className="modal-foot">
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowCreate(false)}>বাতিল</button>
                 <button type="submit" className="btn btn-accent btn-sm" disabled={creating || !newTitle.trim()}>
-                  {creating ? 'তৈরি হচ্ছে…' : 'টাস্ক তৈরি করুন'}
+                  {creating ? 'তৈরি হচ্ছে…' : newAssigneeIds.length > 1 ? `Assign to ${newAssigneeIds.length} selected` : 'টাস্ক তৈরি করুন'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* edit task modal — List কার্ডের Edit বাটন + Weekly Tasks থেকে এলে খোলে;
+          পুরনো table-এর expand-row-এ থাকা comments/attachments/checklist/activity
+          এখানেই থাকে, কোনো ফাংশনালিটি হারায়নি */}
+      {editingTask && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditTaskId(null);
+          }}
+        >
+          <div className="modal-box modal-box-lg">
+            <div className="modal-title">টাস্ক এডিট করুন</div>
+            <form onSubmit={handleEditTaskSubmit}>
+              <label className="field-label">টাস্কের নাম</label>
+              <input
+                className="field-input"
+                type="text"
+                value={editForm.title}
+                onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                autoFocus
+                required
+              />
+
+              <div className="edit-field-row">
+                <div>
+                  <label className="field-label">প্রজেক্ট</label>
+                  <select className="field-input" value={editForm.projectId} onChange={(e) => setEditForm((f) => ({ ...f, projectId: e.target.value }))}>
+                    <option value="">কোনো প্রজেক্ট নেই</option>
+                    {projectOptions.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="field-label">অ্যাসাইনি</label>
+                  <select className="field-input" value={editForm.assigneeId} onChange={(e) => setEditForm((f) => ({ ...f, assigneeId: e.target.value }))}>
+                    <option value="">অনির্ধারিত</option>
+                    {assigneeOptions.map((a) => (
+                      <option key={a.id} value={a.id}>{a.full_name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="edit-field-row">
+                <div>
+                  <label className="field-label">প্রায়োরিটি</label>
+                  <select className="field-input" value={editForm.priority} onChange={(e) => setEditForm((f) => ({ ...f, priority: e.target.value as TaskPriority }))}>
+                    {(Object.keys(PRIORITY_META) as TaskPriority[]).map((p) => (
+                      <option key={p} value={p}>{PRIORITY_META[p].label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="field-label">স্ট্যাটাস</label>
+                  <select className="field-input" value={editForm.status} onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value as TaskStatus }))}>
+                    {(Object.keys(STATUS_META) as TaskStatus[]).map((s) => (
+                      <option key={s} value={s}>{STATUS_META[s].label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <label className="field-label">ডেডলাইন</label>
+              <input className="field-input" type="date" value={editForm.dueDate} onChange={(e) => setEditForm((f) => ({ ...f, dueDate: e.target.value }))} />
+
+              <label className="field-label">Description</label>
+              <textarea
+                className="field-input"
+                style={{ minHeight: 64, resize: 'vertical' }}
+                value={editForm.description}
+                onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                placeholder="একটা বিবরণ যোগ করুন..."
+              />
+
+              {(() => {
+                const detail = expandData[editingTask.id];
+                return (
+                  <div className="expand-grid" style={{ marginTop: 6 }}>
+                    <div>
+                      <div className="expand-label">
+                        Checklist{detail && detail.checklist.length > 0 ? ` · ${detail.checklist.filter((c) => c.is_done).length}/${detail.checklist.length}` : ''}
+                      </div>
+                      {!detail || detail.loading ? (
+                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
+                      ) : (
+                        <>
+                          {detail.checklist.length === 0 ? (
+                            <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>কোনো চেকলিস্ট আইটেম নেই।</p>
+                          ) : (
+                            detail.checklist.map((item) => (
+                              <button type="button" key={item.id} className={`checklist-item${item.is_done ? ' done' : ''}`} onClick={() => toggleChecklistItem(editingTask.id, item)}>
+                                <span className="icb">{item.is_done && <Icon name="tick" size={8} color="#fff" />}</span>
+                                {item.label}
+                              </button>
+                            ))
+                          )}
+                          <div className="comment-form">
+                            <input
+                              type="text"
+                              placeholder="নতুন আইটেম যোগ করুন..."
+                              value={newChecklistItem[editingTask.id] ?? ''}
+                              onChange={(e) => setNewChecklistItem((prev) => ({ ...prev, [editingTask.id]: e.target.value }))}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') { e.preventDefault(); addChecklistItem(editingTask.id); }
+                              }}
+                            />
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={() => addChecklistItem(editingTask.id)}>যোগ করুন</button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="expand-label">Attachments</div>
+                      {!detail || detail.loading ? (
+                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
+                      ) : detail.attachments.length === 0 ? (
+                        <div className="design-preview-card" style={{ opacity: 0.6 }}>
+                          <div className="dp-row">
+                            <div className="dp-thumb"><Icon name="figma" size={14} /></div>
+                            <div className="dp-meta">কোনো ফাইল আপলোড হয়নি</div>
+                          </div>
+                        </div>
+                      ) : (
+                        detail.attachments.map((a) => (
+                          <div className="design-preview-card" key={a.id}>
+                            <div className="dp-row">
+                              <div className="dp-thumb"><Icon name="figma" size={14} /></div>
+                              <div className="dp-meta">
+                                {a.file_name} {a.file_type ? `· ${a.file_type}` : ''}
+                                <br />
+                                <a href={a.drive_url} target="_blank" rel="noopener noreferrer">Drive-এ দেখুন</a>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+
+                      <div className="expand-label">Comments{detail && detail.comments.length > 0 ? ` · ${detail.comments.length}` : ''}</div>
+                      {!detail || detail.loading ? (
+                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
+                      ) : (
+                        <>
+                          {detail.comments.length === 0 && <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>এখনো কোনো কমেন্ট নেই।</p>}
+                          {detail.comments.map((c) => (
+                            <div className="expand-comment" key={c.id}>
+                              <Avatar person={c.profiles} size={20} />
+                              <div className="expand-comment-bubble">
+                                <b>{c.profiles?.full_name ?? 'কেউ একজন'}:</b> {c.body}
+                              </div>
+                            </div>
+                          ))}
+                          <div className="comment-form">
+                            <input
+                              type="text"
+                              placeholder="কমেন্ট লিখুন..."
+                              value={newComment[editingTask.id] ?? ''}
+                              onChange={(e) => setNewComment((prev) => ({ ...prev, [editingTask.id]: e.target.value }))}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') { e.preventDefault(); submitComment(editingTask.id); }
+                              }}
+                            />
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={() => submitComment(editingTask.id)}>পাঠান</button>
+                          </div>
+                        </>
+                      )}
+
+                      <div className="expand-label" style={{ marginTop: 14 }}>Activity Timeline</div>
+                      {!detail || detail.loading ? (
+                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
+                      ) : detail.activity.length === 0 ? (
+                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>এখনো কোনো অ্যাক্টিভিটি নেই।</p>
+                      ) : (
+                        <div style={{ fontSize: 11, color: 'var(--ink-soft)', lineHeight: 2 }}>
+                          {detail.activity.map((a) => (
+                            <div key={a.id}>
+                              {a.profiles?.full_name ?? 'কেউ একজন'} — {a.detail} · {relativeTimeBn(a.created_at)}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="modal-foot">
+                <button type="button" className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => { handleDeleteSingleTask(editingTask.id); setEditTaskId(null); }}>
+                  <Icon name="trash" size={13} /> ডিলিট
+                </button>
+                <div style={{ flex: 1 }}></div>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditTaskId(null)}>বাতিল</button>
+                <button type="submit" className="btn btn-accent btn-sm" disabled={editSaving || !editForm.title.trim()}>
+                  {editSaving ? 'সেভ হচ্ছে…' : 'সেভ করুন'}
                 </button>
               </div>
             </form>
@@ -1407,11 +1403,11 @@ function TasksPageInner() {
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (!modalPlanTitle.trim() || !modalPlanDate) return;
-                await handleAddPlanItem(modalPlanDate, modalPlanTitle);
+                await handleAddPlanItem(modalPlanDate, modalPlanTitle, modalPlanDetails);
                 setShowAddPlanModal(false);
               }}
             >
-              <label className="field-label">দিন</label>
+              <label className="field-label">Plan date</label>
               <select className="field-input" value={modalPlanDate} onChange={(e) => setModalPlanDate(e.target.value)}>
                 {weekDays.map((d, i) => (
                   <option key={isoDate(d)} value={isoDate(d)}>
@@ -1420,7 +1416,7 @@ function TasksPageInner() {
                 ))}
               </select>
 
-              <label className="field-label">শিরোনাম</label>
+              <label className="field-label">Plan title</label>
               <input
                 className="field-input"
                 type="text"
@@ -1429,6 +1425,15 @@ function TasksPageInner() {
                 placeholder="যেমন: Client review call — 3pm"
                 autoFocus
                 required
+              />
+
+              <label className="field-label">Details</label>
+              <textarea
+                className="field-input"
+                style={{ minHeight: 70, resize: 'vertical' }}
+                value={modalPlanDetails}
+                onChange={(e) => setModalPlanDetails(e.target.value)}
+                placeholder="বিস্তারিত লিখুন (ঐচ্ছিক)..."
               />
 
               <div className="modal-foot">

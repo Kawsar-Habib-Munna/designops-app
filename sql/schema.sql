@@ -2117,4 +2117,9 @@ drop policy if exists "team can write weekly_plan_items" on weekly_plan_items;
 drop policy if exists "team can delete weekly_plan_items" on weekly_plan_items;
 create policy "team can read weekly_plan_items" on weekly_plan_items for select using (public.is_team_member());
 create policy "team can write weekly_plan_items" on weekly_plan_items for insert with check (public.is_team_member());
+
+-- মকআপে Add Weekly Plan মোডালে Plan date/Plan title-এর পাশাপাশি Details
+-- (longer text) ফিল্ডও ছিল, আর প্রতি দিনের কার্ডে সেটা টাইটেলের নিচে ছোট
+-- ধূসর টেক্সট হিসেবে দেখা যায় — তাই আলাদা কলাম যোগ হলো।
+alter table weekly_plan_items add column if not exists details text;
 create policy "team can delete weekly_plan_items" on weekly_plan_items for delete using (public.is_team_member());
