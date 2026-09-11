@@ -353,17 +353,28 @@
   justify-content: center;
 }
 
-/* ---- three column body ---- */
+/* ---- three column body ----
+   .hub-body-এর ancestor (.shell/.main) শুধু min-height:100vh ব্যবহার করে,
+   কোনো ফিক্সড height না — তাই আগের overflow:hidden + overflow-y:auto
+   কম্বো (ভেতরের দুটো কলাম আলাদাভাবে স্ক্রল করার জন্য বানানো) আসলে কখনো
+   কার্যকর হতো না, পুরো পেজটাই এক সাথে স্ক্রল হতো আর local-nav হারিয়ে যেত।
+   এখন সহজ, নির্ভরযোগ্য ফিক্স: local-nav-কে position:sticky করে দেওয়া
+   (topbar-এর 60px উচ্চতার ঠিক নিচে), যাতে ডান পাশের কনটেন্ট স্বাভাবিক পেজ
+   স্ক্রলে চলে যায় কিন্তু বাম নেভ জায়গায় আটকে থাকে — .sidebar (অ্যাপ-ওয়াইড
+   নেভ) আগে থেকেই এই একই প্যাটার্নে কাজ করে। */
 .discussions-root .hub-body {
   flex: 1;
   display: flex;
-  overflow: hidden;
 }
 
 /* local nav column */
 .discussions-root .local-nav {
   width: 196px;
   flex-shrink: 0;
+  align-self: flex-start;
+  position: sticky;
+  top: 60px;
+  max-height: calc(100vh - 60px);
   border-right: 1px solid var(--border);
   background: var(--surface);
   padding: 18px 12px;
