@@ -94,6 +94,20 @@ export default function WhiteboardPage() {
   const lastKnownRef = useRef<{ updatedBy: string; updatedAt: string } | null>(null);
   const dismissedUpdatedAtRef = useRef<string | null>(null);
 
+  // সেভ চলাকালীন কেউ রিফ্রেশ/ট্যাব বন্ধ করলে ব্রাউজার নিজে থেকেই সতর্ক করবে —
+  // অসময়ে রিফ্রেশ করলে সেভ শেষ হওয়ার আগের (পুরনো) কন্টেন্ট দেখে "সব মুছে গেছে"
+  // মনে হতে পারে, তাই এটা আটকানো
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (saveStatus === 'saving') {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [saveStatus]);
+
   useEffect(() => {
     if (!user) return;
     supabase
