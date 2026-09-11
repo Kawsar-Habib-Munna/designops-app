@@ -233,6 +233,7 @@ function TasksPageInner() {
   const [activeView, setActiveView] = useState<SmartView>('all');
   const [search, setSearch] = useState('');
   const [advOpen, setAdvOpen] = useState(false);
+  const [listScope, setListScope] = useState<WeeklyScope>('team');
 
   const [expandData, setExpandData] = useState<Record<string, ExpandData>>({});
   const [newComment, setNewComment] = useState<Record<string, string>>({});
@@ -491,7 +492,8 @@ function TasksPageInner() {
   // "My Tasks"/"Overdue" ইত্যাদি pill এখানেও কাজ করে। ----
   const memberTaskCards = useMemo(() => {
     const noConstraint = activeView === 'all' && !search.trim();
-    return assigneeOptions
+    const people = listScope === 'mine' && user ? assigneeOptions.filter((p) => p.id === user.id) : assigneeOptions;
+    return people
       .map((p) => {
         const personTasks = tasks.filter((t) => t.assignee_id === p.id);
         const shown = filtered.filter((t) => t.assignee_id === p.id);
@@ -500,7 +502,7 @@ function TasksPageInner() {
         return { profile: p, personTasks, shown, activeCount: active.length, avgProgress };
       })
       .filter((m) => noConstraint || m.shown.length > 0);
-  }, [assigneeOptions, tasks, filtered, activeView, search]);
+  }, [assigneeOptions, tasks, filtered, activeView, search, listScope, user]);
 
   const weeklyScopedTasks = useMemo(() => (weeklyScope === 'mine' && user ? tasks.filter((t) => t.assignee_id === user.id) : tasks), [tasks, weeklyScope, user]);
 
@@ -1044,6 +1046,14 @@ function TasksPageInner() {
             </div>
 
             {/* per-person card list */}
+            <div className="scope-toggle" style={{ marginBottom: 14 }}>
+              <button className={`scope-btn${listScope === 'mine' ? ' active' : ''}`} onClick={() => setListScope('mine')}>
+                <Icon name="user" size={13} /> My tasks
+              </button>
+              <button className={`scope-btn${listScope === 'team' ? ' active' : ''}`} onClick={() => setListScope('team')}>
+                <Icon name="users2" size={13} /> Team tasks
+              </button>
+            </div>
             {loading ? (
               <div className="table-scroll">
                 <div style={{ padding: 40, textAlign: 'center', fontSize: 13, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</div>
