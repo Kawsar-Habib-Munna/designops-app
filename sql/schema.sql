@@ -2145,19 +2145,8 @@ create policy "team can read weekly_plan_checklist_items" on weekly_plan_checkli
 create policy "team can write weekly_plan_checklist_items" on weekly_plan_checklist_items for all using (public.is_team_member());
 
 -- ============================================
--- SHARED TEAM WHITEBOARD — budget_settings-এর মতো একটাই singleton row,
--- tldraw-এর পুরো ডকুমেন্ট state jsonb স্ন্যাপশট হিসেবে সেভ হয়। এডমিন-অনলি
--- না — এটা সবার শেয়ার্ড ক্যানভাস, তাই team member read+write দুটোই পারবে।
-create table if not exists whiteboard_state (
-  id boolean primary key default true check (id),
-  snapshot jsonb not null default '{}'::jsonb,
-  updated_by uuid references profiles(id),
-  updated_at timestamptz default now()
-);
-insert into whiteboard_state (id) values (true) on conflict do nothing;
-
-alter table whiteboard_state enable row level security;
-drop policy if exists "team can read whiteboard_state" on whiteboard_state;
-drop policy if exists "team can write whiteboard_state" on whiteboard_state;
-create policy "team can read whiteboard_state" on whiteboard_state for select using (public.is_team_member());
-create policy "team can write whiteboard_state" on whiteboard_state for update using (public.is_team_member());
+-- SHARED TEAM WHITEBOARD — ডেটা Supabase-এ না, Google Drive-এ থাকে (একটা
+-- flow53-whiteboard-state.json ফাইলে, app/api/whiteboard/route.ts দেখুন) —
+-- অ্যাপের বাকি "আসল ফাইল" কন্টেন্টের (avatar/attachment/logo) মতোই। এই
+-- টেবিলটা আগে চেষ্টা করা হয়েছিল, এখন আর ব্যবহার হয় না — drop করে দেওয়া হলো।
+drop table if exists whiteboard_state;
