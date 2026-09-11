@@ -84,6 +84,7 @@ export default function WhiteboardPage() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [presentUsers, setPresentUsers] = useState<{ id: string; name: string; avatar_color: string | null; avatar_url: string | null }[]>([]);
   const [showReloadBanner, setShowReloadBanner] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const editorRef = useRef<Editor | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -115,9 +116,11 @@ export default function WhiteboardPage() {
         const result = await saveWhiteboardSnapshot(snapshot);
         lastKnownRef.current = { updatedBy: user.id, updatedAt: result.updatedAt };
         setSaveStatus('saved');
+        setErrorMessage(null);
       } catch (err) {
         console.error('হোয়াইটবোর্ড সেভ করতে সমস্যা হয়েছে:', err);
         setSaveStatus('error');
+        setErrorMessage(err instanceof Error ? err.message : 'হোয়াইটবোর্ড সেভ করা যায়নি।');
       }
     }, 1500);
   }
@@ -153,6 +156,7 @@ export default function WhiteboardPage() {
         }
       } catch (err) {
         console.error('হোয়াইটবোর্ড লোড করতে সমস্যা হয়েছে:', err);
+        setErrorMessage(err instanceof Error ? err.message : 'হোয়াইটবোর্ড লোড করা যায়নি।');
       } finally {
         isApplyingRemoteRef.current = false;
         if (userEditedDuringInitialLoad) scheduleSave(editor);
@@ -266,6 +270,13 @@ export default function WhiteboardPage() {
           <span>টিমের অন্য কেউ বোর্ড আপডেট করেছে।</span>
           <button className="wb-reload-btn" onClick={handleReloadClick}>রিলোড করুন</button>
           <button className="wb-dismiss-btn" onClick={handleDismissBanner} aria-label="বন্ধ করুন">✕</button>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="wb-error-banner">
+          <span>{errorMessage}</span>
+          <button className="wb-dismiss-btn" onClick={() => setErrorMessage(null)} aria-label="বন্ধ করুন">✕</button>
         </div>
       )}
 

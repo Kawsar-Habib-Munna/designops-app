@@ -52,6 +52,7 @@
 .whiteboard-root .wb-reload-btn{background:var(--accent);color:#fff;border:none;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;}
 .whiteboard-root .wb-dismiss-btn{background:transparent;color:rgba(255,255,255,.7);border:none;font-size:13px;padding:2px 4px;line-height:1;}
 .whiteboard-root .wb-dismiss-btn:hover{color:#fff;}
+.whiteboard-root .wb-error-banner{position:absolute;top:112px;left:50%;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:12px;padding:9px 14px;border-radius:12px;background:var(--danger);color:#fff;font-size:12.5px;box-shadow:var(--shadow-sm);max-width:min(90vw,560px);}
 
 .whiteboard-root .wb-canvas{position:relative;flex:1;min-height:0;}
 
