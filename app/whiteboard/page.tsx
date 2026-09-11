@@ -1,14 +1,17 @@
 'use client';
 
 // শেয়ার্ড টিম হোয়াইটবোর্ড — একটাই ক্যানভাস (সবার জন্য কমন, প্রজেক্ট/ক্লায়েন্ট-ভিত্তিক
-// আলাদা বোর্ড না), ড্রয়িং tldraw লাইব্রেরি দিয়ে (shapes/freehand/sticky notes/
-// pan-zoom/undo-redo/PNG-SVG export — সবকিছু লাইব্রেরির নিজস্ব)।
+// আলাদা বোর্ড না), ড্রয়িং Excalidraw লাইব্রেরি দিয়ে (shapes/freehand/sticky notes/
+// pan-zoom/undo-redo/PNG-SVG export — সবকিছু লাইব্রেরির নিজস্ব)। MIT-লাইসেন্সড,
+// কোনো watermark/production license লাগে না — এর আগে tldraw ব্যবহার করা
+// হয়েছিল, কিন্তু সেটার প্রোডাকশন ব্যবহারে পেইড লাইসেন্স লাগে বলে এটায় সরানো হয়েছে।
 //
-// পার্সিস্টেন্স: পুরো ডকুমেন্ট state (আঁকা সহ, পেস্ট করা ছবিও — tldraw ডিফল্টে
-// ছবি base64 হিসেবে স্ন্যাপশটের ভেতরেই এম্বেড করে) Supabase DB-তে না, Google
-// Drive-এ একটাই JSON ফাইলে থাকে (app/api/whiteboard/route.ts, lib/googleDrive.ts-এর
-// একই দেডিকেটেড অ্যাকাউন্ট/ফোল্ডার যেটা avatar/attachment/logo-এর জন্য ব্যবহৃত হয়)।
-// এডিট করলে ~1.5 সেকেন্ড ইনঅ্যাক্টিভিটির পর debounced অটোসেভ হয়।
+// পার্সিস্টেন্স: elements + appState (একটা ছোট, JSON-সেফ সাবসেট) + files (পেস্ট
+// করা ছবি, base64 হিসেবে) — একসাথে একটাই JSON অবজেক্ট হিসেবে Supabase DB-তে না,
+// Google Drive-এ একটাই JSON ফাইলে থাকে (app/api/whiteboard/route.ts,
+// lib/googleDrive.ts-এর একই দেডিকেটেড অ্যাকাউন্ট/ফোল্ডার যেটা avatar/attachment/
+// logo-এর জন্য ব্যবহৃত হয়)। এডিট করলে ~1.5 সেকেন্ড ইনঅ্যাক্টিভিটির পর debounced
+// অটোসেভ হয়।
 //
 // সত্যিকারের লাইভ মাল্টি-কার্সার কোলাবোরেশন না — every কয়েক সেকেন্ডে হালকা
 // পোলিং (Drive ফাইলের properties মেটাডেটা, কন্টেন্ট ডাউনলোড ছাড়াই) করে অন্য কেউ
@@ -19,18 +22,33 @@
 
 import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Tldraw, getSnapshot, loadSnapshot, type Editor, type TLEditorSnapshot } from 'tldraw';
-import 'tldraw/tldraw.css';
+import dynamic from 'next/dynamic';
+import '@excalidraw/excalidraw/index.css';
+
+// @excalidraw/excalidraw মডিউল-লোড টাইমেই `window` অ্যাক্সেস করে, তাই Next.js-এর
+// সার্ভার-সাইড প্রিরেন্ডারে ইম্পোর্ট করলে বিল্ড ফেইল করে ("window is not defined")।
+// next/dynamic দিয়ে ssr:false — Excalidraw নিজে ডকুমেন্টেশনেই এটা সুপারিশ করে।
+const Excalidraw = dynamic(() => import('@excalidraw/excalidraw').then((mod) => mod.Excalidraw), { ssr: false });
+import type { ExcalidrawImperativeAPI, AppState, BinaryFiles, BinaryFileData } from '@excalidraw/excalidraw/types';
+import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import './whiteboard.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
 import SignInScreen from '@/app/components/SignInScreen';
 import Avatar from '@/app/components/Avatar';
 
+const ICON_PATHS: Record<string, string> = {
+  back: '<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>',
+};
+type IconName = keyof typeof ICON_PATHS;
+function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICON_PATHS[name] }} />
+  );
+}
+
 // ক্যানভাস রেন্ডার করতে গিয়ে কোনো এরর হলে পুরো পেজ ক্র্যাশ করে খালি রাখার বদলে
-// অন্তত দৃশ্যমান একটা এরর মেসেজ দেখায় — আগে এই বাউন্ডারি না থাকায় tldraw
-// ব্যর্থ হলে ক্যানভাসের জায়গাটা নীরবে খালি থেকে যাচ্ছিল, কী ভুল হয়েছে বোঝার
-// কোনো উপায়ই ছিল না।
+// অন্তত দৃশ্যমান একটা এরর মেসেজ দেখায়।
 class CanvasErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   constructor(props: { children: ReactNode }) {
     super(props);
@@ -56,21 +74,13 @@ class CanvasErrorBoundary extends Component<{ children: ReactNode }, { error: Er
   }
 }
 
-const ICON_PATHS: Record<string, string> = {
-  back: '<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>',
-};
-type IconName = keyof typeof ICON_PATHS;
-function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICON_PATHS[name] }} />
-  );
-}
-
 type ProfileRow = { id: string; full_name: string; avatar_color: string | null; avatar_url: string | null };
 type PresenceMeta = { name: string; avatar_color: string | null; avatar_url: string | null };
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 type WhiteboardMeta = { updatedBy: string | null; updatedAt: string | null };
-type WhiteboardLoadResult = { data: { updatedBy: string; updatedAt: string; snapshot: TLEditorSnapshot } | null };
+type SavedAppState = { viewBackgroundColor: string; scrollX: number; scrollY: number; zoom: AppState['zoom'] };
+type WhiteboardSnapshot = { elements: readonly ExcalidrawElement[]; appState: SavedAppState; files: BinaryFiles };
+type WhiteboardLoadResult = { data: { updatedBy: string; updatedAt: string; snapshot: WhiteboardSnapshot } | null };
 
 async function authHeader() {
   const { data: { session } } = await supabase.auth.getSession();
@@ -105,7 +115,7 @@ async function loadWhiteboard(): Promise<WhiteboardLoadResult> {
   return json;
 }
 
-async function saveWhiteboardSnapshot(snapshot: TLEditorSnapshot): Promise<{ ok: true; updatedAt: string }> {
+async function saveWhiteboardSnapshot(snapshot: WhiteboardSnapshot): Promise<{ ok: true; updatedAt: string }> {
   const headers = await authHeader();
   const res = await fetchWithTimeout('/api/whiteboard', {
     method: 'POST',
@@ -129,16 +139,18 @@ export default function WhiteboardPage() {
   const { user, loading: sessionLoading } = useSession();
 
   const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [presentUsers, setPresentUsers] = useState<{ id: string; name: string; avatar_color: string | null; avatar_url: string | null }[]>([]);
   const [showReloadBanner, setShowReloadBanner] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const editorRef = useRef<Editor | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // নিজেরই loadSnapshot() কল (initial load / reload বাটন) যাতে ইমিডিয়েটলি আবার
-  // অটোসেভ ট্রিগার না করে — ওই সময়টুকু store.listen ইগনোর করে
+  // নিজেরই updateScene() কল (initial load / reload বাটন) যাতে ইমিডিয়েটলি আবার
+  // অটোসেভ ট্রিগার না করে — Excalidraw-এর onChange সব ধরনের পরিবর্তনেই ডাকে,
+  // প্রোগ্রামেটিক আপডেটও, তাই নিজেদের কলগুলো এই ref দিয়ে আলাদা করা হয়
   const isApplyingRemoteRef = useRef(false);
+  const userEditedDuringInitialLoadRef = useRef(false);
   const lastKnownRef = useRef<{ updatedBy: string; updatedAt: string } | null>(null);
   const dismissedUpdatedAtRef = useRef<string | null>(null);
 
@@ -168,13 +180,17 @@ export default function WhiteboardPage() {
       });
   }, [user]);
 
-  function scheduleSave(editor: Editor) {
+  function scheduleSave(elements: readonly ExcalidrawElement[], appState: AppState, files: BinaryFiles) {
     if (!user) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     setSaveStatus('saving');
     saveTimerRef.current = setTimeout(async () => {
       try {
-        const snapshot = getSnapshot(editor.store);
+        const snapshot: WhiteboardSnapshot = {
+          elements,
+          appState: { viewBackgroundColor: appState.viewBackgroundColor, scrollX: appState.scrollX, scrollY: appState.scrollY, zoom: appState.zoom },
+          files,
+        };
         const result = await saveWhiteboardSnapshot(snapshot);
         lastKnownRef.current = { updatedBy: user.id, updatedAt: result.updatedAt };
         setSaveStatus('saved');
@@ -187,31 +203,32 @@ export default function WhiteboardPage() {
     }, 1500);
   }
 
-  function handleMount(editor: Editor) {
-    editorRef.current = editor;
-    // পুরো initial-load উইন্ডো জুড়ে গার্ড — এডিটরের নিজস্ব bootstrap (blank
-    // ডকুমেন্ট তৈরি) থেকে যেন ভুলবশত autosave ট্রিগার না হয়
-    isApplyingRemoteRef.current = true;
-    let userEditedDuringInitialLoad = false;
+  function handleChange(elements: readonly ExcalidrawElement[], appState: AppState, files: BinaryFiles) {
+    if (isApplyingRemoteRef.current) {
+      // initial-load উইন্ডোতে সত্যিই কিছু আঁকা হলে সেটা মনে রাখি (খালি
+      // এলিমেন্টের no-op প্রথম onChange-টা বাদ দিয়ে), যাতে fetch শেষ হওয়ার পর
+      // পুরনো স্ন্যাপশট প্রয়োগ করে সেটা মুছে না যায়
+      if (elements.length > 0) userEditedDuringInitialLoadRef.current = true;
+      return;
+    }
+    scheduleSave(elements, appState, files);
+  }
 
-    const unsubscribe = editor.store.listen(
-      () => {
-        if (isApplyingRemoteRef.current) {
-          userEditedDuringInitialLoad = true;
-          return;
-        }
-        scheduleSave(editor);
-      },
-      { source: 'user', scope: 'document' }
-    );
+  // প্রথম লোড — excalidrawAPI রেডি হলে একবার চলে
+  useEffect(() => {
+    if (!excalidrawAPI || !user) return;
+    isApplyingRemoteRef.current = true;
+    userEditedDuringInitialLoadRef.current = false;
 
     (async () => {
       try {
         const result = await loadWhiteboard();
-        // fetch শেষ হওয়ার আগেই ব্যবহারকারী আঁকা শুরু করলে পুরনো স্ন্যাপশট
-        // প্রয়োগ করে সেটা মুছে ফেলা হবে না — এটাই এই ফাংশনের মূল বাগ-ফিক্স
-        if (result.data?.snapshot && !userEditedDuringInitialLoad) {
-          loadSnapshot(editor.store, result.data.snapshot);
+        if (result.data?.snapshot && !userEditedDuringInitialLoadRef.current) {
+          const snap = result.data.snapshot;
+          excalidrawAPI.updateScene({ elements: snap.elements, appState: snap.appState });
+          if (snap.files && Object.keys(snap.files).length > 0) {
+            excalidrawAPI.addFiles(Object.values(snap.files) as BinaryFileData[]);
+          }
         }
         if (result.data) {
           lastKnownRef.current = { updatedBy: result.data.updatedBy, updatedAt: result.data.updatedAt };
@@ -221,24 +238,26 @@ export default function WhiteboardPage() {
         setErrorMessage(err instanceof Error ? err.message : 'হোয়াইটবোর্ড লোড করা যায়নি।');
       } finally {
         isApplyingRemoteRef.current = false;
-        if (userEditedDuringInitialLoad) scheduleSave(editor);
+        if (userEditedDuringInitialLoadRef.current) {
+          scheduleSave(excalidrawAPI.getSceneElements(), excalidrawAPI.getAppState(), excalidrawAPI.getFiles());
+        }
       }
     })();
-
-    return () => {
-      unsubscribe();
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- শুধু excalidrawAPI প্রথমবার রেডি হলে চলবে, user বদলানোর কথা না সেশন-লাইফটাইমে
+  }, [excalidrawAPI]);
 
   async function handleReloadClick() {
     setShowReloadBanner(false);
-    if (!editorRef.current) return;
+    if (!excalidrawAPI) return;
     try {
       const result = await loadWhiteboard();
       if (result.data?.snapshot) {
         isApplyingRemoteRef.current = true;
-        loadSnapshot(editorRef.current.store, result.data.snapshot);
+        const snap = result.data.snapshot;
+        excalidrawAPI.updateScene({ elements: snap.elements, appState: snap.appState });
+        if (snap.files && Object.keys(snap.files).length > 0) {
+          excalidrawAPI.addFiles(Object.values(snap.files) as BinaryFileData[]);
+        }
         setTimeout(() => {
           isApplyingRemoteRef.current = false;
         }, 50);
@@ -344,7 +363,7 @@ export default function WhiteboardPage() {
 
       <div className="wb-canvas">
         <CanvasErrorBoundary>
-          <Tldraw onMount={handleMount} />
+          <Excalidraw excalidrawAPI={(api) => setExcalidrawAPI(api)} onChange={handleChange} theme="light" />
         </CanvasErrorBoundary>
       </div>
     </div>
