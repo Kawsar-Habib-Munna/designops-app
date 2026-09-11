@@ -2150,3 +2150,8 @@ create policy "team can write weekly_plan_checklist_items" on weekly_plan_checkl
 -- অ্যাপের বাকি "আসল ফাইল" কন্টেন্টের (avatar/attachment/logo) মতোই। এই
 -- টেবিলটা আগে চেষ্টা করা হয়েছিল, এখন আর ব্যবহার হয় না — drop করে দেওয়া হলো।
 drop table if exists whiteboard_state;
+
+-- Dashboard-এর Activity Feed-এ ডিলিট অপশন যোগ হওয়ায় — audit-trail ধরনের ডেটা
+-- বলে শুধু এডমিনরাই মুছতে পারবে (আগে কোনো delete পলিসিই ছিল না)।
+drop policy if exists "admin can delete activity" on activity_log;
+create policy "admin can delete activity" on activity_log for delete using (public.is_admin());

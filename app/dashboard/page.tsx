@@ -10,7 +10,7 @@ import "./dashboard.css";
 import { supabase } from "@/lib/supabaseClient";
 import { useSession } from "@/lib/useSession";
 import { useUnreadCount } from "@/lib/useUnreadCount";
-import { formatBnDate, formatTimeBn, dueMeta, todayISO } from "@/lib/format";
+import { formatBnDate, formatTimeBn, dueMeta, todayISO, relativeTimeBn } from "@/lib/format";
 import SignInScreen from "@/app/components/SignInScreen";
 import ProfileMenu from "@/app/components/ProfileMenu";
 import Avatar from "@/app/components/Avatar";
@@ -63,7 +63,44 @@ const ICON_PATHS: Record<string, string> = {
     '<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
   dollar: '<path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
   whiteboard: '<rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 9l3 3 2-2 4 4"/>',
+  trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
 };
+
+// action টাইপ অনুযায়ী আইকন + রং — flat ধূসর আইকনের বদলে অ্যাকশনের ধরন (তৈরি/মুছে
+// ফেলা/পেমেন্ট/স্ট্যাটাস বদল ইত্যাদি) এক নজরে বোঝা যায়
+function activityMeta(action: string): { icon: keyof typeof ICON_PATHS; cls: string } {
+  switch (action) {
+    case "task_created":
+    case "project_created":
+    case "client_added":
+      return { icon: "plus", cls: "act-positive" };
+    case "project_deleted":
+    case "payment_cancelled":
+    case "sow_cancelled":
+      return { icon: "close", cls: "act-danger" };
+    case "payment_received":
+    case "payment_confirmation_submitted":
+      return { icon: "dollar", cls: "act-positive" };
+    case "sow_signed":
+    case "sow_agency_signed":
+      return { icon: "check-circle", cls: "act-positive" };
+    case "sow_sent":
+    case "info_requested":
+    case "info_request_resolved":
+    case "requirements_submitted":
+      return { icon: "message", cls: "act-accent" };
+    case "file_uploaded":
+      return { icon: "upload", cls: "act-accent" };
+    case "client_notified":
+      return { icon: "bell", cls: "act-accent" };
+    case "status_changed":
+    case "project_updated":
+    case "manager_assigned":
+      return { icon: "chevron-right", cls: "act-accent" };
+    default:
+      return { icon: "check-circle", cls: "act-neutral" };
+  }
+}
 
 type IconName = keyof typeof ICON_PATHS;
 
@@ -146,6 +183,7 @@ type ProfileRow = {
   role: string | null;
   avatar_color: string | null;
   avatar_url?: string | null;
+  is_admin?: boolean;
 };
 
 type ProjectRow = {
@@ -285,7 +323,7 @@ export default function DashboardPage() {
       ] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url")
+          .select("id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url, is_admin")
           .eq("id", user!.id)
           .single(),
         supabase
@@ -492,6 +530,13 @@ export default function DashboardPage() {
           ? "একটা টাস্ক সম্পন্ন করা হয়েছে"
           : "একটা টাস্ক আবার খোলা হয়েছে",
     });
+  }
+
+  async function handleDeleteActivity(id: string) {
+    if (!window.confirm("এই অ্যাক্টিভিটি এন্ট্রিটা ডিলিট করতে চান? এটা ফিরিয়ে আনা যাবে না।")) return;
+    setActivity((prev) => prev.filter((a) => a.id !== id));
+    const { error: err } = await supabase.from("activity_log").delete().eq("id", id);
+    if (err) setError(err.message);
   }
 
   if (sessionLoading) return null;
@@ -959,29 +1004,33 @@ export default function DashboardPage() {
                         এখনো কোনো অ্যাক্টিভিটি নেই।
                       </p>
                     ) : (
-                      activity.map((a) => (
-                        <div className="activity-row" key={a.id}>
-                          <div className="activity-icon">
-                            <Icon
-                              name={
-                                a.action === "task_created"
-                                  ? "plus"
-                                  : "check-circle"
-                              }
-                              size={14}
-                            />
-                          </div>
-                          <div>
-                            <div className="activity-text">
-                              <b>{a.profiles?.full_name ?? "কেউ একজন"}</b>{" "}
-                              {a.detail}
+                      activity.map((a) => {
+                        const meta = activityMeta(a.action);
+                        return (
+                          <div className="activity-row" key={a.id}>
+                            <div className={`activity-icon ${meta.cls}`}>
+                              <Icon name={meta.icon} size={14} />
                             </div>
-                            <div className="activity-time">
-                              {new Date(a.created_at).toLocaleString("bn-BD")}
+                            <div className="activity-body">
+                              <div className="activity-text">
+                                <b>{a.profiles?.full_name ?? "কেউ একজন"}</b>{" "}
+                                {a.detail}
+                              </div>
+                              <div className="activity-time">{relativeTimeBn(a.created_at)}</div>
                             </div>
+                            {profile?.is_admin && (
+                              <button
+                                className="activity-delete"
+                                onClick={() => handleDeleteActivity(a.id)}
+                                aria-label="ডিলিট করুন"
+                                title="ডিলিট করুন"
+                              >
+                                <Icon name="trash" size={13} />
+                              </button>
+                            )}
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </section>

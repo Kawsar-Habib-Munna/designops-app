@@ -993,11 +993,29 @@
 
 /* activity feed */
 .dashboard-root .activity-row {
+  position: relative;
   display: flex;
+  align-items: flex-start;
   gap: 12px;
-  padding: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  transition: background 0.12s ease;
+}
+.dashboard-root .activity-row:hover {
+  background: var(--surface-muted);
+}
+.dashboard-root .activity-row:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 26px;
+  top: 38px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--border-soft);
 }
 .dashboard-root .activity-icon {
+  position: relative;
+  z-index: 1;
   width: 28px;
   height: 28px;
   border-radius: 999px;
@@ -1008,6 +1026,25 @@
   justify-content: center;
   flex-shrink: 0;
   color: var(--ink-soft);
+}
+.dashboard-root .activity-icon.act-positive {
+  background: var(--positive-soft);
+  border-color: transparent;
+  color: var(--positive);
+}
+.dashboard-root .activity-icon.act-danger {
+  background: var(--danger-soft);
+  border-color: transparent;
+  color: var(--danger);
+}
+.dashboard-root .activity-icon.act-accent {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent);
+}
+.dashboard-root .activity-body {
+  flex: 1;
+  min-width: 0;
 }
 .dashboard-root .activity-text {
   font-size: 12.5px;
@@ -1021,6 +1058,32 @@
   font-size: 11px;
   color: var(--ink-faint);
   margin-top: 2px;
+}
+.dashboard-root .activity-delete {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--ink-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+.dashboard-root .activity-row:hover .activity-delete {
+  opacity: 1;
+}
+.dashboard-root .activity-delete:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+@media (max-width: 860px) {
+  .dashboard-root .activity-delete {
+    opacity: 1;
+  }
 }
 
 /* AI insights card */

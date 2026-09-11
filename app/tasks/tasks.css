@@ -301,7 +301,7 @@
 .tasklist-root .person-task-action:hover{background:var(--surface);color:var(--accent);}
 .tasklist-root .person-task-action.danger:hover{background:var(--danger-soft);color:var(--danger);}
 .tasklist-root .person-task-checklist{margin-top:7px;padding-top:7px;border-top:1px dashed var(--border);display:flex;flex-direction:column;gap:2px;}
-.tasklist-root .person-checklist-item{display:flex;align-items:center;gap:7px;padding:2px 0;font-size:11px;background:none;border:none;width:100%;text-align:left;color:var(--ink-soft);}
+.tasklist-root .person-checklist-item{display:flex;align-items:center;gap:7px;padding:2px 0;font-size:11px;background:none;border:none;width:100%;text-align:left;color:var(--ink-soft);overflow-wrap:anywhere;word-break:break-word;}
 .tasklist-root .person-checklist-item .icb{width:12px;height:12px;border-radius:3px;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
 .tasklist-root .person-checklist-item.done{color:var(--ink-faint);text-decoration:line-through;}
 .tasklist-root .person-checklist-item.done .icb{background:var(--positive);border-color:var(--positive);}
@@ -323,7 +323,7 @@
 
 /* ---- week grid ---- */
 .tasklist-root .week-grid{display:grid;grid-template-columns:repeat(7,1fr);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--surface);}
-.tasklist-root .week-day-col{border-right:1px solid var(--border);min-height:260px;display:flex;flex-direction:column;}
+.tasklist-root .week-day-col{border-right:1px solid var(--border);min-height:260px;min-width:0;display:flex;flex-direction:column;}
 .tasklist-root .week-day-col:last-child{border-right:none;}
 .tasklist-root .week-day-col.is-today{background:var(--accent-soft);}
 .tasklist-root .week-day-head{padding:14px 12px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;}
@@ -341,8 +341,8 @@
 .tasklist-root .plan-item{display:flex;align-items:flex-start;gap:8px;padding:9px 10px;border-radius:var(--radius-sm);background:var(--surface-muted);border:1px solid var(--border-soft);color:var(--ink);}
 .tasklist-root .plan-item-badge{width:18px;height:18px;flex-shrink:0;border-radius:6px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
 .tasklist-root .plan-item-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
-.tasklist-root .plan-item-title{font-size:12px;font-weight:700;color:var(--ink);line-height:1.4;}
-.tasklist-root .plan-item-details{font-size:11px;color:var(--ink-faint);line-height:1.5;}
+.tasklist-root .plan-item-title{font-size:12px;font-weight:700;color:var(--ink);line-height:1.4;overflow-wrap:anywhere;word-break:break-word;}
+.tasklist-root .plan-item-details{font-size:11px;color:var(--ink-faint);line-height:1.5;overflow-wrap:anywhere;word-break:break-word;}
 .tasklist-root .plan-item-checklist-count{font-size:10px;color:var(--accent);font-weight:700;margin-top:2px;}
 .tasklist-root .plan-item-checklist{display:flex;flex-direction:column;gap:1px;margin-top:3px;}
 .tasklist-root .plan-item-actions{display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
