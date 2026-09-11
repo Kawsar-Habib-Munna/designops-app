@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* Scoped to .whiteboard-root so this stylesheet never leaks into other routes. */
+
+.whiteboard-root {
+  --bg: #F7F7F8;
+  --surface: #FFFFFF;
+  --surface-muted: #FBFBFC;
+  --border: #E8E8EC;
+  --ink: #14141A;
+  --ink-soft: #6E6E7A;
+  --ink-faint: #A3A3AE;
+  --accent: #5B4FE8;
+  --positive: #17A34A;
+  --danger: #E5484D;
+  --danger-soft: #FCEBEC;
+  --shadow-sm: 0 1px 2px rgba(16, 16, 20, 0.04);
+
+  margin: 0;
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+.whiteboard-root, .whiteboard-root *{box-sizing:border-box;}
+.whiteboard-root a{color:inherit;text-decoration:none;}
+.whiteboard-root button{font-family:inherit;cursor:pointer;}
+
+.whiteboard-root .wb-topbar{height:56px;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:14px;padding:0 18px;z-index:10;}
+.whiteboard-root .wb-back{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink-soft);padding:6px 10px;border-radius:8px;}
+.whiteboard-root .wb-back:hover{background:var(--surface-muted);color:var(--ink);}
+.whiteboard-root .wb-title{font-size:14px;font-weight:700;color:var(--ink);}
+.whiteboard-root .wb-spacer{flex:1;}
+.whiteboard-root .wb-save-status{font-size:11.5px;color:var(--ink-faint);min-width:80px;text-align:right;}
+.whiteboard-root .wb-save-status.error{color:var(--danger);}
+
+.whiteboard-root .avatar{border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0;color:#fff;background:var(--accent);position:relative;}
+.whiteboard-root .avatar-stack{display:flex;}
+.whiteboard-root .avatar-stack .avatar{border:2px solid var(--surface);margin-left:-8px;}
+.whiteboard-root .avatar-stack .avatar:first-child{margin-left:0;}
+.whiteboard-root .presence-ring{position:absolute;bottom:-1px;right:-1px;width:9px;height:9px;border-radius:999px;background:var(--positive);border:2px solid var(--surface);}
+.whiteboard-root .presence-row{display:flex;align-items:center;}
+
+.whiteboard-root .wb-reload-banner{position:absolute;top:66px;left:50%;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:12px;padding:9px 14px;border-radius:999px;background:var(--ink);color:#fff;font-size:12.5px;box-shadow:var(--shadow-sm);}
+.whiteboard-root .wb-reload-btn{background:var(--accent);color:#fff;border:none;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;}
+
+.whiteboard-root .wb-canvas{position:relative;flex:1;min-height:0;}
+
+@media (max-width:600px){
+  .whiteboard-root .wb-title{display:none;}
+  .whiteboard-root .wb-save-status{min-width:0;}
+}
