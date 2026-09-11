@@ -17,7 +17,7 @@
 // দিয়ে দেখানো হয় (board.tsx-এর প্যাটার্নের হুবহু কপি — এটা শুধু ephemeral
 // "কে এখন দেখছে" সিগন্যাল, বোর্ডের ডেটা এখানে জড়িত না)।
 
-import { useEffect, useRef, useState } from 'react';
+import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Tldraw, getSnapshot, loadSnapshot, type Editor, type TLEditorSnapshot } from 'tldraw';
 import 'tldraw/tldraw.css';
@@ -26,6 +26,35 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
 import SignInScreen from '@/app/components/SignInScreen';
 import Avatar from '@/app/components/Avatar';
+
+// ক্যানভাস রেন্ডার করতে গিয়ে কোনো এরর হলে পুরো পেজ ক্র্যাশ করে খালি রাখার বদলে
+// অন্তত দৃশ্যমান একটা এরর মেসেজ দেখায় — আগে এই বাউন্ডারি না থাকায় tldraw
+// ব্যর্থ হলে ক্যানভাসের জায়গাটা নীরবে খালি থেকে যাচ্ছিল, কী ভুল হয়েছে বোঝার
+// কোনো উপায়ই ছিল না।
+class CanvasErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  componentDidCatch(error: Error, info: { componentStack?: string | null }) {
+    console.error('হোয়াইটবোর্ড ক্যানভাস রেন্ডার করতে সমস্যা হয়েছে:', error, info.componentStack);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="wb-canvas-error">
+          <p>ক্যানভাস লোড করতে সমস্যা হয়েছে।</p>
+          <pre>{this.state.error.message}</pre>
+          <button className="btn-reload" onClick={() => window.location.reload()}>পেজ রিলোড করুন</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const ICON_PATHS: Record<string, string> = {
   back: '<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>',
@@ -314,7 +343,9 @@ export default function WhiteboardPage() {
       )}
 
       <div className="wb-canvas">
-        <Tldraw onMount={handleMount} />
+        <CanvasErrorBoundary>
+          <Tldraw onMount={handleMount} />
+        </CanvasErrorBoundary>
       </div>
     </div>
   );
