@@ -186,6 +186,7 @@ const TASK_SELECT =
 type MainTab = 'list' | 'weekly-tasks' | 'weekly-plan';
 type WeeklyScope = 'mine' | 'team';
 type PlanItem = { id: string; plan_date: string; title: string; details: string | null; created_by: string | null; created_at: string };
+type PlanChecklistItem = { id: string; label: string; is_done: boolean; position: number };
 
 const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
@@ -239,10 +240,12 @@ function TasksPageInner() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
   const [newProjectId, setNewProjectId] = useState('');
   const [newAssigneeIds, setNewAssigneeIds] = useState<string[]>([]);
   const [newPriority, setNewPriority] = useState<TaskPriority>('normal');
   const [newDueDate, setNewDueDate] = useState('');
+  const [newChecklist, setNewChecklist] = useState<string[]>(['']);
   const [creating, setCreating] = useState(false);
 
   // ---- List tab: per-person card view ----
@@ -257,13 +260,16 @@ function TasksPageInner() {
   const [weeklyScope, setWeeklyScope] = useState<WeeklyScope>('team');
 
   const [planItems, setPlanItems] = useState<PlanItem[]>([]);
+  const [planChecklistByPlan, setPlanChecklistByPlan] = useState<Map<string, PlanChecklistItem[]>>(new Map());
   const [planLoading, setPlanLoading] = useState(false);
   const [addingPlanDate, setAddingPlanDate] = useState<string | null>(null);
   const [planDraft, setPlanDraft] = useState('');
   const [showAddPlanModal, setShowAddPlanModal] = useState(false);
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [modalPlanDate, setModalPlanDate] = useState('');
   const [modalPlanTitle, setModalPlanTitle] = useState('');
   const [modalPlanDetails, setModalPlanDetails] = useState('');
+  const [modalPlanChecklist, setModalPlanChecklist] = useState<string[]>(['']);
   const [planSaving, setPlanSaving] = useState(false);
 
   const weekStart = useMemo(() => startOfWeek(weekOffset), [weekOffset]);
@@ -282,8 +288,26 @@ function TasksPageInner() {
         .gte('plan_date', weekStartISO)
         .lte('plan_date', weekEndISO)
         .order('created_at');
+
+      const items = (data as PlanItem[]) ?? [];
+      const ids = items.map((p) => p.id);
+      const checklistMap = new Map<string, PlanChecklistItem[]>();
+      if (ids.length > 0) {
+        const { data: checklistData } = await supabase
+          .from('weekly_plan_checklist_items')
+          .select('id, plan_item_id, label, is_done, position')
+          .in('plan_item_id', ids)
+          .order('position');
+        for (const row of (checklistData as (PlanChecklistItem & { plan_item_id: string })[]) ?? []) {
+          const arr = checklistMap.get(row.plan_item_id) ?? [];
+          arr.push(row);
+          checklistMap.set(row.plan_item_id, arr);
+        }
+      }
+
       if (!cancelled) {
-        if (!err) setPlanItems((data as PlanItem[]) ?? []);
+        if (!err) setPlanItems(items);
+        setPlanChecklistByPlan(checklistMap);
         setPlanLoading(false);
       }
     }
@@ -516,8 +540,128 @@ function TasksPageInner() {
 
   async function handleDeletePlanItem(id: string) {
     setPlanItems((prev) => prev.filter((p) => p.id !== id));
+    setPlanChecklistByPlan((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
     const { error: err } = await supabase.from('weekly_plan_items').delete().eq('id', id);
     if (err) setError(err.message);
+  }
+
+  function openAddPlanModal(dateISO: string) {
+    setEditingPlanId(null);
+    setModalPlanDate(dateISO);
+    setModalPlanTitle('');
+    setModalPlanDetails('');
+    setModalPlanChecklist(['']);
+    setShowAddPlanModal(true);
+  }
+
+  function openEditPlanModal(item: PlanItem) {
+    setEditingPlanId(item.id);
+    setModalPlanDate(item.plan_date);
+    setModalPlanTitle(item.title);
+    setModalPlanDetails(item.details ?? '');
+    const existing = planChecklistByPlan.get(item.id) ?? [];
+    setModalPlanChecklist(existing.length > 0 ? existing.map((c) => c.label) : ['']);
+    setShowAddPlanModal(true);
+  }
+
+  function updateModalPlanChecklistItem(index: number, value: string) {
+    setModalPlanChecklist((prev) => prev.map((c, i) => (i === index ? value : c)));
+  }
+  function addModalPlanChecklistRow() {
+    setModalPlanChecklist((prev) => [...prev, '']);
+  }
+  function removeModalPlanChecklistRow(index: number) {
+    setModalPlanChecklist((prev) => (prev.length === 1 ? [''] : prev.filter((_, i) => i !== index)));
+  }
+
+  // মোডাল সাবমিট — editingPlanId থাকলে আপডেট, না থাকলে নতুন প্ল্যান আইটেম তৈরি।
+  // চেকলিস্ট সবসময় "delete all → re-insert current list" দিয়ে sync হয় — ছোট,
+  // সম্পূর্ণ user-managed লিস্ট বলে diff করার দরকার নেই।
+  async function handleSavePlanItem(e: FormEvent) {
+    e.preventDefault();
+    const trimmedTitle = modalPlanTitle.trim();
+    if (!trimmedTitle || !modalPlanDate || !user) return;
+    const checklistLabels = modalPlanChecklist.map((c) => c.trim()).filter(Boolean);
+
+    setPlanSaving(true);
+
+    if (editingPlanId) {
+      const { data, error: err } = await supabase
+        .from('weekly_plan_items')
+        .update({ title: trimmedTitle, details: modalPlanDetails.trim() || null })
+        .eq('id', editingPlanId)
+        .select('id, plan_date, title, details, created_by, created_at')
+        .single();
+
+      if (err || !data) {
+        setPlanSaving(false);
+        setError(err?.message ?? 'প্ল্যান আইটেম আপডেট করা যায়নি।');
+        return;
+      }
+
+      await supabase.from('weekly_plan_checklist_items').delete().eq('plan_item_id', editingPlanId);
+      let newChecklist: PlanChecklistItem[] = [];
+      if (checklistLabels.length > 0) {
+        const { data: checklistData } = await supabase
+          .from('weekly_plan_checklist_items')
+          .insert(checklistLabels.map((label, i) => ({ plan_item_id: editingPlanId, label, position: i })))
+          .select('id, label, is_done, position');
+        newChecklist = (checklistData as PlanChecklistItem[]) ?? [];
+      }
+
+      setPlanItems((prev) => prev.map((p) => (p.id === editingPlanId ? (data as PlanItem) : p)));
+      setPlanChecklistByPlan((prev) => {
+        const next = new Map(prev);
+        next.set(editingPlanId, newChecklist);
+        return next;
+      });
+    } else {
+      const { data, error: err } = await supabase
+        .from('weekly_plan_items')
+        .insert({ plan_date: modalPlanDate, title: trimmedTitle, details: modalPlanDetails.trim() || null, created_by: user.id })
+        .select('id, plan_date, title, details, created_by, created_at')
+        .single();
+
+      if (err || !data) {
+        setPlanSaving(false);
+        setError(err?.message ?? 'প্ল্যান আইটেম যোগ করা যায়নি।');
+        return;
+      }
+
+      const row = data as PlanItem;
+      setPlanItems((prev) => [...prev, row]);
+
+      if (checklistLabels.length > 0) {
+        const { data: checklistData } = await supabase
+          .from('weekly_plan_checklist_items')
+          .insert(checklistLabels.map((label, i) => ({ plan_item_id: row.id, label, position: i })))
+          .select('id, label, is_done, position');
+        if (checklistData) {
+          setPlanChecklistByPlan((prev) => {
+            const next = new Map(prev);
+            next.set(row.id, checklistData as PlanChecklistItem[]);
+            return next;
+          });
+        }
+      }
+    }
+
+    setPlanSaving(false);
+    setShowAddPlanModal(false);
+  }
+
+  async function togglePlanChecklistItem(planId: string, item: PlanChecklistItem) {
+    const newDone = !item.is_done;
+    setPlanChecklistByPlan((prev) => {
+      const next = new Map(prev);
+      next.set(planId, (next.get(planId) ?? []).map((c) => (c.id === item.id ? { ...c, is_done: newDone } : c)));
+      return next;
+    });
+    await supabase.from('weekly_plan_checklist_items').update({ is_done: newDone }).eq('id', item.id);
   }
 
   async function toggleChecklistItem(taskId: string, item: ChecklistItem) {
@@ -587,13 +731,16 @@ function TasksPageInner() {
 
     setCreating(true);
     const assigneeIds = newAssigneeIds.length > 0 ? newAssigneeIds : [null];
+    const checklistLabels = newChecklist.map((c) => c.trim()).filter(Boolean);
     const createdRows: (Omit<TaskRow, 'commentCount' | 'attachmentCount'> & { commentCount: 0; attachmentCount: 0 })[] = [];
+    const newChecklistEntries: [string, ChecklistItem[]][] = [];
 
     for (const assigneeId of assigneeIds) {
       const { data, error } = await supabase
         .from('tasks')
         .insert({
           title: newTitle.trim(),
+          description: newDescription.trim() || null,
           project_id: newProjectId || null,
           assignee_id: assigneeId,
           priority: newPriority,
@@ -620,6 +767,17 @@ function TasksPageInner() {
         entity_id: row.id,
         detail: `"${row.title}" তৈরি করা হয়েছে`,
       });
+
+      // প্রতিটা assignee-র জন্য আলাদা টাস্ক রো হলেও checklist একই লিস্টের
+      // স্বাধীন কপি — "Create one To-do and assign independent copies" মকআপ অনুযায়ী
+      if (checklistLabels.length > 0) {
+        const { data: checklistData } = await supabase
+          .from('checklist_items')
+          .insert(checklistLabels.map((label, i) => ({ task_id: row.id, label, position: i })))
+          .select('id, label, is_done, position');
+        if (checklistData) newChecklistEntries.push([row.id, checklistData as ChecklistItem[]]);
+      }
+
       if (assigneeId) {
         sendNotifications([{
           recipient_id: assigneeId,
@@ -635,14 +793,33 @@ function TasksPageInner() {
     if (createdRows.length > 0) {
       setTasks((prev) => [...createdRows, ...prev]);
     }
+    if (newChecklistEntries.length > 0) {
+      setChecklistByTask((prev) => {
+        const next = new Map(prev);
+        for (const [taskId, items] of newChecklistEntries) next.set(taskId, items);
+        return next;
+      });
+    }
 
     setNewTitle('');
+    setNewDescription('');
     setNewProjectId('');
     setNewAssigneeIds([]);
     setNewPriority('normal');
     setNewDueDate('');
+    setNewChecklist(['']);
     setCreating(false);
     setShowCreate(false);
+  }
+
+  function updateNewChecklistItem(index: number, value: string) {
+    setNewChecklist((prev) => prev.map((c, i) => (i === index ? value : c)));
+  }
+  function addNewChecklistRow() {
+    setNewChecklist((prev) => [...prev, '']);
+  }
+  function removeNewChecklistRow(index: number) {
+    setNewChecklist((prev) => (prev.length === 1 ? [''] : prev.filter((_, i) => i !== index)));
   }
 
   function toggleNewAssignee(id: string) {
@@ -1023,15 +1200,7 @@ function TasksPageInner() {
                     <p className="page-sub">টিমের শেয়ার্ড ফোকাস আর এই সপ্তাহের অ্যাক্টিভিটি।</p>
                   </div>
                   <div className="header-actions">
-                    <button
-                      className="btn btn-accent"
-                      onClick={() => {
-                        setModalPlanDate(weekStartISO);
-                        setModalPlanTitle('');
-                        setModalPlanDetails('');
-                        setShowAddPlanModal(true);
-                      }}
-                    >
+                    <button className="btn btn-accent" onClick={() => openAddPlanModal(weekStartISO)}>
                       <Icon name="plus" /> Add plan item
                     </button>
                   </div>
@@ -1067,18 +1236,40 @@ function TasksPageInner() {
                           ) : dayPlans.length === 0 && !isAdding ? (
                             <div className="week-empty">No plans yet</div>
                           ) : (
-                            dayPlans.map((p, idx) => (
-                              <div className="plan-item" key={p.id}>
-                                <span className="plan-item-badge tabular">{idx + 1}</span>
-                                <div className="plan-item-body">
-                                  <span className="plan-item-title">{p.title}</span>
-                                  {p.details && <span className="plan-item-details">{p.details}</span>}
+                            dayPlans.map((p, idx) => {
+                              const checklist = planChecklistByPlan.get(p.id) ?? [];
+                              const doneCount = checklist.filter((c) => c.is_done).length;
+                              return (
+                                <div className="plan-item" key={p.id}>
+                                  <span className="plan-item-badge tabular">{idx + 1}</span>
+                                  <div className="plan-item-body">
+                                    <span className="plan-item-title">{p.title}</span>
+                                    {p.details && <span className="plan-item-details">{p.details}</span>}
+                                    {checklist.length > 0 && (
+                                      <>
+                                        <span className="plan-item-checklist-count tabular">{doneCount}/{checklist.length} done</span>
+                                        <div className="plan-item-checklist">
+                                          {checklist.map((item) => (
+                                            <button key={item.id} className={`person-checklist-item${item.is_done ? ' done' : ''}`} onClick={() => togglePlanChecklistItem(p.id, item)}>
+                                              <span className="icb">{item.is_done && <Icon name="tick" size={7} color="#fff" />}</span>
+                                              {item.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                  <div className="plan-item-actions">
+                                    <button className="plan-item-edit" onClick={() => openEditPlanModal(p)} aria-label="এডিট করুন">
+                                      <Icon name="edit" size={12} />
+                                    </button>
+                                    <button className="plan-item-delete" onClick={() => handleDeletePlanItem(p.id)} aria-label="মুছুন">
+                                      <Icon name="trash" size={12} />
+                                    </button>
+                                  </div>
                                 </div>
-                                <button className="plan-item-delete" onClick={() => handleDeletePlanItem(p.id)} aria-label="মুছুন">
-                                  <Icon name="trash" size={12} />
-                                </button>
-                              </div>
-                            ))
+                              );
+                            })
                           )}
 
                           {isAdding ? (
@@ -1129,7 +1320,7 @@ function TasksPageInner() {
             if (e.target === e.currentTarget) setShowCreate(false);
           }}
         >
-          <div className="modal-box">
+          <div className="modal-box modal-box-lg">
             <div className="modal-title">নতুন টাস্ক তৈরি করুন</div>
             <form onSubmit={handleCreateTask}>
               <label className="field-label">টাস্কের নাম</label>
@@ -1142,6 +1333,37 @@ function TasksPageInner() {
                 autoFocus
                 required
               />
+
+              <label className="field-label">Description</label>
+              <textarea
+                className="field-input"
+                style={{ minHeight: 64, resize: 'vertical' }}
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="একটা বিবরণ যোগ করুন (ঐচ্ছিক)..."
+              />
+
+              <label className="field-label">To-do list</label>
+              <div className="todo-draft-box">
+                {newChecklist.map((item, i) => (
+                  <div className="todo-draft-row" key={i}>
+                    <input
+                      className="field-input"
+                      style={{ marginBottom: 0 }}
+                      type="text"
+                      value={item}
+                      onChange={(e) => updateNewChecklistItem(i, e.target.value)}
+                      placeholder={`Checklist item ${i + 1}`}
+                    />
+                    <button type="button" className="todo-draft-remove" onClick={() => removeNewChecklistRow(i)} aria-label="বাদ দিন">
+                      <Icon name="close" size={12} />
+                    </button>
+                  </div>
+                ))}
+                <button type="button" className="btn btn-ghost btn-sm" onClick={addNewChecklistRow}>
+                  <Icon name="plus" size={13} /> Add item
+                </button>
+              </div>
 
               <label className="field-label">প্রজেক্ট</label>
               <select className="field-input" value={newProjectId} onChange={(e) => setNewProjectId(e.target.value)}>
@@ -1397,16 +1619,9 @@ function TasksPageInner() {
             if (e.target === e.currentTarget) setShowAddPlanModal(false);
           }}
         >
-          <div className="modal-box">
-            <div className="modal-title">নতুন প্ল্যান আইটেম</div>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!modalPlanTitle.trim() || !modalPlanDate) return;
-                await handleAddPlanItem(modalPlanDate, modalPlanTitle, modalPlanDetails);
-                setShowAddPlanModal(false);
-              }}
-            >
+          <div className="modal-box modal-box-lg">
+            <div className="modal-title">{editingPlanId ? 'প্ল্যান আইটেম এডিট করুন' : 'নতুন প্ল্যান আইটেম'}</div>
+            <form onSubmit={handleSavePlanItem}>
               <label className="field-label">Plan date</label>
               <select className="field-input" value={modalPlanDate} onChange={(e) => setModalPlanDate(e.target.value)}>
                 {weekDays.map((d, i) => (
@@ -1427,7 +1642,7 @@ function TasksPageInner() {
                 required
               />
 
-              <label className="field-label">Details</label>
+              <label className="field-label">Description</label>
               <textarea
                 className="field-input"
                 style={{ minHeight: 70, resize: 'vertical' }}
@@ -1436,10 +1651,32 @@ function TasksPageInner() {
                 placeholder="বিস্তারিত লিখুন (ঐচ্ছিক)..."
               />
 
+              <label className="field-label">To-do list</label>
+              <div className="todo-draft-box">
+                {modalPlanChecklist.map((item, i) => (
+                  <div className="todo-draft-row" key={i}>
+                    <input
+                      className="field-input"
+                      style={{ marginBottom: 0 }}
+                      type="text"
+                      value={item}
+                      onChange={(e) => updateModalPlanChecklistItem(i, e.target.value)}
+                      placeholder={`Checklist item ${i + 1}`}
+                    />
+                    <button type="button" className="todo-draft-remove" onClick={() => removeModalPlanChecklistRow(i)} aria-label="বাদ দিন">
+                      <Icon name="close" size={12} />
+                    </button>
+                  </div>
+                ))}
+                <button type="button" className="btn btn-ghost btn-sm" onClick={addModalPlanChecklistRow}>
+                  <Icon name="plus" size={13} /> Add item
+                </button>
+              </div>
+
               <div className="modal-foot">
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowAddPlanModal(false)}>বাতিল</button>
                 <button type="submit" className="btn btn-accent btn-sm" disabled={planSaving || !modalPlanTitle.trim()}>
-                  {planSaving ? 'যোগ হচ্ছে…' : 'যোগ করুন'}
+                  {planSaving ? 'সেভ হচ্ছে…' : editingPlanId ? 'সেভ করুন' : 'যোগ করুন'}
                 </button>
               </div>
             </form>

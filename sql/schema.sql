@@ -2123,3 +2123,23 @@ create policy "team can write weekly_plan_items" on weekly_plan_items for insert
 -- ধূসর টেক্সট হিসেবে দেখা যায় — তাই আলাদা কলাম যোগ হলো।
 alter table weekly_plan_items add column if not exists details text;
 create policy "team can delete weekly_plan_items" on weekly_plan_items for delete using (public.is_team_member());
+
+-- এডিট ফিচার যোগ হওয়ায় update পলিসিও লাগবে (আগে শুধু insert/select/delete ছিল)
+drop policy if exists "team can update weekly_plan_items" on weekly_plan_items;
+create policy "team can update weekly_plan_items" on weekly_plan_items for update using (public.is_team_member());
+
+-- প্ল্যান আইটেমের নিজস্ব to-do checklist (tasks-এর checklist_items-এর মতোই প্যাটার্ন)
+create table if not exists weekly_plan_checklist_items (
+  id uuid default gen_random_uuid() primary key,
+  plan_item_id uuid references weekly_plan_items(id) on delete cascade,
+  label text not null,
+  is_done boolean default false,
+  position int default 0
+);
+create index if not exists idx_weekly_plan_checklist_items_plan on weekly_plan_checklist_items(plan_item_id);
+
+alter table weekly_plan_checklist_items enable row level security;
+drop policy if exists "team can read weekly_plan_checklist_items" on weekly_plan_checklist_items;
+drop policy if exists "team can write weekly_plan_checklist_items" on weekly_plan_checklist_items;
+create policy "team can read weekly_plan_checklist_items" on weekly_plan_checklist_items for select using (public.is_team_member());
+create policy "team can write weekly_plan_checklist_items" on weekly_plan_checklist_items for all using (public.is_team_member());

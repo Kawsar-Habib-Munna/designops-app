@@ -257,6 +257,13 @@
 .tasklist-root .modal-foot{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:6px;}
 .tasklist-root .edit-field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 
+/* to-do draft list (create task modal + weekly plan modal) */
+.tasklist-root .todo-draft-box{border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-muted);padding:10px;margin-bottom:12px;}
+.tasklist-root .todo-draft-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.tasklist-root .todo-draft-row .field-input{margin-bottom:0;}
+.tasklist-root .todo-draft-remove{width:26px;height:26px;flex-shrink:0;border-radius:6px;border:none;background:transparent;color:var(--ink-faint);display:flex;align-items:center;justify-content:center;}
+.tasklist-root .todo-draft-remove:hover{background:var(--danger-soft);color:var(--danger);}
+
 /* assignee multi-select (create task modal) */
 .tasklist-root .assignee-check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-bottom:6px;}
 .tasklist-root .assignee-check-item{display:flex;align-items:center;gap:7px;padding:7px 9px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);font-size:12px;font-weight:500;color:var(--ink);text-align:left;font-family:inherit;}
@@ -336,7 +343,11 @@
 .tasklist-root .plan-item-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
 .tasklist-root .plan-item-title{font-size:12px;font-weight:700;color:var(--ink);line-height:1.4;}
 .tasklist-root .plan-item-details{font-size:11px;color:var(--ink-faint);line-height:1.5;}
-.tasklist-root .plan-item-delete{width:20px;height:20px;flex-shrink:0;border-radius:5px;border:none;background:transparent;color:var(--ink-faint);display:flex;align-items:center;justify-content:center;}
+.tasklist-root .plan-item-checklist-count{font-size:10px;color:var(--accent);font-weight:700;margin-top:2px;}
+.tasklist-root .plan-item-checklist{display:flex;flex-direction:column;gap:1px;margin-top:3px;}
+.tasklist-root .plan-item-actions{display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
+.tasklist-root .plan-item-edit,.tasklist-root .plan-item-delete{width:20px;height:20px;flex-shrink:0;border-radius:5px;border:none;background:transparent;color:var(--ink-faint);display:flex;align-items:center;justify-content:center;}
+.tasklist-root .plan-item-edit:hover{background:var(--accent-soft);color:var(--accent);}
 .tasklist-root .plan-item-delete:hover{background:var(--danger-soft);color:var(--danger);}
 .tasklist-root .plan-add-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:var(--radius-sm);border:1.5px dashed var(--border);background:transparent;color:var(--ink-faint);font-size:11.5px;font-weight:600;margin-top:auto;}
 .tasklist-root .plan-add-btn:hover{border-color:var(--accent);color:var(--accent);}
