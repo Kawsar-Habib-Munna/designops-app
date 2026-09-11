@@ -49,9 +49,28 @@ async function authHeader() {
   return { Authorization: `Bearer ${session.access_token}` };
 }
 
+// fetch() নিজে থেকে কখনো "টাইমআউট" হয় না — নেটওয়ার্ক/সার্ভার সত্যিই আটকে গেলে
+// promise-টা অনির্দিষ্টকালের জন্য pending থেকে যেতে পারে, আর UI "সেভ হচ্ছে…"-এ
+// চিরকালের জন্য আটকে থাকে। AbortController দিয়ে একটা হার্ড ২০-সেকেন্ড লিমিট
+// দেওয়া হলো, যাতে সবসময় একটা নির্দিষ্ট সময়ের মধ্যে হয় সফল, নাহলে স্পষ্ট এরর দেখায়।
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 20000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error('নেটওয়ার্ক রেসপন্স খুব দেরি করছে — আবার চেষ্টা করুন।');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function loadWhiteboard(): Promise<WhiteboardLoadResult> {
   const headers = await authHeader();
-  const res = await fetch('/api/whiteboard', { headers });
+  const res = await fetchWithTimeout('/api/whiteboard', { headers });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error ?? 'হোয়াইটবোর্ড লোড করা যায়নি।');
   return json;
@@ -59,7 +78,7 @@ async function loadWhiteboard(): Promise<WhiteboardLoadResult> {
 
 async function saveWhiteboardSnapshot(snapshot: TLEditorSnapshot): Promise<{ ok: true; updatedAt: string }> {
   const headers = await authHeader();
-  const res = await fetch('/api/whiteboard', {
+  const res = await fetchWithTimeout('/api/whiteboard', {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify({ snapshot }),
@@ -71,7 +90,7 @@ async function saveWhiteboardSnapshot(snapshot: TLEditorSnapshot): Promise<{ ok:
 
 async function pollWhiteboardMeta(): Promise<WhiteboardMeta> {
   const headers = await authHeader();
-  const res = await fetch('/api/whiteboard?meta=1', { headers });
+  const res = await fetchWithTimeout('/api/whiteboard?meta=1', { headers }, 10000);
   const json = await res.json();
   if (!res.ok) throw new Error(json.error ?? 'চেক করা যায়নি।');
   return json;
