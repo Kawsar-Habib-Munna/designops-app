@@ -130,4 +130,9 @@
   .payments-admin-root .receipt-modal-noprint { display: none; }
   .payments-admin-root .receipt-modal-body { overflow: visible; background: none; padding: 0; }
   .payments-admin-root .receipt-doc { box-shadow: none; }
+  .payments-admin-root .receipt-doc,
+  .payments-admin-root .receipt-doc * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
