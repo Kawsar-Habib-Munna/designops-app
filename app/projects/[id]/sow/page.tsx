@@ -776,12 +776,12 @@ export default function AdminSowPage() {
             </button>
           </header>
 
-          <main className="content" style={mode === 'editor' ? { maxWidth: 1180 } : undefined}>
+          <main className="content" style={mode === 'editor' ? { maxWidth: 1400 } : undefined}>
             {loading || !project ? (
               <p style={{ padding: 24, fontSize: 13, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
             ) : (
               <>
-                <div className="breadcrumb" style={mode === 'editor' ? { padding: '0 24px', maxWidth: 1180, margin: '0 auto 14px' } : undefined}>
+                <div className="breadcrumb" style={mode === 'editor' ? { padding: '0 24px', maxWidth: 1400, margin: '0 auto 14px' } : undefined}>
                   <Link href="/clients">Clients</Link>
                   <span className="sep">/</span>
                   {client && <Link href={`/projects/${project.id}`}>{client.company_name}</Link>}
@@ -839,7 +839,7 @@ export default function AdminSowPage() {
                 {/* ---- EDITOR (draft) ---- */}
                 {mode === 'editor' && selected && (
                   <>
-                    <div className="page-header-row" style={{ padding: '0 24px', maxWidth: 1180, margin: '0 auto 18px' }}>
+                    <div className="page-header-row" style={{ padding: '0 24px', maxWidth: 1400, margin: '0 auto 18px' }}>
                       <div>
                         <h1 className="page-title">{versions.length > 1 || selected.sent_at ? 'Edit Statement of Work' : 'Create Statement of Work'}</h1>
                         <p className="page-sub">
@@ -1100,45 +1100,48 @@ export default function AdminSowPage() {
                       </div>
                     </div>
 
-                    <div className="sow-version-tabs">
-                      {versions.map((v) => (
-                        <button key={v.id} className={`sow-version-tab${v.id === selectedId ? ' active' : ''}`} onClick={() => selectVersion(v)}>
-                          v{v.version} <span className={`status-pill ${STATUS_META[v.status]?.cls ?? 'sp-draft'}`}>{STATUS_META[v.status]?.label ?? v.status}</span>
-                        </button>
-                      ))}
-                      {selected.status !== 'draft' && selected.status !== 'superseded' && selected.status !== 'cancelled' && (
-                        <button className="btn btn-ghost btn-sm" onClick={handleCreateNewVersion}>
-                          <Icon name="plus" size={12} /> New Version
-                        </button>
-                      )}
-                    </div>
-
-                    {selected.status === 'signed' && (
-                      <div className="sow-locked-banner">
-                        🔒 This SOW version is signed and locked — it can no longer be edited. To change scope, terms, or pricing, create a new version.
+                    <div className="sow-nav-card">
+                      <div className="sow-version-tabs">
+                        {versions.map((v) => (
+                          <button key={v.id} className={`sow-version-tab${v.id === selectedId ? ' active' : ''}`} onClick={() => selectVersion(v)}>
+                            <span className="sow-version-num">v{v.version}</span>
+                            <span className={`status-pill ${STATUS_META[v.status]?.cls ?? 'sp-draft'}`}>{STATUS_META[v.status]?.label ?? v.status}</span>
+                          </button>
+                        ))}
+                        {selected.status !== 'draft' && selected.status !== 'superseded' && selected.status !== 'cancelled' && (
+                          <button className="btn btn-ghost btn-sm" onClick={handleCreateNewVersion}>
+                            <Icon name="plus" size={12} /> New Version
+                          </button>
+                        )}
                       </div>
-                    )}
 
-                    <nav className="sow-toc" aria-label="Document sections" role="tablist">
-                      <button type="button" role="tab" aria-selected={activeTab === 'parties'} className={`sow-toc-tab${activeTab === 'parties' ? ' active' : ''}`} onClick={() => setActiveTab('parties')}>
-                        Parties
-                      </button>
-                      <button type="button" role="tab" aria-selected={activeTab === 'scope'} className={`sow-toc-tab${activeTab === 'scope' ? ' active' : ''}`} onClick={() => setActiveTab('scope')}>
-                        Scope
-                      </button>
-                      <button type="button" role="tab" aria-selected={activeTab === 'timeline'} className={`sow-toc-tab${activeTab === 'timeline' ? ' active' : ''}`} onClick={() => setActiveTab('timeline')}>
-                        Timeline
-                      </button>
-                      <button type="button" role="tab" aria-selected={activeTab === 'payment'} className={`sow-toc-tab${activeTab === 'payment' ? ' active' : ''}`} onClick={() => setActiveTab('payment')}>
-                        Payment
-                      </button>
-                      <button type="button" role="tab" aria-selected={activeTab === 'terms'} className={`sow-toc-tab${activeTab === 'terms' ? ' active' : ''}`} onClick={() => setActiveTab('terms')}>
-                        Terms
-                      </button>
-                      <button type="button" role="tab" aria-selected={activeTab === 'signatures'} className={`sow-toc-tab${activeTab === 'signatures' ? ' active' : ''}`} onClick={() => setActiveTab('signatures')}>
-                        Signatures
-                      </button>
-                    </nav>
+                      {selected.status === 'signed' && (
+                        <div className="sow-locked-banner">
+                          🔒 This SOW version is signed and locked — it can no longer be edited. To change scope, terms, or pricing, create a new version.
+                        </div>
+                      )}
+
+                      <nav className="sow-toc" aria-label="Document sections" role="tablist">
+                        <button type="button" role="tab" aria-selected={activeTab === 'parties'} className={`sow-toc-tab${activeTab === 'parties' ? ' active' : ''}`} onClick={() => setActiveTab('parties')}>
+                          <Icon name="users" size={13} /> Parties
+                        </button>
+                        <button type="button" role="tab" aria-selected={activeTab === 'scope'} className={`sow-toc-tab${activeTab === 'scope' ? ' active' : ''}`} onClick={() => setActiveTab('scope')}>
+                          <Icon name="layers" size={13} /> Scope
+                        </button>
+                        <button type="button" role="tab" aria-selected={activeTab === 'timeline'} className={`sow-toc-tab${activeTab === 'timeline' ? ' active' : ''}`} onClick={() => setActiveTab('timeline')}>
+                          <Icon name="calendar" size={13} /> Timeline
+                        </button>
+                        <button type="button" role="tab" aria-selected={activeTab === 'payment'} className={`sow-toc-tab${activeTab === 'payment' ? ' active' : ''}`} onClick={() => setActiveTab('payment')}>
+                          <Icon name="dollar" size={13} /> Payment
+                        </button>
+                        <button type="button" role="tab" aria-selected={activeTab === 'terms'} className={`sow-toc-tab${activeTab === 'terms' ? ' active' : ''}`} onClick={() => setActiveTab('terms')}>
+                          <Icon name="check" size={13} /> Terms
+                        </button>
+                        <button type="button" role="tab" aria-selected={activeTab === 'signatures'} className={`sow-toc-tab${activeTab === 'signatures' ? ' active' : ''}`} onClick={() => setActiveTab('signatures')}>
+                          <Icon name="edit" size={13} /> Signatures
+                        </button>
+                      </nav>
+                    </div>
 
                     <div className="sow-preview-grid">
                       <div>
