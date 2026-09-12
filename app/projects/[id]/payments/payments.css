@@ -97,7 +97,7 @@
 
 .payments-admin-root .receipt-modal-body { overflow-y: auto; padding: 20px; background: var(--surface-muted); }
 
-.payments-admin-root .receipt-doc { position: relative; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 40px 44px; }
+.payments-admin-root .receipt-doc { position: relative; background: var(--surface); padding: 40px 44px; }
 .payments-admin-root .receipt-doc-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 26px; }
 .payments-admin-root .receipt-doc-brand { font-family: 'Gugi', sans-serif; font-size: 17px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
 .payments-admin-root .receipt-doc-doctitle { font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.1em; }
