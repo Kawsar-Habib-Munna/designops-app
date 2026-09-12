@@ -201,6 +201,9 @@ export default function AdminPaymentsPage() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState<{ inv: Invoice; submission: Payment } | null>(null);
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const receiptDocRef = useRef<HTMLDivElement>(null);
   const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
@@ -397,6 +400,53 @@ export default function AdminPaymentsPage() {
     setCorrectionReason('');
     setMode('list');
     setReloadKey((k) => k + 1);
+  }
+
+  async function handleDownloadReceiptPdf() {
+    const node = receiptDocRef.current;
+    if (!node || downloadingReceipt) return;
+    setDownloadError(null);
+    setDownloadingReceipt(true);
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        onclone: (doc, el) => {
+          // ডার্ক মোড চালু থাকলেও PDF সবসময় লাইট/প্রিন্ট-স্টাইল কালারেই জেনারেট হয় —
+          // একটা ফরমাল ডকুমেন্টের রং UI থিমের সাথে বদলানো উচিত না।
+          el.style.setProperty('--surface', '#FFFFFF');
+          el.style.setProperty('--ink', '#14141A');
+          el.style.setProperty('--ink-soft', '#6E6E7A');
+          el.style.setProperty('--ink-faint', '#A3A3AE');
+          el.style.setProperty('--border', '#E8E8EC');
+          el.style.setProperty('--border-soft', '#F0F0F3');
+        },
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      const fileName = viewingReceipt?.submission.receipt_number ?? viewingReceipt?.inv.request_number ?? 'receipt';
+      pdf.save(`${fileName}.pdf`);
+    } catch (err) {
+      console.error(err);
+      setDownloadError('PDF তৈরি করা যায়নি। আবার চেষ্টা করুন।');
+    } finally {
+      setDownloadingReceipt(false);
+    }
   }
 
   if (sessionLoading) return null;
@@ -1101,10 +1151,11 @@ export default function AdminPaymentsPage() {
               <div>
                 <div className="receipt-modal-eyebrow">Payment Receipt</div>
                 <div className="receipt-modal-filename">{viewingReceipt.submission.receipt_number ?? viewingReceipt.inv.request_number ?? 'Receipt'}</div>
+                {downloadError && <div className="receipt-modal-error">{downloadError}</div>}
               </div>
               <div className="receipt-modal-head-actions">
-                <button type="button" className="btn btn-accent btn-sm" onClick={() => window.print()}>
-                  <Icon name="download" size={14} /> Download
+                <button type="button" className="btn btn-accent btn-sm" onClick={handleDownloadReceiptPdf} disabled={downloadingReceipt}>
+                  <Icon name="download" size={14} /> {downloadingReceipt ? 'তৈরি হচ্ছে…' : 'Download PDF'}
                 </button>
                 <button type="button" className="receipt-modal-close" aria-label="Close" onClick={() => setViewingReceipt(null)}>
                   <Icon name="close" size={16} />
@@ -1113,7 +1164,7 @@ export default function AdminPaymentsPage() {
             </div>
 
             <div className="receipt-modal-body">
-              <div className="receipt-doc">
+              <div className="receipt-doc" ref={receiptDocRef}>
                 <div className="receipt-doc-head">
                   <div>
                     <div className="receipt-doc-brand">FLOW 53</div>

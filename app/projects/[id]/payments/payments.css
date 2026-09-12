@@ -91,7 +91,8 @@
 .payments-admin-root .receipt-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border-soft); flex-shrink: 0; }
 .payments-admin-root .receipt-modal-eyebrow { font-size: 10.5px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
 .payments-admin-root .receipt-modal-filename { font-size: 14px; font-weight: 700; color: var(--ink); }
-.payments-admin-root .receipt-modal-head-actions { display: flex; align-items: center; gap: 8px; }
+.payments-admin-root .receipt-modal-error { font-size: 11.5px; font-weight: 600; color: var(--danger); margin-top: 4px; }
+.payments-admin-root .receipt-modal-head-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .payments-admin-root .receipt-modal-close { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft); cursor: pointer; flex-shrink: 0; }
 .payments-admin-root .receipt-modal-close:hover { background: var(--surface-muted); color: var(--ink); }
 
