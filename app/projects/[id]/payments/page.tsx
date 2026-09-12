@@ -1114,33 +1114,30 @@ export default function AdminPaymentsPage() {
 
             <div className="receipt-modal-body">
               <div className="receipt-doc">
-                <div className="receipt-doc-accent" />
                 <div className="receipt-doc-head">
-                  <div className="receipt-doc-brand">FLOW 53</div>
+                  <div>
+                    <div className="receipt-doc-brand">FLOW 53</div>
+                    <div className="receipt-doc-doctitle">Payment Receipt</div>
+                  </div>
                   <span className="receipt-doc-badge">
                     <Icon name="check" size={12} /> Paid
                   </span>
                 </div>
 
-                <div className="receipt-doc-amount-block">
-                  <div className="receipt-doc-amount-label">Amount Paid</div>
-                  <div className="receipt-doc-amount">
-                    {viewingReceipt.inv.currency} {(viewingReceipt.submission.amount ?? viewingReceipt.inv.amount).toLocaleString('en-US')}
+                <div className="receipt-doc-meta-row">
+                  <div className="receipt-doc-field">
+                    <div className="receipt-doc-field-label">Receipt Number</div>
+                    <div className="receipt-doc-field-value">{viewingReceipt.submission.receipt_number ?? '—'}</div>
                   </div>
-                  <div className="receipt-doc-amount-sub">{viewingReceipt.inv.description || humanizeType(viewingReceipt.inv.payment_type)}</div>
+                  <div className="receipt-doc-field receipt-doc-field-right">
+                    <div className="receipt-doc-field-label">Date</div>
+                    <div className="receipt-doc-field-value">{formatBnDateLong(viewingReceipt.submission.payment_date)}</div>
+                  </div>
                 </div>
 
                 <div className="receipt-doc-divider" />
 
                 <div className="receipt-doc-grid">
-                  <div className="receipt-doc-field">
-                    <div className="receipt-doc-field-label">Receipt Number</div>
-                    <div className="receipt-doc-field-value">{viewingReceipt.submission.receipt_number ?? '—'}</div>
-                  </div>
-                  <div className="receipt-doc-field">
-                    <div className="receipt-doc-field-label">Date</div>
-                    <div className="receipt-doc-field-value">{formatBnDateLong(viewingReceipt.submission.payment_date)}</div>
-                  </div>
                   <div className="receipt-doc-field">
                     <div className="receipt-doc-field-label">Client</div>
                     <div className="receipt-doc-field-value">{client?.primary_contact ?? client?.company_name ?? '—'}</div>
@@ -1157,6 +1154,21 @@ export default function AdminPaymentsPage() {
                     <div className="receipt-doc-field-label">Request No.</div>
                     <div className="receipt-doc-field-value">{viewingReceipt.inv.request_number ?? '—'}</div>
                   </div>
+                </div>
+
+                <div className="receipt-doc-divider" />
+
+                <div className="receipt-doc-amount-row">
+                  <div className="receipt-doc-field">
+                    <div className="receipt-doc-field-label">Description</div>
+                    <div className="receipt-doc-field-value">{viewingReceipt.inv.description || humanizeType(viewingReceipt.inv.payment_type)}</div>
+                  </div>
+                  <div className="receipt-doc-amount">
+                    {viewingReceipt.inv.currency} {(viewingReceipt.submission.amount ?? viewingReceipt.inv.amount).toLocaleString('en-US')}
+                  </div>
+                </div>
+
+                <div className="receipt-doc-grid">
                   <div className="receipt-doc-field">
                     <div className="receipt-doc-field-label">Payment Method</div>
                     <div className="receipt-doc-field-value">{viewingReceipt.submission.payment_method ?? '—'}</div>
