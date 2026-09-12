@@ -309,9 +309,10 @@ export default function DiscussionsPage() {
   const [discussionError, setDiscussionError] = useState<string | null>(null);
 
   const [showVoteModal, setShowVoteModal] = useState(false);
+  const [editingVoteId, setEditingVoteId] = useState<string | null>(null);
   const [vTitle, setVTitle] = useState('');
   const [vDesc, setVDesc] = useState('');
-  const [vOptions, setVOptions] = useState<string[]>(['', '']);
+  const [vOptions, setVOptions] = useState<{ id: string | null; label: string }[]>([{ id: null, label: '' }, { id: null, label: '' }]);
   const [vAllowMultiple, setVAllowMultiple] = useState(false);
   const [vAnonymous, setVAnonymous] = useState(false);
   const [vEndsAt, setVEndsAt] = useState('');
@@ -640,9 +641,10 @@ export default function DiscussionsPage() {
   // ---------------- create vote modal ----------------
   function closeVoteModal() {
     setShowVoteModal(false);
+    setEditingVoteId(null);
     setVTitle('');
     setVDesc('');
-    setVOptions(['', '']);
+    setVOptions([{ id: null, label: '' }, { id: null, label: '' }]);
     setVAllowMultiple(false);
     setVAnonymous(false);
     setVEndsAt('');
@@ -677,7 +679,7 @@ export default function DiscussionsPage() {
     }
   }
   async function submitVote(asDraft: boolean) {
-    const labels = vOptions.map((o) => o.trim()).filter(Boolean);
+    const labels = vOptions.map((o) => o.label.trim()).filter(Boolean);
     if (!vTitle.trim() || labels.length < 2 || !user) { setVoteError('শিরোনাম দিন এবং কমপক্ষে দুটো অপশন লিখুন।'); return; }
     setSavingVote(true);
     setVoteError(null);
@@ -712,6 +714,72 @@ export default function DiscussionsPage() {
           }))
       );
     }
+    await handleReload();
+    setSavingVote(false);
+    closeVoteModal();
+  }
+
+  // ---------------- edit vote ----------------
+  function openEditVoteModal(v: VoteRow) {
+    const existingOptions = voteOptions.filter((o) => o.vote_id === v.id).sort((a, b) => a.position - b.position);
+    const existingAttachments = voteAttachments.filter((a) => a.vote_id === v.id);
+    setEditingVoteId(v.id);
+    setVTitle(v.title);
+    setVDesc(v.description ?? '');
+    setVOptions(existingOptions.length > 0 ? existingOptions.map((o) => ({ id: o.id, label: o.label })) : [{ id: null, label: '' }, { id: null, label: '' }]);
+    setVAllowMultiple(v.allow_multiple);
+    setVAnonymous(v.is_anonymous);
+    setVEndsAt(v.ends_at ? v.ends_at.slice(0, 10) : '');
+    setVProjectId(v.project_id ?? '');
+    setVAttachments(existingAttachments.map((a) => ({ name: a.file_name, url: a.url, type: a.file_type ?? 'other' })));
+    setVoteError(null);
+    setShowVoteModal(true);
+  }
+
+  // অপশন এডিটের সময় আইডি ধরে ধরে সিঙ্ক করা হয় (position-based ধরে নিলে কেউ
+  // মাঝখান থেকে একটা অপশন সরালে বাকিগুলোর label ভুল id-তে বসে যেত, যেটা
+  // vote_responses-এর সাথে সম্পর্ক নষ্ট করে দিতে পারত) — বিদ্যমান id-ওয়ালাগুলো
+  // আপডেট, নতুনগুলো (id null) ইনসার্ট, আর যেগুলো লিস্ট থেকে বাদ পড়েছে সেগুলো
+  // ডিলিট (cascade-এ সংশ্লিষ্ট vote_responses-ও মুছে যায়)। অ্যাটাচমেন্ট ছোট,
+  // সম্পূর্ণ ইউজার-ম্যানেজড লিস্ট বলে delete-all + re-insert দিয়ে সিঙ্ক করা হয়েছে।
+  async function updateVote() {
+    if (!editingVoteId || !user) return;
+    const labels = vOptions.map((o) => ({ ...o, label: o.label.trim() })).filter((o) => o.label);
+    if (!vTitle.trim() || labels.length < 2) { setVoteError('শিরোনাম দিন এবং কমপক্ষে দুটো অপশন লিখুন।'); return; }
+    setSavingVote(true);
+    setVoteError(null);
+
+    const { error: voteErr } = await supabase
+      .from('votes')
+      .update({
+        title: vTitle.trim(), description: vDesc.trim() || null, project_id: vProjectId || null,
+        allow_multiple: vAllowMultiple, is_anonymous: vAnonymous,
+        ends_at: vEndsAt ? new Date(`${vEndsAt}T23:59:59`).toISOString() : null,
+      })
+      .eq('id', editingVoteId);
+    if (voteErr) { setVoteError(voteErr.message); setSavingVote(false); return; }
+
+    const originalIds = new Set(voteOptions.filter((o) => o.vote_id === editingVoteId).map((o) => o.id));
+    const keptIds = new Set(labels.filter((o) => o.id).map((o) => o.id as string));
+    const removedIds = Array.from(originalIds).filter((id) => !keptIds.has(id));
+    if (removedIds.length > 0) {
+      const { error: delErr } = await supabase.from('vote_options').delete().in('id', removedIds);
+      if (delErr) { setVoteError(delErr.message); setSavingVote(false); return; }
+    }
+    for (let i = 0; i < labels.length; i++) {
+      const opt = labels[i];
+      if (opt.id) {
+        await supabase.from('vote_options').update({ label: opt.label, position: i }).eq('id', opt.id);
+      } else {
+        await supabase.from('vote_options').insert({ vote_id: editingVoteId, label: opt.label, position: i });
+      }
+    }
+
+    await supabase.from('vote_attachments').delete().eq('vote_id', editingVoteId);
+    if (vAttachments.length > 0) {
+      await supabase.from('vote_attachments').insert(vAttachments.map((a) => ({ vote_id: editingVoteId, file_name: a.name, file_type: a.type, url: a.url })));
+    }
+
     await handleReload();
     setSavingVote(false);
     closeVoteModal();
@@ -1156,6 +1224,7 @@ export default function DiscussionsPage() {
                         <button className="icon-btn" title={activeVote.is_archived ? 'আনআর্কাইভ করুন' : 'আর্কাইভ করুন'} onClick={() => toggleArchive('vote', activeVote.id, activeVote.is_archived)}><Icon name="archive" size={15} /></button>
                         {activeVote.author_id === profile?.id && (
                           <>
+                            <button className="icon-btn" title="এডিট করুন" onClick={() => openEditVoteModal(activeVote)}><Icon name="edit" size={15} /></button>
                             <button className="btn btn-ghost btn-sm" onClick={() => toggleVoteClosed(activeVote)}>{activeVote.status === 'closed' ? 'আবার খুলুন' : 'বন্ধ করুন'}</button>
                             <button className="icon-btn" title="মুছে ফেলুন" style={{ color: 'var(--danger)' }} disabled={busyId === activeVote.id} onClick={() => deleteVote(activeVote.id)}><Icon name="trash" size={15} /></button>
                           </>
@@ -1446,7 +1515,7 @@ export default function DiscussionsPage() {
           <div className="modal-box">
             <div className="modal-head">
               <div className="modal-icon" style={{ background: 'var(--warning-soft)', color: 'var(--warning)' }}><Icon name="bar-chart" /></div>
-              <span className="modal-title-lg">নতুন ভোট তৈরি করুন</span>
+              <span className="modal-title-lg">{editingVoteId ? 'ভোট এডিট করুন' : 'নতুন ভোট তৈরি করুন'}</span>
               <button className="modal-close" onClick={closeVoteModal}><Icon name="close" /></button>
             </div>
             <div className="modal-body">
@@ -1456,11 +1525,11 @@ export default function DiscussionsPage() {
                 <label className="modal-label">অপশনসমূহ</label>
                 {vOptions.map((opt, i) => (
                   <div key={i} className="option-input-row">
-                    <input className="modal-input" value={opt} onChange={(e) => setVOptions((prev) => prev.map((o, idx) => (idx === i ? e.target.value : o)))} placeholder={`অপশন ${i + 1}`} />
+                    <input className="modal-input" value={opt.label} onChange={(e) => setVOptions((prev) => prev.map((o, idx) => (idx === i ? { ...o, label: e.target.value } : o)))} placeholder={`অপশন ${i + 1}`} />
                     <button type="button" className="option-remove" disabled={vOptions.length <= 2} onClick={() => setVOptions((prev) => prev.filter((_, idx) => idx !== i))}><Icon name="close" size={13} /></button>
                   </div>
                 ))}
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setVOptions((prev) => [...prev, ''])}><Icon name="plus" size={13} /> আরেকটা অপশন যোগ করুন</button>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setVOptions((prev) => [...prev, { id: null, label: '' }])}><Icon name="plus" size={13} /> আরেকটা অপশন যোগ করুন</button>
               </div>
               <div className="toggle-row"><span className="toggle-label">একাধিক অপশন সিলেক্ট করা যাবে</span><button type="button" className={`toggle-switch${vAllowMultiple ? ' on' : ''}`} onClick={() => setVAllowMultiple((v) => !v)}><span className="toggle-knob"></span></button></div>
               <div className="toggle-row"><span className="toggle-label">Anonymous Voting</span><button type="button" className={`toggle-switch${vAnonymous ? ' on' : ''}`} onClick={() => setVAnonymous((v) => !v)}><span className="toggle-knob"></span></button></div>
@@ -1505,8 +1574,12 @@ export default function DiscussionsPage() {
             </div>
             <div className="modal-foot">
               <button className="btn btn-ghost btn-sm" onClick={closeVoteModal} disabled={savingVote}>বাতিল</button>
-              <button className="btn btn-ghost btn-sm" onClick={() => submitVote(true)} disabled={savingVote || vUploading || !vTitle.trim()}>Save Draft</button>
-              <button className="btn btn-accent btn-sm" onClick={() => submitVote(false)} disabled={savingVote || vUploading || !vTitle.trim()}>{savingVote ? 'পাবলিশ হচ্ছে…' : 'Publish Vote'}</button>
+              {!editingVoteId && (
+                <button className="btn btn-ghost btn-sm" onClick={() => submitVote(true)} disabled={savingVote || vUploading || !vTitle.trim()}>Save Draft</button>
+              )}
+              <button className="btn btn-accent btn-sm" onClick={() => (editingVoteId ? updateVote() : submitVote(false))} disabled={savingVote || vUploading || !vTitle.trim()}>
+                {savingVote ? 'সেভ হচ্ছে…' : editingVoteId ? 'সেভ করুন' : 'Publish Vote'}
+              </button>
             </div>
           </div>
         </div>
