@@ -18,6 +18,7 @@
 //   ফিরে পাওয়া যায়), "Export" আসল ক্লায়েন্ট-সাইড CSV ডাউনলোড।
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import './clients.css';
@@ -199,6 +200,7 @@ export default function ClientsListPage() {
   const [page, setPage] = useState(1);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
 
   const [showCreate, setShowCreate] = useState(false);
   const [newCompany, setNewCompany] = useState('');
@@ -249,9 +251,18 @@ export default function ClientsListPage() {
     if (!openMenuId) return;
     function closeMenu() {
       setOpenMenuId(null);
+      setMenuPos(null);
     }
     document.addEventListener('click', closeMenu);
-    return () => document.removeEventListener('click', closeMenu);
+    // পোর্টাল করা মেনুটা position:fixed দিয়ে বসানো (নিচে দেখুন কেন) — টেবিল
+    // স্ক্রল/উইন্ডো রিসাইজ হলে বাটনের সাথে সরে না, তাই সেসময় বন্ধ করে দেওয়া হয়
+    window.addEventListener('scroll', closeMenu, true);
+    window.addEventListener('resize', closeMenu);
+    return () => {
+      document.removeEventListener('click', closeMenu);
+      window.removeEventListener('scroll', closeMenu, true);
+      window.removeEventListener('resize', closeMenu);
+    };
   }, [openMenuId]);
 
   const kpis = useMemo(() => {
@@ -459,6 +470,12 @@ export default function ClientsListPage() {
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
 
+  // ড্রপডাউনটা table-scroll র‍্যাপারের ভেতরে position:absolute দিয়ে বসালে
+  // overflow-x:auto (যেটার সাথে CSS স্পেকের নিয়মেই overflow-y auto হয়ে যায়)
+  // মেনুর নিচের অংশ কেটে ফেলছিল — উপরের সারিগুলোর মেনু খুললে "Assign Manager"/
+  // "Edit Client"/"Archive"-এর মতো আইটেম আদৌ দেখা যাচ্ছিল না, table-এর বাইরে
+  // চলে যাচ্ছিল বলে। এখন document.body-তে পোর্টাল করে position:fixed দিয়ে
+  // বাটনের ঠিক নিচে বসানো হয় — কোনো ancestor-এর overflow আর প্রভাব ফেলে না।
   const rowActionsMenu = (c: ClientRow) => (
     <div className="row-actions" onClick={(e) => e.stopPropagation()}>
       <button
@@ -466,49 +483,69 @@ export default function ClientsListPage() {
         className="row-actions-btn"
         onClick={(e) => {
           e.stopPropagation();
-          setOpenMenuId((id) => (id === c.id ? null : c.id));
+          if (openMenuId === c.id) {
+            setOpenMenuId(null);
+            setMenuPos(null);
+            return;
+          }
+          const rect = e.currentTarget.getBoundingClientRect();
+          const menuWidth = 200;
+          setMenuPos({ top: rect.bottom + 6, left: Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8)) });
+          setOpenMenuId(c.id);
         }}
         aria-label="আরও অপশন"
       >
         <Icon name="more" />
       </button>
-      <div className={`row-actions-menu${openMenuId === c.id ? ' open' : ''}`}>
-        <Link className="ram-item" href={`/clients/${c.id}`}>
-          <Icon name="eye" size={13} /> View Client
-        </Link>
-        {c.contact_phone ? (
-          <a className="ram-item" href={waLink(c.contact_phone)} target="_blank" rel="noopener noreferrer">
-            <Icon name="message" size={13} /> Send Message
-          </a>
-        ) : c.contact_email ? (
-          <a className="ram-item" href={`mailto:${c.contact_email}`}>
-            <Icon name="message" size={13} /> Send Message
-          </a>
-        ) : null}
-        {projectState(c) === 'none' && (
-          <Link className="ram-item" href={`/clients/${c.id}/create-project`}>
-            <Icon name="folder-plus" size={13} /> Create Project
-          </Link>
-        )}
-        <button
-          type="button"
-          className="ram-item"
-          onClick={() => {
-            setAssignFor(c);
-            setAssignManagerId(c.account_manager_id ?? '');
-            setOpenMenuId(null);
-          }}
-        >
-          <Icon name="user-plus" size={13} /> Assign Manager
-        </button>
-        <Link className="ram-item" href={`/clients/${c.id}?edit=1`}>
-          <Icon name="edit" size={13} /> Edit Client
-        </Link>
-        <div className="ram-divider"></div>
-        <button type="button" className="ram-item danger" onClick={() => handleToggleArchive(c)}>
-          <Icon name="archive" size={13} /> {c.is_archived ? 'Unarchive Client' : 'Archive Client'}
-        </button>
-      </div>
+      {openMenuId === c.id && menuPos && createPortal(
+        // document.body-তে পোর্টাল হওয়ায় এটা আর .clientslist-root-এর descendant
+        // না — তাই CSS ভ্যারিয়েবলগুলো (--surface/--border/--ink ইত্যাদি, dark মোড
+        // সহ) আবার ডিফাইন করতে বাইরে একটা display:contents র‍্যাপারে
+        // clientslist-root(.dark) ক্লাস বসানো হলো (নিজের কোনো বক্স/লেআউট নেই,
+        // শুধু ভ্যারিয়েবল আর .row-actions-menu-কে সত্যিকারের descendant বানায়,
+        // যাতে .clientslist-root .row-actions-menu-এর মতো স্কোপড সিলেক্টরগুলো মেলে)
+        <div className={`clientslist-root${dark ? ' dark' : ''}`} style={{ display: 'contents' }}>
+          <div className="row-actions-menu open" style={{ top: menuPos.top, left: menuPos.left }} onClick={(e) => e.stopPropagation()}>
+            <Link className="ram-item" href={`/clients/${c.id}`}>
+              <Icon name="eye" size={13} /> View Client
+            </Link>
+            {c.contact_phone ? (
+              <a className="ram-item" href={waLink(c.contact_phone)} target="_blank" rel="noopener noreferrer">
+                <Icon name="message" size={13} /> Send Message
+              </a>
+            ) : c.contact_email ? (
+              <a className="ram-item" href={`mailto:${c.contact_email}`}>
+                <Icon name="message" size={13} /> Send Message
+              </a>
+            ) : null}
+            {projectState(c) === 'none' && (
+              <Link className="ram-item" href={`/clients/${c.id}/create-project`}>
+                <Icon name="folder-plus" size={13} /> Create Project
+              </Link>
+            )}
+            <button
+              type="button"
+              className="ram-item"
+              onClick={() => {
+                setAssignFor(c);
+                setAssignManagerId(c.account_manager_id ?? '');
+                setOpenMenuId(null);
+                setMenuPos(null);
+              }}
+            >
+              <Icon name="user-plus" size={13} /> Assign Manager
+            </button>
+            <Link className="ram-item" href={`/clients/${c.id}?edit=1`}>
+              <Icon name="edit" size={13} /> Edit Client
+            </Link>
+            <div className="ram-divider"></div>
+            <button type="button" className="ram-item danger" onClick={() => handleToggleArchive(c)}>
+              <Icon name="archive" size={13} /> {c.is_archived ? 'Unarchive Client' : 'Archive Client'}
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 

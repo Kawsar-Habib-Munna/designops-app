@@ -190,7 +190,7 @@
 .clientslist-root .row-actions{position:relative;}
 .clientslist-root .row-actions-btn{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--ink-faint);border:none;background:transparent;}
 .clientslist-root .row-actions-btn:hover{background:var(--border-soft);color:var(--ink);}
-.clientslist-root .row-actions-menu{position:absolute;top:32px;right:0;width:200px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);z-index:20;overflow:hidden;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity .12s ease,transform .12s ease;}
+.clientslist-root .row-actions-menu{position:fixed;width:200px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);z-index:200;overflow:hidden;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity .12s ease,transform .12s ease;}
 .clientslist-root .row-actions-menu.open{opacity:1;pointer-events:auto;transform:translateY(0);}
 .clientslist-root .ram-item{display:flex;align-items:center;gap:9px;padding:9px 12px;font-size:12px;color:var(--ink);border:none;background:transparent;width:100%;text-align:left;}
 .clientslist-root .ram-item:hover{background:var(--surface-muted);}
