@@ -19,7 +19,7 @@ import './payments.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
 import { useUnreadCount } from '@/lib/useUnreadCount';
-import { formatBnDate, todayISO } from '@/lib/format';
+import { formatBnDate, formatBnDateLong, todayISO } from '@/lib/format';
 import { uploadFileToDrive } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
@@ -45,6 +45,7 @@ const ICON_PATHS: Record<string, string> = {
   message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
   layers: '<path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>',
   upload: '<path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
+  download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
 };
 type IconName = keyof typeof ICON_PATHS;
 function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
@@ -199,6 +200,7 @@ export default function AdminPaymentsPage() {
 
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
+  const [viewingReceipt, setViewingReceipt] = useState<{ inv: Invoice; submission: Payment } | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
@@ -725,9 +727,9 @@ export default function AdminPaymentsPage() {
                                   </button>
                                 )}
                                 {inv.status === 'paid' && submission && (
-                                  <Link href={`/projects/${project.id}/payments/${submission.id}/receipt`} className="btn btn-ghost btn-sm">
+                                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setViewingReceipt({ inv, submission })}>
                                     View Receipt
-                                  </Link>
+                                  </button>
                                 )}
                                 {canCancel && (
                                   <button className="btn btn-danger-ghost btn-sm" onClick={() => setCancelTargetId(inv.id)}>
@@ -1087,6 +1089,96 @@ export default function AdminPaymentsPage() {
               <button type="button" className="btn btn-accent btn-sm" onClick={handleCorrectionSubmit} disabled={submittingCorrection}>
                 {submittingCorrection ? 'পাঠানো হচ্ছে…' : 'Send Request'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewingReceipt && project && (
+        <div className="receipt-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setViewingReceipt(null); }}>
+          <div className="receipt-modal-box">
+            <div className="receipt-modal-head receipt-modal-noprint">
+              <div>
+                <div className="receipt-modal-eyebrow">Payment Receipt</div>
+                <div className="receipt-modal-filename">{viewingReceipt.submission.receipt_number ?? viewingReceipt.inv.request_number ?? 'Receipt'}</div>
+              </div>
+              <div className="receipt-modal-head-actions">
+                <button type="button" className="btn btn-accent btn-sm" onClick={() => window.print()}>
+                  <Icon name="download" size={14} /> Download
+                </button>
+                <button type="button" className="receipt-modal-close" aria-label="Close" onClick={() => setViewingReceipt(null)}>
+                  <Icon name="close" size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div className="receipt-modal-body">
+              <div className="receipt-doc">
+                <div className="receipt-doc-accent" />
+                <div className="receipt-doc-head">
+                  <div className="receipt-doc-brand">FLOW 53</div>
+                  <span className="receipt-doc-badge">
+                    <Icon name="check" size={12} /> Paid
+                  </span>
+                </div>
+
+                <div className="receipt-doc-amount-block">
+                  <div className="receipt-doc-amount-label">Amount Paid</div>
+                  <div className="receipt-doc-amount">
+                    {viewingReceipt.inv.currency} {(viewingReceipt.submission.amount ?? viewingReceipt.inv.amount).toLocaleString('en-US')}
+                  </div>
+                  <div className="receipt-doc-amount-sub">{viewingReceipt.inv.description || humanizeType(viewingReceipt.inv.payment_type)}</div>
+                </div>
+
+                <div className="receipt-doc-divider" />
+
+                <div className="receipt-doc-grid">
+                  <div className="receipt-doc-field">
+                    <div className="receipt-doc-field-label">Receipt Number</div>
+                    <div className="receipt-doc-field-value">{viewingReceipt.submission.receipt_number ?? '—'}</div>
+                  </div>
+                  <div className="receipt-doc-field">
+                    <div className="receipt-doc-field-label">Date</div>
+                    <div className="receipt-doc-field-value">{formatBnDateLong(viewingReceipt.submission.payment_date)}</div>
+                  </div>
+                  <div className="receipt-doc-field">
+                    <div className="receipt-doc-field-label">Client</div>
+                    <div className="receipt-doc-field-value">{client?.primary_contact ?? client?.company_name ?? '—'}</div>
+                  </div>
+                  <div className="receipt-doc-field">
+                    <div className="receipt-doc-field-label">Company</div>
+                    <div className="receipt-doc-field-value">{client?.company_name ?? '—'}</div>
+                  </div>
+                  <div className="receipt-doc-field">
+                    <div className="receipt-doc-field-label">Project</div>
+                    <div className="receipt-doc-field-value">{project.name}</div>
+                  </div>
+                  <div className="receipt-doc-field">
+                    <div className="receipt-doc-field-label">Request No.</div>
+                    <div className="receipt-doc-field-value">{viewingReceipt.inv.request_number ?? '—'}</div>
+                  </div>
+                  <div className="receipt-doc-field">
+                    <div className="receipt-doc-field-label">Payment Method</div>
+                    <div className="receipt-doc-field-value">{viewingReceipt.submission.payment_method ?? '—'}</div>
+                  </div>
+                  <div className="receipt-doc-field">
+                    <div className="receipt-doc-field-label">Transaction ID</div>
+                    <div className="receipt-doc-field-value">{viewingReceipt.submission.transaction_id ?? '—'}</div>
+                  </div>
+                </div>
+
+                {viewingReceipt.submission.notes && (
+                  <>
+                    <div className="receipt-doc-divider" />
+                    <div className="receipt-doc-field">
+                      <div className="receipt-doc-field-label">Note</div>
+                      <div className="receipt-doc-field-value receipt-doc-notes">{viewingReceipt.submission.notes}</div>
+                    </div>
+                  </>
+                )}
+
+                <div className="receipt-doc-footer">Thank you for your business — FLOW 53</div>
+              </div>
             </div>
           </div>
         </div>
