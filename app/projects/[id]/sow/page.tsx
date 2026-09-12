@@ -32,7 +32,6 @@
 // (নতুন /sows পাতা, SOW-01) header-এ যোগ হলো।
 
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent } from 'react';
-import { createPortal } from 'react-dom';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import '../project.css';
@@ -72,6 +71,7 @@ const ICON_PATHS: Record<string, string> = {
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
   dollar: '<path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
   'chevron-down': '<path d="M6 9l6 6 6-6"/>',
+  refresh: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v6h-6"/>',
 };
 type IconName = keyof typeof ICON_PATHS;
 function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
@@ -235,7 +235,6 @@ export default function AdminSowPage() {
 
   // ---- version dropdown ----
   const [versionMenuOpen, setVersionMenuOpen] = useState(false);
-  const [versionMenuPos, setVersionMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [deletingVersionId, setDeletingVersionId] = useState<string | null>(null);
 
   // ---- editable form state ----
@@ -301,20 +300,15 @@ export default function AdminSowPage() {
     setNotify(sow.notify_client);
   }
 
-  // ভার্সন ড্রপডাউন বন্ধ করা — বাইরে ক্লিক/স্ক্রল/রিসাইজ হলে
+  // ভার্সন ড্রপডাউন বন্ধ করা — বাইরে ক্লিক করলে
   useEffect(() => {
     if (!versionMenuOpen) return;
     function close() {
       setVersionMenuOpen(false);
-      setVersionMenuPos(null);
     }
     document.addEventListener('click', close);
-    window.addEventListener('scroll', close, true);
-    window.addEventListener('resize', close);
     return () => {
       document.removeEventListener('click', close);
-      window.removeEventListener('scroll', close, true);
-      window.removeEventListener('resize', close);
     };
   }, [versionMenuOpen]);
 
@@ -525,12 +519,32 @@ export default function AdminSowPage() {
     setReloadKey((k) => k + 1);
   }
 
-  // draft ভার্সনই শুধু হার্ড-ডিলিট করা যায় — একবার client-কে "Sent" হয়ে গেলে
-  // সেটা একটা রেকর্ড/অডিট ট্রেইল, তখন Void SOW-ই সঠিক অ্যাকশন (উপরে
-  // handleConfirmVoid)। RLS-এও (sql/schema.sql) status='draft' শর্তটা এনফোর্স
-  // করা আছে, শুধু UI-তে লুকানো না।
+  // Void SOW-এর বিপরীত — voided ভার্সনকে আবার "sent" স্ট্যাটাসে ফিরিয়ে আনে (কারণ
+  // void করার আগে সেটা sent/viewed অবস্থাতেই ছিল)। এটা না থাকলে ভুল করে Void করলে
+  // আর ফেরানোর কোনো উপায়ই ছিল না — শুধু নতুন ভার্সন তৈরি করা যেত।
+  async function handleReactivateVersion() {
+    if (!selected || !user) return;
+    setVoiding(true);
+    const { error: updateError } = await supabase.from('sows').update({ status: 'sent' }).eq('id', selected.id);
+    setVoiding(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    if (project?.client_id) {
+      await supabase.from('activity_log').insert({ actor_id: user.id, action: 'sow_cancelled', entity_type: 'client', entity_id: project.client_id, detail: `SOW ${selected.sow_number ?? `v${selected.version}`} আবার সক্রিয় করা হয়েছে` });
+    }
+    setReloadKey((k) => k + 1);
+  }
+
+  // "sent"/"viewed"/"signed" ভার্সন হার্ড-ডিলিট করা যায় না — client-এর কাছে সেটার
+  // একটা লিংক থাকতে পারে (sent/viewed) বা সেটা লিগ্যালি সাইন করা রেকর্ড (signed);
+  // ওগুলোর জন্য Void SOW-ই সঠিক অ্যাকশন (উপরে handleConfirmVoid)। draft/cancelled/
+  // superseded ভার্সন — কখনো client-কে পাঠানো হয়নি বা ইতিমধ্যে void/replace করা
+  // হয়েছে — এগুলো সেফভাবে হার্ড-ডিলিট করা যায়। RLS-এও (sql/schema.sql) এই একই
+  // শর্ত এনফোর্স করা আছে, শুধু UI-তে লুকানো না।
   async function handleDeleteVersion(v: Sow) {
-    if (v.status !== 'draft') return;
+    if (v.status === 'sent' || v.status === 'viewed' || v.status === 'signed') return;
     if (!window.confirm(`v${v.version} ডিলিট করতে চান? এটা ফিরিয়ে আনা যাবে না।`)) return;
     setDeletingVersionId(v.id);
     const { error: deleteError } = await supabase.from('sows').delete().eq('id', v.id);
@@ -542,7 +556,6 @@ export default function AdminSowPage() {
     const remaining = versions.filter((x) => x.id !== v.id);
     setVersions(remaining);
     setVersionMenuOpen(false);
-    setVersionMenuPos(null);
     if (v.id === selectedId) {
       if (remaining.length > 0) {
         selectVersion(remaining[0]);
@@ -1155,29 +1168,23 @@ export default function AdminSowPage() {
 
                     <div className="sow-nav-card">
                       <div className="sow-version-tabs">
-                        <button
-                          type="button"
-                          className="sow-version-dropdown-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (versionMenuOpen) {
-                              setVersionMenuOpen(false);
-                              setVersionMenuPos(null);
-                              return;
-                            }
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            setVersionMenuPos({ top: rect.bottom + 6, left: rect.left });
-                            setVersionMenuOpen(true);
-                          }}
-                        >
-                          <span className="sow-version-num">v{selected.version}</span>
-                          <span className={`status-pill ${STATUS_META[selected.status]?.cls ?? 'sp-draft'}`}>{STATUS_META[selected.status]?.label ?? selected.status}</span>
-                          <Icon name="chevron-down" size={12} />
-                        </button>
+                        <div className="sow-version-dropdown-wrap">
+                          <button
+                            type="button"
+                            className="sow-version-dropdown-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setVersionMenuOpen((open) => !open);
+                            }}
+                          >
+                            <span className="sow-version-static-label">Version</span>
+                            <span className="sow-version-num">v{selected.version}</span>
+                            <span className={`status-pill ${STATUS_META[selected.status]?.cls ?? 'sp-draft'}`}>{STATUS_META[selected.status]?.label ?? selected.status}</span>
+                            <Icon name="chevron-down" size={12} />
+                          </button>
 
-                        {versionMenuOpen && versionMenuPos && createPortal(
-                          <div className={`sow-admin-root${dark ? ' dark' : ''}`} style={{ display: 'contents' }}>
-                            <div className="sow-version-menu" style={{ top: versionMenuPos.top, left: versionMenuPos.left }} onClick={(e) => e.stopPropagation()}>
+                          {versionMenuOpen && (
+                            <div className="sow-version-menu" onClick={(e) => e.stopPropagation()}>
                               {versions.map((v) => (
                                 <div key={v.id} className={`sow-version-menu-item${v.id === selectedId ? ' active' : ''}`}>
                                   <button
@@ -1186,17 +1193,16 @@ export default function AdminSowPage() {
                                     onClick={() => {
                                       selectVersion(v);
                                       setVersionMenuOpen(false);
-                                      setVersionMenuPos(null);
                                     }}
                                   >
                                     <span className="sow-version-num">v{v.version}</span>
                                     <span className={`status-pill ${STATUS_META[v.status]?.cls ?? 'sp-draft'}`}>{STATUS_META[v.status]?.label ?? v.status}</span>
                                   </button>
-                                  {v.status === 'draft' && (
+                                  {v.status !== 'sent' && v.status !== 'signed' && v.status !== 'viewed' && (
                                     <button
                                       type="button"
                                       className="sow-version-menu-delete"
-                                      title="ডিলিট করুন (শুধু draft ভার্সন)"
+                                      title="এই ভার্সন ডিলিট করুন"
                                       disabled={deletingVersionId === v.id}
                                       onClick={() => handleDeleteVersion(v)}
                                     >
@@ -1206,9 +1212,8 @@ export default function AdminSowPage() {
                                 </div>
                               ))}
                             </div>
-                          </div>,
-                          document.body
-                        )}
+                          )}
+                        </div>
 
                         {selected.status !== 'draft' && selected.status !== 'superseded' && selected.status !== 'cancelled' && (
                           <button className="btn btn-ghost btn-sm" onClick={handleCreateNewVersion}>
@@ -1449,12 +1454,23 @@ export default function AdminSowPage() {
                         <div className="dcard" style={{ marginTop: 14 }}>
                           <span className="dcard-title">Actions</span>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {selected.status === 'cancelled' && (
+                              <>
+                                <p className="sow-action-note">এই ভার্সনটা void করা হয়েছে — client আর এটা সাইন করতে পারবে না।</p>
+                                <button className="btn btn-ghost btn-block btn-sm" disabled={voiding} onClick={handleReactivateVersion}>
+                                  <Icon name="refresh" size={12} /> {voiding ? 'সক্রিয় হচ্ছে…' : 'Reactivate (Send আবার)'}
+                                </button>
+                              </>
+                            )}
+                            {selected.status === 'superseded' && (
+                              <p className="sow-action-note">এই ভার্সনটা একটা নতুন ভার্সন দিয়ে replace হয়ে গেছে — এখন শুধু history হিসেবে আছে।</p>
+                            )}
                             {!selected.agency_signed_at && selected.status !== 'cancelled' && selected.status !== 'superseded' && (
                               <button className="btn btn-accent btn-block btn-sm" onClick={openAgencySignModal}>
                                 <Icon name="edit" size={12} /> Sign as Agency
                               </button>
                             )}
-                            {selected.status === 'sent' && (
+                            {(selected.status === 'sent' || selected.status === 'viewed' || selected.status === 'declined') && (
                               <button className="btn btn-ghost btn-block btn-sm" onClick={() => setShowSendConfirm(true)}>
                                 <Icon name="send" size={12} /> Resend to Client
                               </button>
@@ -1469,7 +1485,7 @@ export default function AdminSowPage() {
                                 <Icon name="download" size={12} /> View Attached Document
                               </a>
                             )}
-                            {selected.status === 'sent' && (
+                            {(selected.status === 'sent' || selected.status === 'viewed' || selected.status === 'declined') && (
                               <button
                                 className="btn btn-ghost btn-block btn-sm"
                                 onClick={() => {
@@ -1479,9 +1495,14 @@ export default function AdminSowPage() {
                                 <Icon name="edit" size={12} /> Edit SOW
                               </button>
                             )}
-                            {(selected.status === 'sent' || selected.status === 'draft') && (
+                            {(selected.status === 'sent' || selected.status === 'viewed' || selected.status === 'declined' || selected.status === 'draft') && (
                               <button className="btn btn-danger-ghost btn-block btn-sm" onClick={() => setShowVoidConfirm(true)}>
                                 <Icon name="close" size={12} /> Void SOW
+                              </button>
+                            )}
+                            {(selected.status === 'cancelled' || selected.status === 'superseded' || selected.status === 'draft') && (
+                              <button className="btn btn-danger-ghost btn-block btn-sm" disabled={deletingVersionId === selected.id} onClick={() => handleDeleteVersion(selected)}>
+                                <Icon name="close" size={12} /> {deletingVersionId === selected.id ? 'ডিলিট হচ্ছে…' : 'Delete This Version'}
                               </button>
                             )}
                           </div>

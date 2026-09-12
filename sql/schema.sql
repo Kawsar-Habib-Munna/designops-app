@@ -2157,9 +2157,12 @@ drop policy if exists "admin can delete activity" on activity_log;
 create policy "admin can delete activity" on activity_log for delete using (public.is_admin());
 
 -- SOW ভার্সন ড্রপডাউনে ডিলিট অপশন যোগ হওয়ায় — sows-এ আগে কোনো delete পলিসিই
--- ছিল না (ডিফল্ট-ডিনাই)। শুধু draft ভার্সন হার্ড-ডিলিট করা যাবে — একবার client-কে
--- "Sent" হয়ে গেলে সেটা রেকর্ড/অডিট ট্রেইল, তখনকার জন্য আগে থেকেই "Void SOW"
--- আছে (status='cancelled', ডেটা থেকেই যায়)। UI-তেও শুধু draft ভার্সনে delete
--- বাটন দেখানো হয়, এই পলিসিটা সেটাকেই DB লেভেলে এনফোর্স করে।
+-- ছিল না (ডিফল্ট-ডিনাই)। draft/cancelled(voided)/superseded ভার্সন হার্ড-ডিলিট
+-- করা যাবে — এগুলো কখনো client-কে অ্যাক্টিভ অবস্থায় পাঠানো হয়নি বা ইতিমধ্যে
+-- void/replace হয়ে গেছে। sent/viewed/signed ভার্সনে delete বাটন দেখানো হয় না —
+-- client-এর কাছে লিংক থাকতে পারে বা সেটা লিগ্যাল সাইন করা রেকর্ড, ওখানে "Void
+-- SOW"-ই সঠিক অ্যাকশন। এই পলিসিটা UI-এর একই শর্ত DB লেভেলে এনফোর্স করে।
 drop policy if exists "team can delete draft sows" on sows;
-create policy "team can delete draft sows" on sows for delete using (public.is_team_member() and status = 'draft');
+create policy "team can delete draft sows" on sows for delete using (
+  public.is_team_member() and status in ('draft', 'cancelled', 'superseded')
+);
