@@ -2155,3 +2155,11 @@ drop table if exists whiteboard_state;
 -- বলে শুধু এডমিনরাই মুছতে পারবে (আগে কোনো delete পলিসিই ছিল না)।
 drop policy if exists "admin can delete activity" on activity_log;
 create policy "admin can delete activity" on activity_log for delete using (public.is_admin());
+
+-- SOW ভার্সন ড্রপডাউনে ডিলিট অপশন যোগ হওয়ায় — sows-এ আগে কোনো delete পলিসিই
+-- ছিল না (ডিফল্ট-ডিনাই)। শুধু draft ভার্সন হার্ড-ডিলিট করা যাবে — একবার client-কে
+-- "Sent" হয়ে গেলে সেটা রেকর্ড/অডিট ট্রেইল, তখনকার জন্য আগে থেকেই "Void SOW"
+-- আছে (status='cancelled', ডেটা থেকেই যায়)। UI-তেও শুধু draft ভার্সনে delete
+-- বাটন দেখানো হয়, এই পলিসিটা সেটাকেই DB লেভেলে এনফোর্স করে।
+drop policy if exists "team can delete draft sows" on sows;
+create policy "team can delete draft sows" on sows for delete using (public.is_team_member() and status = 'draft');

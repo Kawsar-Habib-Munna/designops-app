@@ -32,6 +32,7 @@
 // (নতুন /sows পাতা, SOW-01) header-এ যোগ হলো।
 
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import '../project.css';
@@ -70,6 +71,7 @@ const ICON_PATHS: Record<string, string> = {
   edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/>',
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
   dollar: '<path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  'chevron-down': '<path d="M6 9l6 6 6-6"/>',
 };
 type IconName = keyof typeof ICON_PATHS;
 function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
@@ -229,6 +231,12 @@ export default function AdminSowPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [mode, setMode] = useState<'overview' | 'editor' | 'preview'>('overview');
   const [activeTab, setActiveTab] = useState<SowDetailTabKey>('parties');
+  const [showFullDoc, setShowFullDoc] = useState(false);
+
+  // ---- version dropdown ----
+  const [versionMenuOpen, setVersionMenuOpen] = useState(false);
+  const [versionMenuPos, setVersionMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [deletingVersionId, setDeletingVersionId] = useState<string | null>(null);
 
   // ---- editable form state ----
   const [summary, setSummary] = useState('');
@@ -292,6 +300,23 @@ export default function AdminSowPage() {
     setAttachMSA(!!sow.document_url);
     setNotify(sow.notify_client);
   }
+
+  // ভার্সন ড্রপডাউন বন্ধ করা — বাইরে ক্লিক/স্ক্রল/রিসাইজ হলে
+  useEffect(() => {
+    if (!versionMenuOpen) return;
+    function close() {
+      setVersionMenuOpen(false);
+      setVersionMenuPos(null);
+    }
+    document.addEventListener('click', close);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      document.removeEventListener('click', close);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
+  }, [versionMenuOpen]);
 
   useEffect(() => {
     if (!user || !projectId) return;
@@ -498,6 +523,34 @@ export default function AdminSowPage() {
       await supabase.from('activity_log').insert({ actor_id: user.id, action: 'sow_cancelled', entity_type: 'client', entity_id: project.client_id, detail: `SOW ${selected.sow_number ?? `v${selected.version}`} void করা হয়েছে` });
     }
     setReloadKey((k) => k + 1);
+  }
+
+  // draft ভার্সনই শুধু হার্ড-ডিলিট করা যায় — একবার client-কে "Sent" হয়ে গেলে
+  // সেটা একটা রেকর্ড/অডিট ট্রেইল, তখন Void SOW-ই সঠিক অ্যাকশন (উপরে
+  // handleConfirmVoid)। RLS-এও (sql/schema.sql) status='draft' শর্তটা এনফোর্স
+  // করা আছে, শুধু UI-তে লুকানো না।
+  async function handleDeleteVersion(v: Sow) {
+    if (v.status !== 'draft') return;
+    if (!window.confirm(`v${v.version} ডিলিট করতে চান? এটা ফিরিয়ে আনা যাবে না।`)) return;
+    setDeletingVersionId(v.id);
+    const { error: deleteError } = await supabase.from('sows').delete().eq('id', v.id);
+    setDeletingVersionId(null);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+    const remaining = versions.filter((x) => x.id !== v.id);
+    setVersions(remaining);
+    setVersionMenuOpen(false);
+    setVersionMenuPos(null);
+    if (v.id === selectedId) {
+      if (remaining.length > 0) {
+        selectVersion(remaining[0]);
+      } else {
+        setMode('overview');
+        setSelectedId(null);
+      }
+    }
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -1102,17 +1155,69 @@ export default function AdminSowPage() {
 
                     <div className="sow-nav-card">
                       <div className="sow-version-tabs">
-                        {versions.map((v) => (
-                          <button key={v.id} className={`sow-version-tab${v.id === selectedId ? ' active' : ''}`} onClick={() => selectVersion(v)}>
-                            <span className="sow-version-num">v{v.version}</span>
-                            <span className={`status-pill ${STATUS_META[v.status]?.cls ?? 'sp-draft'}`}>{STATUS_META[v.status]?.label ?? v.status}</span>
-                          </button>
-                        ))}
+                        <button
+                          type="button"
+                          className="sow-version-dropdown-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (versionMenuOpen) {
+                              setVersionMenuOpen(false);
+                              setVersionMenuPos(null);
+                              return;
+                            }
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setVersionMenuPos({ top: rect.bottom + 6, left: rect.left });
+                            setVersionMenuOpen(true);
+                          }}
+                        >
+                          <span className="sow-version-num">v{selected.version}</span>
+                          <span className={`status-pill ${STATUS_META[selected.status]?.cls ?? 'sp-draft'}`}>{STATUS_META[selected.status]?.label ?? selected.status}</span>
+                          <Icon name="chevron-down" size={12} />
+                        </button>
+
+                        {versionMenuOpen && versionMenuPos && createPortal(
+                          <div className={`sow-admin-root${dark ? ' dark' : ''}`} style={{ display: 'contents' }}>
+                            <div className="sow-version-menu" style={{ top: versionMenuPos.top, left: versionMenuPos.left }} onClick={(e) => e.stopPropagation()}>
+                              {versions.map((v) => (
+                                <div key={v.id} className={`sow-version-menu-item${v.id === selectedId ? ' active' : ''}`}>
+                                  <button
+                                    type="button"
+                                    className="sow-version-menu-main"
+                                    onClick={() => {
+                                      selectVersion(v);
+                                      setVersionMenuOpen(false);
+                                      setVersionMenuPos(null);
+                                    }}
+                                  >
+                                    <span className="sow-version-num">v{v.version}</span>
+                                    <span className={`status-pill ${STATUS_META[v.status]?.cls ?? 'sp-draft'}`}>{STATUS_META[v.status]?.label ?? v.status}</span>
+                                  </button>
+                                  {v.status === 'draft' && (
+                                    <button
+                                      type="button"
+                                      className="sow-version-menu-delete"
+                                      title="ডিলিট করুন (শুধু draft ভার্সন)"
+                                      disabled={deletingVersionId === v.id}
+                                      onClick={() => handleDeleteVersion(v)}
+                                    >
+                                      <Icon name="close" size={12} />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>,
+                          document.body
+                        )}
+
                         {selected.status !== 'draft' && selected.status !== 'superseded' && selected.status !== 'cancelled' && (
                           <button className="btn btn-ghost btn-sm" onClick={handleCreateNewVersion}>
                             <Icon name="plus" size={12} /> New Version
                           </button>
                         )}
+                        <button className="btn btn-ghost btn-sm" onClick={() => setShowFullDoc((v) => !v)}>
+                          <Icon name={showFullDoc ? 'layers' : 'file'} size={12} /> {showFullDoc ? 'Tabbed View' : 'View Full SOW'}
+                        </button>
                       </div>
 
                       {selected.status === 'signed' && (
@@ -1121,26 +1226,28 @@ export default function AdminSowPage() {
                         </div>
                       )}
 
-                      <nav className="sow-toc" aria-label="Document sections" role="tablist">
-                        <button type="button" role="tab" aria-selected={activeTab === 'parties'} className={`sow-toc-tab${activeTab === 'parties' ? ' active' : ''}`} onClick={() => setActiveTab('parties')}>
-                          <Icon name="users" size={13} /> Parties
-                        </button>
-                        <button type="button" role="tab" aria-selected={activeTab === 'scope'} className={`sow-toc-tab${activeTab === 'scope' ? ' active' : ''}`} onClick={() => setActiveTab('scope')}>
-                          <Icon name="layers" size={13} /> Scope
-                        </button>
-                        <button type="button" role="tab" aria-selected={activeTab === 'timeline'} className={`sow-toc-tab${activeTab === 'timeline' ? ' active' : ''}`} onClick={() => setActiveTab('timeline')}>
-                          <Icon name="calendar" size={13} /> Timeline
-                        </button>
-                        <button type="button" role="tab" aria-selected={activeTab === 'payment'} className={`sow-toc-tab${activeTab === 'payment' ? ' active' : ''}`} onClick={() => setActiveTab('payment')}>
-                          <Icon name="dollar" size={13} /> Payment
-                        </button>
-                        <button type="button" role="tab" aria-selected={activeTab === 'terms'} className={`sow-toc-tab${activeTab === 'terms' ? ' active' : ''}`} onClick={() => setActiveTab('terms')}>
-                          <Icon name="check" size={13} /> Terms
-                        </button>
-                        <button type="button" role="tab" aria-selected={activeTab === 'signatures'} className={`sow-toc-tab${activeTab === 'signatures' ? ' active' : ''}`} onClick={() => setActiveTab('signatures')}>
-                          <Icon name="edit" size={13} /> Signatures
-                        </button>
-                      </nav>
+                      {!showFullDoc && (
+                        <nav className="sow-toc" aria-label="Document sections" role="tablist">
+                          <button type="button" role="tab" aria-selected={activeTab === 'parties'} className={`sow-toc-tab${activeTab === 'parties' ? ' active' : ''}`} onClick={() => setActiveTab('parties')}>
+                            <Icon name="users" size={13} /> Parties
+                          </button>
+                          <button type="button" role="tab" aria-selected={activeTab === 'scope'} className={`sow-toc-tab${activeTab === 'scope' ? ' active' : ''}`} onClick={() => setActiveTab('scope')}>
+                            <Icon name="layers" size={13} /> Scope
+                          </button>
+                          <button type="button" role="tab" aria-selected={activeTab === 'timeline'} className={`sow-toc-tab${activeTab === 'timeline' ? ' active' : ''}`} onClick={() => setActiveTab('timeline')}>
+                            <Icon name="calendar" size={13} /> Timeline
+                          </button>
+                          <button type="button" role="tab" aria-selected={activeTab === 'payment'} className={`sow-toc-tab${activeTab === 'payment' ? ' active' : ''}`} onClick={() => setActiveTab('payment')}>
+                            <Icon name="dollar" size={13} /> Payment
+                          </button>
+                          <button type="button" role="tab" aria-selected={activeTab === 'terms'} className={`sow-toc-tab${activeTab === 'terms' ? ' active' : ''}`} onClick={() => setActiveTab('terms')}>
+                            <Icon name="check" size={13} /> Terms
+                          </button>
+                          <button type="button" role="tab" aria-selected={activeTab === 'signatures'} className={`sow-toc-tab${activeTab === 'signatures' ? ' active' : ''}`} onClick={() => setActiveTab('signatures')}>
+                            <Icon name="edit" size={13} /> Signatures
+                          </button>
+                        </nav>
+                      )}
                     </div>
 
                     <div className="sow-preview-grid">
@@ -1153,7 +1260,7 @@ export default function AdminSowPage() {
                             {project.name} — {client?.company_name}
                           </div>
 
-                          <div className={`sow-tab-panel${activeTab === 'parties' ? '' : ' sow-tab-hidden'}`}>
+                          <div className={`sow-tab-panel${showFullDoc || activeTab === 'parties' ? '' : ' sow-tab-hidden'}`}>
                             <div className="doc-h2">1. Parties</div>
                             <p className="doc-field-line">
                               <b>Service Provider:</b> FLOW 53 Design Studio
@@ -1163,7 +1270,7 @@ export default function AdminSowPage() {
                             </p>
                           </div>
 
-                          <div className={`sow-tab-panel${activeTab === 'scope' ? '' : ' sow-tab-hidden'}`}>
+                          <div className={`sow-tab-panel${showFullDoc || activeTab === 'scope' ? '' : ' sow-tab-hidden'}`}>
                             <div className="doc-h2">2. Scope of Work</div>
                             <p className="doc-p">{summary || '—'}</p>
                             <ul className="doc-list">
@@ -1173,7 +1280,7 @@ export default function AdminSowPage() {
                             </ul>
                           </div>
 
-                          <div className={`sow-tab-panel${activeTab === 'timeline' ? '' : ' sow-tab-hidden'}`}>
+                          <div className={`sow-tab-panel${showFullDoc || activeTab === 'timeline' ? '' : ' sow-tab-hidden'}`}>
                             <div className="doc-h2">3. Timeline</div>
                             <ul className="doc-list">
                               {milestones
@@ -1194,13 +1301,13 @@ export default function AdminSowPage() {
                             )}
                           </div>
 
-                          <div className={`sow-tab-panel${activeTab === 'payment' ? '' : ' sow-tab-hidden'}`}>
+                          <div className={`sow-tab-panel${showFullDoc || activeTab === 'payment' ? '' : ' sow-tab-hidden'}`}>
                             <div className="doc-h2">4. Payment Terms</div>
                             <p className="doc-p">{buildPaymentTerms()}</p>
                             <p className="doc-p">{revisionPolicy}</p>
                           </div>
 
-                          <div className={`sow-tab-panel${activeTab === 'terms' ? '' : ' sow-tab-hidden'}`}>
+                          <div className={`sow-tab-panel${showFullDoc || activeTab === 'terms' ? '' : ' sow-tab-hidden'}`}>
                             <div className="doc-h2">5. Terms &amp; Conditions</div>
                             <p className="doc-p" style={{ whiteSpace: 'pre-wrap' }}>
                               {terms}
@@ -1212,7 +1319,7 @@ export default function AdminSowPage() {
                             )}
                           </div>
 
-                          <div className={`sow-tab-panel${activeTab === 'signatures' ? '' : ' sow-tab-hidden'}`}>
+                          <div className={`sow-tab-panel${showFullDoc || activeTab === 'signatures' ? '' : ' sow-tab-hidden'}`}>
                             <div className="doc-h2">Agreement &amp; Signatures</div>
                             <div className="sig-block-grid">
                               <div className="sig-block">
