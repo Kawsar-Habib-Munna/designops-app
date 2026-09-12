@@ -2,6 +2,22 @@
    modal-overlay/modal-box সব আসে, এখানে SOW-স্পেসিফিক ক্লাস + মকআপ অনুযায়ী
    একটু বেশি পলিশড field-input/textarea/select (শুধু এই পেজে স্কোপড)। */
 
+/* ---- page header + section cards ----
+   .dcard/.dcard-title/.page-title/.page-header-row/.page-sub এই পেজে ব্যবহার
+   হচ্ছিল কিন্তু .sow-admin-root স্কোপে কোথাও ডিফাইন করা ছিল না — তাই সেকশনগুলো
+   আলাদা কার্ড হিসেবে দেখাচ্ছিল না, হেডিং-এ কোনো টাইপোগ্রাফিক হায়ারার্কি ছিল না,
+   পুরো পেজটা flat/unstyled দেখাচ্ছিল। এটাই মূল কারণ। */
+.sow-admin-root .page-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.sow-admin-root .page-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0; color: var(--ink); }
+.sow-admin-root .page-sub { font-size: 13px; color: var(--ink-faint); margin: 4px 0 0; }
+.sow-admin-root .header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.sow-admin-root .dcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 22px 24px; margin-bottom: 18px; }
+.sow-admin-root .dcard-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.sow-admin-root .dcard-icon { width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; }
+.sow-admin-root .dcard-title { display: block; font-size: 14.5px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; margin-bottom: 16px; }
+.sow-admin-root .dcard-head .dcard-title { margin-bottom: 0; }
+
 .sow-admin-root .field-label { display: block; font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
 .sow-admin-root .field-input,
 .sow-admin-root .field-select,
@@ -77,12 +93,13 @@
 .sow-admin-root .editor-split { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; max-width: 1180px; margin: 0 auto; padding: 0 24px; }
 .sow-admin-root .editor-form-col { min-width: 0; }
 .sow-admin-root .editor-preview-col { position: sticky; top: 76px; }
-.sow-admin-root .preview-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; max-height: calc(100vh - 100px); display: flex; flex-direction: column; }
+.sow-admin-root .preview-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); overflow: hidden; max-height: calc(100vh - 100px); display: flex; flex-direction: column; }
 .sow-admin-root .preview-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface-muted); flex-shrink: 0; }
-.sow-admin-root .preview-panel-title { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; }
+.sow-admin-root .preview-panel-title { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
+.sow-admin-root .preview-panel-body::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--accent), var(--accent-soft-2)); }
 .sow-admin-root .preview-live-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--positive); animation: sow-pulse-dot 1.6s ease infinite; }
 @keyframes sow-pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
-.sow-admin-root .preview-panel-body { padding: 22px 24px; overflow-y: auto; flex: 1; }
+.sow-admin-root .preview-panel-body { position: relative; padding: 22px 24px; overflow-y: auto; flex: 1; }
 .sow-admin-root .preview-letterhead { font-size: 15px; font-weight: 800; color: var(--accent); margin-bottom: 2px; }
 .sow-admin-root .preview-letterhead-sub { font-size: 9.5px; color: var(--ink-faint); margin-bottom: 16px; }
 .sow-admin-root .preview-title { font-size: 15px; font-weight: 800; text-align: center; margin-bottom: 2px; }

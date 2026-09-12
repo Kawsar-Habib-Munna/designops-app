@@ -69,6 +69,7 @@ const ICON_PATHS: Record<string, string> = {
   eye: '<path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8z"/><circle cx="12" cy="12" r="3"/>',
   edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/>',
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
+  dollar: '<path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
 };
 type IconName = keyof typeof ICON_PATHS;
 function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
@@ -857,7 +858,10 @@ export default function AdminSowPage() {
                     <div className="editor-split">
                       <div className="editor-form-col">
                         <div className="dcard">
-                          <span className="dcard-title">Scope of Work</span>
+                          <div className="dcard-head">
+                            <span className="dcard-icon"><Icon name="layers" size={14} /></span>
+                            <span className="dcard-title">Scope of Work</span>
+                          </div>
                           <div className="field">
                             <label className="field-label">Project Summary</label>
                             <textarea className="field-textarea" value={summary} onChange={(e) => setSummary(e.target.value)} />
@@ -880,7 +884,10 @@ export default function AdminSowPage() {
                         </div>
 
                         <div className="dcard">
-                          <span className="dcard-title">Deliverables &amp; Timeline</span>
+                          <div className="dcard-head">
+                            <span className="dcard-icon"><Icon name="calendar" size={14} /></span>
+                            <span className="dcard-title">Deliverables &amp; Timeline</span>
+                          </div>
                           <div className="field-grid-2">
                             <div className="field">
                               <label className="field-label">Start Date</label>
@@ -906,7 +913,10 @@ export default function AdminSowPage() {
                         </div>
 
                         <div className="dcard">
-                          <span className="dcard-title">Payment Terms</span>
+                          <div className="dcard-head">
+                            <span className="dcard-icon"><Icon name="dollar" size={14} /></span>
+                            <span className="dcard-title">Payment Terms</span>
+                          </div>
                           <div className="field-grid-2">
                             <div className="field">
                               <label className="field-label">Project Value</label>
@@ -934,7 +944,10 @@ export default function AdminSowPage() {
                         </div>
 
                         <div className="dcard">
-                          <span className="dcard-title">Terms &amp; Conditions</span>
+                          <div className="dcard-head">
+                            <span className="dcard-icon"><Icon name="check" size={14} /></span>
+                            <span className="dcard-title">Terms &amp; Conditions</span>
+                          </div>
                           <textarea className="field-textarea large" value={terms} onChange={(e) => setTerms(e.target.value)} />
                           <div className="toggle-row">
                             <span className="toggle-label">📎 Attach Master Service Agreement</span>
@@ -958,7 +971,10 @@ export default function AdminSowPage() {
                         </div>
 
                         <div className="dcard">
-                          <span className="dcard-title">Documents &amp; Attachments</span>
+                          <div className="dcard-head">
+                            <span className="dcard-icon"><Icon name="upload" size={14} /></span>
+                            <span className="dcard-title">Documents &amp; Attachments</span>
+                          </div>
                           <p style={{ fontSize: 11.5, color: 'var(--ink-faint)', margin: '0 0 12px' }}>Reference files, contracts, or other documents attached to this SOW version — visible to the client once sent.</p>
                           {documents.length > 0 && (
                             <div className="sow-doc-list">
