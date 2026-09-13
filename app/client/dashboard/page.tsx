@@ -479,9 +479,14 @@ export default function ClientDashboard() {
 
               <div className="ov-welcome-card">
                 <div className="ov-welcome-left">
-                  <h1 className="ov-greeting-title">
-                    {greeting}, {firstName} 👋
-                  </h1>
+                  <div className="ov-greeting-row">
+                    <div className="avatar" style={{ width: 40, height: 40, fontSize: 15 }}>
+                      {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+                    </div>
+                    <h1 className="ov-greeting-title">
+                      {greeting}, {firstName} 👋
+                    </h1>
+                  </div>
                   <p className="ov-greeting-sub">Here&apos;s what&apos;s happening with your project today.</p>
                   {dateLabel && (
                     <div className="ov-date-chip">

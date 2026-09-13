@@ -170,10 +170,10 @@
 }
 
 .client-dashboard-root .content {
-  max-width: 1240px;
+  max-width: 1400px;
   width: 100%;
   margin: 0 auto;
-  padding: 36px 40px 64px;
+  padding: 24px 32px 64px;
 }
 .client-dashboard-root .welcome-title {
   margin: 0 0 6px;
@@ -706,10 +706,11 @@
 .client-dashboard-root .breadcrumb { margin-bottom: 18px; }
 .client-dashboard-root .ov-welcome-card { display: flex; align-items: stretch; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 22px; min-height: 128px; box-shadow: var(--shadow-lg); max-width: 100%; }
 .client-dashboard-root .ov-welcome-left { flex: 1.2; min-width: 0; padding: 22px 26px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.client-dashboard-root .ov-greeting-row { display: flex; align-items: center; gap: 12px; }
 .client-dashboard-root .ov-greeting-title { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
 .client-dashboard-root .ov-greeting-sub { margin: 0 0 4px; font-size: 13.5px; color: var(--ink-soft); }
 .client-dashboard-root .ov-date-chip { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-soft); border-radius: 999px; padding: 7px 13px; width: fit-content; max-width: 100%; white-space: nowrap; }
-.client-dashboard-root .ov-welcome-banner { position: relative; flex: 1; min-width: 160px; background: linear-gradient(135deg, rgba(124,58,237,0.35), rgba(124,58,237,0.75)), url("/dashboard-banner.jpg"); background-size: cover; background-position: center; }
+.client-dashboard-root .ov-welcome-banner { position: relative; flex: 1; min-width: 160px; background: url("/dashboard-banner.jpg"); background-size: cover; background-position: center; }
 @media (max-width: 700px) {
   .client-dashboard-root .ov-welcome-banner { display: none; }
   .client-dashboard-root .ov-welcome-card { min-height: auto; }
@@ -717,10 +718,10 @@
   .client-dashboard-root .breadcrumb { margin-bottom: 14px; }
 }
 
-.client-dashboard-root .ov-action-banner { display: flex; align-items: center; gap: 18px; background: linear-gradient(155deg, var(--accent-soft) 0%, var(--surface) 65%); border: 1px solid var(--accent-soft); border-radius: var(--radius-lg); padding: 22px 26px; flex-wrap: wrap; }
-.client-dashboard-root .ov-action-icon { width: 52px; height: 52px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.client-dashboard-root .ov-action-banner { display: flex; align-items: center; gap: 18px; background: linear-gradient(155deg, var(--warning-soft) 0%, var(--surface) 65%); border: 1px solid var(--warning); border-radius: var(--radius-lg); padding: 22px 26px; flex-wrap: wrap; }
+.client-dashboard-root .ov-action-icon { width: 52px; height: 52px; border-radius: 50%; background: var(--warning-soft); color: var(--warning); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .client-dashboard-root .ov-action-body { flex: 1; min-width: 220px; }
-.client-dashboard-root .ov-action-label { font-size: 10.5px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; }
+.client-dashboard-root .ov-action-label { font-size: 10.5px; font-weight: 700; color: var(--warning); text-transform: uppercase; letter-spacing: 0.05em; }
 .client-dashboard-root .ov-action-title { font-size: 17px; font-weight: 700; margin: 4px 0 4px; }
 .client-dashboard-root .ov-action-desc { margin: 0; font-size: 13px; color: var(--ink-soft); }
 .client-dashboard-root .ov-action-meta { margin-top: 8px; font-size: 12px; color: var(--ink-faint); display: flex; align-items: center; gap: 8px; }
