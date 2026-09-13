@@ -289,9 +289,8 @@ export default function ClientSowPage() {
           html2canvas(node, {
             scale: 2,
             backgroundColor: '#ffffff',
-            useCORS: true,
             imageTimeout: 15000,
-            onclone: (doc, el) => {
+            onclone: async (doc, el) => {
               // ডার্ক মোড চালু থাকলেও SOW PDF সবসময় লাইট কালারেই জেনারেট হয় — একটা
               // ফরমাল চুক্তির রং UI থিমের সাথে বদলানো উচিত না।
               el.style.setProperty('--surface', '#ffffff');
@@ -306,6 +305,30 @@ export default function ClientSowPage() {
               el.style.setProperty('--positive-soft', '#e7f8f2');
               el.style.setProperty('--warning', '#f5a524');
               el.style.setProperty('--warning-soft', '#fdf3e1');
+
+              // সিগনেচার ছবিগুলো Google Drive থেকে আসে (cross-origin, CORS হেডার
+              // ছাড়া) — সরাসরি রাখলে html2canvas-এর canvas "tainted" হয়ে
+              // toDataURL() ফেল করে। তাই এখানে fetch করে base64 data URL-এ
+              // বদলে দেওয়া হচ্ছে, যেটা canvas-এর জন্য নিরাপদ (same-origin)।
+              const imgs = Array.from(el.querySelectorAll('img'));
+              await Promise.all(
+                imgs.map(async (img) => {
+                  try {
+                    const res = await fetch(img.src);
+                    const blob = await res.blob();
+                    const dataUrl = await new Promise<string>((resolve, reject) => {
+                      const reader = new FileReader();
+                      reader.onloadend = () => resolve(reader.result as string);
+                      reader.onerror = () => reject(reader.error);
+                      reader.readAsDataURL(blob);
+                    });
+                    img.src = dataUrl;
+                  } catch {
+                    // fetch/কনভার্শন ফেল করলে বাকি ডকুমেন্ট যেন তবুও রেন্ডার হয় —
+                    // এই একটা ছবি বাদেই।
+                  }
+                }),
+              );
             },
           }),
           new Promise<never>((_, reject) => setTimeout(() => reject(new Error('PDF generation timed out')), 25000)),
