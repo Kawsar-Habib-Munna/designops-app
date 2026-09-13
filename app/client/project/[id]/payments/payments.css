@@ -114,7 +114,7 @@
 .client-payments-root .pm-schedule-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .client-payments-root .pm-schedule-amount { font-size: 14px; font-weight: 700; color: var(--ink); }
 .client-payments-root .pm-schedule-meta { font-size: 12px; color: var(--ink-faint); margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.client-payments-root .pm-receipt-link { font-weight: 600; color: var(--accent); }
+.client-payments-root .pm-receipt-link { font-weight: 600; font-size: 12px; color: var(--accent); background: none; border: none; padding: 0; cursor: pointer; }
 .client-payments-root .pm-receipt-link:hover { text-decoration: underline; }
 
 /* status pill (shared: schedule + table) */
@@ -158,7 +158,7 @@
 .client-payments-root .pm-table-icon.overdue { background: var(--danger-soft); color: var(--danger); }
 .client-payments-root .pm-table-type { font-size: 13px; font-weight: 600; color: var(--ink); }
 .client-payments-root .pm-table-ref { font-size: 11px; color: var(--ink-faint); }
-.client-payments-root .pm-table-action { font-size: 12.5px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+.client-payments-root .pm-table-action { font-size: 12.5px; font-weight: 600; color: var(--accent); white-space: nowrap; background: none; border: none; padding: 0; cursor: pointer; }
 .client-payments-root .pm-table-action:hover { text-decoration: underline; }
 
 /* ---- trust banner ---- */
@@ -195,4 +195,42 @@
 @media (max-width: 600px) {
   .client-payments-root .pm-top-row { flex-direction: column; }
   .client-payments-root .pm-top-actions { align-items: flex-start; }
+}
+
+/* ---- receipt modal (native-PDF-viewer style chrome, matches the team dashboard) ---- */
+.client-payments-root .receipt-modal-overlay { position: fixed; inset: 0; background: rgba(14,14,18,0.72); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 200; }
+.client-payments-root .receipt-modal-box { width: 100%; max-width: 780px; height: 86vh; max-height: 86vh; background: #202124; border-radius: 10px; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden; }
+
+.client-payments-root .receipt-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; background: #202124; flex-shrink: 0; }
+.client-payments-root .receipt-modal-filename { font-size: 13.5px; font-weight: 600; color: #F1F1F3; }
+.client-payments-root .receipt-modal-eyebrow { font-size: 11px; color: #9A9AA6; margin-top: 2px; }
+.client-payments-root .receipt-modal-head-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.client-payments-root .receipt-modal-download { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #F1F1F3; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); padding: 7px 13px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.client-payments-root .receipt-modal-download:hover { background: rgba(255,255,255,0.16); }
+.client-payments-root .receipt-modal-download-disabled { opacity: 0.5; pointer-events: none; }
+.client-payments-root .receipt-modal-close { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: none; background: transparent; color: #C7C7CF; cursor: pointer; flex-shrink: 0; }
+.client-payments-root .receipt-modal-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+.client-payments-root .receipt-modal-body { position: relative; flex: 1; overflow: hidden; background: #3C3C40; }
+.client-payments-root .receipt-pdf-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.client-payments-root .receipt-modal-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; font-size: 13px; color: #C7C7CF; }
+
+/* ---- offscreen source for the PDF render (plain document, same as the old print-ready receipt) ---- */
+.client-payments-root .receipt-doc-offscreen { position: fixed; top: 0; left: -10000px; width: 480px; pointer-events: none; }
+.client-payments-root .receipt-doc { background: var(--surface); padding: 32px 30px; }
+.client-payments-root .receipt-doc-head { text-align: center; margin-bottom: 22px; }
+.client-payments-root .receipt-brand { font-family: 'Gugi', sans-serif; font-size: 18px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+.client-payments-root .receipt-doc-title { font-size: 12px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.08em; }
+.client-payments-root .receipt-meta-row { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.client-payments-root .receipt-meta-label { font-size: 10.5px; color: var(--ink-faint); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.02em; }
+.client-payments-root .receipt-meta-value { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.client-payments-root .receipt-divider { height: 1px; background: var(--border); margin: 18px 0; }
+.client-payments-root .receipt-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 4px; }
+.client-payments-root .receipt-amount-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.client-payments-root .receipt-amount { font-size: 22px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em; }
+.client-payments-root .receipt-footer { text-align: center; font-size: 11.5px; color: var(--ink-faint); margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border); }
+
+@media (max-width: 520px) {
+  .client-payments-root .receipt-modal-box { height: 92vh; max-height: 92vh; border-radius: 0; }
+  .client-payments-root .receipt-modal-filename { font-size: 12.5px; }
 }

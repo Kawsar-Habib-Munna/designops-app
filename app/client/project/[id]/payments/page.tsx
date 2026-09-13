@@ -13,7 +13,7 @@
 // দেখায়/লিংক করে, কোনো ডুপ্লিকেট ফর্ম না। internal_note কলাম এখানে কখনো select
 // করা হয় না — client-safe কলাম লিস্টই একমাত্র সুরক্ষা।
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
@@ -199,6 +199,12 @@ export default function ClientPaymentsPage() {
   const [sows, setSows] = useState<SowBrief[]>([]);
   const [filterTab, setFilterTab] = useState<TabKey>('all');
 
+  const [viewingReceipt, setViewingReceipt] = useState<{ inv: Invoice; pay: Payment } | null>(null);
+  const [receiptPdfUrl, setReceiptPdfUrl] = useState<string | null>(null);
+  const [generatingReceiptPdf, setGeneratingReceiptPdf] = useState(false);
+  const [receiptPdfError, setReceiptPdfError] = useState<string | null>(null);
+  const receiptDocRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     async function load() {
       setLoadError(false);
@@ -244,6 +250,66 @@ export default function ClientPaymentsPage() {
 
     load();
   }, [router, projectId]);
+
+  useEffect(() => {
+    if (!viewingReceipt) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+
+    (async () => {
+      setGeneratingReceiptPdf(true);
+      setReceiptPdfError(null);
+      setReceiptPdfUrl(null);
+      try {
+        const node = receiptDocRef.current;
+        if (!node) return;
+        const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
+        const canvas = await html2canvas(node, {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          onclone: (doc, el) => {
+            // ডার্ক মোড চালু থাকলেও রসিদ সবসময় লাইট কালারেই জেনারেট হয়।
+            el.style.setProperty('--surface', '#ffffff');
+            el.style.setProperty('--bg', '#f2f1f2');
+            el.style.setProperty('--border', '#d5d4d7');
+            el.style.setProperty('--ink', '#323135');
+            el.style.setProperty('--ink-soft', '#6d6a72');
+            el.style.setProperty('--ink-faint', '#939197');
+          },
+        });
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = pageWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        const blob = pdf.output('blob');
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setReceiptPdfUrl(objectUrl);
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) setReceiptPdfError('PDF প্রিভিউ তৈরি করা যায়নি।');
+      } finally {
+        if (!cancelled) setGeneratingReceiptPdf(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [viewingReceipt]);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -460,9 +526,9 @@ export default function ClientPaymentsPage() {
                       <div className="pm-schedule-meta">
                         {status.key === 'paid' && pay?.payment_date ? `Paid on ${formatBnDateLong(pay.payment_date)}` : inv.due_date ? `Due ${formatBnDateLong(inv.due_date)}` : 'Due before project completion'}
                         {pay?.receipt_number && (
-                          <Link href={`/client/project/${project.id}/payments/${pay.id}/receipt`} className="pm-receipt-link">
+                          <button type="button" className="pm-receipt-link" onClick={() => setViewingReceipt({ inv, pay })}>
                             Receipt: {pay.receipt_number}
-                          </Link>
+                          </button>
                         )}
                       </div>
                     </div>
@@ -580,9 +646,9 @@ export default function ClientPaymentsPage() {
                         <td>{pay?.receipt_number ?? '—'}</td>
                         <td>
                           {status.key === 'paid' && pay ? (
-                            <Link href={`/client/project/${project.id}/payments/${pay.id}/receipt`} className="pm-table-action">
+                            <button type="button" className="pm-table-action" onClick={() => setViewingReceipt({ inv, pay })}>
                               View Receipt
-                            </Link>
+                            </button>
                           ) : inv.status === 'pending' || inv.status === 'processing' ? (
                             <Link href={`/client/project/${project.id}/payments/confirm`} className="pm-table-action">
                               View Payment
@@ -614,6 +680,106 @@ export default function ClientPaymentsPage() {
           </div>
         </div>
       </PaymentsShell>
+
+      {viewingReceipt && project && client && (
+        <div className="receipt-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setViewingReceipt(null); }}>
+          <div className="receipt-modal-box">
+            <div className="receipt-modal-head">
+              <div>
+                <div className="receipt-modal-filename">{viewingReceipt.pay.receipt_number ?? viewingReceipt.inv.request_number ?? 'Receipt'}.pdf</div>
+                <div className="receipt-modal-eyebrow">{receiptPdfError ?? 'Payment Receipt'}</div>
+              </div>
+              <div className="receipt-modal-head-actions">
+                <a
+                  className={`receipt-modal-download${receiptPdfUrl ? '' : ' receipt-modal-download-disabled'}`}
+                  href={receiptPdfUrl ?? undefined}
+                  download={`${viewingReceipt.pay.receipt_number ?? viewingReceipt.inv.request_number ?? 'receipt'}.pdf`}
+                  onClick={(e) => { if (!receiptPdfUrl) e.preventDefault(); }}
+                >
+                  <Icon name="download" size={13} /> {generatingReceiptPdf ? 'তৈরি হচ্ছে…' : 'Download'}
+                </a>
+                <button type="button" className="receipt-modal-close" aria-label="Close" onClick={() => setViewingReceipt(null)}>
+                  <Icon name="close" size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div className="receipt-modal-body">
+              {receiptPdfUrl ? (
+                <iframe src={receiptPdfUrl} className="receipt-pdf-frame" title="Payment Receipt PDF" />
+              ) : (
+                <div className="receipt-modal-loading">{receiptPdfError ?? 'PDF প্রিভিউ তৈরি হচ্ছে…'}</div>
+              )}
+
+              <div className="receipt-doc-offscreen" aria-hidden="true">
+                <div className="receipt-doc" ref={receiptDocRef}>
+                  <div className="receipt-doc-head">
+                    <div className="receipt-brand">FLOW 53</div>
+                    <div className="receipt-doc-title">Payment Receipt</div>
+                  </div>
+
+                  <div className="receipt-meta-row">
+                    <div>
+                      <div className="receipt-meta-label">Receipt Number</div>
+                      <div className="receipt-meta-value">{viewingReceipt.pay.receipt_number ?? '—'}</div>
+                    </div>
+                    <div>
+                      <div className="receipt-meta-label">Date</div>
+                      <div className="receipt-meta-value">{formatBnDateLong(viewingReceipt.pay.payment_date)}</div>
+                    </div>
+                  </div>
+
+                  <div className="receipt-divider"></div>
+
+                  <div className="receipt-field-grid">
+                    <div>
+                      <div className="receipt-meta-label">Client</div>
+                      <div className="receipt-meta-value">{client.primary_contact ?? '—'}</div>
+                    </div>
+                    <div>
+                      <div className="receipt-meta-label">Company</div>
+                      <div className="receipt-meta-value">{client.company_name}</div>
+                    </div>
+                    <div>
+                      <div className="receipt-meta-label">Project</div>
+                      <div className="receipt-meta-value">{project.name}</div>
+                    </div>
+                    <div>
+                      <div className="receipt-meta-label">Status</div>
+                      <div className="receipt-meta-value">Paid ✓</div>
+                    </div>
+                  </div>
+
+                  <div className="receipt-divider"></div>
+
+                  <div className="receipt-amount-row">
+                    <div>
+                      <div className="receipt-meta-label">Description</div>
+                      <div className="receipt-meta-value">{viewingReceipt.inv.description || humanizeType(viewingReceipt.inv.payment_type)}</div>
+                    </div>
+                    <div className="receipt-amount">
+                      {viewingReceipt.inv.currency} {viewingReceipt.inv.amount.toLocaleString('en-US')}
+                    </div>
+                  </div>
+
+                  <div className="receipt-field-grid">
+                    <div>
+                      <div className="receipt-meta-label">Payment Method</div>
+                      <div className="receipt-meta-value">{viewingReceipt.pay.payment_method ?? '—'}</div>
+                    </div>
+                    <div>
+                      <div className="receipt-meta-label">Transaction ID</div>
+                      <div className="receipt-meta-value">{viewingReceipt.pay.transaction_id ?? '—'}</div>
+                    </div>
+                  </div>
+
+                  <div className="receipt-footer">Thank you for your business — FLOW 53</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
