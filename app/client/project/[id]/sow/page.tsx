@@ -29,7 +29,7 @@
 // ডকুমেন্ট লেআউট অক্ষত রেখে (কোনো screenshot/মকআপ ছাড়া বড় tabbed রিডিজাইন করা
 // রিস্কি), শুধু anchor-link pill nav যোগ হলো যা প্রতিটা #sec-* সেকশনে জাম্প করে।
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
@@ -217,11 +217,6 @@ export default function ClientSowPage() {
   const [sow, setSow] = useState<Sow | null>(null);
   const [documents, setDocuments] = useState<SowDocument[]>([]);
 
-  const [sowPdfUrl, setSowPdfUrl] = useState<string | null>(null);
-  const [generatingSowPdf, setGeneratingSowPdf] = useState(false);
-  const [sowPdfError, setSowPdfError] = useState<string | null>(null);
-  const sowDocRef = useRef<HTMLDivElement>(null);
-
   const [signError, setSignError] = useState<string | null>(null);
 
   const [showRequestChanges, setShowRequestChanges] = useState(false);
@@ -271,107 +266,6 @@ export default function ClientSowPage() {
 
     load();
   }, [router, projectId, viewVersion]);
-
-  useEffect(() => {
-    if (!sow) return;
-    let cancelled = false;
-    let objectUrl: string | null = null;
-
-    (async () => {
-      setGeneratingSowPdf(true);
-      setSowPdfError(null);
-      setSowPdfUrl(null);
-      try {
-        const node = sowDocRef.current;
-        if (!node) throw new Error('Document not ready');
-        const { data: sessionData } = await supabase.auth.getSession();
-        const accessToken = sessionData.session?.access_token ?? '';
-        const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
-        const canvas = await Promise.race([
-          html2canvas(node, {
-            scale: 2,
-            backgroundColor: '#ffffff',
-            imageTimeout: 15000,
-            onclone: async (doc, el) => {
-              // ডার্ক মোড চালু থাকলেও SOW PDF সবসময় লাইট কালারেই জেনারেট হয় — একটা
-              // ফরমাল চুক্তির রং UI থিমের সাথে বদলানো উচিত না।
-              el.style.setProperty('--surface', '#ffffff');
-              el.style.setProperty('--bg', '#f2f1f2');
-              el.style.setProperty('--border', '#d5d4d7');
-              el.style.setProperty('--ink', '#323135');
-              el.style.setProperty('--ink-soft', '#6d6a72');
-              el.style.setProperty('--ink-faint', '#939197');
-              el.style.setProperty('--accent', '#7c3aed');
-              el.style.setProperty('--accent-hover', '#7135d8');
-              el.style.setProperty('--positive', '#10b981');
-              el.style.setProperty('--positive-soft', '#e7f8f2');
-              el.style.setProperty('--warning', '#f5a524');
-              el.style.setProperty('--warning-soft', '#fdf3e1');
-
-              // সিগনেচার ছবিগুলো Google Drive থেকে আসে (cross-origin, CORS হেডার
-              // ছাড়া) — সরাসরি রাখলে html2canvas-এর canvas "tainted" হয়ে
-              // toDataURL() ফেল করে। Drive সরাসরি fetch() করলেও CORS ব্লক করে
-              // দেয়, তাই আমাদের নিজের /api/drive-image-proxy (same-origin,
-              // সার্ভার সাইডে কোনো CORS নেই) দিয়ে ঘুরিয়ে base64 data URL-এ
-              // বদলে দেওয়া হচ্ছে।
-              const imgs = Array.from(el.querySelectorAll('img'));
-              await Promise.all(
-                imgs.map(async (img) => {
-                  try {
-                    const proxyUrl = `/api/drive-image-proxy?url=${encodeURIComponent(img.src)}`;
-                    const res = await fetch(proxyUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
-                    if (!res.ok) return;
-                    const blob = await res.blob();
-                    const dataUrl = await new Promise<string>((resolve, reject) => {
-                      const reader = new FileReader();
-                      reader.onloadend = () => resolve(reader.result as string);
-                      reader.onerror = () => reject(reader.error);
-                      reader.readAsDataURL(blob);
-                    });
-                    img.src = dataUrl;
-                  } catch {
-                    // fetch/কনভার্শন ফেল করলে বাকি ডকুমেন্ট যেন তবুও রেন্ডার হয় —
-                    // এই একটা ছবি বাদেই।
-                  }
-                }),
-              );
-            },
-          }),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('PDF generation timed out')), 25000)),
-        ]);
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const imgWidth = pageWidth;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-        const blob = pdf.output('blob');
-        if (cancelled) return;
-        objectUrl = URL.createObjectURL(blob);
-        setSowPdfUrl(objectUrl);
-      } catch (err) {
-        console.error(err);
-        if (!cancelled) setSowPdfError('PDF প্রিভিউ তৈরি করা যায়নি।');
-      } finally {
-        if (!cancelled) setGeneratingSowPdf(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [sow]);
 
   async function handleSubmitChanges() {
     if (!client || !project || !changesText.trim()) return;
@@ -545,29 +439,15 @@ export default function ClientSowPage() {
 
           {justSigned && <div className="sw-just-signed-banner">✓ SOW signed successfully — your signature now appears below.</div>}
 
-          <div className="sw-pdf-shell">
-            <div className="sw-pdf-head">
-              <span className="sw-pdf-head-title">Full Statement of Work</span>
-              <a
-                className={`sw-pdf-download${sowPdfUrl ? '' : ' sw-pdf-download-disabled'}`}
-                href={sowPdfUrl ?? undefined}
-                download={`${sow.sow_number ?? `SOW-v${sow.version}`}.pdf`}
-                onClick={(e) => { if (!sowPdfUrl) e.preventDefault(); }}
-              >
-                <Icon name="download" size={13} /> {generatingSowPdf ? 'তৈরি হচ্ছে…' : 'Download PDF'}
-              </a>
+          {isSigned && (
+            <div className="sw-doc-toolbar">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => window.print()}>
+                <Icon name="download" size={13} /> Download Signed PDF
+              </button>
             </div>
-            <div className="sw-pdf-body">
-              {sowPdfUrl ? (
-                <iframe src={sowPdfUrl} className="sw-pdf-frame" title="Statement of Work PDF" />
-              ) : (
-                <div className="sw-pdf-loading">{sowPdfError ?? 'PDF প্রিভিউ তৈরি হচ্ছে…'}</div>
-              )}
-            </div>
-          </div>
+          )}
 
-          <div className="sw-doc-offscreen" aria-hidden="true">
-          <div className="doc-card" ref={sowDocRef}>
+          <div className="doc-card">
             <div className="doc-topbar"></div>
             <div className="doc-letterhead-row">
               <div className="doc-brand-mark" aria-hidden="true"></div>
@@ -720,7 +600,6 @@ export default function ClientSowPage() {
               </div>
               {isSigned && <p className="sig-version-line">SOW Version: v{sow.version}.0 · Status: Signed ✓</p>}
             </div>
-          </div>
           </div>
 
           {documents.length > 0 && (
