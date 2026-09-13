@@ -2166,3 +2166,11 @@ drop policy if exists "team can delete draft sows" on sows;
 create policy "team can delete draft sows" on sows for delete using (
   public.is_team_member() and status in ('draft', 'cancelled', 'superseded')
 );
+
+-- ভোট টাই হলে (একাধিক অপশনে সমান %) স্পষ্ট বিজয়ী থাকে না — একটা "স্পিন" (lottery
+-- style) টাই-ব্রেকার দিয়ে ভোটের author/admin ফাইনাল ডিসিশন লক করে রাখতে পারবেন।
+-- আলাদা RLS পলিসি লাগছে না — "team can write votes" (for all) আগে থেকেই এই
+-- কলামগুলোর UPDATE কভার করে।
+alter table votes add column if not exists winner_option_id uuid references vote_options(id) on delete set null;
+alter table votes add column if not exists decided_at timestamptz;
+alter table votes add column if not exists decided_by uuid references profiles(id) on delete set null;

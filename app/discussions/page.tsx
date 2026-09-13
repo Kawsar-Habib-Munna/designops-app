@@ -67,6 +67,8 @@ const ICON_PATHS: Record<string, string> = {
   'check-circle': '<circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/>',
   link: '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>',
   spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
+  warning: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  dice: '<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1.3" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1.3" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/>',
 };
 
 type IconName = keyof typeof ICON_PATHS;
@@ -122,6 +124,7 @@ type VoteRow = {
   id: string; title: string; description: string | null; project_id: string | null; author_id: string | null;
   allow_multiple: boolean; is_anonymous: boolean; ends_at: string | null; status: string;
   is_pinned: boolean; is_draft: boolean; is_archived: boolean; created_at: string;
+  winner_option_id: string | null; decided_at: string | null; decided_by: string | null;
   profiles: AuthorRef; projects: ProjectRef;
 };
 type VoteOptionRow = { id: string; vote_id: string; label: string; position: number };
@@ -141,7 +144,7 @@ const DISCUSSION_SELECT = 'id, title, description, category, tags, project_id, a
 // একই কারণে vote_responses (votes<->profiles) আর reply_reactions
 // (discussion_replies<->profiles) নিজেরাও many-to-many পথ তৈরি করে, তাই এখানেও
 // "!author_id" হিন্ট দরকার।
-const VOTE_SELECT = 'id, title, description, project_id, author_id, allow_multiple, is_anonymous, ends_at, status, is_pinned, is_draft, is_archived, created_at, profiles!author_id(full_name, role, avatar_color, avatar_url), projects(id, name)';
+const VOTE_SELECT = 'id, title, description, project_id, author_id, allow_multiple, is_anonymous, ends_at, status, is_pinned, is_draft, is_archived, created_at, winner_option_id, decided_at, decided_by, profiles!author_id(full_name, role, avatar_color, avatar_url), projects(id, name)';
 const REPLY_SELECT = 'id, discussion_id, author_id, body, created_at, updated_at, profiles!author_id(full_name, role, avatar_color, avatar_url)';
 
 async function fetchDiscussionsData() {
@@ -213,6 +216,69 @@ function AttachmentPreview({ name, url, fileType, style }: { name: string; url: 
     <a className="attach-chip" href={url} target="_blank" rel="noopener noreferrer" style={style}><Icon name={attachTypeIcon(fileType)} size={13} /> {name}</a>
   );
 }
+// টাই ভাঙার জন্য "স্পিন" — একটা lottery-স্টাইল হাইলাইট-সাইকেল যেটা ধীরে ধীরে
+// স্লো হয়ে র‍্যান্ডমলি বাছাই করা একটা অপশনে গিয়ে থামে। র‍্যান্ডম পিক আর সব
+// setState কল effect/handler-এর ভেতর থেকে হয় (render-এর সময় না), আর ফাইনাল
+// বিজয়ী `highlightIndex` state থেকেই পড়া হয় — ref.current render-এ পড়া হয় না।
+function TieBreakSpinner({ options, onConfirm, onCancel }: { options: { option: VoteOptionRow; count: number; pct: number }[]; onConfirm: (optionId: string) => void; onCancel: () => void }) {
+  const [highlightIndex, setHighlightIndex] = useState(0);
+  const [landed, setLanded] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function spin() {
+    const target = Math.floor(Math.random() * options.length);
+    setLanded(false);
+    const steps = 22;
+    let i = 0;
+    function runStep() {
+      if (i >= steps - 1) {
+        setHighlightIndex(target);
+        setLanded(true);
+        return;
+      }
+      setHighlightIndex(i % options.length);
+      const delay = 60 + Math.pow(i / (steps - 1), 2.5) * 340;
+      i += 1;
+      timerRef.current = setTimeout(runStep, delay);
+    }
+    timerRef.current = setTimeout(runStep, 0);
+  }
+
+  useEffect(() => {
+    timerRef.current = setTimeout(spin, 0);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && landed) onCancel(); }}>
+      <div className="tiebreak-card">
+        <div className="tiebreak-title">{landed ? '🎉 বিজয়ী বাছাই হয়েছে' : 'স্পিন হচ্ছে…'}</div>
+        <div className="tiebreak-list">
+          {options.map(({ option, pct }, idx) => (
+            <div key={option.id} className={`tiebreak-item${idx === highlightIndex ? ' active' : ''}${landed && idx === highlightIndex ? ' winner' : ''}`}>
+              <span className="tiebreak-item-label">{option.label}</span>
+              <span className="tiebreak-item-pct tabular">{pct}%</span>
+            </div>
+          ))}
+        </div>
+        {landed ? (
+          <div className="tiebreak-actions">
+            <button className="btn btn-ghost btn-sm" onClick={onCancel}>বাতিল</button>
+            <button className="btn btn-ghost btn-sm" onClick={spin}>আবার স্পিন করুন</button>
+            <button className="btn btn-accent btn-sm" onClick={() => onConfirm(options[highlightIndex].option.id)}>এটাই ফাইনাল করুন</button>
+          </div>
+        ) : (
+          <div className="tiebreak-actions">
+            <button className="btn btn-ghost btn-sm" disabled>স্পিন হচ্ছে…</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 function daysSince(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
 }
@@ -277,6 +343,7 @@ export default function DiscussionsPage() {
   const [view, setView] = useState<'feed' | 'discussion' | 'vote'>('feed');
   const [activeDiscussionId, setActiveDiscussionId] = useState<string | null>(null);
   const [activeVoteId, setActiveVoteId] = useState<string | null>(null);
+  const [tieBreakVoteId, setTieBreakVoteId] = useState<string | null>(null);
 
   const replyInputRef = useRef<HTMLTextAreaElement>(null);
   const [replyBody, setReplyBody] = useState('');
@@ -389,8 +456,10 @@ export default function DiscussionsPage() {
       return { option: o, count, pct: total > 0 ? Math.round((count / total) * 100) : 0 };
     });
     const maxCount = withCounts.reduce((m, x) => Math.max(m, x.count), 0);
-    const leader = total > 0 ? (withCounts.find((x) => x.count === maxCount) ?? null) : null;
-    return { options, responses, total, distinctVoters, withCounts, leader };
+    const tiedLeaders = maxCount > 0 ? withCounts.filter((x) => x.count === maxCount) : [];
+    const isTie = tiedLeaders.length > 1;
+    const leader = total > 0 && !isTie ? (tiedLeaders[0] ?? null) : null;
+    return { options, responses, total, distinctVoters, withCounts, leader, tiedLeaders, isTie };
   }
 
   // ---------------- pin / archive / status / delete ----------------
@@ -422,6 +491,24 @@ export default function DiscussionsPage() {
     const { data, error: err } = await supabase.from('votes').update({ status: nextStatus }).eq('id', v.id).select('id').single();
     if (err || !data) { setError(err?.message ?? 'স্ট্যাটাস পরিবর্তন করা যায়নি।'); return; }
     setVotes((prev) => prev.map((x) => (x.id === v.id ? { ...x, status: nextStatus } : x)));
+  }
+
+  async function decideVoteWinner(voteId: string, optionId: string) {
+    const decidedAt = new Date().toISOString();
+    const { data, error: err } = await supabase
+      .from('votes')
+      .update({ winner_option_id: optionId, decided_at: decidedAt, decided_by: user!.id })
+      .eq('id', voteId)
+      .select('id')
+      .single();
+    if (err || !data) { setError(err?.message ?? 'ফাইনাল ডিসিশন সেভ করা যায়নি।'); return; }
+    setVotes((prev) => prev.map((v) => (v.id === voteId ? { ...v, winner_option_id: optionId, decided_at: decidedAt, decided_by: user!.id } : v)));
+  }
+
+  async function resetVoteWinner(voteId: string) {
+    const { data, error: err } = await supabase.from('votes').update({ winner_option_id: null, decided_at: null, decided_by: null }).eq('id', voteId).select('id').single();
+    if (err || !data) { setError(err?.message ?? 'ডিসিশন রিসেট করা যায়নি।'); return; }
+    setVotes((prev) => prev.map((v) => (v.id === voteId ? { ...v, winner_option_id: null, decided_at: null, decided_by: null } : v)));
   }
 
   async function deleteDiscussion(id: string) {
@@ -915,6 +1002,7 @@ export default function DiscussionsPage() {
   // শুধু is_admin প্রোফাইলরাই ভোট দেওয়ার আগে ফলাফল দেখতে পারবেন।
   const canVote = !hasVoted && !voteClosed;
   const canSeeResults = hasVoted || voteClosed || !!profile?.is_admin;
+  const canDecideVote = !!activeVote && (activeVote.author_id === profile?.id || !!profile?.is_admin);
 
   const emptyCopy: Record<LocalView, { title: string; sub: string }> = {
     all: { title: 'এখনো কোনো আলোচনা বা ভোট নেই', sub: 'নতুন আলোচনা শুরু করুন বা একটা ভোট তৈরি করুন।' },
@@ -980,8 +1068,13 @@ export default function DiscussionsPage() {
         <div className="fcard-title">{v.title}</div>
         {v.description && <div className="fcard-desc">{v.description}</div>}
         <div className="vote-mini">
-          <div className="vote-mini-track"><div className="vote-mini-fill" style={{ width: `${stats.leader?.pct ?? 0}%` }}></div></div>
-          <span className="vote-mini-label tabular">{stats.leader ? `${stats.leader.option.label} · ${stats.leader.pct}%` : 'এখনো কেউ ভোট দেননি'}</span>
+          {(() => {
+            const decided = v.winner_option_id ? stats.withCounts.find((x) => x.option.id === v.winner_option_id) : null;
+            if (decided) return (<><div className="vote-mini-track"><div className="vote-mini-fill" style={{ width: `${decided.pct}%` }}></div></div><span className="vote-mini-label tabular">🏆 {decided.option.label} · ফাইনাল</span></>);
+            if (stats.isTie) return (<><div className="vote-mini-track"><div className="vote-mini-fill" style={{ width: `${stats.tiedLeaders[0].pct}%` }}></div></div><span className="vote-mini-label tabular">⚖ {stats.tiedLeaders.length}টা অপশন টাই — {stats.tiedLeaders[0].pct}%</span></>);
+            if (stats.leader) return (<><div className="vote-mini-track"><div className="vote-mini-fill" style={{ width: `${stats.leader.pct}%` }}></div></div><span className="vote-mini-label tabular">{stats.leader.option.label} · {stats.leader.pct}%</span></>);
+            return (<><div className="vote-mini-track"><div className="vote-mini-fill" style={{ width: '0%' }}></div></div><span className="vote-mini-label tabular">এখনো কেউ ভোট দেননি</span></>);
+          })()}
         </div>
         <div className="fcard-foot">
           {v.projects && <span className="proj-tag">{v.projects.name}</span>}
@@ -1283,14 +1376,40 @@ export default function DiscussionsPage() {
                       <p style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 12 }}>
                         {activeVote.is_anonymous ? 'Anonymous Voting চালু আছে — তাই কে কোন অপশনে ভোট দিয়েছেন তা দেখানো হচ্ছে না।' : 'Anonymous Voting বন্ধ আছে — তাই কে কোন অপশনে ভোট দিয়েছেন তা নিচে দেখা যাচ্ছে।'}
                       </p>
-                      {activeVoteStats.leader && (
-                        <div className="winner-banner">
+                      {activeVote.winner_option_id ? (
+                        <div className="winner-banner winner-banner-decided">
                           <Icon name="trophy" size={20} />
-                          <div><b style={{ fontSize: 12.5 }}>{activeVoteStats.leader.option.label} এগিয়ে আছে</b><div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{activeVoteStats.leader.pct}% ভোট নিয়ে</div></div>
+                          <div>
+                            <b style={{ fontSize: 12.5 }}>{activeVoteStats.withCounts.find((x) => x.option.id === activeVote.winner_option_id)?.option.label ?? 'নির্বাচিত অপশন'} ফাইনাল করা হয়েছে</b>
+                            <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{activeVote.decided_at ? `স্পিন করে সিদ্ধান্ত নেওয়া হয়েছে ${formatBnDate(activeVote.decided_at)}` : 'ফাইনাল ডিসিশন নেওয়া হয়েছে'}</div>
+                          </div>
+                          {canDecideVote && (
+                            <button className="btn btn-ghost btn-sm winner-banner-action" onClick={() => resetVoteWinner(activeVote.id)}>রিসেট</button>
+                          )}
                         </div>
+                      ) : activeVoteStats.isTie ? (
+                        <div className="winner-banner winner-banner-tie">
+                          <Icon name="warning" size={20} />
+                          <div>
+                            <b style={{ fontSize: 12.5 }}>{activeVoteStats.tiedLeaders.length}টা অপশন টাই — {activeVoteStats.tiedLeaders[0].pct}% করে</b>
+                            <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>স্পষ্ট কোনো বিজয়ী নেই</div>
+                          </div>
+                          {canDecideVote && (
+                            <button className="btn btn-accent btn-sm winner-banner-action" onClick={() => setTieBreakVoteId(activeVote.id)}>
+                              <Icon name="dice" size={14} /> স্পিন করে ঠিক করুন
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        activeVoteStats.leader && (
+                          <div className="winner-banner">
+                            <Icon name="trophy" size={20} />
+                            <div><b style={{ fontSize: 12.5 }}>{activeVoteStats.leader.option.label} এগিয়ে আছে</b><div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{activeVoteStats.leader.pct}% ভোট নিয়ে</div></div>
+                          </div>
+                        )
                       )}
                       {activeVoteStats.withCounts.map(({ option, count, pct }) => {
-                        const isWinner = activeVoteStats.leader?.option.id === option.id && count > 0;
+                        const isWinner = activeVote.winner_option_id ? activeVote.winner_option_id === option.id : (activeVoteStats.leader?.option.id === option.id && count > 0);
                         const voters = activeVote.is_anonymous ? [] : voteResponses.filter((r) => r.vote_id === activeVote.id && r.option_id === option.id).map((r) => profileById.get(r.voter_id)).filter(Boolean) as ProfileRow[];
                         return (
                           <div className="result-row" key={option.id}>
@@ -1400,13 +1519,15 @@ export default function DiscussionsPage() {
                     <div style={{ fontSize: 11, color: 'var(--ink-faint)' }} className="tabular">{activeVoteStats?.distinctVoters ?? 0} / {teamOptions.length} জন ভোট দিয়েছেন</div>
                   </div>
                   <div className="rp-section">
-                    <div className="rp-title">Current Leader</div>
+                    <div className="rp-title">{activeVote.winner_option_id ? 'ফাইনাল ডিসিশন' : 'Current Leader'}</div>
                     <div className="linked-proj-mini">
-                      {activeVoteStats?.leader ? (
-                        <><div className="lp-name">🏆 {activeVoteStats.leader.option.label}</div><div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{activeVoteStats.leader.pct}% ভোট নিয়ে এগিয়ে</div></>
-                      ) : (
-                        <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>এখনো কেউ ভোট দেননি</div>
-                      )}
+                      {(() => {
+                        const decided = activeVote.winner_option_id ? activeVoteStats?.withCounts.find((x) => x.option.id === activeVote.winner_option_id) : null;
+                        if (decided) return (<><div className="lp-name">🏆 {decided.option.label}</div><div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>স্পিন করে ফাইনাল করা হয়েছে</div></>);
+                        if (activeVoteStats?.isTie) return (<><div className="lp-name">⚖ {activeVoteStats.tiedLeaders.length}টা অপশন টাই</div><div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{activeVoteStats.tiedLeaders[0].pct}% করে</div></>);
+                        if (activeVoteStats?.leader) return (<><div className="lp-name">🏆 {activeVoteStats.leader.option.label}</div><div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{activeVoteStats.leader.pct}% ভোট নিয়ে এগিয়ে</div></>);
+                        return <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>এখনো কেউ ভোট দেননি</div>;
+                      })()}
                     </div>
                   </div>
                   {voteAttachmentsForActive.length > 0 && (
@@ -1584,6 +1705,20 @@ export default function DiscussionsPage() {
           </div>
         </div>
       )}
+
+      {tieBreakVoteId && (() => {
+        const tieVote = votes.find((v) => v.id === tieBreakVoteId);
+        if (!tieVote) return null;
+        const tieStats = voteStats(tieVote.id);
+        if (!tieStats.isTie) return null;
+        return (
+          <TieBreakSpinner
+            options={tieStats.tiedLeaders}
+            onConfirm={(optionId) => { decideVoteWinner(tieVote.id, optionId); setTieBreakVoteId(null); }}
+            onCancel={() => setTieBreakVoteId(null)}
+          />
+        );
+      })()}
     </div>
   );
 }
