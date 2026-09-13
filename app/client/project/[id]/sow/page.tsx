@@ -29,7 +29,7 @@
 // ডকুমেন্ট লেআউট অক্ষত রেখে (কোনো screenshot/মকআপ ছাড়া বড় tabbed রিডিজাইন করা
 // রিস্কি), শুধু anchor-link pill nav যোগ হলো যা প্রতিটা #sec-* সেকশনে জাম্প করে।
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
@@ -89,7 +89,6 @@ type Sow = {
 };
 
 type SowDocument = { id: string; file_name: string; file_url: string; file_size: number | null };
-type SowTabKey = 'parties' | 'scope' | 'timeline' | 'payment' | 'terms' | 'documents' | 'signatures';
 
 function toOne<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
@@ -217,7 +216,11 @@ export default function ClientSowPage() {
   const [client, setClient] = useState<ClientRecord | null>(null);
   const [sow, setSow] = useState<Sow | null>(null);
   const [documents, setDocuments] = useState<SowDocument[]>([]);
-  const [activeTab, setActiveTab] = useState<SowTabKey>(justSigned ? 'signatures' : 'parties');
+
+  const [sowPdfUrl, setSowPdfUrl] = useState<string | null>(null);
+  const [generatingSowPdf, setGeneratingSowPdf] = useState(false);
+  const [sowPdfError, setSowPdfError] = useState<string | null>(null);
+  const sowDocRef = useRef<HTMLDivElement>(null);
 
   const [signError, setSignError] = useState<string | null>(null);
 
@@ -270,11 +273,71 @@ export default function ClientSowPage() {
   }, [router, projectId, viewVersion]);
 
   useEffect(() => {
-    if (activeTab === 'documents' && documents.length === 0) {
-      const timer = setTimeout(() => setActiveTab('parties'), 0);
-      return () => clearTimeout(timer);
-    }
-  }, [activeTab, documents]);
+    if (!sow) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+
+    (async () => {
+      setGeneratingSowPdf(true);
+      setSowPdfError(null);
+      setSowPdfUrl(null);
+      try {
+        const node = sowDocRef.current;
+        if (!node) return;
+        const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
+        const canvas = await html2canvas(node, {
+          scale: 2,
+          backgroundColor: '#ffffff',
+          onclone: (doc, el) => {
+            // ডার্ক মোড চালু থাকলেও SOW PDF সবসময় লাইট কালারেই জেনারেট হয় — একটা
+            // ফরমাল চুক্তির রং UI থিমের সাথে বদলানো উচিত না।
+            el.style.setProperty('--surface', '#ffffff');
+            el.style.setProperty('--bg', '#f2f1f2');
+            el.style.setProperty('--border', '#d5d4d7');
+            el.style.setProperty('--ink', '#323135');
+            el.style.setProperty('--ink-soft', '#6d6a72');
+            el.style.setProperty('--ink-faint', '#939197');
+            el.style.setProperty('--accent', '#7c3aed');
+            el.style.setProperty('--accent-hover', '#7135d8');
+            el.style.setProperty('--positive', '#10b981');
+            el.style.setProperty('--positive-soft', '#e7f8f2');
+            el.style.setProperty('--warning', '#f5a524');
+            el.style.setProperty('--warning-soft', '#fdf3e1');
+          },
+        });
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = pageWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        const blob = pdf.output('blob');
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setSowPdfUrl(objectUrl);
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) setSowPdfError('PDF প্রিভিউ তৈরি করা যায়নি।');
+      } finally {
+        if (!cancelled) setGeneratingSowPdf(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [sow]);
 
   async function handleSubmitChanges() {
     if (!client || !project || !changesText.trim()) return;
@@ -436,11 +499,6 @@ export default function ClientSowPage() {
                 </Link>
               </div>
             </div>
-            {isSigned && (
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => window.print()}>
-                <Icon name="download" size={13} /> Download Signed PDF
-              </button>
-            )}
           </div>
           <p className="welcome-sub">{isSigned ? 'This agreement has been signed.' : 'Please review and sign to begin your project.'}</p>
 
@@ -453,33 +511,29 @@ export default function ClientSowPage() {
 
           {justSigned && <div className="sw-just-signed-banner">✓ SOW signed successfully — your signature now appears below.</div>}
 
-          <nav className="sw-toc" aria-label="Document sections" role="tablist">
-            <button type="button" role="tab" aria-selected={activeTab === 'parties'} className={`sw-toc-tab${activeTab === 'parties' ? ' active' : ''}`} onClick={() => setActiveTab('parties')}>
-              Parties
-            </button>
-            <button type="button" role="tab" aria-selected={activeTab === 'scope'} className={`sw-toc-tab${activeTab === 'scope' ? ' active' : ''}`} onClick={() => setActiveTab('scope')}>
-              Scope
-            </button>
-            <button type="button" role="tab" aria-selected={activeTab === 'timeline'} className={`sw-toc-tab${activeTab === 'timeline' ? ' active' : ''}`} onClick={() => setActiveTab('timeline')}>
-              Timeline
-            </button>
-            <button type="button" role="tab" aria-selected={activeTab === 'payment'} className={`sw-toc-tab${activeTab === 'payment' ? ' active' : ''}`} onClick={() => setActiveTab('payment')}>
-              Payment
-            </button>
-            <button type="button" role="tab" aria-selected={activeTab === 'terms'} className={`sw-toc-tab${activeTab === 'terms' ? ' active' : ''}`} onClick={() => setActiveTab('terms')}>
-              Terms
-            </button>
-            {documents.length > 0 && (
-              <button type="button" role="tab" aria-selected={activeTab === 'documents'} className={`sw-toc-tab${activeTab === 'documents' ? ' active' : ''}`} onClick={() => setActiveTab('documents')}>
-                Documents
-              </button>
-            )}
-            <button type="button" role="tab" aria-selected={activeTab === 'signatures'} className={`sw-toc-tab${activeTab === 'signatures' ? ' active' : ''}`} onClick={() => setActiveTab('signatures')}>
-              Signatures
-            </button>
-          </nav>
+          <div className="sw-pdf-shell">
+            <div className="sw-pdf-head">
+              <span className="sw-pdf-head-title">Full Statement of Work</span>
+              <a
+                className={`sw-pdf-download${sowPdfUrl ? '' : ' sw-pdf-download-disabled'}`}
+                href={sowPdfUrl ?? undefined}
+                download={`${sow.sow_number ?? `SOW-v${sow.version}`}.pdf`}
+                onClick={(e) => { if (!sowPdfUrl) e.preventDefault(); }}
+              >
+                <Icon name="download" size={13} /> {generatingSowPdf ? 'তৈরি হচ্ছে…' : 'Download PDF'}
+              </a>
+            </div>
+            <div className="sw-pdf-body">
+              {sowPdfUrl ? (
+                <iframe src={sowPdfUrl} className="sw-pdf-frame" title="Statement of Work PDF" />
+              ) : (
+                <div className="sw-pdf-loading">{sowPdfError ?? 'PDF প্রিভিউ তৈরি হচ্ছে…'}</div>
+              )}
+            </div>
+          </div>
 
-          <div className="doc-card">
+          <div className="sw-doc-offscreen" aria-hidden="true">
+          <div className="doc-card" ref={sowDocRef}>
             <div className="doc-topbar"></div>
             <div className="doc-letterhead-row">
               <div className="doc-brand-mark" aria-hidden="true"></div>
@@ -493,7 +547,7 @@ export default function ClientSowPage() {
               {project.name} — {client.company_name}
             </div>
 
-            <div className={`sw-tab-panel${activeTab === 'parties' ? '' : ' sw-tab-hidden'}`}>
+            <div className="sw-doc-section">
               <div className="doc-h2">
                 <span className="doc-h2-num">1</span>Parties
               </div>
@@ -519,7 +573,7 @@ export default function ClientSowPage() {
               </div>
             </div>
 
-            <div className={`sw-tab-panel${activeTab === 'scope' ? '' : ' sw-tab-hidden'}`}>
+            <div className="sw-doc-section">
               <div className="doc-h2">
                 <span className="doc-h2-num">2</span>Scope of Work
               </div>
@@ -533,7 +587,7 @@ export default function ClientSowPage() {
               )}
             </div>
 
-            <div className={`sw-tab-panel${activeTab === 'timeline' ? '' : ' sw-tab-hidden'}`}>
+            <div className="sw-doc-section">
               <div className="doc-h2">
                 <span className="doc-h2-num">3</span>Timeline
               </div>
@@ -553,7 +607,7 @@ export default function ClientSowPage() {
               )}
             </div>
 
-            <div className={`sw-tab-panel${activeTab === 'payment' ? '' : ' sw-tab-hidden'}`}>
+            <div className="sw-doc-section">
               <div className="doc-h2">
                 <span className="doc-h2-num">4</span>Payment Terms
               </div>
@@ -570,7 +624,7 @@ export default function ClientSowPage() {
               {sow.revision_policy && <p className="doc-p">{sow.revision_policy}</p>}
             </div>
 
-            <div className={`sw-tab-panel${activeTab === 'terms' ? '' : ' sw-tab-hidden'}`}>
+            <div className="sw-doc-section">
               <div className="doc-h2">
                 <span className="doc-h2-num">5</span>Terms &amp; Conditions
               </div>
@@ -586,27 +640,7 @@ export default function ClientSowPage() {
               )}
             </div>
 
-            {documents.length > 0 && (
-              <div className={`sw-tab-panel${activeTab === 'documents' ? '' : ' sw-tab-hidden'}`}>
-                <div className="doc-h2">
-                  <span className="doc-h2-num">6</span>Documents &amp; Attachments
-                </div>
-                <div className="sw-doc-list">
-                  {documents.map((d) => (
-                    <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="sw-doc-item" key={d.id}>
-                      <span className="sw-doc-ext">{fileExtension(d.file_name)}</span>
-                      <div className="sw-doc-item-meta">
-                        <span className="sw-doc-item-name">{d.file_name}</span>
-                        <span className="sw-doc-item-size">{formatBytes(d.file_size)}</span>
-                      </div>
-                      <Icon name="download" size={13} />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className={`sw-tab-panel${activeTab === 'signatures' ? '' : ' sw-tab-hidden'}`}>
+            <div className="sw-doc-section">
               <div className="doc-h2">
                 <span className="doc-h2-num">✓</span>Agreement &amp; Signatures
               </div>
@@ -653,6 +687,27 @@ export default function ClientSowPage() {
               {isSigned && <p className="sig-version-line">SOW Version: v{sow.version}.0 · Status: Signed ✓</p>}
             </div>
           </div>
+          </div>
+
+          {documents.length > 0 && (
+            <div className="doc-card sw-doc-attachments-card">
+              <div className="doc-h2">
+                <span className="doc-h2-num">📎</span>Documents &amp; Attachments
+              </div>
+              <div className="sw-doc-list">
+                {documents.map((d) => (
+                  <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="sw-doc-item" key={d.id}>
+                    <span className="sw-doc-ext">{fileExtension(d.file_name)}</span>
+                    <div className="sw-doc-item-meta">
+                      <span className="sw-doc-item-name">{d.file_name}</span>
+                      <span className="sw-doc-item-size">{formatBytes(d.file_size)}</span>
+                    </div>
+                    <Icon name="download" size={13} />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
 
           {!viewVersion && !isSigned && sow.status === 'sent' && (
             <div className="sign-panel">
