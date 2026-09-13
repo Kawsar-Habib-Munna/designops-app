@@ -29,7 +29,7 @@
 //   Approvals/Updates-এর পূর্ণ UI আগে থেকেই বিদ্যমান নিজস্ব রুটে আছে (Screens
 //   10/12/17/18/19/20/22, এই সেশনের আগের অংশে তৈরি) — এখানে শুধু লিংক করা হলো।
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
@@ -83,7 +83,10 @@ type InvoiceBrief = { id: string; amount: number; currency: string; due_date: st
 type SowBrief = { id: string; status: string; version: number; sent_at: string | null; signed_at: string | null };
 type MessageBrief = { id: string; sender: string; message: string | null; created_at: string; read_at: string | null };
 type UpdateBrief = { id: string; title: string; description: string | null; attachment_url: string | null; created_at: string; author: { full_name: string } | { full_name: string }[] | null };
-type ApprovalBrief = { id: string; item: string; status: string };
+type ApprovalBrief = { id: string; item: string; status: string; comment: string | null; created_at: string };
+
+const APPROVAL_STATUS_LABEL: Record<string, string> = { awaiting: 'Awaiting Approval', approved: 'Approved ✓', changes_requested: 'Changes Requested' };
+const APPROVAL_STATUS_BADGE: Record<string, string> = { awaiting: 'cp-badge-pending', approved: 'cp-badge-success', changes_requested: 'cp-badge-pending' };
 
 const PROJECT_STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   active: { label: 'Active', cls: 'b-active' },
@@ -159,6 +162,10 @@ export default function ClientProjectDashboard() {
   const [messages, setMessages] = useState<MessageBrief[]>([]);
   const [updates, setUpdates] = useState<UpdateBrief[]>([]);
   const [approvals, setApprovals] = useState<ApprovalBrief[]>([]);
+  const [approvalsModalOpen, setApprovalsModalOpen] = useState(false);
+  const [respondingApprovalId, setRespondingApprovalId] = useState<string | null>(null);
+  const [approvalComment, setApprovalComment] = useState('');
+  const [submittingApproval, setSubmittingApproval] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -182,7 +189,7 @@ export default function ClientProjectDashboard() {
           supabase.from('sows').select('id, status, version, sent_at, signed_at').eq('project_id', projectId).order('version', { ascending: false }).limit(1),
           supabase.from('client_messages').select('id, sender, message, created_at, read_at').eq('project_id', projectId).order('created_at', { ascending: false }).limit(5),
           supabase.from('project_updates').select('id, title, description, attachment_url, created_at, author:profiles!author_id(full_name)').eq('project_id', projectId).order('created_at', { ascending: false }).limit(5),
-          supabase.from('client_approvals').select('id, item, status').eq('project_id', projectId),
+          supabase.from('client_approvals').select('id, item, status, comment, created_at').eq('project_id', projectId),
         ]);
 
         if (!projectRes.data || (projectRes.data as unknown as ProjectDetail).client_id !== own.id) {
@@ -209,6 +216,22 @@ export default function ClientProjectDashboard() {
 
     load();
   }, [router, projectId]);
+
+  async function handleApproveItem(id: string) {
+    await supabase.from('client_approvals').update({ status: 'approved', responded_at: new Date().toISOString() }).eq('id', id);
+    setApprovals((prev) => prev.map((a) => (a.id === id ? { ...a, status: 'approved' } : a)));
+  }
+
+  async function handleRequestApprovalChanges(e: FormEvent, id: string) {
+    e.preventDefault();
+    setSubmittingApproval(true);
+    const trimmed = approvalComment.trim() || null;
+    await supabase.from('client_approvals').update({ status: 'changes_requested', comment: trimmed, responded_at: new Date().toISOString() }).eq('id', id);
+    setSubmittingApproval(false);
+    setRespondingApprovalId(null);
+    setApprovalComment('');
+    setApprovals((prev) => prev.map((a) => (a.id === id ? { ...a, status: 'changes_requested', comment: trimmed } : a)));
+  }
 
   if (loading) {
     return (
@@ -501,9 +524,15 @@ export default function ClientProjectDashboard() {
                         <div className="action-desc">{pendingAction.desc}</div>
                         {pendingAction.moreCount && <div className="action-more">+{pendingAction.moreCount} more action{pendingAction.moreCount > 1 ? 's' : ''}</div>}
                       </div>
-                      <Link href={pendingAction.href} className="btn btn-accent">
-                        {pendingAction.ctaLabel}
-                      </Link>
+                      {pendingAction.key === 'approval' ? (
+                        <button type="button" className="btn btn-accent" onClick={() => setApprovalsModalOpen(true)}>
+                          {pendingAction.ctaLabel}
+                        </button>
+                      ) : (
+                        <Link href={pendingAction.href} className="btn btn-accent">
+                          {pendingAction.ctaLabel}
+                        </Link>
+                      )}
                     </>
                   ) : (
                     <div>
@@ -801,6 +830,67 @@ export default function ClientProjectDashboard() {
           </main>
         </div>
       </div>
+
+      {approvalsModalOpen && (
+        <div className="cp-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setApprovalsModalOpen(false); setRespondingApprovalId(null); } }}>
+          <div className="cp-modal-box">
+            <div className="cp-modal-head">
+              <span className="cp-modal-title">Approvals</span>
+              <button type="button" className="cp-modal-close" aria-label="Close" onClick={() => { setApprovalsModalOpen(false); setRespondingApprovalId(null); }}>
+                <Icon name="close" size={16} />
+              </button>
+            </div>
+
+            {approvals.length === 0 ? (
+              <div className="cp-dash-card">
+                <p className="cp-page-empty">No approval requests.</p>
+              </div>
+            ) : (
+              <div className="cp-item-list">
+                {approvals.map((a) => (
+                  <div className="cp-dash-card" key={a.id}>
+                    <div className="cp-item-top">
+                      <div>
+                        <span className="cp-item-title">{a.item}</span>
+                        <div className="cp-item-meta">{relativeTimeBn(a.created_at)}</div>
+                      </div>
+                      <span className={`cp-badge ${APPROVAL_STATUS_BADGE[a.status] ?? 'cp-badge-pending'}`}>{APPROVAL_STATUS_LABEL[a.status] ?? a.status}</span>
+                    </div>
+                    {a.comment && <p className="cp-item-desc">{a.comment}</p>}
+
+                    {a.status === 'awaiting' &&
+                      (respondingApprovalId === a.id ? (
+                        <form onSubmit={(e) => handleRequestApprovalChanges(e, a.id)} style={{ marginTop: 10 }}>
+                          <div className="cp-field">
+                            <label className="cp-label">What needs to change?</label>
+                            <textarea className="cp-input" value={approvalComment} onChange={(e) => setApprovalComment(e.target.value)} required autoFocus />
+                          </div>
+                          <div className="cp-item-actions">
+                            <button type="button" className="cp-btn cp-btn-secondary" onClick={() => setRespondingApprovalId(null)}>
+                              Cancel
+                            </button>
+                            <button type="submit" className="cp-btn cp-btn-primary" disabled={submittingApproval}>
+                              {submittingApproval ? 'পাঠানো হচ্ছে…' : 'Submit'}
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <div className="cp-item-actions">
+                          <button className="cp-btn cp-btn-primary" onClick={() => handleApproveItem(a.id)}>
+                            Approve
+                          </button>
+                          <button className="cp-btn cp-btn-secondary" onClick={() => setRespondingApprovalId(a.id)}>
+                            Request Changes
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
