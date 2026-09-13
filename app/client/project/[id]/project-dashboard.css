@@ -7,6 +7,7 @@
 .client-projectdash-root {
   --warning: #f5a524;
   --warning-soft: #fdf3e1;
+  overflow-x: hidden;
 }
 @media (prefers-color-scheme: dark) {
   .client-projectdash-root {
@@ -33,6 +34,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
+  overflow-y: auto;
 }
 .client-projectdash-root .sidebar-close-btn {
   display: none;
@@ -397,6 +399,8 @@
   border-radius: var(--radius-lg);
   padding: 20px 22px;
   height: 100%;
+  min-width: 0;
+  min-height: 140px;
 }
 .client-projectdash-root .dcard-head {
   display: flex;
@@ -457,6 +461,12 @@
 }
 .client-projectdash-root .detail-row span:first-child {
   color: var(--ink-faint);
+  flex-shrink: 0;
+}
+.client-projectdash-root .detail-row span:last-child {
+  overflow-wrap: anywhere;
+  text-align: right;
+  min-width: 0;
 }
 .client-projectdash-root .detail-row span:last-child {
   font-weight: 600;
@@ -524,6 +534,7 @@
   font-size: 12px;
   font-weight: 700;
   color: var(--ink);
+  overflow-wrap: anywhere;
 }
 .client-projectdash-root .ms-meta {
   font-size: 10.5px;
@@ -704,11 +715,16 @@
   background: var(--border);
   margin: 4px 0;
 }
+.client-projectdash-root .timeline-item > div:last-child {
+  flex: 1;
+  min-width: 0;
+}
 .client-projectdash-root .timeline-text {
   font-size: 12.5px;
   color: var(--ink);
   line-height: 1.5;
   padding-bottom: 14px;
+  overflow-wrap: anywhere;
 }
 .client-projectdash-root .timeline-time {
   font-size: 11px;

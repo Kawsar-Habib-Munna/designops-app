@@ -414,22 +414,27 @@ export default function AdminPaymentsPage() {
       setReceiptPdfUrl(null);
       try {
         const node = receiptDocRef.current;
-        if (!node) return;
+        if (!node) throw new Error('Document not ready');
         const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
-        const canvas = await html2canvas(node, {
-          scale: 2,
-          backgroundColor: '#ffffff',
-          onclone: (doc, el) => {
-            // ডার্ক মোড চালু থাকলেও PDF সবসময় লাইট/প্রিন্ট-স্টাইল কালারেই জেনারেট হয় —
-            // একটা ফরমাল ডকুমেন্টের রং UI থিমের সাথে বদলানো উচিত না।
-            el.style.setProperty('--surface', '#FFFFFF');
-            el.style.setProperty('--ink', '#14141A');
-            el.style.setProperty('--ink-soft', '#6E6E7A');
-            el.style.setProperty('--ink-faint', '#A3A3AE');
-            el.style.setProperty('--border', '#E8E8EC');
-            el.style.setProperty('--border-soft', '#F0F0F3');
-          },
-        });
+        const canvas = await Promise.race([
+          html2canvas(node, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            imageTimeout: 15000,
+            onclone: (doc, el) => {
+              // ডার্ক মোড চালু থাকলেও PDF সবসময় লাইট/প্রিন্ট-স্টাইল কালারেই জেনারেট হয় —
+              // একটা ফরমাল ডকুমেন্টের রং UI থিমের সাথে বদলানো উচিত না।
+              el.style.setProperty('--surface', '#FFFFFF');
+              el.style.setProperty('--ink', '#14141A');
+              el.style.setProperty('--ink-soft', '#6E6E7A');
+              el.style.setProperty('--ink-faint', '#A3A3AE');
+              el.style.setProperty('--border', '#E8E8EC');
+              el.style.setProperty('--border-soft', '#F0F0F3');
+            },
+          }),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('PDF generation timed out')), 25000)),
+        ]);
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         const pageWidth = pdf.internal.pageSize.getWidth();

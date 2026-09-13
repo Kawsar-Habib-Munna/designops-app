@@ -4,6 +4,7 @@
 .client-dashboard-root {
   --warning: #f5a524;
   --warning-soft: #fdf3e1;
+  overflow-x: hidden;
 }
 @media (prefers-color-scheme: dark) {
   .client-dashboard-root {
@@ -702,16 +703,18 @@
 .client-dashboard-root .status-badge.b-done { background: var(--positive-soft); color: var(--positive); }
 .client-dashboard-root .nav-tag-accent { background: var(--accent); color: #fff; border-radius: 999px; padding: 1px 6px; font-size: 10px; }
 
-.client-dashboard-root .ov-welcome-card { display: flex; align-items: stretch; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 22px; min-height: 128px; box-shadow: var(--shadow-lg); }
-.client-dashboard-root .ov-welcome-left { flex: 1.2; min-width: 220px; padding: 22px 26px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.client-dashboard-root .breadcrumb { margin-bottom: 18px; }
+.client-dashboard-root .ov-welcome-card { display: flex; align-items: stretch; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 22px; min-height: 128px; box-shadow: var(--shadow-lg); max-width: 100%; }
+.client-dashboard-root .ov-welcome-left { flex: 1.2; min-width: 0; padding: 22px 26px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
 .client-dashboard-root .ov-greeting-title { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
 .client-dashboard-root .ov-greeting-sub { margin: 0 0 4px; font-size: 13.5px; color: var(--ink-soft); }
-.client-dashboard-root .ov-date-chip { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-soft); border-radius: 999px; padding: 7px 13px; width: fit-content; white-space: nowrap; }
-.client-dashboard-root .ov-welcome-banner { position: relative; flex: 1; min-width: 160px; background: linear-gradient(135deg, var(--accent-soft) 0%, var(--accent) 130%); }
+.client-dashboard-root .ov-date-chip { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-soft); border-radius: 999px; padding: 7px 13px; width: fit-content; max-width: 100%; white-space: nowrap; }
+.client-dashboard-root .ov-welcome-banner { position: relative; flex: 1; min-width: 160px; background: linear-gradient(135deg, rgba(124,58,237,0.35), rgba(124,58,237,0.75)), url("/dashboard-banner.jpg"); background-size: cover; background-position: center; }
 @media (max-width: 700px) {
   .client-dashboard-root .ov-welcome-banner { display: none; }
   .client-dashboard-root .ov-welcome-card { min-height: auto; }
   .client-dashboard-root .ov-welcome-left { padding: 18px; }
+  .client-dashboard-root .breadcrumb { margin-bottom: 14px; }
 }
 
 .client-dashboard-root .ov-action-banner { display: flex; align-items: center; gap: 18px; background: linear-gradient(155deg, var(--accent-soft) 0%, var(--surface) 65%); border: 1px solid var(--accent-soft); border-radius: var(--radius-lg); padding: 22px 26px; flex-wrap: wrap; }
@@ -728,7 +731,7 @@
 
 .client-dashboard-root .ov-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 .client-dashboard-root .ov-grid-payments { grid-template-columns: 2fr 1fr; }
-.client-dashboard-root .ov-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 22px; }
+.client-dashboard-root .ov-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 22px; min-width: 0; }
 .client-dashboard-root .ov-card-wide { grid-column: span 1; }
 .client-dashboard-root .ov-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
 .client-dashboard-root .ov-card-title { font-size: 13.5px; font-weight: 700; color: var(--ink); margin-bottom: 14px; }
@@ -738,15 +741,15 @@
 .client-dashboard-root .ov-card-head .ov-link { margin-top: 0; white-space: nowrap; }
 
 /* project snapshot */
-.client-dashboard-root .ov-snapshot-name { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+.client-dashboard-root .ov-snapshot-name { font-size: 15px; font-weight: 700; margin-bottom: 12px; overflow-wrap: anywhere; }
 .client-dashboard-root .ov-progress-row { margin-bottom: 8px; }
 .client-dashboard-root .ov-progress-pct { font-size: 13px; font-weight: 700; color: var(--ink); }
 .client-dashboard-root .ov-progress-track { height: 8px; border-radius: 999px; background: var(--bg); overflow: hidden; }
 .client-dashboard-root .ov-progress-fill { height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.3s ease; }
-.client-dashboard-root .ov-mini-stats { display: flex; flex-direction: column; gap: 10px; margin: 16px 0 4px; }
-.client-dashboard-root .ov-mini-stats > div { display: flex; align-items: center; gap: 8px; color: var(--ink-faint); }
-.client-dashboard-root .ov-mini-label { font-size: 11.5px; color: var(--ink-faint); min-width: 110px; }
-.client-dashboard-root .ov-mini-value { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.client-dashboard-root .ov-mini-stats { display: flex; flex-direction: column; gap: 10px; margin: 16px 0 4px; min-width: 0; }
+.client-dashboard-root .ov-mini-stats > div { display: flex; align-items: center; gap: 8px; color: var(--ink-faint); min-width: 0; flex-wrap: wrap; }
+.client-dashboard-root .ov-mini-label { font-size: 11.5px; color: var(--ink-faint); min-width: 110px; flex-shrink: 0; }
+.client-dashboard-root .ov-mini-value { font-size: 12.5px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; min-width: 0; }
 
 /* project journey (horizontal stepper) */
 .client-dashboard-root .ov-journey-row { display: flex; align-items: flex-start; overflow-x: auto; padding-top: 4px; }

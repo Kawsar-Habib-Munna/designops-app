@@ -283,28 +283,33 @@ export default function ClientSowPage() {
       setSowPdfUrl(null);
       try {
         const node = sowDocRef.current;
-        if (!node) return;
+        if (!node) throw new Error('Document not ready');
         const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
-        const canvas = await html2canvas(node, {
-          scale: 2,
-          backgroundColor: '#ffffff',
-          onclone: (doc, el) => {
-            // ডার্ক মোড চালু থাকলেও SOW PDF সবসময় লাইট কালারেই জেনারেট হয় — একটা
-            // ফরমাল চুক্তির রং UI থিমের সাথে বদলানো উচিত না।
-            el.style.setProperty('--surface', '#ffffff');
-            el.style.setProperty('--bg', '#f2f1f2');
-            el.style.setProperty('--border', '#d5d4d7');
-            el.style.setProperty('--ink', '#323135');
-            el.style.setProperty('--ink-soft', '#6d6a72');
-            el.style.setProperty('--ink-faint', '#939197');
-            el.style.setProperty('--accent', '#7c3aed');
-            el.style.setProperty('--accent-hover', '#7135d8');
-            el.style.setProperty('--positive', '#10b981');
-            el.style.setProperty('--positive-soft', '#e7f8f2');
-            el.style.setProperty('--warning', '#f5a524');
-            el.style.setProperty('--warning-soft', '#fdf3e1');
-          },
-        });
+        const canvas = await Promise.race([
+          html2canvas(node, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            imageTimeout: 15000,
+            onclone: (doc, el) => {
+              // ডার্ক মোড চালু থাকলেও SOW PDF সবসময় লাইট কালারেই জেনারেট হয় — একটা
+              // ফরমাল চুক্তির রং UI থিমের সাথে বদলানো উচিত না।
+              el.style.setProperty('--surface', '#ffffff');
+              el.style.setProperty('--bg', '#f2f1f2');
+              el.style.setProperty('--border', '#d5d4d7');
+              el.style.setProperty('--ink', '#323135');
+              el.style.setProperty('--ink-soft', '#6d6a72');
+              el.style.setProperty('--ink-faint', '#939197');
+              el.style.setProperty('--accent', '#7c3aed');
+              el.style.setProperty('--accent-hover', '#7135d8');
+              el.style.setProperty('--positive', '#10b981');
+              el.style.setProperty('--positive-soft', '#e7f8f2');
+              el.style.setProperty('--warning', '#f5a524');
+              el.style.setProperty('--warning-soft', '#fdf3e1');
+            },
+          }),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('PDF generation timed out')), 25000)),
+        ]);
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         const pageWidth = pdf.internal.pageSize.getWidth();

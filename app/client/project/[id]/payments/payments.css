@@ -158,8 +158,8 @@
 .client-payments-root .pm-table-icon.overdue { background: var(--danger-soft); color: var(--danger); }
 .client-payments-root .pm-table-type { font-size: 13px; font-weight: 600; color: var(--ink); }
 .client-payments-root .pm-table-ref { font-size: 11px; color: var(--ink-faint); }
-.client-payments-root .pm-table-action { font-size: 12.5px; font-weight: 600; color: var(--accent); white-space: nowrap; background: none; border: none; padding: 0; cursor: pointer; }
-.client-payments-root .pm-table-action:hover { text-decoration: underline; }
+.client-payments-root .pm-table-action { display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; color: var(--accent); white-space: nowrap; background: var(--accent-soft); border: 1px solid var(--accent-soft); border-radius: 999px; padding: 6px 13px; cursor: pointer; }
+.client-payments-root .pm-table-action:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 /* ---- trust banner ---- */
 .client-payments-root .pm-trust-banner { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; background: var(--accent-soft); border-radius: var(--radius-lg); padding: 18px 22px; }
