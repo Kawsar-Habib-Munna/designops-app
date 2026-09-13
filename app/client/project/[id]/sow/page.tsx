@@ -284,6 +284,8 @@ export default function ClientSowPage() {
       try {
         const node = sowDocRef.current;
         if (!node) throw new Error('Document not ready');
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token ?? '';
         const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
         const canvas = await Promise.race([
           html2canvas(node, {
@@ -308,13 +310,17 @@ export default function ClientSowPage() {
 
               // সিগনেচার ছবিগুলো Google Drive থেকে আসে (cross-origin, CORS হেডার
               // ছাড়া) — সরাসরি রাখলে html2canvas-এর canvas "tainted" হয়ে
-              // toDataURL() ফেল করে। তাই এখানে fetch করে base64 data URL-এ
-              // বদলে দেওয়া হচ্ছে, যেটা canvas-এর জন্য নিরাপদ (same-origin)।
+              // toDataURL() ফেল করে। Drive সরাসরি fetch() করলেও CORS ব্লক করে
+              // দেয়, তাই আমাদের নিজের /api/drive-image-proxy (same-origin,
+              // সার্ভার সাইডে কোনো CORS নেই) দিয়ে ঘুরিয়ে base64 data URL-এ
+              // বদলে দেওয়া হচ্ছে।
               const imgs = Array.from(el.querySelectorAll('img'));
               await Promise.all(
                 imgs.map(async (img) => {
                   try {
-                    const res = await fetch(img.src);
+                    const proxyUrl = `/api/drive-image-proxy?url=${encodeURIComponent(img.src)}`;
+                    const res = await fetch(proxyUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+                    if (!res.ok) return;
                     const blob = await res.blob();
                     const dataUrl = await new Promise<string>((resolve, reject) => {
                       const reader = new FileReader();
