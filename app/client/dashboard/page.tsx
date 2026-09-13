@@ -400,9 +400,12 @@ export default function ClientDashboard() {
           <div className={`mobile-backdrop${mobileNavOpen ? ' open' : ''}`} onClick={() => setMobileNavOpen(false)}></div>
           <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
             <div>
-              <div className="cp-brand" style={{ padding: '6px 10px 22px' }}>
+              <div className="cp-brand cp-brand-sidebar">
                 <div className="cp-brand-mark" aria-hidden="true"></div>
-                <div className="cp-brand-text">FLOW 53</div>
+                <div>
+                  <div className="cp-brand-text">FLOW 53</div>
+                  <div className="cp-brand-tagline">Innovate · Design · Elevate</div>
+                </div>
                 <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন">
                   <Icon name="close" size={16} />
                 </button>
@@ -452,18 +455,19 @@ export default function ClientDashboard() {
             <main className="content">
               <div className="breadcrumb">Client Portal / Overview</div>
 
-              <div className="ov-header-row">
-                <div>
+              <div className="ov-welcome-card">
+                <div className="ov-welcome-left">
                   <h1 className="ov-greeting-title">
                     {greeting}, {firstName} 👋
                   </h1>
                   <p className="ov-greeting-sub">Here&apos;s what&apos;s happening with your project today.</p>
+                  {dateLabel && (
+                    <div className="ov-date-chip">
+                      <Icon name="calendar" size={13} /> {dateLabel}
+                    </div>
+                  )}
                 </div>
-                {dateLabel && (
-                  <div className="ov-date-chip">
-                    <Icon name="calendar" size={13} /> {dateLabel}
-                  </div>
-                )}
+                <div className="ov-welcome-banner" aria-hidden="true"></div>
               </div>
 
               {!isCompleted && pendingAction && (
@@ -786,9 +790,12 @@ export default function ClientDashboard() {
         <div className={`mobile-backdrop${mobileNavOpen ? ' open' : ''}`} onClick={() => setMobileNavOpen(false)}></div>
         <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
           <div>
-            <div className="cp-brand" style={{ padding: '6px 10px 22px' }}>
+            <div className="cp-brand cp-brand-sidebar">
               <div className="cp-brand-mark" aria-hidden="true"></div>
-              <div className="cp-brand-text">FLOW 53</div>
+              <div>
+                <div className="cp-brand-text">FLOW 53</div>
+                <div className="cp-brand-tagline">Innovate · Design · Elevate</div>
+              </div>
               <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন">
                 <Icon name="close" size={16} />
               </button>

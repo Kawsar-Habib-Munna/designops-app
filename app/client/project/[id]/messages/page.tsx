@@ -21,7 +21,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClientProject, type ClientRecord } from '@/lib/clientPortal';
-import { uploadFileToDrive, guessFileType } from '@/lib/driveUpload';
+import { uploadFileToDrive, guessFileType, driveThumbnailUrl } from '@/lib/driveUpload';
 import { formatBnDateLong } from '@/lib/format';
 import '../../../client-shared.css';
 import './messages.css';
@@ -374,9 +374,12 @@ export default function ClientMessagesPage() {
         <div className={`mobile-backdrop${mobileNavOpen ? ' open' : ''}`} onClick={() => setMobileNavOpen(false)}></div>
         <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
           <div>
-            <div className="cp-brand" style={{ padding: '6px 10px 22px' }}>
+            <div className="cp-brand cp-brand-sidebar">
               <div className="cp-brand-mark" aria-hidden="true"></div>
-              <div className="cp-brand-text">FLOW 53</div>
+              <div>
+                <div className="cp-brand-text">FLOW 53</div>
+                <div className="cp-brand-tagline">Innovate · Design · Elevate</div>
+              </div>
               <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন">
                 <Icon name="close" size={16} />
               </button>
@@ -474,7 +477,7 @@ export default function ClientMessagesPage() {
                           <div className="msg-conv-avatar" style={{ background: c.avatarUrl ? undefined : colorForKey(c.key) }}>
                             {c.avatarUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={c.avatarUrl} alt={c.name} />
+                              <img src={driveThumbnailUrl(c.avatarUrl)} alt={c.name} />
                             ) : (
                               c.name.charAt(0).toUpperCase()
                             )}
@@ -535,7 +538,7 @@ export default function ClientMessagesPage() {
                       <div className="msg-thread-avatar" style={{ background: selected.avatarUrl ? undefined : colorForKey(selected.key) }}>
                         {selected.avatarUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={selected.avatarUrl} alt={selected.name} />
+                          <img src={driveThumbnailUrl(selected.avatarUrl)} alt={selected.name} />
                         ) : (
                           selected.name.charAt(0).toUpperCase()
                         )}
@@ -584,7 +587,7 @@ export default function ClientMessagesPage() {
                                   <div className="msg-bubble-avatar" style={{ background: colorForKey(m.sender_id ?? GENERAL_KEY) }}>
                                     {senderProfile?.avatar_url ? (
                                       // eslint-disable-next-line @next/next/no-img-element
-                                      <img src={senderProfile.avatar_url} alt="" />
+                                      <img src={driveThumbnailUrl(senderProfile.avatar_url)} alt="" />
                                     ) : (
                                       (senderProfile?.full_name ?? 'F').charAt(0).toUpperCase()
                                     )}

@@ -99,6 +99,28 @@
   color: var(--ink);
 }
 
+/* ---- sidebar brand lockup — matches the team dashboard's bordered brand box ---- */
+.client-portal .cp-brand-sidebar {
+  position: relative;
+  justify-content: flex-start;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  margin-bottom: 12px;
+}
+.client-portal .cp-brand-sidebar .cp-brand-mark {
+  width: 30px;
+  height: 30px;
+}
+.client-portal .cp-brand-sidebar .cp-brand-text {
+  font-size: 14px;
+}
+.client-portal .cp-brand-tagline {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  margin-top: 1px;
+}
+
 /* ---- centered auth shell ---- */
 .client-portal .cp-auth-shell {
   min-height: 100vh;

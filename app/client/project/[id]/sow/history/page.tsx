@@ -77,9 +77,12 @@ function HistoryShell({
       <div className={`mobile-backdrop${mobileNavOpen ? ' open' : ''}`} onClick={() => setMobileNavOpen(false)}></div>
       <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
         <div>
-          <div className="cp-brand" style={{ padding: '6px 10px 22px' }}>
+          <div className="cp-brand cp-brand-sidebar">
             <div className="cp-brand-mark" aria-hidden="true"></div>
-            <div className="cp-brand-text">FLOW 53</div>
+            <div>
+              <div className="cp-brand-text">FLOW 53</div>
+              <div className="cp-brand-tagline">Innovate · Design · Elevate</div>
+            </div>
             <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন">
               <Icon name="close" size={16} />
             </button>
