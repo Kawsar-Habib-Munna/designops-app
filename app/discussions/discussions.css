@@ -766,6 +766,8 @@
   border-radius: var(--radius-sm);
   background: var(--surface-muted);
   color: var(--ink-soft);
+  cursor: pointer;
+  text-align: left;
 }
 .discussions-root .attach-image {
   display: block;
@@ -775,6 +777,8 @@
   border: 1px solid var(--border);
   background: var(--surface-muted);
   max-width: 220px;
+  padding: 0;
+  cursor: pointer;
 }
 .discussions-root .attach-image img {
   display: block;

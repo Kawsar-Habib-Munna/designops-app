@@ -26,6 +26,7 @@ import { relativeTimeBn, formatBnDate } from '@/lib/format';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
 import Avatar from '@/app/components/Avatar';
+import MediaPreviewModal from '@/app/components/MediaPreviewModal';
 import { canPreviewInline, driveThumbnailUrl, guessFileType, uploadFileToDrive } from '@/lib/driveUpload';
 import { sendNotifications } from '@/lib/notify';
 
@@ -203,17 +204,24 @@ function attachTypeIcon(t: string | null): IconName {
 // জন্যই ইনলাইন থাম্বনেইল দেখানো সম্ভব। Figma লিংক Drive-এ হোস্ট করা না হওয়ায়
 // এই এন্ডপয়েন্ট কাজ করে না, তাই সেটা আইকন চিপ হিসেবেই থাকছে।
 function AttachmentPreview({ name, url, fileType, style }: { name: string; url: string; fileType: string | null; style?: CSSProperties }) {
+  const [previewOpen, setPreviewOpen] = useState(false);
   if (canPreviewInline(fileType, url)) {
     return (
-      <a className="attach-image" href={url} target="_blank" rel="noopener noreferrer" title={name} style={style}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={driveThumbnailUrl(url)} alt={name} />
-        {fileType === 'video' && <span className="attach-play-badge"><Icon name="play" size={16} /></span>}
-      </a>
+      <>
+        <button type="button" className="attach-image" onClick={() => setPreviewOpen(true)} title={name} style={style}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={driveThumbnailUrl(url)} alt={name} />
+          {fileType === 'video' && <span className="attach-play-badge"><Icon name="play" size={16} /></span>}
+        </button>
+        {previewOpen && <MediaPreviewModal item={{ name, url, fileType }} onClose={() => setPreviewOpen(false)} />}
+      </>
     );
   }
   return (
-    <a className="attach-chip" href={url} target="_blank" rel="noopener noreferrer" style={style}><Icon name={attachTypeIcon(fileType)} size={13} /> {name}</a>
+    <>
+      <button type="button" className="attach-chip" onClick={() => setPreviewOpen(true)} style={style}><Icon name={attachTypeIcon(fileType)} size={13} /> {name}</button>
+      {previewOpen && <MediaPreviewModal item={{ name, url, fileType }} onClose={() => setPreviewOpen(false)} />}
+    </>
   );
 }
 // টাই ভাঙার জন্য "স্পিন" — একটা lottery-স্টাইল হাইলাইট-সাইকেল যেটা ধীরে ধীরে

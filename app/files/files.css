@@ -208,7 +208,7 @@
 .files-root .insp-empty-title{font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;}
 .files-root .insp-empty-sub{font-size:11px;line-height:1.5;max-width:220px;}
 
-.files-root .insp-preview{height:120px;border-radius:var(--radius-md);margin-bottom:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
+.files-root .insp-preview{width:100%;height:120px;border-radius:var(--radius-md);margin-bottom:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;border:none;background:var(--surface-muted);padding:0;cursor:pointer;color:var(--ink-faint);}
 .files-root .insp-preview-img{width:100%;height:100%;object-fit:cover;}
 .files-root .insp-title{font-size:14.5px;font-weight:700;margin-bottom:3px;word-break:break-word;}
 .files-root .insp-project{font-size:11.5px;color:var(--ink-faint);margin-bottom:14px;}

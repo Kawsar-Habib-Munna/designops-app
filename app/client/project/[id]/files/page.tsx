@@ -14,7 +14,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClientProject, type ClientRecord } from '@/lib/clientPortal';
-import { uploadFileToDrive, guessFileType, driveThumbnailUrl } from '@/lib/driveUpload';
+import { uploadFileToDrive, guessFileType, driveDownloadUrl } from '@/lib/driveUpload';
+import MediaPreviewModal, { type MediaPreviewItem } from '@/app/components/MediaPreviewModal';
 import { formatBnDateLong } from '@/lib/format';
 import '../../../client-shared.css';
 import './files.css';
@@ -125,6 +126,7 @@ export default function ClientFilesPage() {
   const [showAllFolders, setShowAllFolders] = useState(false);
   const [page, setPage] = useState(1);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [previewItem, setPreviewItem] = useState<MediaPreviewItem | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -545,7 +547,7 @@ export default function ClientFilesPage() {
                             </td>
                             <td>
                               <div className="files-actions">
-                                <a href={f.drive_url} target="_blank" rel="noopener noreferrer" className="icon-btn" aria-label="Download">
+                                <a href={driveDownloadUrl(f.drive_url)} target="_blank" rel="noopener noreferrer" className="icon-btn" aria-label="Download">
                                   <Icon name="download" size={14} />
                                 </a>
                                 <div className="files-menu-wrap">
@@ -554,10 +556,10 @@ export default function ClientFilesPage() {
                                   </button>
                                   {openMenuId === f.id && (
                                     <div className="files-menu">
-                                      <a href={driveThumbnailUrl(f.drive_url)} target="_blank" rel="noopener noreferrer" onClick={() => setOpenMenuId(null)}>
+                                      <button type="button" onClick={() => { setOpenMenuId(null); setPreviewItem({ name: f.name, url: f.drive_url, fileType: f.file_type }); }}>
                                         <Icon name="eye" size={13} /> View
-                                      </a>
-                                      <a href={f.drive_url} target="_blank" rel="noopener noreferrer" onClick={() => setOpenMenuId(null)}>
+                                      </button>
+                                      <a href={driveDownloadUrl(f.drive_url)} target="_blank" rel="noopener noreferrer" onClick={() => setOpenMenuId(null)}>
                                         <Icon name="download" size={13} /> Download
                                       </a>
                                     </div>
@@ -576,7 +578,7 @@ export default function ClientFilesPage() {
                   {pagedFiles.map((f) => {
                     const uploader = f.uploaded_by_id ? uploaders[f.uploaded_by_id] : null;
                     return (
-                      <a key={f.id} href={f.drive_url} target="_blank" rel="noopener noreferrer" className="files-grid-card">
+                      <button type="button" key={f.id} className="files-grid-card" onClick={() => setPreviewItem({ name: f.name, url: f.drive_url, fileType: f.file_type })}>
                         <div className={`files-row-icon ${fileExtension(f.name).toLowerCase()}`}>
                           <Icon name="file" size={18} />
                         </div>
@@ -585,7 +587,7 @@ export default function ClientFilesPage() {
                           {fileExtension(f.name)} · {formatBytes(f.size_bytes)}
                         </div>
                         <div className="files-grid-meta">{uploader?.full_name ?? (f.uploaded_by === 'client' ? 'You' : 'FLOW 53 Team')}</div>
-                      </a>
+                      </button>
                     );
                   })}
                 </div>
@@ -618,6 +620,8 @@ export default function ClientFilesPage() {
           </main>
         </div>
       </div>
+
+      <MediaPreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />
     </div>
   );
 }

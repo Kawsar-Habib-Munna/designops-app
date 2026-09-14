@@ -125,12 +125,12 @@
 .files-root .files-actions { display: flex; align-items: center; gap: 6px; }
 .files-root .files-menu-wrap { position: relative; }
 .files-root .files-menu { position: absolute; right: 0; top: 40px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); z-index: 30; overflow: hidden; min-width: 140px; }
-.files-root .files-menu a { display: flex; align-items: center; gap: 8px; padding: 9px 14px; font-size: 12.5px; color: var(--ink); }
-.files-root .files-menu a:hover { background: var(--bg); }
+.files-root .files-menu a, .files-root .files-menu button { display: flex; align-items: center; gap: 8px; padding: 9px 14px; font-size: 12.5px; color: var(--ink); width: 100%; border: none; background: none; text-align: left; cursor: pointer; }
+.files-root .files-menu a:hover, .files-root .files-menu button:hover { background: var(--bg); }
 
 /* ---------- grid view ---------- */
 .files-root .files-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
-.files-root .files-grid-card { display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 16px; }
+.files-root .files-grid-card { display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 16px; width: 100%; text-align: left; cursor: pointer; }
 .files-root .files-grid-card:hover { border-color: var(--accent); }
 .files-root .files-grid-name { font-size: 12.5px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 6px; }
 .files-root .files-grid-meta { font-size: 11px; color: var(--ink-faint); }

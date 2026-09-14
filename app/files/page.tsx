@@ -27,6 +27,7 @@ import { canPreviewInline, driveThumbnailUrl, guessFileType, uploadFileToDrive }
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
 import Avatar from '@/app/components/Avatar';
+import MediaPreviewModal, { type MediaPreviewItem } from '@/app/components/MediaPreviewModal';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -190,6 +191,7 @@ export default function FilesPage() {
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [previewItem, setPreviewItem] = useState<MediaPreviewItem | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -733,7 +735,7 @@ export default function FilesPage() {
                               {chip && <span className={`review-chip ${chip.cls}`}>{chip.label}</span>}
                             </div>
                             <div className="asset-hover-actions">
-                              <a className="ah-btn" href={a.drive_url} target="_blank" rel="noopener noreferrer" title="লিংক খুলুন"><Icon name="link" size={14} /></a>
+                              <button type="button" className="ah-btn" title="প্রিভিউ দেখুন" onClick={(e) => { e.stopPropagation(); setPreviewItem({ name: a.file_name, url: a.drive_url, fileType: a.file_type }); }}><Icon name="link" size={14} /></button>
                               <button className="ah-btn" title={copiedId === a.id ? 'কপি হয়েছে!' : 'লিংক কপি করুন'} onClick={() => copyLink(a.drive_url, a.id)}><Icon name={copiedId === a.id ? 'check-circle' : 'copy'} size={14} /></button>
                               <button className="ah-btn" title="ডিলিট করুন" disabled={busyId === a.id} onClick={(e) => { e.stopPropagation(); deleteAttachment(a.id); }}><Icon name="trash" size={14} /></button>
                             </div>
@@ -770,7 +772,12 @@ export default function FilesPage() {
                       const progress = linkedProject ? projectProgress.get(linkedProject.id) ?? 0 : 0;
                       return (
                         <>
-                          <div className="insp-preview" style={canPreviewInline(selected.file_type, selected.drive_url) ? undefined : { background: meta.bg }}>
+                          <button
+                            type="button"
+                            className="insp-preview"
+                            style={canPreviewInline(selected.file_type, selected.drive_url) ? undefined : { background: meta.bg }}
+                            onClick={() => setPreviewItem({ name: selected.file_name, url: selected.drive_url, fileType: selected.file_type })}
+                          >
                             {canPreviewInline(selected.file_type, selected.drive_url) ? (
                               <>
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -780,7 +787,7 @@ export default function FilesPage() {
                             ) : (
                               <Icon name={meta.icon} size={36} />
                             )}
-                          </div>
+                          </button>
                           <div className="insp-title">{selected.file_name}</div>
                           <div className="insp-project">{selected.tasks?.projects?.name ?? selected.clients?.company_name ?? 'কোনো প্রজেক্ট নেই'} · {selected.profiles?.full_name ?? 'অজানা'}</div>
 
@@ -798,7 +805,7 @@ export default function FilesPage() {
                             <div className="insp-label">Link</div>
                             <div className="insp-link-row">
                               <input readOnly value={selected.drive_url} onClick={(e) => (e.target as HTMLInputElement).select()} />
-                              <a className="btn btn-ghost btn-sm" href={selected.drive_url} target="_blank" rel="noopener noreferrer">খুলুন</a>
+                              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPreviewItem({ name: selected.file_name, url: selected.drive_url, fileType: selected.file_type })}>খুলুন</button>
                             </div>
                           </div>
 
@@ -996,6 +1003,8 @@ export default function FilesPage() {
           </div>
         </div>
       )}
+
+      <MediaPreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />
     </div>
   );
 }

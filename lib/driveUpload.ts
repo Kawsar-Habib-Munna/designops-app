@@ -38,6 +38,15 @@ export function driveEmbedUrl(url: string): string | null {
   return id ? `https://drive.google.com/file/d/${id}/preview` : null;
 }
 
+// একটা ক্লিকেই আসল ফাইল ডাউনলোড শুরু হওয়ার জন্য Drive-এর নিজস্ব "uc?export=download"
+// ফর্ম্যাট — সরাসরি <a download> ক্রস-অরিজিন URL-এ কাজ করে না (ব্রাউজার শুধু
+// navigate করে), কিন্তু এই এন্ডপয়েন্ট পাবলিক ("anyone: reader") ফাইলের জন্য সত্যিই
+// ডাউনলোড ট্রিগার করে।
+export function driveDownloadUrl(url: string): string {
+  const id = driveFileId(url);
+  return id ? `https://drive.google.com/uc?export=download&id=${id}` : url;
+}
+
 // Drive-এর thumbnail এন্ডপয়েন্ট ইমেজের পাশাপাশি ভিডিও আর PDF-এরও একটা স্ট্যাটিক
 // প্রিভিউ জেনারেট করে দেয়, কিন্তু শুধু Drive-এ হোস্ট করা ফাইলের জন্যই — পেস্ট করা
 // কোনো বহিরাগত (non-Drive) ভিডিও/PDF লিংকের জন্য এই এন্ডপয়েন্ট কাজ করবে না।

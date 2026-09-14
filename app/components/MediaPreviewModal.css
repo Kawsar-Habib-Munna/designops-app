@@ -1,0 +1,123 @@
+/* MediaPreviewModal — শেয়ার্ড, unscoped (mpm- প্রিফিক্সড ক্লাস, তাই কোনো পেজের
+   নিজস্ব CSS-এর সাথে কলিশনের ঝুঁকি নেই)। যেকোনো পেজ থেকে ইম্পোর্ট করা যায়। */
+
+.mpm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 24px;
+}
+.mpm-box {
+  width: 100%;
+  max-width: 960px;
+  height: 86vh;
+  max-height: 86vh;
+  background: #202124;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.mpm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  flex-shrink: 0;
+}
+.mpm-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f1f1f3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.mpm-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.mpm-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #f1f1f3;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 7px 13px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.mpm-download:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.mpm-close {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #c7c7cf;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.mpm-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+.mpm-body {
+  position: relative;
+  flex: 1;
+  overflow: auto;
+  background: #3c3c40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mpm-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.mpm-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+.mpm-fallback {
+  color: #c7c7cf;
+  font-size: 13px;
+  text-align: center;
+  padding: 24px;
+}
+
+@media (max-width: 640px) {
+  .mpm-overlay {
+    padding: 0;
+  }
+  .mpm-box {
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    max-width: 100%;
+  }
+}
