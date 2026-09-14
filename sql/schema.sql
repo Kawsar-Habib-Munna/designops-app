@@ -2174,3 +2174,20 @@ create policy "team can delete draft sows" on sows for delete using (
 alter table votes add column if not exists winner_option_id uuid references vote_options(id) on delete set null;
 alter table votes add column if not exists decided_at timestamptz;
 alter table votes add column if not exists decided_by uuid references profiles(id) on delete set null;
+
+-- Web Push (OS/browser-level) নোটিফিকেশন — টিম মেম্বারদের জন্য, বিদ্যমান
+-- notifications/dispatch পাইপলাইনের তৃতীয় চ্যানেল (in-app feed + email/WhatsApp-এর
+-- পাশে)। একজন ইউজারের একাধিক subscription থাকতে পারে (একাধিক ডিভাইস/ব্রাউজার)।
+create table if not exists push_subscriptions (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references profiles(id) on delete cascade not null,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz default now()
+);
+alter table push_subscriptions enable row level security;
+drop policy if exists "user can manage own push_subscriptions" on push_subscriptions;
+create policy "user can manage own push_subscriptions" on push_subscriptions for all using (user_id = auth.uid());
+
+alter table profiles add column if not exists notify_push_enabled boolean default false;

@@ -87,7 +87,19 @@ type SettingsProfile = {
   notify_email_votes: boolean;
   notify_whatsapp_discussions: boolean;
   notify_whatsapp_votes: boolean;
+  notify_push_enabled: boolean;
 };
+
+// VAPID পাবলিক কী (base64url) PushManager.subscribe()-এর applicationServerKey-এর
+// জন্য Uint8Array হতে হয় — এটাই স্ট্যান্ডার্ড কনভার্শন (MDN-এর ডকুমেন্টেড প্যাটার্ন)।
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
 
 type NotificationRow = {
   id: string;
@@ -172,6 +184,8 @@ export default function NotificationsPage() {
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
 
   async function loadNotifications() {
     if (!user) return { errorMessage: null, rows: [] as NotificationRow[] };
@@ -242,7 +256,7 @@ export default function NotificationsPage() {
     setSettingsLoading(true);
     const { data, error: err } = await supabase
       .from('profiles')
-      .select('id, whatsapp_number, notify_email_discussions, notify_email_votes, notify_whatsapp_discussions, notify_whatsapp_votes')
+      .select('id, whatsapp_number, notify_email_discussions, notify_email_votes, notify_whatsapp_discussions, notify_whatsapp_votes, notify_push_enabled')
       .eq('id', user.id)
       .single();
     setSettingsLoading(false);
@@ -269,6 +283,68 @@ export default function NotificationsPage() {
     setSavingSettings(false);
     if (err) { setSettingsError('সেভ করা যায়নি — আবার চেষ্টা করুন।'); return; }
     setShowSettings(false);
+  }
+
+  // ইমেইল/WhatsApp টগলগুলোর মতো "সেভ" বাটন পর্যন্ত অপেক্ষা করে না — ব্রাউজার
+  // পারমিশন/subscribe() সরাসরি ক্লিকেই হয়, কারণ এটা একটা real ব্রাউজার একশন
+  // (permission prompt) যেটা ফর্ম সাবমিটের পেছনে লুকিয়ে রাখলে বিভ্রান্তিকর হতো।
+  async function handleTogglePush() {
+    if (!settingsProfile || !user) return;
+    setPushBusy(true);
+    setPushError(null);
+    try {
+      if (!settingsProfile.notify_push_enabled) {
+        if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+          throw new Error('এই ব্রাউজার পুশ নোটিফিকেশন সাপোর্ট করে না।');
+        }
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') throw new Error('নোটিফিকেশন পারমিশন দেওয়া হয়নি।');
+
+        const reg = await navigator.serviceWorker.ready;
+        const keyRes = await fetch('/api/push/vapid-key');
+        const keyData = await keyRes.json();
+        if (!keyRes.ok || !keyData.publicKey) throw new Error(keyData.error ?? 'VAPID কী পাওয়া যায়নি।');
+
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(keyData.publicKey) as BufferSource,
+        });
+        const subJson = sub.toJSON();
+
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        const subRes = await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ endpoint: subJson.endpoint, keys: subJson.keys }),
+        });
+        if (!subRes.ok) throw new Error('সাবস্ক্রিপশন সেভ করা যায়নি।');
+
+        const { error: updateErr } = await supabase.from('profiles').update({ notify_push_enabled: true }).eq('id', user.id);
+        if (updateErr) throw new Error('সেভ করা যায়নি।');
+        setSettingsProfile((p) => p && { ...p, notify_push_enabled: true });
+      } else {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const accessToken = sessionData.session?.access_token;
+          await fetch('/api/push/subscribe', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+            body: JSON.stringify({ endpoint: sub.endpoint }),
+          }).catch(() => {});
+          await sub.unsubscribe();
+        }
+        const { error: updateErr } = await supabase.from('profiles').update({ notify_push_enabled: false }).eq('id', user.id);
+        if (updateErr) throw new Error('সেভ করা যায়নি।');
+        setSettingsProfile((p) => p && { ...p, notify_push_enabled: false });
+      }
+    } catch (err) {
+      setPushError(err instanceof Error ? err.message : 'পুশ নোটিফিকেশন চালু/বন্ধ করা যায়নি।');
+    } finally {
+      setPushBusy(false);
+    }
   }
 
   const counts = useMemo(() => {
@@ -450,6 +526,13 @@ export default function NotificationsPage() {
                 <div className="state-view" style={{ padding: '30px 10px' }}><div className="state-sub">{settingsError ?? 'লোড করা যায়নি।'}</div></div>
               ) : (
                 <form onSubmit={saveSettings}>
+                  <div className="settings-section-label">পুশ নোটিফিকেশন</div>
+                  <div className="toggle-row">
+                    <span className="toggle-label">এই ব্রাউজারে OS-লেভেল পুশ নোটিফিকেশন পান (টাস্ক, টু-ডু, আলোচনা, ভোট — সব ধরনের)</span>
+                    <Toggle on={settingsProfile.notify_push_enabled} onChange={handleTogglePush} disabled={pushBusy} />
+                  </div>
+                  {pushError && <div style={{ marginTop: -6, marginBottom: 10, color: 'var(--danger)', fontSize: 12 }}>{pushError}</div>}
+
                   <div className="settings-section-label">ইমেইল নোটিফিকেশন</div>
                   <div className="toggle-row">
                     <span className="toggle-label">নতুন আলোচনা, রিপ্লাই ও মেনশন</span>
@@ -479,7 +562,7 @@ export default function NotificationsPage() {
                   </div>
 
                   <div className="settings-note">
-                    টাস্ক অ্যাসাইনমেন্টের নোটিফিকেশন এখনো শুধু in-app ফিডেই দেখা যাবে — ইমেইল/WhatsApp-এ শুধু আলোচনা আর ভোট পাঠানো হয়। WhatsApp পেতে হলে Twilio Sandbox নম্বরে একবার &quot;join&quot; মেসেজ পাঠাতে হবে (অ্যাডমিনের কাছে জেনে নিন)।
+                    টাস্ক/টু-ডু অ্যাসাইনমেন্টের নোটিফিকেশন এখনো in-app ফিড আর পুশেই দেখা যাবে — ইমেইল/WhatsApp-এ শুধু আলোচনা আর ভোট পাঠানো হয়। WhatsApp পেতে হলে Twilio Sandbox নম্বরে একবার &quot;join&quot; মেসেজ পাঠাতে হবে (অ্যাডমিনের কাছে জেনে নিন)।
                   </div>
 
                   {settingsError && <div style={{ marginTop: 12, color: 'var(--danger)', fontSize: 12 }}>{settingsError}</div>}

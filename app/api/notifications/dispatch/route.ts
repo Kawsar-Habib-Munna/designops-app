@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getSupabaseAdmin, getCallerProfile } from '@/lib/supabaseAdmin';
 import { sendEmail } from '@/lib/email';
 import { sendWhatsApp } from '@/lib/whatsapp';
+import { sendPushToUser } from '@/lib/webPush';
 
 // Tasks/Discussions পেজ থেকে lib/notify.ts যেটা fire-and-forget কল করে —
 // এই রুট service role দিয়ে notifications insert করে (ক্লায়েন্ট থেকে সরাসরি
@@ -78,20 +79,36 @@ export async function POST(request: NextRequest) {
   for (const n of inserted) {
     const isDiscussion = n.type.startsWith('discussion');
     const isVote = n.type.startsWith('vote');
-    if (!isDiscussion && !isVote) { results.skipped.push(n.id); continue; }
+    const isEmailWhatsappEligible = isDiscussion || isVote;
 
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('whatsapp_number, notify_email_discussions, notify_email_votes, notify_whatsapp_discussions, notify_whatsapp_votes')
+      .select('whatsapp_number, notify_email_discussions, notify_email_votes, notify_whatsapp_discussions, notify_whatsapp_votes, notify_push_enabled')
       .eq('id', n.recipient_id)
       .single();
     if (!profile) { results.skipped.push(n.id); continue; }
 
-    const wantsEmail = isDiscussion ? profile.notify_email_discussions : profile.notify_email_votes;
-    const wantsWhatsapp = (isDiscussion ? profile.notify_whatsapp_discussions : profile.notify_whatsapp_votes) && !!profile.whatsapp_number;
-
     const link = n.link ? `${base}${n.link}` : base;
     const plainMessage = `${n.title}${n.subtitle ? `\n${n.subtitle}` : ''}${n.meta ? `\n${n.meta}` : ''}${link ? `\n${link}` : ''}`;
+
+    // পুশ সব ধরনের নোটিফিকেশনের জন্যই পাঠানো হয় (task/todo assigned-সহ) —
+    // in-app ফিডের সবচেয়ে কাছাকাছি বিকল্প বলে email/WhatsApp-এর discussion/vote-only
+    // গেটের বাইরে রাখা হয়েছে। শুধু recipient-এর নিজের টগল আর subscription লাগে।
+    if (profile.notify_push_enabled) {
+      try {
+        const pushResult = await sendPushToUser(n.recipient_id, { title: n.title, body: n.subtitle ?? n.meta ?? null, link: n.link ?? null });
+        if (pushResult.sent > 0) results.sent.push(`${n.id}:push`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'unknown';
+        results.errors.push(`${n.id}:push:${msg}`);
+        console.error(`[notifications/dispatch] push failed for notification ${n.id} (recipient ${n.recipient_id}):`, msg);
+      }
+    }
+
+    if (!isEmailWhatsappEligible) { results.skipped.push(`${n.id}:email/whatsapp`); continue; }
+
+    const wantsEmail = isDiscussion ? profile.notify_email_discussions : profile.notify_email_votes;
+    const wantsWhatsapp = (isDiscussion ? profile.notify_whatsapp_discussions : profile.notify_whatsapp_votes) && !!profile.whatsapp_number;
 
     if (wantsEmail) {
       try {

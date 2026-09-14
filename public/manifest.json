@@ -1,0 +1,17 @@
+{
+  "name": "FLOW 53",
+  "short_name": "FLOW 53",
+  "description": "Innovate · Design · Elevate",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#F7F7F8",
+  "theme_color": "#5B4FE8",
+  "icons": [
+    {
+      "src": "/flow53-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
