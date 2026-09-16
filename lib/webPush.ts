@@ -34,6 +34,7 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
 
   let sent = 0;
   let removed = 0;
+  const errors: string[] = [];
   await Promise.all(
     subs.map(async (sub) => {
       try {
@@ -49,11 +50,12 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
           removed++;
         } else {
           const msg = err instanceof Error ? err.message : 'unknown';
+          errors.push(`[${statusCode ?? 'no-status'}] ${msg}`);
           console.error(`[webPush] sendNotification failed for subscription ${sub.id} (user ${userId}):`, msg);
         }
       }
     }),
   );
 
-  return { sent, removed };
+  return { sent, removed, errors };
 }

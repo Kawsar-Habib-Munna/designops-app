@@ -186,6 +186,8 @@ export default function NotificationsPage() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushError, setPushError] = useState<string | null>(null);
+  const [pushTestBusy, setPushTestBusy] = useState(false);
+  const [pushTestResult, setPushTestResult] = useState<string | null>(null);
 
   async function loadNotifications() {
     if (!user) return { errorMessage: null, rows: [] as NotificationRow[] };
@@ -344,6 +346,39 @@ export default function NotificationsPage() {
       setPushError(err instanceof Error ? err.message : 'পুশ নোটিফিকেশন চালু/বন্ধ করা যায়নি।');
     } finally {
       setPushBusy(false);
+    }
+  }
+
+  // ডিবাগিং টুল — dispatch route-এর fire-and-forget ফ্লোতে push সত্যিই sent হলো
+  // নাকি কোথায় আটকালো সেটা কখনো ক্লায়েন্টে দেখা যায় না। এই বাটন সরাসরি
+  // /api/push/test কল করে নিজের subscription-এ একটা টেস্ট পুশ পাঠায় আর real
+  // sent/removed/error রেজাল্ট দেখায়, যাতে সমস্যাটা ঠিক কোথায় বোঝা যায়।
+  async function handleSendTestPush() {
+    if (!user) return;
+    setPushTestBusy(true);
+    setPushTestResult(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      const res = await fetch('/api/push/test', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPushTestResult(`এরর: ${data.error ?? 'অজানা'} (সাবস্ক্রিপশন: ${data.subscriptionCount ?? '?'})`);
+      } else if (data.subscriptionCount === 0) {
+        setPushTestResult('কোনো সাবস্ক্রিপশন সেভ নেই — টগল আবার অফ করে অন করে দেখুন।');
+      } else if (data.sent > 0) {
+        setPushTestResult(`পাঠানো হয়েছে (${data.sent}টা ডিভাইসে) — এখন নোটিফিকেশন আসা উচিত। না এলে ব্রাউজার/OS-এর নোটিফিকেশন সেটিংস চেক করুন।`);
+      } else {
+        const errText = Array.isArray(data.errors) && data.errors.length > 0 ? ` — ${data.errors.join('; ')}` : '';
+        setPushTestResult(`পাঠানো যায়নি — সাবস্ক্রিপশন ছিল ${data.subscriptionCount}টা, sent ০টা, removed ${data.removed ?? 0}টা${errText}`);
+      }
+    } catch {
+      setPushTestResult('টেস্ট রিকোয়েস্ট পাঠানো যায়নি।');
+    } finally {
+      setPushTestBusy(false);
     }
   }
 
@@ -532,6 +567,14 @@ export default function NotificationsPage() {
                     <Toggle on={settingsProfile.notify_push_enabled} onChange={handleTogglePush} disabled={pushBusy} />
                   </div>
                   {pushError && <div style={{ marginTop: -6, marginBottom: 10, color: 'var(--danger)', fontSize: 12 }}>{pushError}</div>}
+                  {settingsProfile.notify_push_enabled && (
+                    <div style={{ marginTop: -6, marginBottom: 14 }}>
+                      <button type="button" className="btn btn-ghost btn-sm" disabled={pushTestBusy} onClick={handleSendTestPush}>
+                        {pushTestBusy ? 'পাঠানো হচ্ছে…' : 'টেস্ট নোটিফিকেশন পাঠান'}
+                      </button>
+                      {pushTestResult && <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--ink-soft)' }}>{pushTestResult}</div>}
+                    </div>
+                  )}
 
                   <div className="settings-section-label">ইমেইল নোটিফিকেশন</div>
                   <div className="toggle-row">
