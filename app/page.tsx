@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Nunito_Sans, Playfair_Display } from 'next/font/google';
+import { Inter, Nunito_Sans, Playfair_Display } from 'next/font/google';
 import './home.css';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { driveThumbnailUrl, driveFullImageUrl } from '@/lib/driveUpload';
@@ -17,8 +17,29 @@ import RevealOnScroll from '@/app/components/RevealOnScroll';
 // রিকোয়েস্টে fresh ডেটা আনা হয়।
 export const dynamic = 'force-dynamic';
 
+const interStats = Inter({ subsets: ['latin'], weight: ['500'], variable: '--font-inter-stats', display: 'swap' });
 const nunito = Nunito_Sans({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-nunito', display: 'swap' });
 const playfair = Playfair_Display({ subsets: ['latin'], weight: ['400', '700'], style: ['normal', 'italic'], variable: '--font-playfair', display: 'swap' });
+
+const STATS_TOP = [
+  { label: 'Experience', value: '02+' },
+  { label: 'Project Complete', value: '19+' },
+];
+const STATS_BOTTOM = [
+  { label: 'Satisfied Clients', value: '12+' },
+  { label: 'Countries Reached', value: '04+' },
+  { label: 'Achievements', value: '03+' },
+];
+
+function StatCircle({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="stat-circle">
+      <span className="stat-label">{label}</span>
+      <span className="stat-value">{value}</span>
+      <img src="/stats/arrow.svg" alt="" className="stat-arrow" />
+    </div>
+  );
+}
 
 // Work সেকশনের প্রজেক্টগুলো আগে কোডে হার্ডকোড করা placeholder ছিল, এখন
 // app-এর ভেতরের /portfolio পেজ থেকে টিম যেই কেস স্টাডি publish করে সেটাই
@@ -77,7 +98,7 @@ export default async function Home() {
   const [team, caseStudies] = await Promise.all([fetchTeam(), fetchCaseStudies()]);
 
   return (
-    <div className={`home-root ${nunito.variable} ${playfair.variable}`}>
+    <div className={`home-root ${nunito.variable} ${playfair.variable} ${interStats.variable}`}>
       <LandingNav />
 
       <div className="home-body">
@@ -143,7 +164,32 @@ export default async function Home() {
             <div className="hero-partners-fade"></div>
           </div>
         </div>
+      </header>
 
+      <section className="stats" id="numbers">
+        <div className="stats-inner">
+          <span className="stats-eyebrow">
+            <img src="/stats/line.svg" alt="" />
+            <span>TRUSTED GLOBALLY</span>
+          </span>
+
+          <div className="stats-body">
+            <div className="stats-top">
+              <StatCircle {...STATS_TOP[0]} />
+              <div className="stats-heading">
+                <h2 className="stats-title">Numbers That Speak!</h2>
+                <p className="stats-desc">From thoughtful product decisions to polished digital experiences, here’s a quick look at what we’ve been building and learning along the way.</p>
+              </div>
+              <StatCircle {...STATS_TOP[1]} />
+            </div>
+            <div className="stats-bottom">
+              {STATS_BOTTOM.map((s) => <StatCircle key={s.label} {...s} />)}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="work-legacy">
         <div className="container">
 
           <div className="project-grid reveal" id="work">
@@ -169,7 +215,7 @@ export default async function Home() {
             })}
           </div>
         </div>
-      </header>
+      </section>
 
       <section className="section hired-section" id="services">
         <div className="container reveal">

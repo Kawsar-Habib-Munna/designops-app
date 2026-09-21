@@ -86,7 +86,7 @@ html:has(.home-root){scroll-behavior:smooth;}
 }
 
 /* ---------- hero ---------- */
-.home-root .hero{position:relative;background:#010003;padding:0 0 72px 0;overflow:hidden;}
+.home-root .hero{position:relative;background:#010003;padding:0;overflow:hidden;}
 .home-root .hero-fig{position:relative;padding:220px 0 120px 0;font-family:var(--font-nunito),'Nunito Sans','Inter',sans-serif;}
 .home-root .hero-fig-bg{position:absolute;top:0;left:0;width:100%;height:974px;object-fit:cover;pointer-events:none;user-select:none;}
 .home-root .hero-fig-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;max-width:1168px;margin:0 auto;padding:0 24px;}
@@ -147,6 +147,37 @@ html:has(.home-root){scroll-behavior:smooth;}
 .home-root .hero-book-btn:hover{background:#fff;color:var(--bg);border-color:#fff;transform:translateY(-2px);box-shadow:0 10px 26px rgba(255,255,255,0.15);}
 .home-root .book-call-icon{flex-shrink:0;transition:transform .35s ease;}
 .home-root .hero-book-btn:hover .book-call-icon{transform:rotate(-10deg) scale(1.1);}
+
+/* ---------- stats: Numbers That Speak! (Figma 44:575) ---------- */
+.home-root .stats{background:#010003;padding:120px 0;font-family:var(--font-nunito),'Nunito Sans','Inter',sans-serif;}
+.home-root .stats-inner{display:flex;flex-direction:column;align-items:center;width:min(1280px,calc(100% - 48px));margin:0 auto;}
+.home-root .stats-eyebrow{display:inline-flex;align-items:center;gap:12px;margin-bottom:70px;padding:12px 20px 12px 0;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:linear-gradient(90deg,rgba(239,230,253,0.02),rgba(206,176,250,0.02));box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-family:var(--font-inter-stats),'Inter',sans-serif;font-size:16px;line-height:1.5;font-weight:500;color:#efe6fd;white-space:nowrap;}
+.home-root .stats-eyebrow img{display:block;width:40px;height:1px;}
+.home-root .stats-body{display:flex;flex-direction:column;gap:60px;width:100%;}
+.home-root .stats-top{display:grid;grid-template-columns:302px 1fr 302px;align-items:center;}
+.home-root .stats-top > .stat-circle:first-child{justify-self:start;}
+.home-root .stats-top > .stat-circle:last-child{justify-self:end;}
+.home-root .stats-bottom{display:flex;justify-content:center;gap:60px;}
+.home-root .stats-heading{justify-self:center;width:477px;max-width:100%;text-align:center;}
+.home-root .stats-title{font-family:var(--font-playfair),'Playfair Display',serif;font-size:36px;line-height:1.5;font-weight:700;color:#e6e4e8;white-space:nowrap;}
+.home-root .stats-desc{margin-top:32px;font-size:16px;line-height:1.5;font-weight:500;color:#ada8b4;}
+.home-root .stat-circle{display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;width:302px;height:302px;padding:40px;border-radius:50%;background:rgba(103,107,106,0.04);border:1px solid rgba(254,255,255,0.1);text-align:center;}
+.home-root .stat-label{display:block;width:100%;margin-bottom:-8px;font-size:20px;line-height:1.5;font-weight:500;color:#7b7780;}
+.home-root .stat-value{display:block;width:100%;font-family:var(--font-playfair),'Playfair Display',serif;font-size:72px;line-height:1.5;font-weight:700;color:#ada8b4;}
+.home-root .stat-arrow{display:block;width:24px;height:24px;margin-top:24px;}
+@media (max-width:1199px){
+  .home-root .stats-body{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:24px;}
+  .home-root .stats-top,.home-root .stats-bottom{display:contents;}
+  .home-root .stats-heading{order:-1;flex-basis:100%;margin:0 auto 24px auto;}
+}
+@media (max-width:640px){
+  .home-root .stats{padding:72px 0;}
+  .home-root .stats-eyebrow{margin-bottom:40px;}
+  .home-root .stats-title{font-size:clamp(26px,8vw,36px);white-space:normal;}
+  .home-root .stat-circle{width:min(302px,100%);height:auto;aspect-ratio:1;padding:24px;}
+}
+
+.home-root .work-legacy{position:relative;z-index:1;background:#010003;padding:0 0 72px 0;}
 
 /* ---------- project grid ---------- */
 .home-root .project-grid{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:28px;background:transparent;margin-top:36px;}
