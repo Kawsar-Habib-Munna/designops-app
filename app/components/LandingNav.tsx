@@ -44,6 +44,7 @@ function PhoneIcon() {
 export default function LandingNav() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState('Home');
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     function onScroll() {
@@ -55,6 +56,7 @@ export default function LandingNav() {
         }
       }
       setActive(current);
+      setScrolled(window.scrollY > 8);
     }
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -72,7 +74,7 @@ export default function LandingNav() {
   }
 
   return (
-    <nav className="nav" id="top">
+    <nav className={`nav${scrolled ? ' scrolled' : ''}`} id="top">
       <div className="nav-inner">
         <a
           href="#top"
