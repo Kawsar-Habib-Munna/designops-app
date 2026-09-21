@@ -58,7 +58,9 @@ html:has(.home-root){scroll-behavior:smooth;}
 .home-root .nav-links{display:flex;align-items:center;gap:4px;padding:8px 16px 8px 8px;background:rgba(103,107,106,0.04);}
 .home-root .nav-link{position:relative;display:flex;align-items:center;justify-content:center;padding:10px 16px;border-radius:8px;border:none;background:transparent;font-size:16px;line-height:1.5;font-weight:400;color:#ada8b4;cursor:pointer;white-space:nowrap;transition:color .15s ease;}
 .home-root .nav-link:hover{color:#efe6fd;}
-.home-root .nav-link.active{font-weight:500;color:#efe6fd;background:radial-gradient(50% 100% at 50% 0%,#4600a9 5%,#370086 29%,#290063 53%,#1a003f 76%,#0b001c 100%);box-shadow:inset 0 0 4px #4600a9;}
+.home-root .nav-link.active{font-weight:500;color:#efe6fd;}
+.home-root .nav-link-bg{position:absolute;inset:0;border-radius:8px;background:radial-gradient(50% 100% at 50% 0%,#4600a9 5%,#370086 29%,#290063 53%,#1a003f 76%,#0b001c 100%);box-shadow:inset 0 0 4px #4600a9;}
+.home-root .nav-link-text{position:relative;z-index:1;}
 .home-root .nav-right{justify-self:end;display:flex;align-items:center;gap:10px;}
 .home-root .nav-cta-pill{display:flex;align-items:center;justify-content:center;width:192px;height:60px;padding:8px;}
 .home-root .nav-cta{display:flex;align-items:center;justify-content:space-between;gap:12px;box-sizing:border-box;width:100%;height:44px;padding:1px 12px 1px 1px;border:1px solid #8133f1;border-radius:10px;background:#010003;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);filter:drop-shadow(0 12px 20px rgba(129,51,241,0.12));transition:filter .2s ease,transform .2s ease;}

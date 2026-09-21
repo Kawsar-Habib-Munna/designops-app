@@ -1,11 +1,12 @@
 'use client';
 
 // ল্যান্ডিং পেজের নেভবার — Figma "Flow 53 Web" (node 364:9422) অনুযায়ী তিনটা আলাদা
-// glass pill: বামে লোগো, মাঝে মেনু, ডানে "Book A Call"। ১০২০px-এর নিচে মাঝের মেনু
+// glass pill (মেনুর active হাইলাইট framer-motion layoutId দিয়ে এক আইটেম থেকে আরেকটায় স্লাইড করে): বামে লোগো, মাঝে মেনু, ডানে "Book A Call"। ১০২০px-এর নিচে মাঝের মেনু
 // হ্যামবার্গারে চলে যায়। Figma-তে "Blog" মেনু আছে কিন্তু সাইটে এখনো ব্লগ সেকশন/পেজ
 // নেই, তাই ওটা ক্লিক করলে কোথাও যায় না (মরা লিংক বানানো হয়নি)।
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { WHATSAPP_URL } from './BookCallButton';
 
 type NavItem = { label: string; target: string | null };
@@ -45,9 +46,17 @@ export default function LandingNav() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState('Home');
   const [scrolled, setScrolled] = useState(false);
+  const lockRef = useRef(false);
+  const lockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     function onScroll() {
+      setScrolled(window.scrollY > 8);
+      if (lockRef.current) {
+        if (lockTimer.current) clearTimeout(lockTimer.current);
+        lockTimer.current = setTimeout(() => { lockRef.current = false; }, 140);
+        return;
+      }
       let current = 'Home';
       for (const id of SPY_IDS) {
         const el = document.getElementById(id);
@@ -56,7 +65,6 @@ export default function LandingNav() {
         }
       }
       setActive(current);
-      setScrolled(window.scrollY > 8);
     }
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -66,6 +74,10 @@ export default function LandingNav() {
   function goTo(item: NavItem) {
     if (!item.target) return;
     setOpen(false);
+    setActive(item.label);
+    lockRef.current = true;
+    if (lockTimer.current) clearTimeout(lockTimer.current);
+    lockTimer.current = setTimeout(() => { lockRef.current = false; }, 900);
     if (item.target === '#top') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -97,7 +109,15 @@ export default function LandingNav() {
               className={`nav-link${active === l.label ? ' active' : ''}`}
               onClick={() => goTo(l)}
             >
-              {l.label}
+              {active === l.label && (
+                <motion.span
+                  layoutId="active-nav-item"
+                  className="nav-link-bg"
+                  style={{ borderRadius: 8 }}
+                  transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              <span className="nav-link-text">{l.label}</span>
             </button>
           ))}
         </div>
