@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Nunito_Sans, Playfair_Display } from 'next/font/google';
 import './home.css';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { driveThumbnailUrl, driveFullImageUrl } from '@/lib/driveUpload';
@@ -15,6 +16,9 @@ import RevealOnScroll from '@/app/components/RevealOnScroll';
 // প্রোফাইল পাল্টালে সাথে সাথে পরের ভিজিটেই দেখা যায়) ক্যাশ/ISR ছাড়াই প্রতিটা
 // রিকোয়েস্টে fresh ডেটা আনা হয়।
 export const dynamic = 'force-dynamic';
+
+const nunito = Nunito_Sans({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-nunito', display: 'swap' });
+const playfair = Playfair_Display({ subsets: ['latin'], weight: ['400', '700'], style: ['normal', 'italic'], variable: '--font-playfair', display: 'swap' });
 
 // Work সেকশনের প্রজেক্টগুলো আগে কোডে হার্ডকোড করা placeholder ছিল, এখন
 // app-এর ভেতরের /portfolio পেজ থেকে টিম যেই কেস স্টাডি publish করে সেটাই
@@ -73,18 +77,74 @@ export default async function Home() {
   const [team, caseStudies] = await Promise.all([fetchTeam(), fetchCaseStudies()]);
 
   return (
-    <div className="home-root">
+    <div className={`home-root ${nunito.variable} ${playfair.variable}`}>
       <LandingNav />
 
       <div className="home-body">
       <header className="hero">
-        <div className="container">
-          <div className="hero-top reveal">
-            <span className="hero-eyebrow">UI/UX Design Studio</span>
-            <h1 className="hero-headline">We design digital products people actually love to use.</h1>
-            <p className="hero-desc">We partner with ambitious teams to research, design and ship digital products — from the first wireframe to a polished, production-ready UI.</p>
-            <BookCallButton />
+        <div className="hero-fig">
+          <img className="hero-fig-bg" src="/hero/bg.webp" alt="" aria-hidden="true" />
+
+          <div className="hero-fig-inner">
+            <div className="hero-trust">
+              <span className="hero-trust-label">Trusted By</span>
+              <span className="hero-trust-avatars">
+                <img src="/hero/avatar-1.png" alt="" />
+                <img src="/hero/avatar-2.png" alt="" />
+                <img src="/hero/avatar-3.png" alt="" />
+                <img src="/hero/avatar-4.png" alt="" />
+                <span className="hero-trust-plus"><img src="/hero/plus.svg" alt="" /></span>
+              </span>
+              <span className="hero-trust-divider"></span>
+              <span className="hero-trust-rating">
+                <img src="/hero/star.svg" alt="" className="hero-trust-star" />
+                <span className="hero-trust-score">4.5</span>
+                <span className="hero-trust-word">Rating</span>
+              </span>
+            </div>
+
+            <h1 className="hero-title">
+              We Design And Build Digital Products That <em>Create</em> Impact!
+            </h1>
+
+            <p className="hero-sub">
+              Flow 53 is a UI/UX design and development agency helping ambitious businesses transform ideas into intuitive, scalable digital products.
+            </p>
+
+            <div className="hero-actions">
+              <a href="#contact" className="hero-start">
+                <span className="hero-start-label">Start A Project</span>
+                <img src="/hero/cta-arrows.svg" alt="" className="hero-start-icon" />
+              </a>
+              <a href="#work" className="hero-view">
+                <span className="hero-view-play">
+                  <span className="hero-view-ring hero-view-ring-1"></span>
+                  <span className="hero-view-ring hero-view-ring-2"></span>
+                  <span className="hero-view-ring hero-view-ring-3"></span>
+                  <img src="/hero/play.svg" alt="" className="hero-view-play-icon" />
+                </span>
+                <span className="hero-view-label">
+                  View Work
+                  <img src="/hero/arrow-ne.svg" alt="" />
+                </span>
+              </a>
+            </div>
           </div>
+
+          <div className="hero-partners">
+            <p className="hero-partners-title">Trusted By Partners</p>
+            <div className="hero-partners-row">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                <span className="hero-partner" key={n}>
+                  <img src={`/hero/partner-${n}.svg`} alt="" />
+                </span>
+              ))}
+            </div>
+            <div className="hero-partners-fade"></div>
+          </div>
+        </div>
+
+        <div className="container">
 
           <div className="project-grid reveal" id="work">
             {caseStudies.map((p) => {
