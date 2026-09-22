@@ -207,7 +207,7 @@ html:has(.home-root){scroll-behavior:smooth;}
 .home-root .section-title{font-size:clamp(24px,3.2vw,32px);font-weight:800;letter-spacing:-0.02em;margin-bottom:44px;}
 
 /* ---------- services showcase: What Can We Build Together? (Figma 429:2152 / 496:3499 / 500:3595-3689) ---------- */
-.home-root .services-showcase{background:var(--surface);font-family:var(--font-nunito),'Nunito Sans','Inter',sans-serif;}
+.home-root .services-showcase{background:#010003;font-family:var(--font-nunito),'Nunito Sans','Inter',sans-serif;}
 .home-root .services-eyebrow{display:inline-flex;align-items:center;gap:12px;margin-bottom:24px;padding:12px 20px 12px 0;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:linear-gradient(90deg,rgba(239,230,253,0.02),rgba(206,176,250,0.02));box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-family:var(--font-inter-stats),'Inter',sans-serif;font-size:16px;line-height:1.5;font-weight:500;color:#efe6fd;white-space:nowrap;}
 .home-root .services-eyebrow img{display:block;width:40px;height:1px;}
 .home-root .services-heading{display:flex;flex-direction:column;align-items:center;gap:32px;margin-bottom:72px;text-align:center;}
