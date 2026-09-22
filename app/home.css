@@ -154,7 +154,7 @@ html:has(.home-root){scroll-behavior:smooth;}
 /* ---------- stats: Numbers That Speak! (Figma 44:575) ---------- */
 .home-root .stats{background:#010003;padding:120px 0;font-family:var(--font-nunito),'Nunito Sans','Inter',sans-serif;}
 .home-root .stats-inner{display:flex;flex-direction:column;align-items:center;width:min(1280px,calc(100% - 48px));margin:0 auto;}
-.home-root .stats-eyebrow{display:inline-flex;align-items:center;gap:12px;margin-bottom:70px;padding:12px 20px 12px 0;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:linear-gradient(90deg,rgba(239,230,253,0.02),rgba(206,176,250,0.02));box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-family:var(--font-inter-stats),'Inter',sans-serif;font-size:16px;line-height:1.5;font-weight:500;color:#efe6fd;white-space:nowrap;}
+.home-root .stats-eyebrow{display:inline-flex;align-items:center;gap:12px;margin-bottom:70px;padding:12px 20px 12px 0;border-radius:10px;border:1px solid rgba(239,230,253,0.2);background:rgba(103,107,106,0.04);box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-family:var(--font-inter-stats),'Inter',sans-serif;font-size:16px;line-height:1.5;font-weight:500;color:#ceb0fa;white-space:nowrap;}
 .home-root .stats-eyebrow img{display:block;width:40px;height:1px;}
 .home-root .stats-body{display:flex;flex-direction:column;gap:60px;width:100%;}
 .home-root .stats-top{display:grid;grid-template-columns:302px 1fr 302px;align-items:center;}
@@ -212,13 +212,19 @@ html:has(.home-root){scroll-behavior:smooth;}
    list is x=700 w=740, a 120px gap from the card's right edge (580). List sits 15px lower than the card (y=2507
    vs 2492) - kept as a small optical offset rather than collapsed into equal grid-row alignment. */
 .home-root .services-showcase{background:#010003;padding:120px 0;font-family:var(--font-nunito),'Nunito Sans','Inter',sans-serif;}
-.home-root .services-eyebrow{display:inline-flex;align-items:center;gap:12px;padding:12px 20px 12px 0;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:linear-gradient(90deg,rgba(239,230,253,0.02),rgba(206,176,250,0.02));box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-family:var(--font-inter-stats),'Inter',sans-serif;font-size:16px;line-height:1.5;font-weight:500;color:#efe6fd;white-space:nowrap;}
+.home-root .services-inner{width:min(1280px,calc(100% - 48px));margin:0 auto;}
+.home-root .services-eyebrow{display:inline-flex;align-items:center;gap:12px;padding:12px 20px 12px 0;border-radius:10px;border:1px solid rgba(239,230,253,0.2);background:rgba(103,107,106,0.04);box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-family:var(--font-inter-stats),'Inter',sans-serif;font-size:16px;line-height:1.5;font-weight:500;color:#ceb0fa;white-space:nowrap;}
 .home-root .services-eyebrow img{display:block;width:40px;height:1px;}
 .home-root .services-heading{display:flex;flex-direction:column;align-items:center;gap:24px;margin-bottom:80px;text-align:center;}
 .home-root .services-heading-copy{display:flex;flex-direction:column;align-items:center;gap:32px;width:100%;}
 .home-root .services-title{font-family:var(--font-playfair),'Playfair Display',serif;font-size:36px;line-height:1.5;font-weight:700;color:#e6e4e8;}
 .home-root .services-desc{max-width:680px;font-size:16px;line-height:1.5;font-weight:500;color:#ada8b4;}
 
+/* Figma's list (496:3499) runs flush to the canvas' right edge (x=700, w=740, canvas
+   w=1440 -> zero right margin) while the card keeps the page's standard 80px left inset.
+   Reproduced as a bleed: left inset matches .services-inner's own edge, right side is
+   unpadded so the list runs to the true viewport edge instead of stopping at a container. */
+.home-root .services-tabs-bleed{padding-left:max(24px,calc((100% - 1280px) / 2));}
 .home-root .services-tabs{display:grid;grid-template-columns:500px 1fr;column-gap:120px;align-items:start;}
 
 /* left: the active card, swapped via framer-motion on click */
@@ -252,12 +258,14 @@ html:has(.home-root){scroll-behavior:smooth;}
   .home-root .services-list-name{font-size:clamp(28px,4.4vw,48px);}
 }
 @media (max-width:900px){
+  .home-root .services-tabs-bleed{padding-right:max(24px,calc((100% - 1280px) / 2));}
   .home-root .services-tabs{grid-template-columns:1fr;row-gap:56px;}
   .home-root .services-tabs-list{margin-top:0;}
   .home-root .services-tabs-card{max-width:500px;margin:0 auto;}
 }
 @media (max-width:640px){
   .home-root .services-showcase{padding:64px 0;}
+  .home-root .services-tabs-bleed{padding-left:20px;padding-right:20px;}
   .home-root .services-heading{margin-bottom:48px;}
   .home-root .services-list-name{white-space:normal;}
 }

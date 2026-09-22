@@ -211,7 +211,7 @@ export default async function Home() {
       </section>
 
       <section className="section services-showcase" id="services">
-        <div className="container reveal">
+        <div className="services-inner reveal">
           <div className="services-heading">
             <span className="services-eyebrow">
               <img src="/stats/line.svg" alt="" />
@@ -222,6 +222,8 @@ export default async function Home() {
               <p className="services-desc">Whether you&rsquo;re starting from an idea or improving an existing product, we help shape, design, and build experiences from strategy to launch.</p>
             </div>
           </div>
+        </div>
+        <div className="services-tabs-bleed reveal">
           <ServicesShowcase />
         </div>
       </section>
