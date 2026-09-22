@@ -7,6 +7,7 @@ import LandingNav from '@/app/components/LandingNav';
 import LandingFooter from '@/app/components/LandingFooter';
 import BookCallButton from '@/app/components/BookCallButton';
 import RevealOnScroll from '@/app/components/RevealOnScroll';
+import ServicesShowcase from '@/app/components/ServicesShowcase';
 
 // পাবলিক ল্যান্ডিং পেজ — লগইন ছাড়াই সবাই দেখে, তাই profiles টেবিলের RLS
 // (শুধু authenticated ইউজার read করতে পারে) এই পেজের জন্য প্রযোজ্য না। এটা
@@ -59,14 +60,6 @@ async function fetchCaseStudies(): Promise<CaseStudyCard[]> {
     return [];
   }
 }
-
-const SERVICES_HIRED = [
-  { name: 'UX Research & Discovery', sub: 'Interviews · Journey Mapping', detail: 'User interviews, market research and journey mapping to uncover the real problem before we design a single screen.' },
-  { name: 'UI Design', sub: 'Web · Mobile · Dashboards', detail: 'Pixel-perfect, responsive interfaces for web, mobile and dashboard products — built to convert and built to last.' },
-  { name: 'Design Systems', sub: 'Tokens · Components', detail: 'Reusable component libraries and design tokens so your product stays consistent as your team and codebase grow.' },
-  { name: 'Prototyping & Testing', sub: 'Figma · Usability Testing', detail: 'Interactive Figma prototypes validated with real users, so decisions are backed by evidence before a line of code is written.' },
-  { name: 'Brand Identity', sub: 'Naming · Visual Identity', detail: 'Naming, logo, color and typography systems that give your product a voice people recognize and remember.' },
-];
 
 const SERVICES_LIST = ['UI / UX Design', 'Frontend Design', 'SaaS Design'];
 
@@ -217,20 +210,17 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="section hired-section" id="services">
+      <section className="section services-showcase" id="services">
         <div className="container reveal">
-          <h2 className="section-title">What we are hired for</h2>
-          {SERVICES_HIRED.map((s, i) => (
-            <details className="hired-item" key={s.name}>
-              <summary className="hired-summary">
-                <span className="hired-index">{String(i + 1).padStart(2, '0')}</span>
-                <span className="hired-name">{s.name}</span>
-                <span className="hired-sub">{s.sub}</span>
-                <span className="hired-toggle" aria-hidden="true">→</span>
-              </summary>
-              <div className="hired-body"><p>{s.detail}</p></div>
-            </details>
-          ))}
+          <div className="services-heading">
+            <span className="services-eyebrow">
+              <img src="/stats/line.svg" alt="" />
+              <span>Services</span>
+            </span>
+            <h2 className="services-title">What Can We Build Together?</h2>
+            <p className="services-desc">Whether you&rsquo;re starting from an idea or improving an existing product, we help shape, design, and build experiences from strategy to launch.</p>
+          </div>
+          <ServicesShowcase />
         </div>
       </section>
 
