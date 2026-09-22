@@ -217,8 +217,10 @@ export default async function Home() {
               <img src="/stats/line.svg" alt="" />
               <span>Services</span>
             </span>
-            <h2 className="services-title">What Can We Build Together?</h2>
-            <p className="services-desc">Whether you&rsquo;re starting from an idea or improving an existing product, we help shape, design, and build experiences from strategy to launch.</p>
+            <div className="services-heading-copy">
+              <h2 className="services-title">What Can We Build Together?</h2>
+              <p className="services-desc">Whether you&rsquo;re starting from an idea or improving an existing product, we help shape, design, and build experiences from strategy to launch.</p>
+            </div>
           </div>
           <ServicesShowcase />
         </div>

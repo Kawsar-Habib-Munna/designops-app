@@ -76,15 +76,19 @@ export default function ServicesShowcase() {
             exit={{ opacity: 0, y: -18 }}
             transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
           >
-            <span className="services-card-number">{service.number}</span>
-            <div className="services-card-head">
-              <h3 className="services-card-title">{service.name}</h3>
-              <p className="services-card-subtitle">{service.subtitle}</p>
-            </div>
-            <div className="services-card-tags">
-              {service.tags.map((tag) => (
-                <span className="services-tag" key={tag}>{tag}</span>
-              ))}
+            <div className="services-card-top">
+              <span className="services-card-number">{service.number}</span>
+              <div className="services-card-copy-tags">
+                <div className="services-card-head">
+                  <h3 className="services-card-title">{service.name}</h3>
+                  <p className="services-card-subtitle">{service.subtitle}</p>
+                </div>
+                <div className="services-card-tags">
+                  {service.tags.map((tag) => (
+                    <span className="services-tag" key={tag}>{tag}</span>
+                  ))}
+                </div>
+              </div>
             </div>
             <div className="services-card-illustration">
               <div className="services-card-illustration-inner">
