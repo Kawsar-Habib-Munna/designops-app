@@ -21,11 +21,15 @@ export function driveThumbnailUrl(url: string): string {
 // driveThumbnailUrl-এর "thumbnail" এন্ডপয়েন্ট সবসময় ম্যাক্স ১০০০px চওড়ায়
 // রিসাইজ + রি-কম্প্রেস করে দেয় — ছোট প্রিভিউ (avatar, admin-এর থাম্বনেইল গ্রিড)-এর
 // জন্য ঠিক আছে, কিন্তু কেস স্টাডির কভার/গ্যালারির মতো বড় করে দেখানো ছবির জন্য
-// রেজোলিউশন কমে যায়। lh3.googleusercontent.com-এর "=s0" প্যারামিটার আসল ফাইলের
-// পুরো রেজোলিউশন কোনো রিসাইজ/রি-কম্প্রেশন ছাড়াই সরাসরি সার্ভ করে।
-export function driveFullImageUrl(url: string): string {
+// রেজোলিউশন কমে যায়। lh3.googleusercontent.com অবশ্য "=wXXX"-এও রিসাইজ+রি-কম্প্রেস
+// করে দেয় (শুধু "=s0"-এই raw ফাইলের আনবাউন্ডেড রেজোলিউশন সার্ভ করে) — একটা AI-generated
+// case-study cover আসলে ৬-৮MB পর্যন্ত হতে পারে, যেখানে =w1600 একই ছবিকে ~150-300KB-এ
+// নামিয়ে আনে (visually প্রায় identical, যেহেতু কোনো ব্যবহারই ১৬০০px width-এর বেশি দেখায় না,
+// এমনকি ২x retina display-তেও)। width প্যারামিটার দিয়ে ছোট ব্যবহারের জন্য (যেমন Projects
+// কার্ডের ৪৮০px cover) আরও ছোট রিকোয়েস্ট করা যায়।
+export function driveFullImageUrl(url: string, width: number = 1600): string {
   const id = driveFileId(url);
-  return id ? `https://lh3.googleusercontent.com/d/${id}=s0` : url;
+  return id ? `https://lh3.googleusercontent.com/d/${id}=w${width}` : url;
 }
 
 // ভিডিও প্লে করার জন্য Drive-এর "preview" এন্ডপয়েন্ট — একটা <iframe>-এ বসালে

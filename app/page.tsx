@@ -220,7 +220,9 @@ export default async function Home() {
               category: p.category,
               summary: p.summary,
               tags: p.tags,
-              cover: p.cover_image ? driveFullImageUrl(p.cover_image) : null,
+              // Card displays this at 480px CSS width - 960 covers 2x retina without
+              // paying for the full driveFullImageUrl default (sized for wider hero/gallery uses).
+              cover: p.cover_image ? driveFullImageUrl(p.cover_image, 960) : null,
             }))}
           />
         </div>
