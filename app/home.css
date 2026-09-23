@@ -225,7 +225,7 @@ html:has(.home-root){scroll-behavior:smooth;}
    Reproduced as a bleed: left inset matches .services-inner's own edge, right side is
    unpadded so the list runs to the true viewport edge instead of stopping at a container. */
 .home-root .services-tabs-bleed{padding-left:max(24px,calc((100% - 1280px) / 2));}
-.home-root .services-tabs{display:grid;grid-template-columns:500px 1fr;column-gap:120px;align-items:start;}
+.home-root .services-tabs{display:grid;grid-template-columns:500px minmax(0,1fr);column-gap:120px;align-items:start;}
 
 /* left: the active card, swapped via framer-motion on click */
 .home-root .services-tabs-card{position:relative;border:1px solid rgba(255,255,255,0.6);border-radius:40px;background:rgba(103,107,106,0.1);box-shadow:0 8px 40px rgba(41,0,100,0.12),inset 0 4px 20px rgba(254,255,255,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);overflow:hidden;}
@@ -242,11 +242,17 @@ html:has(.home-root){scroll-behavior:smooth;}
 .home-root .services-card-illustration-inner{position:relative;width:100%;aspect-ratio:280/212;overflow:hidden;}
 .home-root .services-card-illustration-inner img{position:absolute;max-width:none;pointer-events:none;}
 
-/* right: the clickable list of 5 */
-.home-root .services-tabs-list{display:flex;flex-direction:column;gap:40px;margin-top:15px;}
+/* right: the clickable list of 5. container-type lets the title font size key off the
+   list column's OWN rendered width (cqw) instead of the viewport (vw) - so it shrinks
+   exactly when the column itself gets narrower (e.g. the 440px-card breakpoint, browser
+   zoom, an in-between window width) and never forces the nowrap title past the column,
+   which previously pushed the whole grid track (and the "reaches the edge" divider) past
+   the viewport on common laptop widths. 6.49cqw == 48px at Figma's 740px reference width;
+   clamp's upper bound holds it at that exact 48px above the reference width. */
+.home-root .services-tabs-list{container-type:inline-size;display:flex;flex-direction:column;gap:40px;margin-top:15px;}
 .home-root .services-list-item{display:flex;flex-direction:column;gap:16px;width:100%;padding:0;border:none;background:none;cursor:pointer;text-align:left;font-family:inherit;}
-.home-root .services-list-row{display:flex;align-items:center;gap:16px;}
-.home-root .services-list-name{font-family:var(--font-playfair),'Playfair Display',serif;font-size:48px;line-height:1.5;font-weight:700;color:#ada8b4;opacity:0.2;text-transform:uppercase;white-space:nowrap;transition:opacity .2s ease;}
+.home-root .services-list-row{display:flex;align-items:center;gap:16px;min-width:0;}
+.home-root .services-list-name{font-family:var(--font-playfair),'Playfair Display',serif;font-size:clamp(20px,6.49cqw,48px);line-height:1.5;font-weight:700;color:#ada8b4;opacity:0.2;text-transform:uppercase;white-space:nowrap;transition:opacity .2s ease;}
 .home-root .services-list-item:hover .services-list-name{opacity:0.5;}
 .home-root .services-list-item.active .services-list-name{opacity:1;background:linear-gradient(90deg,#ffffff,#ceb0fa);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;}
 .home-root .services-list-icon{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:36px;height:36px;margin-top:6px;padding:6px;border-radius:2px;border:1px solid rgba(254,255,255,0.5);background:linear-gradient(135deg,rgba(254,255,255,0.08),rgba(239,230,253,0.08));box-shadow:inset 0 4px 12px rgba(254,255,255,0.04);transition:background .2s ease,border-color .2s ease,box-shadow .2s ease;}
@@ -254,12 +260,11 @@ html:has(.home-root){scroll-behavior:smooth;}
 .home-root .services-list-item.active .services-list-icon{border-color:rgba(239,230,253,0.6);background:linear-gradient(90deg,#ffffff,#ceb0fa);box-shadow:0 8px 20px rgba(41,0,100,0.3),inset 0 4px 12px rgba(183,138,247,0.2);}
 .home-root .services-list-divider{display:block;width:100%;height:1px;}
 @media (max-width:1240px){
-  .home-root .services-tabs{grid-template-columns:440px 1fr;column-gap:64px;}
-  .home-root .services-list-name{font-size:clamp(28px,4.4vw,48px);}
+  .home-root .services-tabs{grid-template-columns:440px minmax(0,1fr);column-gap:64px;}
 }
 @media (max-width:900px){
   .home-root .services-tabs-bleed{padding-right:max(24px,calc((100% - 1280px) / 2));}
-  .home-root .services-tabs{grid-template-columns:1fr;row-gap:56px;}
+  .home-root .services-tabs{grid-template-columns:minmax(0,1fr);row-gap:56px;}
   .home-root .services-tabs-list{margin-top:0;}
   .home-root .services-tabs-card{max-width:500px;margin:0 auto;}
 }
