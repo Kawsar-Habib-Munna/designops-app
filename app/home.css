@@ -208,8 +208,14 @@ html:has(.home-root){scroll-behavior:smooth;}
    shift without overflowing - left:60px + right:0 gives the back card a definite width
    (same flex:1 math as the front card gets from filling .projects-inner) that's just
    60px narrower and shifted right, rather than trying to offset two ~1280px-wide cards
-   diagonally by hundreds of pixels, which would push the second one off-screen. */
-.home-root .project-stack{position:relative;padding-bottom:680px;}
+   diagonally by hundreds of pixels, which would push the second one off-screen.
+   padding-bottom (420px) only needs to cover the back card's offset (400px) plus its own
+   image-dominated ~364px height, minus the front card's own ~364px height that the stack
+   already occupies in normal flow (back is absolutely positioned, so it doesn't
+   contribute to that) - it was left at a stale, too-large value from an earlier pass
+   where the back card was smaller and sat further down, leaving a large empty gap above
+   the nav controls below. */
+.home-root .project-stack{position:relative;padding-bottom:420px;}
 .home-root .project-stack-slot.front{position:relative;z-index:2;}
 .home-root .project-stack-slot.back{position:absolute;top:400px;left:60px;right:0;z-index:1;}
 
