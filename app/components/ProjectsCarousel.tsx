@@ -4,10 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 
-// Figma: "Let's Look At What We've built!" (533:505 heading, 565:2813 / 565:2814 the two
-// example slides, 577:3342 the prev/dots/next controls). Figma lays the slides out
-// stacked on the canvas since it's static; here they occupy one slot and crossfade on
-// click/arrow, alternating image-left/image-right by index like the two Figma examples.
+// Figma's own frames (533:505 heading, 565:2813 / 565:2814 the two example slides,
+// 577:3342 prev/dots/next) show one full-width slide at a time. The user asked for two
+// visible at once instead - the current project up front, the next one peeking out
+// behind/below it - so the card itself is shrunk into a compact variant and shown twice
+// per view instead of once full-width.
 
 export type ProjectCard = {
   slug: string;
@@ -18,6 +19,46 @@ export type ProjectCard = {
   cover: string | null;
 };
 
+function ProjectMiniCard({ project, reversed, number }: { project: ProjectCard; reversed: boolean; number: string }) {
+  return (
+    <div className={`project-row${reversed ? ' reversed' : ''}`}>
+      <div className="project-card-pill">
+        <div className="project-image">
+          {project.cover ? (
+            <img src={project.cover} alt={project.title} />
+          ) : (
+            <div className="project-image-placeholder" aria-hidden="true" />
+          )}
+        </div>
+        <div className="project-content">
+          <div className="project-content-top">
+            {project.category && <span className="project-category">{project.category}</span>}
+            <div className="project-text">
+              <h3 className="project-title">{project.title}</h3>
+              {project.summary && <p className="project-summary">{project.summary}</p>}
+            </div>
+            {project.tags && project.tags.length > 0 && (
+              // Capped at 3: the back card must clear the front card's fixed height without
+              // overlapping its text (see .project-stack-slot.back's offset in home.css), so
+              // this compact card's height needs to stay bounded regardless of tag count.
+              <div className="project-tags-row">
+                {project.tags.slice(0, 3).map((t) => (
+                  <span className="project-tag-pill" key={t}>{t}</span>
+                ))}
+              </div>
+            )}
+          </div>
+          <Link href={`/work/${project.slug}`} className="project-details-btn">
+            <span>See More Details</span>
+            <img src="/projects/arrow-details.svg" alt="" />
+          </Link>
+        </div>
+      </div>
+      <span className="project-number" aria-hidden="true">{number}</span>
+    </div>
+  );
+}
+
 export default function ProjectsCarousel({ projects }: { projects: ProjectCard[] }) {
   const [index, setIndex] = useState(0);
 
@@ -25,8 +66,8 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
 
   const total = projects.length;
   const current = projects[index];
-  const reversed = index % 2 === 1;
-  const number = String(index + 1).padStart(2, '0');
+  const nextIndex = (index + 1) % total;
+  const next = projects[nextIndex];
 
   function go(delta: number) {
     setIndex((i) => (i + delta + total) % total);
@@ -34,47 +75,36 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
 
   return (
     <div className="projects-carousel">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={index}
-          className={`project-row${reversed ? ' reversed' : ''}`}
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -24 }}
-          transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-        >
-          <div className="project-card-pill">
-            <div className="project-image">
-              {current.cover ? (
-                <img src={current.cover} alt={current.title} />
-              ) : (
-                <div className="project-image-placeholder" aria-hidden="true" />
-              )}
-            </div>
-            <div className="project-content">
-              <div className="project-content-top">
-                {current.category && <span className="project-category">{current.category}</span>}
-                <div className="project-text">
-                  <h3 className="project-title">{current.title}</h3>
-                  {current.summary && <p className="project-summary">{current.summary}</p>}
-                </div>
-                {current.tags && current.tags.length > 0 && (
-                  <div className="project-tags-row">
-                    {current.tags.map((t) => (
-                      <span className="project-tag-pill" key={t}>{t}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <Link href={`/work/${current.slug}`} className="project-details-btn">
-                <span>See More Details</span>
-                <img src="/projects/arrow-details.svg" alt="" />
-              </Link>
-            </div>
+      <div className="project-stack">
+        {total > 1 && (
+          <div className="project-stack-slot back">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={next.slug}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+              >
+                <ProjectMiniCard project={next} reversed={nextIndex % 2 === 1} number={String(nextIndex + 1).padStart(2, '0')} />
+              </motion.div>
+            </AnimatePresence>
           </div>
-          <span className="project-number" aria-hidden="true">{number}</span>
-        </motion.div>
-      </AnimatePresence>
+        )}
+        <div className="project-stack-slot front">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={current.slug}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <ProjectMiniCard project={current} reversed={index % 2 === 1} number={String(index + 1).padStart(2, '0')} />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
 
       {total > 1 && (
         <div className="project-nav">
