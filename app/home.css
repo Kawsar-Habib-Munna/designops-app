@@ -199,35 +199,37 @@ html:has(.home-root){scroll-behavior:smooth;}
 
 .home-root .projects-carousel{position:relative;}
 
-/* current project up front, next one peeking out behind/below it - two compact cards
-   instead of Figma's one full-width slide, per explicit request over the Figma default.
-   The back card's top offset (232px) is set to clear the front card's own height, not
-   overlap it - title/summary are clamped and tags capped at 3 (see ProjectMiniCard) so
-   that height stays a predictable ~228px regardless of how long the real content is,
-   instead of the two cards' text colliding whenever a project has a longer summary. */
-.home-root .project-stack{position:relative;padding-bottom:250px;}
+/* current project up front, next one peeking out behind/below it - two cards instead of
+   Figma's one full-width slide, per explicit request over the Figma default. Sized back
+   up close to that original single-card scale (480px image -> 320px, not the initial
+   220px-image pass, which read as too small) while still fitting two per view. The back
+   card's top offset (270px) is set to clear the front card's own height, not overlap it -
+   title/summary are clamped and tags capped at 3 (see ProjectMiniCard) so that height
+   stays a predictable ~265px regardless of how long the real content is, instead of the
+   two cards' text colliding whenever a project has a longer summary. */
+.home-root .project-stack{position:relative;padding-bottom:300px;}
 .home-root .project-stack-slot.front{position:relative;z-index:2;}
-.home-root .project-stack-slot.back{position:absolute;top:232px;left:110px;z-index:1;}
+.home-root .project-stack-slot.back{position:absolute;top:270px;left:150px;z-index:1;}
 
-.home-root .project-row{display:inline-flex;max-width:100%;align-items:center;gap:20px;}
+.home-root .project-row{display:inline-flex;max-width:100%;align-items:center;gap:28px;}
 .home-root .project-row.reversed{flex-direction:row-reverse;}
-.home-root .project-card-pill{position:relative;display:flex;align-items:center;gap:24px;padding:8px 24px 8px 8px;border-radius:32px;border:1px solid #e6e4e8;background:rgba(103,107,106,0.04);box-shadow:0 8px 40px rgba(41,0,100,0.04),inset 0 4px 12px rgba(254,255,255,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);width:min(560px,90vw);min-width:0;}
-.home-root .project-row.reversed .project-card-pill{flex-direction:row-reverse;padding:8px 8px 8px 24px;}
-.home-root .project-image{flex-shrink:0;width:220px;aspect-ratio:480/348;border-radius:24px;border:1px solid #e6e4e8;overflow:hidden;background:linear-gradient(150deg,#eceef1,#d7dae0);}
+.home-root .project-card-pill{position:relative;display:flex;align-items:center;gap:32px;padding:8px 32px 8px 8px;border-radius:36px;border:1px solid #e6e4e8;background:rgba(103,107,106,0.04);box-shadow:0 8px 40px rgba(41,0,100,0.04),inset 0 4px 12px rgba(254,255,255,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);width:min(680px,92vw);min-width:0;}
+.home-root .project-row.reversed .project-card-pill{flex-direction:row-reverse;padding:8px 8px 8px 32px;}
+.home-root .project-image{flex-shrink:0;width:320px;aspect-ratio:480/348;border-radius:28px;border:1px solid #e6e4e8;overflow:hidden;background:linear-gradient(150deg,#eceef1,#d7dae0);}
 .home-root .project-image img{display:block;width:100%;height:100%;object-fit:cover;}
 .home-root .project-image-placeholder{width:100%;height:100%;}
-.home-root .project-content{display:flex;flex-direction:column;gap:20px;min-width:0;flex:1;}
-.home-root .project-content-top{display:flex;flex-direction:column;gap:10px;align-items:flex-start;}
-.home-root .project-category{display:inline-flex;align-items:center;justify-content:center;height:32px;padding:8px 12px;border-radius:16px;border:1px solid #e6e4e8;background:#ffffff;font-size:11px;font-weight:600;color:#49474c;white-space:nowrap;}
-.home-root .project-text{display:flex;flex-direction:column;gap:8px;}
-.home-root .project-title{font-family:var(--font-playfair),'Playfair Display',serif;font-size:18px;line-height:1.4;font-weight:600;color:#13002f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.home-root .project-summary{font-size:13px;line-height:1.5;font-weight:500;color:#5f5c63;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-.home-root .project-tags-row{display:flex;flex-wrap:wrap;gap:8px;}
-.home-root .project-tag-pill{display:flex;align-items:center;justify-content:center;height:32px;padding:8px 12px;border-radius:16px;border:1px solid #e6e4e8;background:rgba(103,107,106,0.04);box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:11px;font-weight:600;color:#5f5c63;white-space:nowrap;}
-.home-root .project-details-btn{display:inline-flex;align-self:flex-start;align-items:center;gap:6px;padding:10px 14px;border-radius:10px;border:1px solid #e6e4e8;background:#ffffff;box-shadow:0 8px 10px rgba(129,51,241,0.04);font-size:13px;font-weight:500;color:#6200ee;white-space:nowrap;transition:transform .2s ease,box-shadow .2s ease;}
+.home-root .project-content{display:flex;flex-direction:column;gap:28px;min-width:0;flex:1;}
+.home-root .project-content-top{display:flex;flex-direction:column;gap:12px;align-items:flex-start;}
+.home-root .project-category{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:10px 14px;border-radius:18px;border:1px solid #e6e4e8;background:#ffffff;font-size:12px;font-weight:600;color:#49474c;white-space:nowrap;}
+.home-root .project-text{display:flex;flex-direction:column;gap:10px;}
+.home-root .project-title{font-family:var(--font-playfair),'Playfair Display',serif;font-size:22px;line-height:1.4;font-weight:600;color:#13002f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.home-root .project-summary{font-size:14px;line-height:1.5;font-weight:500;color:#5f5c63;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.home-root .project-tags-row{display:flex;flex-wrap:wrap;gap:10px;}
+.home-root .project-tag-pill{display:flex;align-items:center;justify-content:center;height:36px;padding:10px 14px;border-radius:18px;border:1px solid #e6e4e8;background:rgba(103,107,106,0.04);box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:12px;font-weight:600;color:#5f5c63;white-space:nowrap;}
+.home-root .project-details-btn{display:inline-flex;align-self:flex-start;align-items:center;gap:8px;padding:12px 16px;border-radius:12px;border:1px solid #e6e4e8;background:#ffffff;box-shadow:0 8px 10px rgba(129,51,241,0.04);font-size:14px;font-weight:500;color:#6200ee;white-space:nowrap;transition:transform .2s ease,box-shadow .2s ease;}
 .home-root .project-details-btn:hover{transform:translateY(-2px);box-shadow:0 10px 16px rgba(129,51,241,0.1);}
-.home-root .project-details-btn img{display:block;width:16px;height:16px;}
-.home-root .project-number{flex-shrink:0;width:130px;font-family:var(--font-playfair),'Playfair Display',serif;font-size:110px;line-height:1.5;font-weight:700;color:#7b7780;opacity:0.08;text-align:center;user-select:none;}
+.home-root .project-details-btn img{display:block;width:18px;height:18px;}
+.home-root .project-number{flex-shrink:0;width:180px;font-family:var(--font-playfair),'Playfair Display',serif;font-size:150px;line-height:1.5;font-weight:700;color:#7b7780;opacity:0.08;text-align:center;user-select:none;}
 
 .home-root .project-nav{display:flex;align-items:center;justify-content:center;gap:40px;margin-top:32px;}
 .home-root .project-nav-arrow{display:flex;align-items:center;justify-content:center;width:56px;height:56px;padding:16px;border-radius:12px;border:1px solid #e6e4e8;background:rgba(103,107,106,0.04);box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:pointer;transition:background .2s ease,transform .2s ease;}

@@ -20,6 +20,11 @@ export type ProjectCard = {
 };
 
 function ProjectMiniCard({ project, reversed, number }: { project: ProjectCard; reversed: boolean; number: string }) {
+  // Guards a real data-entry slip (a project's Summary field got set to its own slug,
+  // e.g. "crypto-trading-web-app-ui-ux-design-case-study-concept") rather than a real
+  // description - render nothing instead of that raw slug text.
+  const summary = project.summary && project.summary.trim() !== project.slug ? project.summary : null;
+
   return (
     <div className={`project-row${reversed ? ' reversed' : ''}`}>
       <div className="project-card-pill">
@@ -35,7 +40,7 @@ function ProjectMiniCard({ project, reversed, number }: { project: ProjectCard; 
             {project.category && <span className="project-category">{project.category}</span>}
             <div className="project-text">
               <h3 className="project-title">{project.title}</h3>
-              {project.summary && <p className="project-summary">{project.summary}</p>}
+              {summary && <p className="project-summary">{summary}</p>}
             </div>
             {project.tags && project.tags.length > 0 && (
               // Capped at 3: the back card must clear the front card's fixed height without
