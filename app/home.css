@@ -227,8 +227,11 @@ html:has(.home-root){scroll-behavior:smooth;}
 .home-root .services-tabs-bleed{padding-left:max(24px,calc((100% - 1280px) / 2));}
 .home-root .services-tabs{display:grid;grid-template-columns:500px minmax(0,1fr);column-gap:120px;align-items:start;}
 
-/* left: the active card, swapped via framer-motion on click */
-.home-root .services-tabs-card{position:relative;border:1px solid rgba(255,255,255,0.6);border-radius:40px;background:rgba(103,107,106,0.1);box-shadow:0 8px 40px rgba(41,0,100,0.12),inset 0 4px 20px rgba(254,255,255,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);overflow:hidden;}
+/* left: the active card, swapped via framer-motion on click. Figma's own rendered card
+   has no visible stroke - the "border-[#feffff]" the export gave is a stroke style with
+   no resolved opacity, confirmed against a direct screenshot of node 500:3595 (no outline
+   visible, just the soft fill + shadow). */
+.home-root .services-tabs-card{position:relative;border-radius:40px;background:rgba(103,107,106,0.1);box-shadow:0 8px 40px rgba(41,0,100,0.12),inset 0 4px 20px rgba(254,255,255,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);overflow:hidden;}
 .home-root .services-card-inner{display:flex;flex-direction:column;align-items:center;gap:50px;padding:0 40px;}
 .home-root .services-card-top{display:flex;flex-direction:column;align-items:center;width:100%;}
 .home-root .services-card-number{width:100%;font-family:var(--font-nunito),'Nunito Sans',sans-serif;font-size:72px;line-height:1.5;font-weight:700;color:#5f5c63;opacity:0.08;text-align:center;}
@@ -236,7 +239,10 @@ html:has(.home-root){scroll-behavior:smooth;}
 .home-root .services-card-head{display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center;}
 .home-root .services-card-title{font-size:20px;line-height:1.5;font-weight:600;color:#efe6fd;text-transform:uppercase;}
 .home-root .services-card-subtitle{font-size:16px;line-height:1.5;font-weight:500;color:#ada8b4;}
-.home-root .services-card-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;}
+/* Figma lays these out as a fixed 3-per-row grid (2 rows for 6 tags), not a width-fitted
+   wrap - flex-wrap let a 4th tag onto row 1 once the pills rendered slightly narrower
+   than Figma's. repeat(3,auto) guarantees 3 per row regardless of pill text width. */
+.home-root .services-card-tags{display:grid;grid-template-columns:repeat(3,auto);justify-content:center;gap:12px;}
 .home-root .services-tag{display:flex;align-items:center;justify-content:center;height:40px;padding:12px 16px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);background:rgba(103,107,106,0.1);box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:12px;font-weight:600;color:#c8c5cd;white-space:nowrap;}
 .home-root .services-card-illustration{width:400px;max-width:100%;padding:24px 60px;border-radius:40px 40px 0 0;background:rgba(103,107,106,0.04);box-shadow:0 8px 40px rgba(41,0,100,0.12),inset 0 4px 12px rgba(254,255,255,0.04);}
 .home-root .services-card-illustration-inner{position:relative;width:100%;aspect-ratio:280/212;overflow:hidden;}
@@ -266,11 +272,17 @@ html:has(.home-root){scroll-behavior:smooth;}
   .home-root .services-tabs-bleed{padding-right:max(24px,calc((100% - 1280px) / 2));}
   .home-root .services-tabs{grid-template-columns:minmax(0,1fr);row-gap:56px;}
   .home-root .services-tabs-list{margin-top:0;}
-  .home-root .services-tabs-card{max-width:500px;margin:0 auto;}
+  /* width:min(...), not max-width+auto-margin: a plain grid item normally stretches to
+     fill its track, but pairing max-width with margin:auto switches it to shrink-to-fit
+     its CONTENT instead - and the illustration's fixed 400px forced the card to 480px,
+     overflowing (and clipping, via .home-body's overflow-x:hidden) on phones under ~560px.
+     width:min() keeps it a definite, track-safe size before the auto margins center it. */
+  .home-root .services-tabs-card{width:min(500px,100%);margin:0 auto;}
 }
 @media (max-width:640px){
   .home-root .services-showcase{padding:64px 0;}
   .home-root .services-tabs-bleed{padding-left:20px;padding-right:20px;}
+  .home-root .services-card-tags{grid-template-columns:repeat(2,auto);}
   .home-root .services-heading{margin-bottom:48px;}
   .home-root .services-list-name{white-space:normal;}
 }
