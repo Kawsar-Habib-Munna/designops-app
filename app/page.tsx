@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Inter, Nunito_Sans, Playfair_Display } from 'next/font/google';
 import './home.css';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
@@ -8,6 +7,7 @@ import LandingFooter from '@/app/components/LandingFooter';
 import BookCallButton from '@/app/components/BookCallButton';
 import RevealOnScroll from '@/app/components/RevealOnScroll';
 import ServicesShowcase from '@/app/components/ServicesShowcase';
+import ProjectsCarousel from '@/app/components/ProjectsCarousel';
 
 // পাবলিক ল্যান্ডিং পেজ — লগইন ছাড়াই সবাই দেখে, তাই profiles টেবিলের RLS
 // (শুধু authenticated ইউজার read করতে পারে) এই পেজের জন্য প্রযোজ্য না। এটা
@@ -45,14 +45,14 @@ function StatCircle({ label, value }: { label: string; value: string }) {
 // Work সেকশনের প্রজেক্টগুলো আগে কোডে হার্ডকোড করা placeholder ছিল, এখন
 // app-এর ভেতরের /portfolio পেজ থেকে টিম যেই কেস স্টাডি publish করে সেটাই
 // এখানে (এবং /work/[slug]-এ ফুল কেস স্টাডি হিসেবে) দেখা যায়।
-type CaseStudyCard = { slug: string; title: string; summary: string | null; tags: string[] | null; cover_image: string | null };
+type CaseStudyCard = { slug: string; title: string; category: string | null; summary: string | null; tags: string[] | null; cover_image: string | null };
 
 async function fetchCaseStudies(): Promise<CaseStudyCard[]> {
   try {
     const admin = getSupabaseAdmin();
     const { data } = await admin
       .from('case_studies')
-      .select('slug, title, summary, tags, cover_image')
+      .select('slug, title, category, summary, tags, cover_image')
       .eq('published', true)
       .order('order_index');
     return (data as CaseStudyCard[]) ?? [];
@@ -182,34 +182,6 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="work-legacy">
-        <div className="container">
-
-          <div className="project-grid reveal" id="work">
-            {caseStudies.map((p) => {
-              const cover = p.cover_image ? driveFullImageUrl(p.cover_image) : null;
-              return (
-                <Link className="project-card" href={`/work/${p.slug}`} key={p.slug}>
-                  <div className="project-photo" style={cover ? { backgroundImage: `url(${cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: 'linear-gradient(150deg,#232323,#050505)' }}></div>
-                  <div className="project-info project-info-row">
-                    <div>
-                      <div className="project-name">{p.title}</div>
-                      {p.summary && <div className="project-desc">{p.summary}</div>}
-                      {p.tags && p.tags.length > 0 && (
-                        <div className="project-tags">
-                          {p.tags.map((t) => <span className="project-tag" key={t}>{t}</span>)}
-                        </div>
-                      )}
-                    </div>
-                    <span className="arrow-circle" aria-label={`${p.title} সম্পর্কে জানুন`}>→</span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
       <section className="section services-showcase" id="services">
         <div className="services-inner reveal">
           <div className="services-heading">
@@ -225,6 +197,32 @@ export default async function Home() {
         </div>
         <div className="services-tabs-bleed reveal">
           <ServicesShowcase />
+        </div>
+      </section>
+
+      <section className="section projects-section" id="work">
+        <div className="projects-grid-lines" aria-hidden="true" />
+        <div className="projects-inner reveal">
+          <div className="projects-heading">
+            <span className="projects-eyebrow">
+              <img src="/stats/line.svg" alt="" />
+              <span>Projects</span>
+            </span>
+            <div className="projects-heading-copy">
+              <h2 className="projects-title">Let&rsquo;s Look At What We&rsquo;ve built!</h2>
+              <p className="projects-desc">Discover digital products that transform challenges into engaging solutions.</p>
+            </div>
+          </div>
+          <ProjectsCarousel
+            projects={caseStudies.map((p) => ({
+              slug: p.slug,
+              title: p.title,
+              category: p.category,
+              summary: p.summary,
+              tags: p.tags,
+              cover: p.cover_image ? driveFullImageUrl(p.cover_image) : null,
+            }))}
+          />
         </div>
       </section>
 

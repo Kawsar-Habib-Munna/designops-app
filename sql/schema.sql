@@ -583,6 +583,7 @@ create table if not exists case_studies (
   slug text not null unique,
   title text not null,
   client_name text,
+  category text,
   summary text,
   tags text[] default '{}',
   cover_image text,
@@ -2191,3 +2192,7 @@ drop policy if exists "user can manage own push_subscriptions" on push_subscript
 create policy "user can manage own push_subscriptions" on push_subscriptions for all using (user_id = auth.uid());
 
 alter table profiles add column if not exists notify_push_enabled boolean default false;
+
+-- Landing page Projects carousel (Figma 533:505 onward) shows a category pill per
+-- case study (e.g. "E-Commerce", "Fintech") that the previous card-grid design didn't have.
+alter table case_studies add column if not exists category text;

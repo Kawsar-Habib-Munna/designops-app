@@ -44,6 +44,7 @@ type CaseStudy = {
   slug: string;
   title: string;
   client_name: string | null;
+  category: string | null;
   summary: string | null;
   tags: string[] | null;
   cover_image: string | null;
@@ -66,7 +67,7 @@ async function fetchCaseStudy(slug: string) {
     const admin = getSupabaseAdmin();
     const { data: cs } = await admin
       .from('case_studies')
-      .select('id, slug, title, client_name, summary, tags, cover_image, figma_prototype_url')
+      .select('id, slug, title, client_name, category, summary, tags, cover_image, figma_prototype_url')
       .eq('slug', slug)
       .eq('published', true)
       .maybeSingle();
@@ -137,6 +138,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
           <Link href="/#work" className="work-back">← All projects</Link>
           <h1 className="work-title">{caseStudy.title}</h1>
           <div className="work-meta-row">
+            {caseStudy.category && <span className="work-client">{caseStudy.category}</span>}
             {caseStudy.client_name && <span className="work-client">{caseStudy.client_name}</span>}
             {caseStudy.tags && caseStudy.tags.length > 0 && (
               <div className="work-tags">{caseStudy.tags.map((t) => <span className="work-tag" key={t}>{t}</span>)}</div>

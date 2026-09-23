@@ -111,6 +111,7 @@ type CaseStudy = {
   slug: string;
   title: string;
   client_name: string | null;
+  category: string | null;
   summary: string | null;
   tags: string[] | null;
   cover_image: string | null;
@@ -140,7 +141,7 @@ function linkLabel(url: string) {
 
 async function fetchAll() {
   const [csRes, secRes, medRes] = await Promise.all([
-    supabase.from('case_studies').select('id, slug, title, client_name, summary, tags, cover_image, figma_prototype_url, order_index, published').order('order_index'),
+    supabase.from('case_studies').select('id, slug, title, client_name, category, summary, tags, cover_image, figma_prototype_url, order_index, published').order('order_index'),
     supabase.from('case_study_sections').select('id, case_study_id, section_key, content'),
     supabase.from('case_study_media').select('id, case_study_id, section_key, media_type, url, caption, order_index').order('order_index'),
   ]);
@@ -174,6 +175,7 @@ export default function PortfolioPage() {
   const [eTitle, setETitle] = useState('');
   const [eSlug, setESlug] = useState('');
   const [eClient, setEClient] = useState('');
+  const [eCategory, setECategory] = useState('');
   const [eSummary, setESummary] = useState('');
   const [eTags, setETags] = useState('');
   const [eFigma, setEFigma] = useState('');
@@ -266,7 +268,7 @@ export default function PortfolioPage() {
     const { data, error: err } = await supabase
       .from('case_studies')
       .insert({ title: newTitle.trim(), slug, order_index: maxOrder + 1, published: false, created_by: profile?.id ?? null })
-      .select('id, slug, title, client_name, summary, tags, cover_image, figma_prototype_url, order_index, published')
+      .select('id, slug, title, client_name, category, summary, tags, cover_image, figma_prototype_url, order_index, published')
       .single();
     setCreating(false);
 
@@ -286,6 +288,7 @@ export default function PortfolioPage() {
     setETitle(cs.title);
     setESlug(cs.slug);
     setEClient(cs.client_name ?? '');
+    setECategory(cs.category ?? '');
     setESummary(cs.summary ?? '');
     setETags((cs.tags ?? []).join(', '));
     setEFigma(cs.figma_prototype_url ?? '');
@@ -330,13 +333,14 @@ export default function PortfolioPage() {
         title: eTitle.trim(),
         slug,
         client_name: eClient.trim() || null,
+        category: eCategory.trim() || null,
         summary: eSummary.trim() || null,
         tags,
         figma_prototype_url: eFigma.trim() || null,
         published: ePublished,
       })
       .eq('id', editingId)
-      .select('id, slug, title, client_name, summary, tags, cover_image, figma_prototype_url, order_index, published')
+      .select('id, slug, title, client_name, category, summary, tags, cover_image, figma_prototype_url, order_index, published')
       .single();
     setSaving(false);
 
@@ -362,7 +366,7 @@ export default function PortfolioPage() {
         .from('case_studies')
         .update({ cover_image: result.webViewLink })
         .eq('id', editingId)
-        .select('id, slug, title, client_name, summary, tags, cover_image, figma_prototype_url, order_index, published')
+        .select('id, slug, title, client_name, category, summary, tags, cover_image, figma_prototype_url, order_index, published')
         .single();
       if (err || !data) throw new Error(err?.message ?? 'কভার ছবি সেভ করা যায়নি।');
       setECover(data.cover_image);
@@ -381,7 +385,7 @@ export default function PortfolioPage() {
       .from('case_studies')
       .update({ cover_image: null })
       .eq('id', editingId)
-      .select('id, slug, title, client_name, summary, tags, cover_image, figma_prototype_url, order_index, published')
+      .select('id, slug, title, client_name, category, summary, tags, cover_image, figma_prototype_url, order_index, published')
       .single();
     if (err || !data) return;
     setECover(null);
@@ -620,6 +624,7 @@ export default function PortfolioPage() {
                         </div>
                         <div className="cs-body">
                           <div className="cs-title">{cs.title}</div>
+                          {cs.category && <span className="cs-tag">{cs.category}</span>}
                           {cs.client_name && <div className="cs-client">{cs.client_name}</div>}
                           {cs.summary && <div className="cs-summary">{cs.summary}</div>}
                           {cs.tags && cs.tags.length > 0 && (
@@ -694,8 +699,16 @@ export default function PortfolioPage() {
                 </div>
               </div>
 
-              <label className="field-label">ক্লায়েন্ট (ঐচ্ছিক)</label>
-              <input className="field-input" type="text" value={eClient} onChange={(e) => setEClient(e.target.value)} />
+              <div className="field-row-2" style={{ marginBottom: 12 }}>
+                <div>
+                  <label className="field-label">ক্লায়েন্ট (ঐচ্ছিক)</label>
+                  <input className="field-input" style={{ marginBottom: 0 }} type="text" value={eClient} onChange={(e) => setEClient(e.target.value)} />
+                </div>
+                <div>
+                  <label className="field-label">ক্যাটাগরি (কার্ডের পিল ব্যাজ, যেমন E-Commerce)</label>
+                  <input className="field-input" style={{ marginBottom: 0 }} type="text" value={eCategory} onChange={(e) => setECategory(e.target.value)} placeholder="E-Commerce" />
+                </div>
+              </div>
 
               <label className="field-label">সংক্ষিপ্ত বিবরণ (কার্ডে দেখাবে)</label>
               <textarea className="field-input" value={eSummary} onChange={(e) => setESummary(e.target.value)} rows={2} />
