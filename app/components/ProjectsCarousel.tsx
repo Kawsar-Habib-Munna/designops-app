@@ -6,9 +6,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 // Figma: "Let's Look At What We've built!" (533:505 heading, 565:2813 / 565:2814 the two
 // example slides, 577:3342 the prev/dots/next controls) shows one full-width slide at a
-// time. Per explicit request, the current project stays exactly that full size up front,
-// and the next one now also renders - smaller, peeking out behind/below-right of it -
-// instead of being hidden until you click next.
+// time. Per explicit request, projects now show in fixed pairs instead - 1&2, then 3&4,
+// then 5&6 - each pair's first project full size up front, its second peeking out behind/
+// below-right of it. Advancing moves a whole pair at a time, not a sliding one-at-a-time
+// window (which would show 2&3 after 1&2).
 
 export type ProjectCard = {
   slug: string;
@@ -61,24 +62,31 @@ function ProjectMiniCard({ project, reversed, number }: { project: ProjectCard; 
   );
 }
 
+const PAGE_SIZE = 2;
+
 export default function ProjectsCarousel({ projects }: { projects: ProjectCard[] }) {
-  const [index, setIndex] = useState(0);
+  const [page, setPage] = useState(0);
 
   if (projects.length === 0) return null;
 
   const total = projects.length;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  // Non-overlapping pairs: page 0 -> projects 1&2, page 1 -> 3&4, and so on - not a
+  // sliding window (which would show 2&3 after 1&2). The last page may have only one
+  // project if total is odd, in which case the back slot just doesn't render.
+  const index = page * PAGE_SIZE;
   const current = projects[index];
-  const nextIndex = (index + 1) % total;
-  const next = projects[nextIndex];
+  const nextIndex = index + 1;
+  const next = nextIndex < total ? projects[nextIndex] : null;
 
   function go(delta: number) {
-    setIndex((i) => (i + delta + total) % total);
+    setPage((p) => (p + delta + totalPages) % totalPages);
   }
 
   return (
     <div className="projects-carousel">
       <div className="project-stack">
-        {total > 1 && (
+        {next && (
           <div className="project-stack-slot back">
             <AnimatePresence mode="wait">
               <motion.div
@@ -108,26 +116,26 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
         </div>
       </div>
 
-      {total > 1 && (
+      {totalPages > 1 && (
         <div className="project-nav">
-          <button type="button" className="project-nav-arrow" onClick={() => go(-1)} aria-label="Previous project">
+          <button type="button" className="project-nav-arrow" onClick={() => go(-1)} aria-label="Previous projects">
             <img src="/projects/arrow-prev.svg" alt="" />
           </button>
           <div className="project-dots">
-            {projects.map((p, i) => (
+            {Array.from({ length: totalPages }, (_, i) => (
               <button
                 type="button"
-                key={p.slug}
-                className={`project-dot${i === index ? ' active' : ''}`}
-                onClick={() => setIndex(i)}
-                aria-label={`Go to project ${i + 1}`}
-                aria-current={i === index}
+                key={i}
+                className={`project-dot${i === page ? ' active' : ''}`}
+                onClick={() => setPage(i)}
+                aria-label={`Go to projects ${i * PAGE_SIZE + 1}${i * PAGE_SIZE + 2 <= total ? `-${i * PAGE_SIZE + 2}` : ''}`}
+                aria-current={i === page}
               >
                 <span />
               </button>
             ))}
           </div>
-          <button type="button" className="project-nav-arrow" onClick={() => go(1)} aria-label="Next project">
+          <button type="button" className="project-nav-arrow" onClick={() => go(1)} aria-label="Next projects">
             <img src="/projects/arrow-next.svg" alt="" />
           </button>
         </div>
