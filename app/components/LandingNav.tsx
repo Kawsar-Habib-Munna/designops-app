@@ -46,12 +46,19 @@ export default function LandingNav() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState('Home');
   const [scrolled, setScrolled] = useState(false);
+  // Projects (#work) is the one white section on an otherwise all-dark page - the
+  // sticky nav's own dark glass pill reads as a harsh black bar floating on white
+  // there, so it needs a light-mode variant specifically while overlapping it.
+  const [onLight, setOnLight] = useState(false);
   const lockRef = useRef(false);
   const lockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     function onScroll() {
       setScrolled(window.scrollY > 8);
+      const workEl = document.getElementById('work');
+      const workRect = workEl?.getBoundingClientRect();
+      setOnLight(!!workRect && workRect.top <= 120 && workRect.bottom >= 0);
       if (lockRef.current) {
         if (lockTimer.current) clearTimeout(lockTimer.current);
         lockTimer.current = setTimeout(() => { lockRef.current = false; }, 140);
@@ -86,7 +93,7 @@ export default function LandingNav() {
   }
 
   return (
-    <nav className={`nav${scrolled ? ' scrolled' : ''}`} id="top">
+    <nav className={`nav${scrolled ? ' scrolled' : ''}${onLight ? ' on-light' : ''}`} id="top">
       <div className="nav-inner">
         <a
           href="#top"
