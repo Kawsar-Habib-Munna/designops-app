@@ -63,6 +63,18 @@ async function fetchCaseStudies(): Promise<CaseStudyCard[]> {
 
 const SERVICES_LIST = ['UI / UX Design', 'Frontend Design', 'SaaS Design'];
 
+// Figma (682:677) alternates each icon's tilt and fades exactly two of the seven (not a
+// simple first/last pattern) - reproduced as given rather than normalized into a rule.
+const ABOUT_TOOLS = [
+  { src: '/about/tool-1.svg', rotate: -16, faded: true },
+  { src: '/about/tool-2.svg', rotate: 16, faded: false },
+  { src: '/about/tool-3.svg', rotate: -16, faded: false },
+  { src: '/about/tool-4.svg', rotate: 0, faded: true },
+  { src: '/about/tool-5.svg', rotate: 16, faded: false },
+  { src: '/about/tool-6.svg', rotate: -16, faded: false },
+  { src: '/about/tool-7.svg', rotate: 16, faded: false },
+];
+
 const PROCESS_STEPS = [
   { name: 'Discover', desc: 'Research & a clear problem statement.', image: '/Discover.jpg' },
   { name: 'Design', desc: 'Wireframes to high-fidelity UI.', image: '/Design.jpg' },
@@ -226,6 +238,59 @@ export default async function Home() {
             }))}
           />
         </div>
+      </section>
+
+      <section className="section about-section" id="about">
+        <div className="about-inner reveal">
+          <div className="about-heading">
+            <span className="about-eyebrow">
+              <img src="/stats/line.svg" alt="" />
+              <span>About Us</span>
+            </span>
+            <div className="about-heading-copy">
+              <h2 className="about-title">So, Who Are We?</h2>
+              <p className="about-desc">We&rsquo;re a design and development team passionate about solving complex problems, creating better experiences, and turning ideas into digital products people enjoy using.</p>
+            </div>
+          </div>
+
+          <div className="about-body">
+            <div className="about-photo-card">
+              <div className="about-photo">
+                <img src="/about/photo.webp" alt="The Flow 53 team collaborating around a whiteboard session" />
+              </div>
+              <div className="about-tools" aria-hidden="true">
+                {ABOUT_TOOLS.map((t, i) => (
+                  <span className={`about-tool${t.faded ? ' faded' : ''}`} key={i} style={{ transform: `rotate(${t.rotate}deg)` }}>
+                    <img src={t.src} alt="" />
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="about-content">
+              <p className="about-lead">
+                <span className="about-lead-brand">Flow 53</span> is a design agency creating meaningful digital experiences that connect people and businesses. We combine user-centered design, technology, and creative problem-solving to transform ideas into intuitive applications and products. We work collaboratively to understand challenges and build purposeful solutions. Our goal is to create digital experiences that are thoughtful, seamless, and help businesses progress.
+              </p>
+              <div className="about-mission">
+                <h3 className="about-mv-title">Our Mission</h3>
+                <p className="about-mv-desc">To shape meaningful digital experiences that transform businesses and lives.</p>
+              </div>
+              <div className="about-vision">
+                <h3 className="about-mv-title">Our Vision</h3>
+                <p className="about-mv-desc">To transform complex ideas into simple, scalable digital solutions.</p>
+              </div>
+              <a href="#team" className="about-know-more">
+                <span className="about-know-more-label">Know More</span>
+                <img src="/about/arrow-know-more.svg" alt="" />
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <img className="about-deco about-deco-1" src="/about/deco2.svg" alt="" aria-hidden="true" />
+        <img className="about-deco about-deco-2" src="/about/deco1.svg" alt="" aria-hidden="true" />
+        <img className="about-deco about-deco-3" src="/about/deco4.svg" alt="" aria-hidden="true" />
+        <img className="about-deco about-deco-4" src="/about/deco3.svg" alt="" aria-hidden="true" />
       </section>
 
       <section className="section process-section" id="process">

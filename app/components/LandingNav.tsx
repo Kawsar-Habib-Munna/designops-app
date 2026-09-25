@@ -15,12 +15,12 @@ const LINKS: NavItem[] = [
   { label: 'Home', target: '#top' },
   { label: 'Service', target: '#services' },
   { label: 'Project', target: '#work' },
-  { label: 'About', target: '#team' },
+  { label: 'About', target: '#about' },
   { label: 'Blog', target: null },
   { label: 'Contact', target: '#contact' },
 ];
 
-const SPY_IDS = ['services', 'work', 'team', 'contact'];
+const SPY_IDS = ['services', 'work', 'about', 'team', 'contact'];
 
 function PhoneIcon() {
   return (
