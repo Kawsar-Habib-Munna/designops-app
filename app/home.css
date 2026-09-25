@@ -336,14 +336,13 @@ html:has(.home-root){scroll-behavior:smooth;}
 .home-root .about-know-more img{display:block;width:24px;height:24px;}
 
 .home-root .about-deco{position:absolute;pointer-events:none;user-select:none;}
-/* Figma's own y for deco-1/deco-3 (80px/133px) sits above the heading (which starts at
-   120px) - a subtle bleed in the source file, but distracting once rendered since it reads
-   as a line cutting near the heading text. Shifted both down into the body area instead,
-   keeping their 53px relative offset from each other; deco-2/deco-4 were already well
-   clear of the heading so they're untouched. */
-.home-root .about-deco-1{top:380px;left:170px;}
+/* deco-1's horizontal tick lines up with "So, Who Are We?" (title center ~219px), deco-3's
+   with "Our Mission" (title center ~605px) - each deco's own tick mark sits at the middle
+   of its 180px-tall asset, so top = target center - 90. deco-2/deco-4 are unrelated to
+   either heading and stay where they were. */
+.home-root .about-deco-1{top:227px;left:170px;}
 .home-root .about-deco-2{top:579px;left:700px;}
-.home-root .about-deco-3{top:433px;left:1270px;}
+.home-root .about-deco-3{top:613px;left:1270px;}
 .home-root .about-deco-4{top:553px;left:1360px;}
 
 @media (max-width:1100px){
