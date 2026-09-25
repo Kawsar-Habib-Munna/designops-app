@@ -315,6 +315,12 @@ html:has(.home-root){scroll-behavior:smooth;}
 .home-root .about-tool{display:flex;align-items:center;justify-content:center;width:44px;height:44px;flex-shrink:0;}
 .home-root .about-tool img{display:block;width:100%;height:100%;}
 .home-root .about-tool.faded{border-radius:50%;background:rgba(103,107,106,0.1);opacity:0.3;box-shadow:inset 0 1px 8px rgba(150,84,244,0.2);}
+/* tool-1 and tool-4 (the two faded icons) are natively much smaller than the other five's
+   44x44 (26x22.8 and 16.5x24.75) - width/height:100% was stretching them up to fill the
+   full circle, distorting and oversizing them instead of sitting inset like Figma's own
+   (which insets these two by ~25-30% rather than filling edge-to-edge). width/height:auto
+   renders each at its own intrinsic SVG size, small and centered by the parent's flex. */
+.home-root .about-tool.faded img{width:auto;height:auto;}
 
 .home-root .about-content{position:relative;flex:1;min-width:0;height:455px;}
 .home-root .about-lead{position:absolute;top:0;left:0;width:100%;font-size:16px;line-height:1.5;font-weight:500;color:#ada8b4;}
@@ -330,9 +336,14 @@ html:has(.home-root){scroll-behavior:smooth;}
 .home-root .about-know-more img{display:block;width:24px;height:24px;}
 
 .home-root .about-deco{position:absolute;pointer-events:none;user-select:none;}
-.home-root .about-deco-1{top:80px;left:170px;}
+/* Figma's own y for deco-1/deco-3 (80px/133px) sits above the heading (which starts at
+   120px) - a subtle bleed in the source file, but distracting once rendered since it reads
+   as a line cutting near the heading text. Shifted both down into the body area instead,
+   keeping their 53px relative offset from each other; deco-2/deco-4 were already well
+   clear of the heading so they're untouched. */
+.home-root .about-deco-1{top:380px;left:170px;}
 .home-root .about-deco-2{top:579px;left:700px;}
-.home-root .about-deco-3{top:133px;left:1270px;}
+.home-root .about-deco-3{top:433px;left:1270px;}
 .home-root .about-deco-4{top:553px;left:1360px;}
 
 @media (max-width:1100px){
