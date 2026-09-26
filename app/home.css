@@ -336,14 +336,18 @@ html:has(.home-root){scroll-behavior:smooth;}
 .home-root .about-know-more img{display:block;width:24px;height:24px;}
 
 .home-root .about-deco{position:absolute;pointer-events:none;user-select:none;}
-/* Two matched pairs, each left+right line at the same height (measured empirically, same
-   method as before): deco-1 + deco-4 frame "So, Who Are We?"; deco-2 + deco-3 frame
-   "Our Mission". Previously deco-4/deco-2 sat at unrelated heights between the two
-   headings, reading as stray rather than a deliberate pair. */
 .home-root .about-deco-1{top:227px;left:170px;}
-.home-root .about-deco-4{top:227px;left:1360px;}
-.home-root .about-deco-2{top:613px;left:700px;}
 .home-root .about-deco-3{top:613px;left:1270px;}
+/* deco-2 and deco-4 are pinned to the lead paragraph (653:2468), not either heading, per
+   Figma's own measurements: deco-2 sits 42px below the paragraph's bottom, left-aligned to
+   its left edge; deco-4 sits 16px below it, left-aligned to the paragraph's RIGHT edge (so
+   it extends further right from there). Figma's raw y-coordinates translated to a ~100px
+   too-high position here - the paragraph reflows to a slightly different height than
+   Figma's fixed export - so these were measured directly against the rendered .about-lead
+   instead (top = lead's rendered bottom + 42/16, converted to this element's own
+   .about-section-relative offset) rather than hand-derived from Figma's numbers. */
+.home-root .about-deco-2{top:679px;left:700px;}
+.home-root .about-deco-4{top:653px;left:1360px;}
 
 @media (max-width:1100px){
   .home-root .about-photo-card{width:460px;}
