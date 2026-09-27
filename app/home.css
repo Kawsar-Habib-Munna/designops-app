@@ -635,9 +635,9 @@ html:has(.home-root){scroll-behavior:smooth;}
 
 .home-root .faq-row{display:flex;align-items:flex-start;gap:24px;margin-bottom:99px;}
 .home-root .faq-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px;}
-.home-root .faq-pill{position:relative;display:flex;align-items:center;justify-content:center;padding:24px 40px;border:1px solid #feffff;border-radius:40px;background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(41,0,100,0.04),inset 0 4px 12px rgba(254,255,255,0.04);font-family:var(--font-playfair),'Playfair Display',serif;font-size:24px;line-height:1.5;font-weight:600;color:#ced0d4;text-align:center;}
+.home-root .faq-pill{position:relative;display:flex;align-items:center;justify-content:center;padding:24px 40px;border-radius:40px;background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(41,0,100,0.04),inset 0 4px 12px rgba(254,255,255,0.04);font-family:var(--font-playfair),'Playfair Display',serif;font-size:24px;line-height:1.5;font-weight:600;color:#ced0d4;text-align:center;}
 
-.home-root .faq-card{position:relative;padding:40px;border:1px solid #feffff;border-radius:40px;background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(41,0,100,0.04),inset 0 4px 12px rgba(254,255,255,0.04);}
+.home-root .faq-card{position:relative;padding:40px;border-radius:40px;background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(41,0,100,0.04),inset 0 4px 12px rgba(254,255,255,0.04);}
 .home-root .faq-item{width:100%;}
 .home-root .faq-item:not(.last){border-bottom:1px solid #feffff;}
 .home-root .faq-item-head{display:flex;align-items:center;gap:8px;width:100%;padding:12px 0;background:none;border:none;cursor:pointer;text-align:left;font:inherit;color:inherit;}
@@ -649,7 +649,7 @@ html:has(.home-root){scroll-behavior:smooth;}
 .home-root .faq-item-icon img{position:relative;width:20px;height:20px;display:block;}
 .home-root .faq-item-a{margin:0;padding-bottom:13px;font-size:16px;line-height:1.5;font-weight:500;color:#bdb9c3;}
 
-.home-root .contact-card{flex:1;position:relative;padding:40px;border:1px solid #feffff;border-radius:40px;background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(41,0,100,0.04),inset 0 4px 12px rgba(254,255,255,0.04);}
+.home-root .contact-card{flex:1;position:relative;padding:40px;border-radius:40px;background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(41,0,100,0.04),inset 0 4px 12px rgba(254,255,255,0.04);}
 .home-root .contact-form{display:flex;flex-direction:column;gap:40px;}
 .home-root .contact-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 40px;}
 .home-root .contact-field{display:flex;flex-direction:column;gap:4px;}
@@ -668,10 +668,10 @@ html:has(.home-root){scroll-behavior:smooth;}
 .home-root .faq-contact-info-line{position:relative;flex:1;min-width:0;height:1px;}
 .home-root .faq-contact-info-line img{display:block;width:100%;height:auto;}
 .home-root .faq-contact-cards{display:flex;gap:40px;}
-.home-root .faq-contact-card{flex:394 1 0;min-width:0;display:flex;align-items:flex-start;gap:20px;padding:20px;border:1px solid #feffff;border-radius:24px;background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(41,0,100,0.04),inset 0 4px 12px rgba(254,255,255,0.04);text-decoration:none;transition:transform .2s ease;}
+.home-root .faq-contact-card{flex:394 1 0;min-width:0;display:flex;align-items:flex-start;gap:20px;padding:20px;border-radius:24px;background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(41,0,100,0.04),inset 0 4px 12px rgba(254,255,255,0.04);text-decoration:none;transition:transform .2s ease;}
 .home-root a.faq-contact-card:hover{transform:translateY(-2px);}
 .home-root .faq-contact-card-wide{flex:412 1 0;}
-.home-root .faq-contact-icon{position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:68px;height:68px;border-radius:12px;border:1px solid #feffff;background:linear-gradient(90deg,rgba(239,230,253,0.1),rgba(206,176,250,0.1));backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(41,0,100,0.04),inset 0 4px 12px rgba(254,255,255,0.04);}
+.home-root .faq-contact-icon{position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:68px;height:68px;border-radius:12px;background:linear-gradient(90deg,rgba(239,230,253,0.1),rgba(206,176,250,0.1));backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(41,0,100,0.04),inset 0 4px 12px rgba(254,255,255,0.04);}
 .home-root .faq-contact-icon img{position:relative;width:24px;height:24px;display:block;}
 .home-root .faq-contact-icon-svg{position:relative;width:24px;height:24px;display:block;}
 .home-root .faq-contact-icon-svg.whatsapp{color:#03df5f;}
