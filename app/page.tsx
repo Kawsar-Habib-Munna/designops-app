@@ -86,11 +86,14 @@ const WHY_CARDS = [
 
 const WHY_INDUSTRIES = ['FinTech', 'SaaS', 'E-commerce', 'Healthcare', 'Government', 'Marketplace', 'Education', 'Business', 'Travel', 'Real Estate', 'Foods', 'Logistics'];
 
+// top/left are % of the 1280x782 diagram box (Figma's raw px / box size) so the cards
+// track the diagram's SVG line proportionally as it scales down on narrower viewports.
 const PROCESS_STEPS = [
-  { name: 'Discover', desc: 'Research & a clear problem statement.', image: '/Discover.jpg' },
-  { name: 'Design', desc: 'Wireframes to high-fidelity UI.', image: '/Design.jpg' },
-  { name: 'Test', desc: 'Real users, real tasks.', image: '/Test.jpg' },
-  { name: 'Deliver', desc: 'Clean specs & a working system.', image: '/Deliver.jpg' },
+  { name: 'Discover', desc: 'Understand the business, users and problem.', top: 51.15, left: 2.34, active: true },
+  { name: 'Define', desc: 'Find opportunities and set product direction.', top: 39.51, left: 22.34 },
+  { name: 'Design', desc: 'Design flows, wireframes and H-fidelity interfaces.', top: 25.58, left: 42.34 },
+  { name: 'Develop', desc: 'Transform designs into digital products.', top: 14.07, left: 62.34 },
+  { name: 'Launch', desc: 'Test, refine and launch with confidence.', top: 0, left: 82.34 },
 ];
 
 type TeamMember = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url: string | null; behance_url: string | null; linkedin_url: string | null };
@@ -354,15 +357,39 @@ export default async function Home() {
       </section>
 
       <section className="section process-section" id="process">
-        <div className="container reveal">
-          <h2 className="section-title">How an engagement runs.</h2>
-          <div className="process-grid">
-            {PROCESS_STEPS.map((s, i) => (
-              <div className="process-card" key={s.name} style={{ backgroundImage: `url(${s.image})` }}>
-                <div className="process-overlay"></div>
-                <span className="process-num">{String(i + 1).padStart(2, '0')}</span>
-                <div className="process-name">{s.name}</div>
-                <div className="process-desc">{s.desc}</div>
+        <div className="process-inner reveal">
+          <div className="process-heading">
+            <span className="process-eyebrow">
+              <img src="/stats/line.svg" alt="" />
+              <span>Process</span>
+            </span>
+            <div className="process-heading-copy">
+              <h2 className="process-title">How Do We Bring Ideas To Life?</h2>
+              <p className="process-lead">From problem research to design, build, test and launch&mdash;we follow a clear, collaborative process.</p>
+            </div>
+          </div>
+
+          <div className="process-diagram">
+            <img src="/process/timeline-graph.svg" alt="" className="process-diagram-graph" aria-hidden="true" />
+            <span className="process-axis-y" aria-hidden="true">PROGRESS &amp; TIMELINE</span>
+            <span className="process-axis-x" aria-hidden="true">DESIGN THINKING PROCESS</span>
+            {PROCESS_STEPS.map((s) => (
+              <div
+                className={`process-step${s.active ? ' active' : ''}`}
+                key={s.name}
+                style={{ top: `${s.top}%`, left: `${s.left}%` }}
+              >
+                <h3 className="process-step-title">{s.name}</h3>
+                <p className="process-step-desc">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="process-mobile-steps">
+            {PROCESS_STEPS.map((s) => (
+              <div className={`process-step${s.active ? ' active' : ''}`} key={s.name}>
+                <h3 className="process-step-title">{s.name}</h3>
+                <p className="process-step-desc">{s.desc}</p>
               </div>
             ))}
           </div>

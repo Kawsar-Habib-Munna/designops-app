@@ -510,17 +510,51 @@ html:has(.home-root){scroll-behavior:smooth;}
   .home-root .services-list-name{white-space:normal;}
 }
 
-/* ---------- process ---------- */
-.home-root .process-section{background:var(--bg);}
-.home-root .process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
-.home-root .process-card{background:var(--surface-muted) center/cover no-repeat;border-radius:var(--radius-md);aspect-ratio:4/5;padding:22px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden;transition:transform .4s ease;}
-.home-root .process-card:hover{transform:scale(1.02);}
-.home-root .process-overlay{position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.3) 55%, rgba(0,0,0,0.08) 80%);pointer-events:none;}
-.home-root .process-num{position:absolute;top:20px;left:22px;font-size:12px;font-weight:700;color:rgba(255,255,255,0.85);z-index:1;}
-.home-root .process-name{font-size:17px;font-weight:800;margin-bottom:6px;color:#fff;position:relative;z-index:1;}
-.home-root .process-desc{font-size:12px;color:rgba(255,255,255,0.8);line-height:1.5;position:relative;z-index:1;}
-@media (max-width:900px){ .home-root .process-grid{grid-template-columns:1fr 1fr;} }
-@media (max-width:520px){ .home-root .process-grid{grid-template-columns:1fr;} }
+/* ---------- process: How Do We Bring Ideas To Life? (Figma 778:912 heading, 850:2752
+   diagram). Unlike the other section headings, this one is left-aligned, not centered -
+   confirmed in Figma's own export (items-start on the heading, no text-center/mx-auto on
+   the copy block), and it sits flush with the container's left edge (x=80) rather than
+   the 250px-inset centered block the other sections use. The ascending stepped line, its
+   axis lines and the little connector ticks are one exported SVG (Figma group 850:2750) -
+   only the 5 step cards are real, positioned absolutely with Figma's exact local offsets
+   (+30px for the diagram's own inner-frame inset). Only "Discover" gets the highlighted
+   purple-glow treatment in Figma; Define/Design/Develop/Launch share one plain style. */
+.home-root .process-section{background:#010003;padding:120px 0;font-family:var(--font-nunito),'Nunito Sans','Inter',sans-serif;}
+.home-root .process-inner{width:min(1280px,calc(100% - 48px));margin:0 auto;}
+.home-root .process-heading{display:flex;flex-direction:column;gap:24px;margin-bottom:80px;}
+.home-root .process-eyebrow{display:inline-flex;align-items:center;gap:12px;padding:12px 20px 12px 0;border-radius:10px;border:1px solid rgba(200,197,205,0.4);background:rgba(103,107,106,0.04);box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-family:var(--font-inter-stats),'Inter',sans-serif;font-size:16px;line-height:1.5;font-weight:500;color:#ceb0fa;white-space:nowrap;}
+.home-root .process-eyebrow img{display:block;width:40px;height:1px;}
+.home-root .process-heading-copy{display:flex;flex-direction:column;gap:32px;width:100%;max-width:780px;}
+.home-root .process-title{font-family:var(--font-playfair),'Playfair Display',serif;font-size:36px;line-height:1.5;font-weight:700;color:#e6e4e8;}
+.home-root .process-lead{font-size:16px;line-height:1.5;font-weight:500;color:#ada8b4;}
+
+.home-root .process-diagram{position:relative;width:100%;max-width:1280px;aspect-ratio:1280 / 782;margin:0 auto;}
+.home-root .process-diagram-graph{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;user-select:none;}
+.home-root .process-axis-y{position:absolute;top:22.6%;left:1.02%;width:24px;height:22.6%;display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;transform:rotate(180deg);font-size:16px;line-height:1.5;font-weight:600;color:#7b7780;white-space:nowrap;}
+.home-root .process-axis-x{position:absolute;top:95.27%;left:82.97%;width:17.03%;text-align:right;font-size:16px;line-height:1.5;font-weight:600;color:#7b7780;white-space:nowrap;}
+.home-root .process-step{position:absolute;display:flex;flex-direction:column;gap:20px;width:17.656%;min-width:170px;padding:20px;border:1px solid #feffff;border-radius:20px;box-shadow:0 8px 40px rgba(41,0,100,0.04);}
+.home-root .process-step::before{content:'';position:absolute;inset:0;border-radius:inherit;background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);pointer-events:none;}
+.home-root .process-step::after{content:'';position:absolute;inset:-1px;border-radius:inherit;box-shadow:inset 0 4px 12px rgba(254,255,255,0.04);pointer-events:none;}
+.home-root .process-step.active{border-color:rgba(200,197,205,0.8);background:linear-gradient(90deg,rgba(239,230,253,0.1),rgba(206,176,250,0.1));box-shadow:0 12px 40px rgba(129,51,241,0.12);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
+.home-root .process-step.active::before{content:none;}
+.home-root .process-step-title{position:relative;font-family:var(--font-playfair),'Playfair Display',serif;font-size:24px;line-height:1.5;font-weight:600;color:#d9d7dd;}
+.home-root .process-step.active .process-step-title{color:#efe6fd;}
+.home-root .process-step-desc{position:relative;font-size:16px;line-height:1.5;font-weight:500;color:#ada8b4;width:186px;max-width:100%;}
+.home-root .process-step.active .process-step-desc{color:#bdb9c3;}
+
+@media (max-width:900px){
+  .home-root .process-diagram{display:none;}
+  .home-root .process-mobile-steps{display:flex;flex-direction:column;gap:16px;}
+  .home-root .process-mobile-steps .process-step{position:static;width:100%;min-width:0;}
+}
+@media (min-width:901px){
+  .home-root .process-mobile-steps{display:none;}
+}
+@media (max-width:640px){
+  .home-root .process-section{padding:64px 0;}
+  .home-root .process-heading{margin-bottom:48px;}
+  .home-root .process-title{font-size:28px;}
+}
 
 /* ---------- services + collage ---------- */
 .home-root .services-section{background:var(--surface);}
