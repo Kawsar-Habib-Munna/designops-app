@@ -8,6 +8,8 @@ import BookCallButton from '@/app/components/BookCallButton';
 import RevealOnScroll from '@/app/components/RevealOnScroll';
 import ServicesShowcase from '@/app/components/ServicesShowcase';
 import ProjectsCarousel from '@/app/components/ProjectsCarousel';
+import FaqAccordion from '@/app/components/FaqAccordion';
+import ContactForm from '@/app/components/ContactForm';
 
 // পাবলিক ল্যান্ডিং পেজ — লগইন ছাড়াই সবাই দেখে, তাই profiles টেবিলের RLS
 // (শুধু authenticated ইউজার read করতে পারে) এই পেজের জন্য প্রযোজ্য না। এটা
@@ -457,6 +459,78 @@ export default async function Home() {
             <span className="testimonials-pager-btn">
               <img src="/testimonials/arrow-right.svg" alt="" />
             </span>
+          </div>
+        </div>
+      </section>
+
+      <section className="section faq-section">
+        <div className="faq-inner reveal">
+          <div className="faq-heading">
+            <span className="faq-eyebrow">
+              <img src="/stats/line.svg" alt="" />
+              <span>FAQ &amp; CONTACT</span>
+            </span>
+            <div className="faq-heading-copy">
+              <h2 className="faq-title">Got Questions? Let&rsquo;s Find Answers.</h2>
+              <p className="faq-lead">Whether you&rsquo;re curious about our services, process, pricing, or timelines, you&rsquo;ll find quick answers below. Still have questions? Just reach out&mdash;we&rsquo;re always happy to chat.</p>
+            </div>
+          </div>
+
+          <div className="faq-row">
+            <div className="faq-col">
+              <div className="faq-pill">Frequently Asked Questions</div>
+              <FaqAccordion />
+            </div>
+            <div className="faq-col">
+              <div className="faq-pill">Let&rsquo;s Work Together</div>
+              <div className="contact-card">
+                <ContactForm />
+              </div>
+            </div>
+          </div>
+
+          <div className="faq-contact-info">
+            <div className="faq-contact-info-head">
+              <h3 className="faq-contact-info-title">Feel Free Contact Us</h3>
+              <span className="faq-contact-info-line">
+                <img src="/faq/divider-line.svg" alt="" />
+              </span>
+            </div>
+            <div className="faq-contact-cards">
+              <a className="faq-contact-card" href="https://wa.me/8801979291001" target="_blank" rel="noopener noreferrer">
+                <span className="faq-contact-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="faq-contact-icon-svg whatsapp">
+                    <path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.35 5.07L2 22l5.07-1.32A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                    <path d="M8.5 8.2c.2-.45.4-.46.6-.47h.5c.17 0 .4-.06.62.48.23.55.78 1.9.85 2.04.07.14.12.3.02.49-.1.19-.15.3-.3.46-.15.16-.31.36-.44.48-.15.14-.3.29-.13.58.17.29.75 1.25 1.62 2.02 1.11.99 2.05 1.3 2.34 1.45.29.15.46.13.63-.08.17-.2.72-.84.92-1.13.19-.29.38-.24.64-.14.26.1 1.66.79 1.94.93.29.14.48.22.55.34.07.13.07.72-.17 1.41-.24.7-1.4 1.34-1.93 1.42-.5.08-1.12.11-1.81-.11-.42-.14-.95-.31-1.64-.61-2.88-1.25-4.76-4.15-4.9-4.34-.14-.2-1.17-1.56-1.17-2.98 0-1.42.75-2.11 1.02-2.4Z" fill="currentColor" />
+                  </svg>
+                </span>
+                <span className="faq-contact-lines">
+                  <span>+088 01979 291 001</span>
+                  <span>+088 01979 291 001</span>
+                </span>
+              </a>
+              <a className="faq-contact-card" href="mailto:flow53@gmail.com">
+                <span className="faq-contact-icon">
+                  <img src="/faq/icon-email.svg" alt="" />
+                </span>
+                <span className="faq-contact-lines">
+                  <span>flow53@gmail.com</span>
+                  <span>oparthibtuhin@gmail.com</span>
+                </span>
+              </a>
+              <div className="faq-contact-card faq-contact-card-wide">
+                <span className="faq-contact-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="faq-contact-icon-svg location">
+                    <path d="M12 22s7-6.4 7-12a7 7 0 1 0-14 0c0 5.6 7 12 7 12Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+                    <circle cx="12" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.6" />
+                  </svg>
+                </span>
+                <span className="faq-contact-lines">
+                  <span>5/A, Dhaka, Bangladesh</span>
+                  <span>5/A, Dhaka, United Kingdom</span>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </section>

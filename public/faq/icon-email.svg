@@ -1,0 +1,14 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="arcticons:huawei-email" clip-path="url(#clip0_0_45)">
+<path id="Union" d="M20.8584 2C22.5824 2.0001 24.0016 3.37693 24.002 5.10059V18.9043C24.002 20.6283 22.5827 22.0048 20.8584 22.0049H3.14355C1.41923 22.0049 0 20.6283 0 18.9043V5.10059C0.000359682 3.37688 1.41945 2.00002 3.14355 2H20.8584ZM12.4102 12.5713L12.001 12.8652L11.5918 12.5713L1.40039 5.23047V18.9043C1.40039 19.8319 2.16901 20.6045 3.14355 20.6045H20.8584C21.8329 20.6044 22.6016 19.8319 22.6016 18.9043V5.23047L12.4102 12.5713ZM3.14355 3.40039C2.66661 3.4004 2.2391 3.58604 1.92676 3.88379L12.001 11.1396L22.0742 3.88379C21.7619 3.58633 21.335 3.40044 20.8584 3.40039H3.14355Z" fill="url(#paint0_linear_0_45)"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_45" x1="0" y1="12.0024" x2="24.002" y2="12.0024" gradientUnits="userSpaceOnUse">
+<stop stop-color="white"/>
+<stop offset="1" stop-color="#CEB0FA"/>
+</linearGradient>
+<clipPath id="clip0_0_45">
+<rect width="24" height="24" fill="white"/>
+</clipPath>
+</defs>
+</svg>
