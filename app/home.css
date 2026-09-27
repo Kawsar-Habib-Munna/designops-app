@@ -704,6 +704,41 @@ html:has(.home-root){scroll-behavior:smooth;}
   .home-root .faq-contact-info-head{flex-direction:column;align-items:flex-start;gap:16px;}
 }
 
+/* ---------- final cta: Have Something Worth Building? (Figma 940:13741 heading,
+   977:1648 card, 981:1684 buttons). Figma leaves 371px of empty space below the card
+   before the section ends (120 top + 206 heading + 80 gap + 60 buttons + 120 bottom = 586
+   exactly fills the card, but the outer section is 1077 tall) - kept faithfully at desktop
+   widths, collapsed to the standard mobile padding since a fixed 371px gap wouldn't scale
+   proportionally and would look like a layout bug on a small screen. */
+.home-root .cta-final-section{background:#010003;padding:120px 0 371px;font-family:var(--font-nunito),'Nunito Sans','Inter',sans-serif;}
+.home-root .cta-final-inner{width:min(1280px,calc(100% - 48px));margin:0 auto;}
+.home-root .cta-final-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:80px;padding:120px 40px;border-radius:40px;border:1px solid rgba(200,197,205,0.8);background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(41,0,100,0.04);overflow:hidden;}
+.home-root .cta-final-card::after{content:'';position:absolute;inset:-1px;border-radius:inherit;box-shadow:inset 0 4px 12px rgba(254,255,255,0.04);pointer-events:none;}
+.home-root .cta-final-heading{position:relative;display:flex;flex-direction:column;align-items:center;gap:24px;text-align:center;}
+.home-root .cta-final-eyebrow{display:inline-flex;align-items:center;gap:12px;padding:12px 20px 12px 0;border-radius:10px;border:1px solid rgba(200,197,205,0.4);background:rgba(103,107,106,0.04);box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-family:var(--font-inter-stats),'Inter',sans-serif;font-size:16px;line-height:1.5;font-weight:500;color:#ceb0fa;white-space:nowrap;}
+.home-root .cta-final-eyebrow img{display:block;width:40px;height:1px;}
+.home-root .cta-final-heading-copy{display:flex;flex-direction:column;align-items:center;gap:32px;width:100%;max-width:780px;}
+.home-root .cta-final-title{font-family:var(--font-playfair),'Playfair Display',serif;font-size:36px;line-height:1.5;font-weight:700;color:#e6e4e8;}
+.home-root .cta-final-lead{font-size:16px;line-height:1.5;font-weight:500;color:#ada8b4;}
+
+.home-root .cta-final-buttons{position:relative;display:flex;align-items:center;justify-content:center;gap:24px;flex-wrap:wrap;}
+.home-root .cta-final-btn{display:inline-flex;align-items:center;gap:16px;padding:2px 16px 2px 2px;border-radius:14px;background:#010003;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);filter:drop-shadow(0 12px 20px rgba(129,51,241,0.2));text-decoration:none;transition:transform .2s ease;}
+.home-root .cta-final-btn:hover{transform:translateY(-2px);}
+.home-root .cta-final-btn.primary{border:1px solid #efe6fd;}
+.home-root .cta-final-btn.secondary{border:1px solid #8133f1;}
+.home-root .cta-final-btn-inner{display:flex;align-items:center;justify-content:center;padding:16px 32px;border-radius:12px;font-size:16px;line-height:1.5;font-weight:500;white-space:nowrap;}
+.home-root .cta-final-btn.primary .cta-final-btn-inner{background:linear-gradient(90deg,#ffffff,#ceb0fa);color:#010003;}
+.home-root .cta-final-btn.secondary .cta-final-btn-inner{background:linear-gradient(90deg,rgba(239,230,253,0.1),rgba(206,176,250,0.1));color:#efe6fd;}
+.home-root .cta-final-btn-icon{display:block;width:24px;height:24px;flex-shrink:0;color:#efe6fd;}
+
+@media (max-width:640px){
+  .home-root .cta-final-section{padding:64px 0;}
+  .home-root .cta-final-card{padding:56px 24px;gap:48px;}
+  .home-root .cta-final-title{font-size:28px;}
+  .home-root .cta-final-buttons{flex-direction:column;align-items:stretch;width:100%;}
+  .home-root .cta-final-btn{justify-content:space-between;width:100%;}
+}
+
 /* ---------- services + collage ---------- */
 .home-root .services-section{background:var(--surface);}
 .home-root .services-split{display:grid;grid-template-columns:1.3fr 1fr;gap:60px;align-items:center;}
