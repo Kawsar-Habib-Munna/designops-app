@@ -96,6 +96,17 @@ const PROCESS_STEPS = [
   { name: 'Launch', desc: 'Test, refine and launch with confidence.', top: 0, left: 82.34 },
 ];
 
+// The 4 Figma testimonial cards all carry the identical placeholder name/role/quote -
+// only the avatar photo differs - matched here literally rather than inventing real copy.
+// top/left/width are % of the 1280x548 grid box; the staggered (brick, not aligned-grid)
+// layout is exactly what Figma has: row 1 spans columns A+B, row 2 spans columns B+C.
+const TESTIMONIALS = [
+  { avatar: '/testimonials/avatar-1.webp', name: 'Adam Alane Walker', role: 'Honorable Client', quote: 'Fast trades, clean interface, and secure transactions. Cryzen makes crypto investing simple and stress-free.', rating: '4.4', top: 0.18, left: 0 },
+  { avatar: '/testimonials/avatar-2.webp', name: 'Adam Alane Walker', role: 'Honorable Client', quote: 'Fast trades, clean interface, and secure transactions. Cryzen makes crypto investing simple and stress-free.', rating: '4.4', top: 0.18, left: 33.36 },
+  { avatar: '/testimonials/avatar-3.webp', name: 'Adam Alane Walker', role: 'Honorable Client', quote: 'Fast trades, clean interface, and secure transactions. Cryzen makes crypto investing simple and stress-free.', rating: '4.4', top: 50.18, left: 33.36 },
+  { avatar: '/testimonials/avatar-4.webp', name: 'Adam Alane Walker', role: 'Honorable Client', quote: 'Fast trades, clean interface, and secure transactions. Cryzen makes crypto investing simple and stress-free.', rating: '4.4', top: 50.18, left: 66.72 },
+];
+
 type TeamMember = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url: string | null; behance_url: string | null; linkedin_url: string | null };
 
 async function fetchTeam(): Promise<TeamMember[]> {
@@ -392,6 +403,60 @@ export default async function Home() {
                 <p className="process-step-desc">{s.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section testimonials-section">
+        <div className="testimonials-inner reveal">
+          <div className="testimonials-heading">
+            <span className="testimonials-eyebrow">
+              <img src="/stats/line.svg" alt="" />
+              <span>TESTIMONIALS</span>
+            </span>
+            <div className="testimonials-heading-copy">
+              <h2 className="testimonials-title">Don&rsquo;t Just Take Our Word For It!</h2>
+              <p className="testimonials-lead">Hear from the people we&rsquo;ve worked with and discover how thoughtful collaboration, clear communication, and purposeful design shaped their experience with us.</p>
+            </div>
+          </div>
+
+          <div className="testimonials-grid">
+            <img src="/testimonials/grid-lines.svg" alt="" className="testimonials-grid-lines" aria-hidden="true" />
+            {TESTIMONIALS.map((t, i) => (
+              <div className="testimonial-card" key={i} style={{ top: `${t.top}%`, left: `${t.left}%` }}>
+                <div className="testimonial-top">
+                  <img src={t.avatar} alt="" className="testimonial-avatar" />
+                  <div className="testimonial-who">
+                    <p className="testimonial-name">{t.name}</p>
+                    <p className="testimonial-role">{t.role}</p>
+                  </div>
+                </div>
+                <p className="testimonial-quote">{t.quote}</p>
+                <div className="testimonial-foot">
+                  <span className="testimonial-rating">
+                    {t.rating}
+                    <img src="/testimonials/star-icon.svg" alt="" />
+                  </span>
+                  <img src="/testimonials/quote-icon.svg" alt="" className="testimonial-quote-mark" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="testimonials-pager" aria-hidden="true">
+            <span className="testimonials-pager-btn">
+              <img src="/testimonials/arrow-left.svg" alt="" />
+            </span>
+            <span className="testimonials-dots">
+              <span className="testimonials-dot"></span>
+              <span className="testimonials-dot"></span>
+              <span className="testimonials-dot active"></span>
+              <span className="testimonials-dot"></span>
+              <span className="testimonials-dot"></span>
+            </span>
+            <span className="testimonials-pager-btn">
+              <img src="/testimonials/arrow-right.svg" alt="" />
+            </span>
           </div>
         </div>
       </section>

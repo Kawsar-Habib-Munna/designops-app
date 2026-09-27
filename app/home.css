@@ -565,6 +565,59 @@ html:has(.home-root){scroll-behavior:smooth;}
   .home-root .process-title{font-size:28px;}
 }
 
+/* ---------- testimonials: Don't Just Take Our Word For It! (Figma 856:2784 heading,
+   903:3081-3083 card grid, 868:3195 pager). This is a LIGHT section (white bg, dark text)
+   unlike every dark section around it - confirmed directly from Figma's own fills/colors,
+   not a mistake. The 4 cards are NOT a plain 2x2 grid: Figma staggers them in 3 columns -
+   row 1 spans columns A+B, row 2 spans columns B+C - producing the brick/offset layout the
+   divider-line SVG's asymmetric partial dividers are drawn for. All 4 cards carry Figma's
+   own identical placeholder name/role/quote text; only the avatar photo differs. */
+.home-root .testimonials-section{background:#ffffff;padding:120px 0;font-family:var(--font-nunito),'Nunito Sans','Inter',sans-serif;}
+.home-root .testimonials-inner{width:min(1280px,calc(100% - 48px));margin:0 auto;}
+.home-root .testimonials-heading{display:flex;flex-direction:column;align-items:center;gap:24px;margin-bottom:80px;text-align:center;}
+.home-root .testimonials-eyebrow{display:inline-flex;align-items:center;gap:12px;padding:12px 20px 12px 0;border-radius:10px;border:1px solid rgba(200,197,205,0.4);background:rgba(103,107,106,0.04);box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-family:var(--font-inter-stats),'Inter',sans-serif;font-size:16px;line-height:1.5;font-weight:500;color:#9654f4;white-space:nowrap;}
+.home-root .testimonials-eyebrow img{display:block;width:40px;height:1px;}
+.home-root .testimonials-heading-copy{display:flex;flex-direction:column;align-items:center;gap:32px;width:100%;max-width:780px;}
+.home-root .testimonials-title{font-family:var(--font-playfair),'Playfair Display',serif;font-size:36px;line-height:1.5;font-weight:700;color:#0b001c;}
+.home-root .testimonials-lead{font-size:16px;line-height:1.5;font-weight:500;color:#5f5c63;}
+
+.home-root .testimonials-grid{position:relative;width:100%;aspect-ratio:1280 / 548;margin-bottom:60px;}
+.home-root .testimonials-grid-lines{position:absolute;top:-0.49%;left:-0.21%;width:calc(100% * 1285.33 / 1280);height:calc(100% * 553.333 / 548);max-width:none;pointer-events:none;user-select:none;}
+.home-root .testimonial-card{position:absolute;width:33.28%;height:49.64%;display:flex;flex-direction:column;gap:20px;padding:32px 32px 28px;border:1px solid #feffff;box-shadow:0 8px 40px rgba(41,0,100,0.04);}
+.home-root .testimonial-card::before{content:'';position:absolute;inset:0;background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);pointer-events:none;}
+.home-root .testimonial-card::after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 4px 12px rgba(254,255,255,0.04);}
+.home-root .testimonial-top{position:relative;display:flex;align-items:center;gap:20px;}
+.home-root .testimonial-avatar{width:70px;height:70px;flex-shrink:0;border:1px solid #feffff;border-radius:16px;object-fit:cover;}
+.home-root .testimonial-who{display:flex;flex-direction:column;gap:10px;min-width:0;}
+.home-root .testimonial-name{font-family:var(--font-playfair),'Playfair Display',serif;font-size:24px;line-height:1.5;font-weight:600;color:#13002f;}
+.home-root .testimonial-role{font-size:16px;line-height:1.5;font-weight:600;color:#49474c;}
+.home-root .testimonial-quote{position:relative;font-size:16px;line-height:1.5;font-weight:500;color:#5f5c63;}
+.home-root .testimonial-foot{position:relative;display:flex;align-items:center;justify-content:space-between;margin-top:auto;}
+.home-root .testimonial-rating{display:flex;align-items:center;gap:8px;font-size:20px;line-height:1.5;font-weight:500;color:#5f5c63;}
+.home-root .testimonial-rating img{display:block;width:24px;height:24px;}
+.home-root .testimonial-quote-mark{display:block;width:28px;height:18px;}
+
+.home-root .testimonials-pager{display:flex;align-items:center;justify-content:center;gap:40px;}
+.home-root .testimonials-pager-btn{display:inline-flex;align-items:center;justify-content:center;padding:16px;border-radius:12px;border:1px solid #e6e4e8;background:rgba(103,107,106,0.04);box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+.home-root .testimonials-pager-btn img{display:block;width:24px;height:24px;}
+.home-root .testimonials-dots{display:flex;align-items:center;gap:4px;}
+.home-root .testimonials-dot{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:16px;border:2px solid #fff;}
+.home-root .testimonials-dot::before{content:'';width:12px;height:12px;border-radius:6px;background:rgba(103,107,106,0.1);}
+.home-root .testimonials-dot.active{border-color:#9654f4;}
+.home-root .testimonials-dot.active::before{background:linear-gradient(90deg,#8133f1,#6200ee);}
+
+@media (max-width:900px){
+  .home-root .testimonials-grid{aspect-ratio:auto;display:flex;flex-direction:column;gap:20px;}
+  .home-root .testimonials-grid-lines{display:none;}
+  .home-root .testimonial-card{position:static;width:100%;height:auto;}
+}
+@media (max-width:640px){
+  .home-root .testimonials-section{padding:64px 0;}
+  .home-root .testimonials-heading{margin-bottom:48px;}
+  .home-root .testimonials-title{font-size:28px;}
+  .home-root .testimonials-pager{gap:20px;}
+}
+
 /* ---------- services + collage ---------- */
 .home-root .services-section{background:var(--surface);}
 .home-root .services-split{display:grid;grid-template-columns:1.3fr 1fr;gap:60px;align-items:center;}
