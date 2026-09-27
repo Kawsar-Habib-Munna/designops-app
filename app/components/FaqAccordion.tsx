@@ -27,14 +27,17 @@ export default function FaqAccordion() {
       {FAQS.map((item, i) => {
         const isOpen = open === i;
         return (
-          <div className={`faq-item${isOpen ? ' open' : ''}${i === FAQS.length - 1 ? ' last' : ''}`} key={item.q}>
-            <button type="button" className="faq-item-head" onClick={() => setOpen(isOpen ? -1 : i)} aria-expanded={isOpen}>
-              <span className="faq-item-q">{item.q}</span>
-              <span className="faq-item-icon">
-                <img src={isOpen ? '/faq/chevron-up.svg' : '/faq/chevron-down.svg'} alt="" />
-              </span>
-            </button>
-            {isOpen && item.a && <p className="faq-item-a">{item.a}</p>}
+          <div key={item.q}>
+            <div className={`faq-item${isOpen ? ' open' : ''}`}>
+              <button type="button" className="faq-item-head" onClick={() => setOpen(isOpen ? -1 : i)} aria-expanded={isOpen}>
+                <span className="faq-item-q">{item.q}</span>
+                <span className="faq-item-icon">
+                  <img src={isOpen ? '/faq/chevron-up.svg' : '/faq/chevron-down.svg'} alt="" />
+                </span>
+              </button>
+              {isOpen && item.a && <p className="faq-item-a">{item.a}</p>}
+            </div>
+            {i < FAQS.length - 1 && <span className="faq-divider" />}
           </div>
         );
       })}
