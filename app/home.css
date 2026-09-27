@@ -532,9 +532,13 @@ html:has(.home-root){scroll-behavior:smooth;}
 /* The exported SVG's own viewBox (1362.67x862) is padded beyond the real 1280x782 graph
    for its drop-shadow/blur bleed, so it can't be inset:0/100% - that squeezes the padding
    into the box too and shifts the real axis/line inward, out from under the step cards.
-   These insets are Figma's own bleed percentages, positioning the true graph content flush
-   with the container edges while letting the soft blur hang outside it, unclipped. */
-.home-root .process-diagram-graph{position:absolute;top:-4.09%;right:-3.33%;bottom:-6.14%;left:-3.13%;width:auto;height:auto;pointer-events:none;user-select:none;}
+   top/left position the true graph content flush with the container's edges (Figma's own
+   bleed percentages) while width/height are computed explicitly via calc() rather than
+   "auto" - for a replaced element like <img>, four-sided auto insets don't solve to the
+   inset math the way they would on a <div>; the browser instead falls back to the SVG's
+   intrinsic aspect ratio and silently squashes it, which is what left the visible gap
+   between the step cards and the line/dots below them. */
+.home-root .process-diagram-graph{position:absolute;top:-4.09%;left:-3.13%;width:calc(100% * 1362.67 / 1280);height:calc(100% * 862 / 782);max-width:none;pointer-events:none;user-select:none;}
 .home-root .process-axis-y{position:absolute;top:22.6%;left:1.02%;width:24px;height:22.6%;display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;transform:rotate(180deg);font-size:16px;line-height:1.5;font-weight:600;color:#7b7780;white-space:nowrap;}
 .home-root .process-axis-x{position:absolute;top:95.27%;left:82.97%;width:17.03%;text-align:right;font-size:16px;line-height:1.5;font-weight:600;color:#7b7780;white-space:nowrap;}
 .home-root .process-step{position:absolute;display:flex;flex-direction:column;gap:20px;width:17.656%;min-width:170px;padding:20px;border:1px solid #feffff;border-radius:20px;box-shadow:0 8px 40px rgba(41,0,100,0.04);}
