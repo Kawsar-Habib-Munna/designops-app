@@ -639,12 +639,16 @@ html:has(.home-root){scroll-behavior:smooth;}
 
 .home-root .faq-card{position:relative;padding:40px;border-radius:40px;background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(41,0,100,0.04),inset 0 4px 12px rgba(254,255,255,0.04);}
 .home-root .faq-item{width:100%;}
-/* A real in-flow 1px block instead of a border/pseudo-element anchored to the item's own
-   bottom edge: that edge falls at a fractional pixel (text line-height + padding rarely
-   sums to a whole number), so a hairline positioned against it gets anti-aliased into a
-   dim, semi-transparent line in some browsers. An explicit 1px-tall element in normal
-   flow has its own integer height and doesn't inherit that fractional position. */
-.home-root .faq-divider{display:block;width:100%;height:1px;background:#feffff;}
+/* A real in-flow block instead of a border/pseudo-element anchored to the item's own
+   bottom edge (that edge falls at a fractional pixel, so a hairline positioned against
+   it anti-aliases dim in some browsers) - but even here, two of these with identical CSS
+   still rendered at different brightness depending on their cumulative page position,
+   because each one's own top/bottom can independently land on a fractional device pixel
+   under a non-integer OS display-scale factor (125%/150% Windows scaling, etc.) - a 1px
+   line can end up blended across two device pixels at ~50% each, while another lands
+   clean. 2px isn't immune to that split either, but it always leaves at least one full
+   solid device pixel, so it can't wash out to near-invisible the way 1px can. */
+.home-root .faq-divider{display:block;width:100%;height:2px;background:#feffff;}
 .home-root .faq-item-head{display:flex;align-items:center;gap:8px;width:100%;padding:12px 0;background:none;border:none;cursor:pointer;text-align:left;font:inherit;color:inherit;}
 .home-root .faq-item-q{flex:1;min-width:0;font-size:20px;line-height:1.5;font-weight:500;color:#d9d7dd;}
 .home-root .faq-item.open .faq-item-q{color:#ceb0fa;}
