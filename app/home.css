@@ -366,6 +366,65 @@ html:has(.home-root){scroll-behavior:smooth;}
   .home-root .about-photo{height:280px;}
 }
 
+/* ---------- why flow 53: Why Work With Us? (Figma 689:690/689:691, 6 cards 778:868-902,
+   industries strip 778:911). Heading block is 120px from the section top and 780px wide,
+   centered - identical spacing convention to the about/services headings. The 3x2 card
+   grid is 1280px total (3x406px cards + 2x31px gaps) so every card sits flush with the
+   1280px container edges. Card background opacity alternates in a checkerboard (0.04/0.1)
+   per Figma - not a mistake, encoded here as the "alt" card modifier. The industries row
+   overflows its 1280px frame in Figma (marked overflow-clip there), so it's implemented as
+   a duplicated, auto-scrolling marquee rather than actually clipping half the tags. ---------- */
+.home-root .why-section{background:#010003;padding:120px 0;font-family:var(--font-nunito),'Nunito Sans','Inter',sans-serif;}
+.home-root .why-inner{width:min(1280px,calc(100% - 48px));margin:0 auto;}
+.home-root .why-heading{display:flex;flex-direction:column;align-items:center;gap:24px;margin-bottom:80px;text-align:center;}
+.home-root .why-eyebrow{display:inline-flex;align-items:center;gap:12px;padding:12px 20px 12px 0;border-radius:10px;border:1px solid rgba(200,197,205,0.4);background:rgba(103,107,106,0.04);box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-family:var(--font-inter-stats),'Inter',sans-serif;font-size:16px;line-height:1.5;font-weight:500;color:#ceb0fa;white-space:nowrap;}
+.home-root .why-eyebrow img{display:block;width:40px;height:1px;}
+.home-root .why-heading-copy{display:flex;flex-direction:column;align-items:center;gap:32px;width:100%;max-width:780px;}
+.home-root .why-title{font-family:var(--font-playfair),'Playfair Display',serif;font-size:36px;line-height:1.5;font-weight:700;color:#e6e4e8;}
+.home-root .why-desc{font-size:16px;line-height:1.5;font-weight:500;color:#ada8b4;}
+
+.home-root .why-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:31px;margin-bottom:100px;}
+.home-root .why-card{position:relative;display:flex;flex-direction:column;gap:116px;padding:40px;border:1px solid #feffff;border-radius:36px;box-shadow:0 8px 40px rgba(41,0,100,0.12);overflow:hidden;}
+.home-root .why-card::before{content:'';position:absolute;inset:0;border-radius:inherit;background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);pointer-events:none;}
+.home-root .why-card.alt::before{background:rgba(103,107,106,0.1);}
+.home-root .why-card::after{content:'';position:absolute;inset:-1px;border-radius:inherit;box-shadow:inset 0 4px 12px rgba(254,255,255,0.04);pointer-events:none;}
+.home-root .why-card-top{position:relative;display:flex;align-items:center;gap:40px;}
+.home-root .why-card-icon{position:relative;display:flex;align-items:center;justify-content:center;width:72px;height:72px;border-radius:16px;box-shadow:0 8px 40px rgba(41,0,100,0.12);flex-shrink:0;}
+.home-root .why-card-icon::before{content:'';position:absolute;inset:0;border-radius:inherit;background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
+.home-root .why-card-icon::after{content:'';position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 4px 12px rgba(254,255,255,0.04);}
+.home-root .why-card-icon img{position:relative;width:40px;height:40px;border-radius:10px;object-fit:cover;}
+.home-root .why-card-line{position:relative;flex:1;min-width:0;height:1px;}
+.home-root .why-card-line img{display:block;width:100%;height:auto;}
+.home-root .why-card-copy{position:relative;display:flex;flex-direction:column;gap:28px;}
+.home-root .why-card-title{font-family:var(--font-playfair),'Playfair Display',serif;font-size:24px;line-height:1.5;font-weight:600;color:#d9d7dd;}
+.home-root .why-card-desc{font-size:16px;line-height:1.5;font-weight:500;color:#ada8b4;}
+
+.home-root .why-tailored{display:flex;flex-direction:column;gap:60px;}
+.home-root .why-tailored-head{display:flex;align-items:baseline;gap:40px;}
+.home-root .why-tailored-title{font-family:var(--font-playfair),'Playfair Display',serif;font-size:24px;line-height:1.5;font-weight:600;color:#d9d7dd;white-space:nowrap;}
+.home-root .why-tailored-line{position:relative;flex:1;min-width:0;height:1px;}
+.home-root .why-tailored-line img{display:block;width:100%;height:auto;}
+.home-root .why-tags{position:relative;overflow:hidden;padding:2px 0;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);}
+.home-root .why-tags-track{display:flex;gap:20px;width:max-content;animation:why-tags-scroll 32s linear infinite;}
+.home-root .why-tag{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:26px 32px;border-radius:20px;border:1px solid rgba(200,197,205,0.4);background:rgba(103,107,106,0.04);box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:20px;line-height:1.5;font-weight:600;color:#ada8b4;white-space:nowrap;flex-shrink:0;}
+@keyframes why-tags-scroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+@media (max-width:1100px){
+  .home-root .why-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media (max-width:640px){
+  .home-root .why-section{padding:64px 0;}
+  .home-root .why-heading{margin-bottom:48px;}
+  .home-root .why-title{font-size:28px;}
+  .home-root .why-grid{grid-template-columns:1fr;gap:20px;margin-bottom:64px;}
+  .home-root .why-card{gap:56px;padding:32px;}
+  .home-root .why-tailored-head{flex-direction:column;align-items:flex-start;gap:16px;}
+  .home-root .why-tag{padding:16px 20px;font-size:16px;}
+}
+@media (prefers-reduced-motion:reduce){
+  .home-root .why-tags-track{animation:none;}
+}
+
 /* ---------- section shared ---------- */
 .home-root .section{padding:96px 0;}
 .home-root .section-title{font-size:clamp(24px,3.2vw,32px);font-weight:800;letter-spacing:-0.02em;margin-bottom:44px;}

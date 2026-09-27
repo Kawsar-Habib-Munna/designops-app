@@ -75,6 +75,17 @@ const ABOUT_TOOLS = [
   { src: '/about/tool-7.svg', rotate: 16, faded: false },
 ];
 
+const WHY_CARDS = [
+  { icon: '/why/icon-strategy.webp', title: 'Strategy Before Screens', desc: 'We understand user and business goals before designing.' },
+  { icon: '/why/icon-user.webp', title: 'User-Centered Thinking', desc: 'We design around real user needs to create clear, intuitive, and useful experiences.', alt: true },
+  { icon: '/why/icon-dev.webp', title: 'Design Meets Development', desc: 'Design and development collaborate to create scalable, production-ready products.' },
+  { icon: '/why/icon-purpose.webp', title: 'Purposeful Design', desc: 'Every design choice serves a purpose, from structure to visuals.', alt: true },
+  { icon: '/why/icon-collab.webp', title: 'Collaborative Partnership', desc: 'We collaborate with clients and keep projects moving.' },
+  { icon: '/why/icon-grow.webp', title: 'Built to Grow', desc: 'We create flexible digital systems that evolve with your business.', alt: true },
+];
+
+const WHY_INDUSTRIES = ['FinTech', 'SaaS', 'E-commerce', 'Healthcare', 'Government', 'Marketplace', 'Education', 'Business', 'Travel', 'Real Estate', 'Foods', 'Logistics'];
+
 const PROCESS_STEPS = [
   { name: 'Discover', desc: 'Research & a clear problem statement.', image: '/Discover.jpg' },
   { name: 'Design', desc: 'Wireframes to high-fidelity UI.', image: '/Design.jpg' },
@@ -287,6 +298,56 @@ export default async function Home() {
                 <span className="about-know-more-label">Know More</span>
                 <img src="/about/arrow-know-more.svg" alt="" />
               </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section why-section">
+        <div className="why-inner reveal">
+          <div className="why-heading">
+            <span className="why-eyebrow">
+              <img src="/stats/line.svg" alt="" />
+              <span>WHY FLOW 53</span>
+            </span>
+            <div className="why-heading-copy">
+              <h2 className="why-title">Why Work With Us?</h2>
+              <p className="why-desc">We look beyond the interface to understand the problem, align with your goals, and create solutions that are thoughtful, scalable, and built to make an impact.</p>
+            </div>
+          </div>
+
+          <div className="why-grid">
+            {WHY_CARDS.map((c) => (
+              <div className={`why-card${c.alt ? ' alt' : ''}`} key={c.title}>
+                <div className="why-card-top">
+                  <span className="why-card-icon">
+                    <img src={c.icon} alt="" />
+                  </span>
+                  <span className="why-card-line">
+                    <img src="/why/card-line.svg" alt="" />
+                  </span>
+                </div>
+                <div className="why-card-copy">
+                  <h3 className="why-card-title">{c.title}</h3>
+                  <p className="why-card-desc">{c.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="why-tailored">
+            <div className="why-tailored-head">
+              <h3 className="why-tailored-title">Tailored For Various Industries</h3>
+              <span className="why-tailored-line">
+                <img src="/why/tailored-line.svg" alt="" />
+              </span>
+            </div>
+            <div className="why-tags" aria-hidden="true">
+              <div className="why-tags-track">
+                {[...WHY_INDUSTRIES, ...WHY_INDUSTRIES].map((name, i) => (
+                  <span className="why-tag" key={i}>{name}</span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
