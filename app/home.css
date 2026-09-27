@@ -521,7 +521,7 @@ html:has(.home-root){scroll-behavior:smooth;}
    purple-glow treatment in Figma; Define/Design/Develop/Launch share one plain style. */
 .home-root .process-section{background:#010003;padding:120px 0;font-family:var(--font-nunito),'Nunito Sans','Inter',sans-serif;}
 .home-root .process-inner{width:min(1280px,calc(100% - 48px));margin:0 auto;}
-.home-root .process-heading{display:flex;flex-direction:column;gap:24px;margin-bottom:80px;}
+.home-root .process-heading{display:flex;flex-direction:column;align-items:flex-start;gap:24px;margin-bottom:80px;}
 .home-root .process-eyebrow{display:inline-flex;align-items:center;gap:12px;padding:12px 20px 12px 0;border-radius:10px;border:1px solid rgba(200,197,205,0.4);background:rgba(103,107,106,0.04);box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-family:var(--font-inter-stats),'Inter',sans-serif;font-size:16px;line-height:1.5;font-weight:500;color:#ceb0fa;white-space:nowrap;}
 .home-root .process-eyebrow img{display:block;width:40px;height:1px;}
 .home-root .process-heading-copy{display:flex;flex-direction:column;gap:32px;width:100%;max-width:780px;}
