@@ -638,8 +638,11 @@ html:has(.home-root){scroll-behavior:smooth;}
 .home-root .faq-pill{position:relative;display:flex;align-items:center;justify-content:center;padding:24px 40px;border-radius:40px;background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(41,0,100,0.04),inset 0 4px 12px rgba(254,255,255,0.04);font-family:var(--font-playfair),'Playfair Display',serif;font-size:24px;line-height:1.5;font-weight:600;color:#ced0d4;text-align:center;}
 
 .home-root .faq-card{position:relative;padding:40px;border-radius:40px;background:rgba(103,107,106,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(41,0,100,0.04),inset 0 4px 12px rgba(254,255,255,0.04);}
-.home-root .faq-item{width:100%;}
-.home-root .faq-item:not(.last){border-bottom:1px solid #feffff;}
+.home-root .faq-item{position:relative;width:100%;}
+/* A filled 1px bar instead of border-bottom: a hairline border sitting on an element
+   whose ancestor (.faq-card) has backdrop-filter:blur() can render dimmed/anti-aliased
+   in some browsers - a solid background fill doesn't have that ambiguity. */
+.home-root .faq-item:not(.last)::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:#feffff;}
 .home-root .faq-item-head{display:flex;align-items:center;gap:8px;width:100%;padding:12px 0;background:none;border:none;cursor:pointer;text-align:left;font:inherit;color:inherit;}
 .home-root .faq-item-q{flex:1;min-width:0;font-size:20px;line-height:1.5;font-weight:500;color:#d9d7dd;}
 .home-root .faq-item.open .faq-item-q{color:#ceb0fa;}
