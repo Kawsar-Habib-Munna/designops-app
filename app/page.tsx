@@ -243,6 +243,8 @@ export default async function Home() {
       <section className="section about-section" id="about">
         <div className="about-inner reveal">
           <div className="about-heading">
+            <img className="about-deco about-deco-1" src="/about/deco2.svg" alt="" aria-hidden="true" />
+            <img className="about-deco about-deco-3" src="/about/deco4.svg" alt="" aria-hidden="true" />
             <span className="about-eyebrow">
               <img src="/stats/line.svg" alt="" />
               <span>About Us</span>
@@ -271,6 +273,8 @@ export default async function Home() {
               <p className="about-lead">
                 <span className="about-lead-brand">Flow 53</span> is a design agency creating meaningful digital experiences that connect people and businesses. We combine user-centered design, technology, and creative problem-solving to transform ideas into intuitive applications and products. We work collaboratively to understand challenges and build purposeful solutions. Our goal is to create digital experiences that are thoughtful, seamless, and help businesses progress.
               </p>
+              <img className="about-deco about-deco-2" src="/about/deco1.svg" alt="" aria-hidden="true" />
+              <img className="about-deco about-deco-4" src="/about/deco3.svg" alt="" aria-hidden="true" />
               <div className="about-mission">
                 <h3 className="about-mv-title">Our Mission</h3>
                 <p className="about-mv-desc">To shape meaningful digital experiences that transform businesses and lives.</p>
@@ -286,11 +290,6 @@ export default async function Home() {
             </div>
           </div>
         </div>
-
-        <img className="about-deco about-deco-1" src="/about/deco2.svg" alt="" aria-hidden="true" />
-        <img className="about-deco about-deco-2" src="/about/deco1.svg" alt="" aria-hidden="true" />
-        <img className="about-deco about-deco-3" src="/about/deco4.svg" alt="" aria-hidden="true" />
-        <img className="about-deco about-deco-4" src="/about/deco3.svg" alt="" aria-hidden="true" />
       </section>
 
       <section className="section process-section" id="process">

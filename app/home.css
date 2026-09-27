@@ -300,7 +300,7 @@ html:has(.home-root){scroll-behavior:smooth;}
    plain stacked column below 900px where there's no room for it. */
 .home-root .about-section{position:relative;background:#010003;overflow:hidden;font-family:var(--font-nunito),'Nunito Sans','Inter',sans-serif;}
 .home-root .about-inner{position:relative;width:min(1280px,calc(100% - 48px));margin:0 auto;padding:120px 0;}
-.home-root .about-heading{display:flex;flex-direction:column;align-items:center;gap:24px;margin-bottom:80px;text-align:center;}
+.home-root .about-heading{position:relative;display:flex;flex-direction:column;align-items:center;gap:24px;margin-bottom:80px;text-align:center;}
 .home-root .about-eyebrow{display:inline-flex;align-items:center;gap:12px;padding:12px 20px 12px 0;border-radius:10px;border:1px solid rgba(239,230,253,0.2);background:rgba(103,107,106,0.04);box-shadow:0 8px 20px rgba(129,51,241,0.04);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-family:var(--font-inter-stats),'Inter',sans-serif;font-size:16px;line-height:1.5;font-weight:500;color:#ceb0fa;white-space:nowrap;}
 .home-root .about-eyebrow img{display:block;width:40px;height:1px;}
 .home-root .about-heading-copy{display:flex;flex-direction:column;align-items:center;gap:32px;width:100%;max-width:780px;}
@@ -336,18 +336,17 @@ html:has(.home-root){scroll-behavior:smooth;}
 .home-root .about-know-more img{display:block;width:24px;height:24px;}
 
 .home-root .about-deco{position:absolute;pointer-events:none;user-select:none;}
-.home-root .about-deco-1{top:227px;left:170px;}
-.home-root .about-deco-3{top:613px;left:1270px;}
-/* deco-2 and deco-4 are pinned to the lead paragraph (653:2468), not either heading, per
-   Figma's own measurements: deco-2 sits 42px below the paragraph's bottom, left-aligned to
-   its left edge; deco-4 sits 16px below it, left-aligned to the paragraph's RIGHT edge (so
-   it extends further right from there). Figma's raw y-coordinates translated to a ~100px
-   too-high position here - the paragraph reflows to a slightly different height than
-   Figma's fixed export - so these were measured directly against the rendered .about-lead
-   instead (top = lead's rendered bottom + 42/16, converted to this element's own
-   .about-section-relative offset) rather than hand-derived from Figma's numbers. */
-.home-root .about-deco-2{top:679px;left:700px;}
-.home-root .about-deco-4{top:653px;left:1360px;}
+/* Figma groups deco-1/deco-3 as children of the "So, Who Are We?" heading frame
+   (940:13736, 1280px wide - same rendered width as .about-heading) and deco-2/deco-4
+   as children of the "Our Mission" frame (940:13738, nested inside the 660px-wide
+   content column) - not as independent, page-absolute elements. Positioned here
+   relative to those real parents using Figma's exact local offsets, so no reflow-vs-Figma
+   drift correction is needed (about-heading and about-content both render at the same
+   width/position as their Figma frames at design width). */
+.home-root .about-deco-1{top:-40px;left:90px;}
+.home-root .about-deco-3{top:13px;left:1190px;}
+.home-root .about-deco-2{top:173px;left:0;}
+.home-root .about-deco-4{top:147px;left:660px;}
 
 @media (max-width:1100px){
   .home-root .about-photo-card{width:460px;}
