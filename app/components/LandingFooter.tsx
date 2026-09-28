@@ -86,14 +86,23 @@ export default function LandingFooter() {
     e.preventDefault();
   }
 
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   return (
     <footer className="footer">
       <div className="footer-inner">
-        <div className="footer-glow" aria-hidden="true" />
         <div className="footer-divider" />
 
-        <div className="footer-main reveal">
-          <div className="footer-brand-col">
+        <div className="footer-main-wrap">
+          <div className="footer-gutter-line" aria-hidden="true" />
+          <button type="button" className="footer-scroll-top" onClick={scrollToTop} aria-label="উপরে যান">
+            <img src="/footer/icon-scroll-top.svg" alt="" />
+          </button>
+
+          <div className="footer-main reveal">
+            <div className="footer-brand-col">
             <div className="footer-newsletter-block">
               <div className="footer-newsletter-copy">
                 <p className="footer-heading">
@@ -178,15 +187,21 @@ export default function LandingFooter() {
               </div>
             </div>
           </div>
+          </div>
         </div>
 
-        <div className="footer-divider" />
+        <div className="footer-bottom-wrap">
+          <div className="footer-glow" aria-hidden="true" />
+          <div className="footer-divider" />
 
-        <div className="footer-bottom">
-          <span className="footer-copyright">
-            <img src="/footer/copyright-dot.svg" alt="©" /> {new Date().getFullYear()} Flow 53. All Rights Reserved.
-          </span>
-          <img src="/footer/payment-cards.webp" alt="আমরা PayPal, Visa, MasterCard, Maestro এবং American Express গ্রহণ করি" className="footer-payment-cards" />
+          <div className="footer-bottom">
+            <span className="footer-copyright">
+              <img src="/footer/copyright-dot.svg" alt="©" /> {new Date().getFullYear()} Flow 53. All Rights Reserved.
+            </span>
+            <img src="/footer/payment-cards.webp" alt="আমরা PayPal, Visa, MasterCard, Maestro এবং American Express গ্রহণ করি" className="footer-payment-cards" />
+          </div>
+
+          <div className="footer-divider" />
         </div>
       </div>
     </footer>

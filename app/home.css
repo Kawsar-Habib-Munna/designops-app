@@ -1818,7 +1818,7 @@ html:has(.home-root) {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  object-fit: cover;
+  object-fit: fill;
 }
 .home-root .why-card-line {
   position: relative;
@@ -3649,14 +3649,22 @@ html:has(.home-root) {
   width: min(1280px, calc(100% - 48px));
   margin: 0 auto;
 }
+.home-root .footer-bottom-wrap {
+  position: relative;
+  overflow: hidden;
+}
 .home-root .footer-glow {
   position: absolute;
   left: 50%;
   top: 0;
   width: 800px;
-  height: 420px;
-  transform: translate(-50%, -35%);
-  background: radial-gradient(circle, rgba(129, 51, 241, 0.12) 0%, rgba(129, 51, 241, 0) 70%);
+  height: 100%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse 50% 100% at 50% 0%,
+    rgba(129, 51, 241, 0.14) 0%,
+    rgba(129, 51, 241, 0) 72%
+  );
   filter: blur(10px);
   pointer-events: none;
 }
@@ -3666,6 +3674,50 @@ html:has(.home-root) {
   border: none;
   background: rgba(254, 255, 255, 0.08);
   box-shadow: 0 8px 20px rgba(41, 0, 100, 0.04);
+}
+
+.home-root .footer-main-wrap {
+  position: relative;
+}
+.home-root .footer-gutter-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 39.0625%;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(254, 255, 255, 0.1), rgba(254, 255, 255, 0));
+}
+.home-root .footer-scroll-top {
+  position: absolute;
+  bottom: 0;
+  left: 39.0625%;
+  transform: translate(-50%, 50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  padding: 16px;
+  border: 1px solid #feffff;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #8133f1, #6200ee);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  filter: drop-shadow(0 12px 20px rgba(129, 51, 241, 0.12));
+  cursor: pointer;
+  transition:
+    filter 0.2s ease,
+    transform 0.2s ease;
+}
+.home-root .footer-scroll-top:hover {
+  filter: drop-shadow(0 16px 28px rgba(129, 51, 241, 0.32));
+  transform: translate(-50%, 50%) translateY(-2px);
+}
+.home-root .footer-scroll-top img {
+  width: 24px;
+  height: 24px;
+  display: block;
 }
 
 .home-root .footer-main {
@@ -3719,7 +3771,7 @@ html:has(.home-root) {
   max-width: 420px;
   padding: 8px 8px 8px 20px;
   border-radius: 16px;
-  border: 1px solid #4f7fff;
+  /* border: 1px solid #4f7fff; */
   background: rgba(103, 107, 106, 0.04);
   backdrop-filter: blur(2.5px);
   -webkit-backdrop-filter: blur(2.5px);
@@ -3765,7 +3817,11 @@ html:has(.home-root) {
   justify-content: center;
   padding: 8px 20px;
   border-radius: 8px;
-  background: linear-gradient(90deg, rgba(239, 230, 253, 0.1), rgba(206, 176, 250, 0.1));
+  background: linear-gradient(
+    90deg,
+    rgba(239, 230, 253, 0.1),
+    rgba(206, 176, 250, 0.1)
+  );
   font-size: 16px;
   font-weight: 500;
   color: #efe6fd;
@@ -3870,7 +3926,8 @@ html:has(.home-root) {
   display: block;
 }
 .home-root .footer-pin-icon {
-  border: 1px solid #feffff;
+  /* border: 1px solid #feffff; */
+  border: 1px solid rgba(254, 255, 255, 0.1);
   border-radius: 4px;
   padding: 4px;
   box-sizing: border-box;
@@ -3934,10 +3991,14 @@ a.footer-contact-row:hover .footer-contact-text {
   height: 44px;
   border: 1px solid #feffff;
   border-radius: 4px;
-  object-fit: cover;
+  object-fit: fill;
 }
 
 @media (max-width: 900px) {
+  .home-root .footer-gutter-line,
+  .home-root .footer-scroll-top {
+    display: none;
+  }
   .home-root .footer-main {
     gap: 48px;
   }
