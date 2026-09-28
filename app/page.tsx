@@ -4,7 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { driveThumbnailUrl, driveFullImageUrl } from '@/lib/driveUpload';
 import LandingNav from '@/app/components/LandingNav';
 import LandingFooter from '@/app/components/LandingFooter';
-import BookCallButton, { WHATSAPP_URL } from '@/app/components/BookCallButton';
+import { WHATSAPP_URL } from '@/app/components/BookCallButton';
 import RevealOnScroll from '@/app/components/RevealOnScroll';
 import ServicesShowcase from '@/app/components/ServicesShowcase';
 import ProjectsCarousel from '@/app/components/ProjectsCarousel';
@@ -62,8 +62,6 @@ async function fetchCaseStudies(): Promise<CaseStudyCard[]> {
     return [];
   }
 }
-
-const SERVICES_LIST = ['UI / UX Design', 'Frontend Design', 'SaaS Design'];
 
 // Figma (682:677) alternates each icon's tilt and fades exactly two of the seven (not a
 // simple first/last pattern) - reproduced as given rather than normalized into a rule.
@@ -535,7 +533,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="section cta-final-section">
+      <section className="section cta-final-section" id="contact">
         <div className="cta-final-inner reveal">
           <div className="cta-final-card">
             <div className="cta-final-heading">
@@ -560,36 +558,6 @@ export default async function Home() {
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
                 </svg>
               </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section services-section">
-        <div className="container services-split reveal">
-          <div className="collage-grid" aria-hidden="true">
-            <div className="collage-col" style={{ marginTop: 30 }}>
-              <div className="collage-img" style={{ height: 190, backgroundImage: 'url(/1.jpg)' }}></div>
-              <div className="collage-img" style={{ height: 130, backgroundImage: 'url(/2.jpg)' }}></div>
-            </div>
-            <div className="collage-col">
-              <div className="collage-img" style={{ height: 150, backgroundImage: 'url(/3.jpg)' }}></div>
-              <div className="collage-img" style={{ height: 170, backgroundImage: 'url(/4.jpg)' }}></div>
-            </div>
-            <div className="collage-col" style={{ marginTop: 50 }}>
-              <div className="collage-img" style={{ height: 160, backgroundImage: 'url(/5.jpg)' }}></div>
-              <div className="collage-img" style={{ height: 130, backgroundImage: 'url(/6.jpg)' }}></div>
-            </div>
-          </div>
-          <div>
-            <div className="collage-services-title">Our Services</div>
-            <div className="services-list-plain">
-              {SERVICES_LIST.map((s, i) => (
-                <div className="service-plain-item" key={s}>
-                  <span className="service-plain-index">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="service-plain-name">{s}</span>
-                </div>
-              ))}
             </div>
           </div>
         </div>
@@ -638,13 +606,6 @@ export default async function Home() {
               })}
             </div>
           )}
-        </div>
-      </section>
-
-      <section className="cta-band" id="contact">
-        <div className="container reveal">
-          <h2 className="cta-band-title">Got a product that deserves better design?</h2>
-          <BookCallButton />
         </div>
       </section>
 

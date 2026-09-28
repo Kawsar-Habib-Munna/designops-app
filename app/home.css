@@ -3417,100 +3417,6 @@ html:has(.home-root) {
   }
 }
 
-/* ---------- services + collage ---------- */
-.home-root .services-section {
-  background: var(--surface);
-}
-.home-root .services-split {
-  display: grid;
-  grid-template-columns: 1.3fr 1fr;
-  gap: 60px;
-  align-items: center;
-}
-.home-root .collage-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px;
-}
-.home-root .collage-col {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.home-root .collage-img {
-  border-radius: var(--radius-md);
-  width: 100%;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  transition:
-    transform 0.4s ease,
-    filter 0.4s ease;
-  filter: saturate(0.9);
-}
-.home-root .collage-img:hover {
-  transform: scale(1.03);
-  filter: saturate(1.05);
-}
-.home-root .collage-services-title {
-  font-size: 24px;
-  font-weight: 800;
-  margin-bottom: 22px;
-}
-.home-root .services-list-plain {
-  display: flex;
-  flex-direction: column;
-}
-.home-root .service-plain-item {
-  display: flex;
-  align-items: baseline;
-  gap: 18px;
-  padding: 17px 0;
-  border-bottom: 1px solid var(--border);
-  transition: padding-left 0.2s ease;
-}
-.home-root .service-plain-item:first-child {
-  border-top: 1px solid var(--border);
-}
-.home-root .service-plain-item:hover {
-  padding-left: 8px;
-}
-.home-root .service-plain-index {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ink-faint);
-  flex-shrink: 0;
-}
-.home-root .service-plain-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--ink-soft);
-  position: relative;
-  display: inline-block;
-  transition: color 0.15s ease;
-}
-.home-root .service-plain-name::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -4px;
-  width: 0;
-  height: 1.5px;
-  background: var(--accent);
-  transition: width 0.3s ease;
-}
-.home-root .service-plain-item:hover .service-plain-name {
-  color: var(--ink);
-}
-.home-root .service-plain-item:hover .service-plain-name::after {
-  width: 100%;
-}
-@media (max-width: 860px) {
-  .home-root .services-split {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* ---------- team ---------- */
 .home-root .team-section {
   background: var(--bg);
@@ -3603,7 +3509,7 @@ html:has(.home-root) {
   }
 }
 
-/* ---------- final cta ---------- */
+/* ---------- legacy cta band: still used by app/work/[slug]/page.tsx ---------- */
 .home-root .cta-band {
   position: relative;
   background: var(--surface);
