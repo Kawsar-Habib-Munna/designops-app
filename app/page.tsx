@@ -63,25 +63,13 @@ async function fetchCaseStudies(): Promise<CaseStudyCard[]> {
   }
 }
 
-// Figma (682:677) alternates each icon's tilt and fades exactly two of the seven (not a
-// simple first/last pattern) - reproduced as given rather than normalized into a rule.
-const ABOUT_TOOLS = [
-  { src: '/about/tool-1.svg', rotate: -16, faded: true },
-  { src: '/about/tool-2.svg', rotate: 16, faded: false },
-  { src: '/about/tool-3.svg', rotate: -16, faded: false },
-  { src: '/about/tool-4.svg', rotate: 0, faded: true },
-  { src: '/about/tool-5.svg', rotate: 16, faded: false },
-  { src: '/about/tool-6.svg', rotate: -16, faded: false },
-  { src: '/about/tool-7.svg', rotate: 16, faded: false },
-];
-
 const WHY_CARDS = [
-  { icon: '/why/icon-strategy.webp', title: 'Strategy Before Screens', desc: 'We understand user and business goals before designing.' },
-  { icon: '/why/icon-user.webp', title: 'User-Centered Thinking', desc: 'We design around real user needs to create clear, intuitive, and useful experiences.', alt: true },
-  { icon: '/why/icon-dev.webp', title: 'Design Meets Development', desc: 'Design and development collaborate to create scalable, production-ready products.' },
-  { icon: '/why/icon-purpose.webp', title: 'Purposeful Design', desc: 'Every design choice serves a purpose, from structure to visuals.', alt: true },
-  { icon: '/why/icon-collab.webp', title: 'Collaborative Partnership', desc: 'We collaborate with clients and keep projects moving.' },
-  { icon: '/why/icon-grow.webp', title: 'Built to Grow', desc: 'We create flexible digital systems that evolve with your business.', alt: true },
+  { icon: '/why/icon-strategy.png', title: 'Strategy Before Screens', desc: 'We understand user and business goals before designing.' },
+  { icon: '/why/icon-user.png', title: 'User-Centered Thinking', desc: 'We design around real user needs to create clear, intuitive, and useful experiences.', alt: true },
+  { icon: '/why/icon-dev.png', title: 'Design Meets Development', desc: 'Design and development collaborate to create scalable, production-ready products.' },
+  { icon: '/why/icon-purpose.png', title: 'Purposeful Design', desc: 'Every design choice serves a purpose, from structure to visuals.', alt: true },
+  { icon: '/why/icon-collab.png', title: 'Collaborative Partnership', desc: 'We collaborate with clients and keep projects moving.' },
+  { icon: '/why/icon-grow.png', title: 'Built to Grow', desc: 'We create flexible digital systems that evolve with your business.', alt: true },
 ];
 
 const WHY_INDUSTRIES = ['FinTech', 'SaaS', 'E-commerce', 'Healthcare', 'Government', 'Marketplace', 'Education', 'Business', 'Travel', 'Real Estate', 'Foods', 'Logistics'];
@@ -285,13 +273,7 @@ export default async function Home() {
               <div className="about-photo">
                 <img src="/about/photo.webp" alt="The Flow 53 team collaborating around a whiteboard session" />
               </div>
-              <div className="about-tools" aria-hidden="true">
-                {ABOUT_TOOLS.map((t, i) => (
-                  <span className={`about-tool${t.faded ? ' faded' : ''}`} key={i} style={{ transform: `rotate(${t.rotate}deg)` }}>
-                    <img src={t.src} alt="" />
-                  </span>
-                ))}
-              </div>
+              <img src="/about/flow-wordmark.png" alt="" className="about-watermark" aria-hidden="true" />
             </div>
 
             <div className="about-content">
@@ -480,7 +462,7 @@ export default async function Home() {
               <FaqAccordion />
             </div>
             <div className="faq-col">
-              <div className="faq-pill">Let&rsquo;s Work Together</div>
+              <div className="faq-pill faq-pill-stroke">Let&rsquo;s Work Together</div>
               <div className="contact-card">
                 <ContactForm />
               </div>
@@ -536,6 +518,18 @@ export default async function Home() {
       <section className="section cta-final-section" id="contact">
         <div className="cta-final-inner reveal">
           <div className="cta-final-card">
+            <div className="cta-final-deco" aria-hidden="true">
+              <span className="cta-deco-badge cta-deco-figma">
+                <img src="/cta/icon-figma.svg" alt="" />
+              </span>
+              <img src="/cta/icon-xd-a.svg" alt="" className="cta-deco-plain cta-deco-xd" />
+              <img src="/cta/icon-spiral.svg" alt="" className="cta-deco-plain cta-deco-spiral" />
+              <img src="/cta/icon-sunburst.svg" alt="" className="cta-deco-plain cta-deco-sunburst" />
+              <img src="/cta/icon-framer.svg" alt="" className="cta-deco-plain cta-deco-framer" />
+              <span className="cta-deco-badge cta-deco-illustrator">
+                <img src="/cta/icon-illustrator.svg" alt="" />
+              </span>
+            </div>
             <div className="cta-final-heading">
               <span className="cta-final-eyebrow">
                 <img src="/stats/line.svg" alt="" />

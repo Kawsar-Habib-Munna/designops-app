@@ -191,14 +191,19 @@ export default function LandingFooter() {
         </div>
 
         <div className="footer-bottom-wrap">
-          <div className="footer-glow" aria-hidden="true" />
           <div className="footer-divider" />
 
           <div className="footer-bottom">
             <span className="footer-copyright">
               <img src="/footer/copyright-dot.svg" alt="©" /> {new Date().getFullYear()} Flow 53. All Rights Reserved.
             </span>
-            <img src="/footer/payment-cards.webp" alt="আমরা PayPal, Visa, MasterCard, Maestro এবং American Express গ্রহণ করি" className="footer-payment-cards" />
+            <div className="footer-payment-cards" role="img" aria-label="আমরা bKash, PayPal, Visa, MasterCard এবং American Express গ্রহণ করি">
+              <img src="/footer/payment/bkash.svg" alt="" className="footer-payment-icon footer-payment-bkash" />
+              <img src="/footer/payment/paypal.svg" alt="" className="footer-payment-icon" />
+              <img src="/footer/payment/visa.svg" alt="" className="footer-payment-icon" />
+              <img src="/footer/payment/mastercard.svg" alt="" className="footer-payment-icon" />
+              <img src="/footer/payment/amex.svg" alt="" className="footer-payment-icon" />
+            </div>
           </div>
 
           <div className="footer-divider" />

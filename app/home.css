@@ -102,8 +102,10 @@ html:has(.home-root) {
 }
 .home-root .nav-logo {
   justify-self: start;
-  display: block;
-  width: 184px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 160px;
   height: 60px;
   padding: 12px;
   transition: opacity 0.15s ease;
@@ -114,35 +116,33 @@ html:has(.home-root) {
 .home-root .nav-logo-art {
   position: relative;
   display: block;
-  width: 200px;
-  height: 44px;
-  transform: scale(0.8);
-  transform-origin: 0 0;
+  width: 124px;
+  height: 27px;
 }
 .home-root .nav-logo-mark {
   position: absolute;
   left: 0;
   top: 0;
-  width: 34px;
-  height: 44px;
+  width: 21px;
+  height: 27px;
   display: block;
 }
 .home-root .nav-logo-text {
   position: absolute;
-  left: 46px;
+  left: 28px;
   top: 0;
-  width: 154px;
-  height: 28px;
+  width: 95px;
+  height: 17px;
   display: block;
 }
 .home-root .nav-logo-tagline {
   position: absolute;
-  left: 46px;
-  top: 33px;
-  font-size: 12px;
+  left: 28px;
+  top: 20px;
+  font-size: 7px;
   line-height: 1;
   font-weight: 600;
-  letter-spacing: 0.72px;
+  letter-spacing: 0.45px;
   color: #c8c5cd;
   white-space: nowrap;
 }
@@ -399,7 +399,7 @@ html:has(.home-root) {
 }
 .home-root .hero-fig {
   position: relative;
-  padding: clamp(140px, 22vh, 220px) 0 120px 0;
+  padding: clamp(180px, 26vh, 260px) 0 120px 0;
   font-family: var(--font-nunito), "Nunito Sans", "Inter", sans-serif;
 }
 .home-root .hero-fig-bg {
@@ -1454,41 +1454,16 @@ html:has(.home-root) {
   object-fit: cover;
   object-position: bottom;
 }
-.home-root .about-tools {
+.home-root .about-watermark {
   position: absolute;
-  left: 40px;
-  top: 384px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.home-root .about-tool {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-}
-.home-root .about-tool img {
+  z-index: -1;
+  left: 28px;
+  top: 344px;
+  width: 484px;
+  height: 88px;
   display: block;
-  width: 100%;
-  height: 100%;
-}
-.home-root .about-tool.faded {
-  border-radius: 50%;
-  background: rgba(103, 107, 106, 0.1);
-  opacity: 0.3;
-  box-shadow: inset 0 1px 8px rgba(150, 84, 244, 0.2);
-}
-/* tool-1 and tool-4 (the two faded icons) are natively much smaller than the other five's
-   44x44 (26x22.8 and 16.5x24.75) - width/height:100% was stretching them up to fill the
-   full circle, distorting and oversizing them instead of sitting inset like Figma's own
-   (which insets these two by ~25-30% rather than filling edge-to-edge). width/height:auto
-   renders each at its own intrinsic SVG size, small and centered by the parent's flex. */
-.home-root .about-tool.faded img {
-  width: auto;
-  height: auto;
+  mix-blend-mode: screen;
+  pointer-events: none;
 }
 
 .home-root .about-content {
@@ -1606,6 +1581,7 @@ html:has(.home-root) {
 .home-root .about-deco-3 {
   top: 13px;
   left: 1190px;
+  transform: scaleX(-1);
 }
 .home-root .about-deco-2 {
   top: 173px;
@@ -1614,6 +1590,7 @@ html:has(.home-root) {
 .home-root .about-deco-4 {
   top: 147px;
   left: 660px;
+  transform: scaleX(-1);
 }
 
 @media (max-width: 1100px) {
@@ -1635,10 +1612,8 @@ html:has(.home-root) {
     max-width: 540px;
     height: auto;
   }
-  .home-root .about-tools {
-    position: static;
-    margin-top: 16px;
-    flex-wrap: wrap;
+  .home-root .about-watermark {
+    display: none;
   }
   .home-root .about-content {
     position: static;
@@ -1827,9 +1802,13 @@ html:has(.home-root) {
   height: 1px;
 }
 .home-root .why-card-line img {
+  position: absolute;
+  left: 0;
+  top: 50%;
   display: block;
   width: 100%;
   height: auto;
+  transform: translateY(-50%);
 }
 .home-root .why-card-copy {
   position: relative;
@@ -2903,6 +2882,26 @@ html:has(.home-root) {
   color: #ced0d4;
   text-align: center;
 }
+.home-root .faq-pill-stroke {
+  border: 1px solid transparent;
+}
+.home-root .faq-pill-stroke::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(90deg, rgba(200, 197, 205, 0.8), #8133f1);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
 
 .home-root .faq-card {
   position: relative;
@@ -2931,7 +2930,12 @@ html:has(.home-root) {
   display: block;
   width: 100%;
   height: 2px;
-  background: #feffff;
+  margin: 12px 0;
+  background: rgba(254, 255, 255, 0.08);
+  transition: background 0.2s ease;
+}
+.home-root .faq-divider.active {
+  background: linear-gradient(90deg, rgba(200, 197, 205, 0.8), #8133f1);
 }
 .home-root .faq-item-head {
   display: flex;
@@ -3006,12 +3010,30 @@ html:has(.home-root) {
   position: relative;
   padding: 40px;
   border-radius: 40px;
+  border: 1px solid transparent;
   background: rgba(103, 107, 106, 0.04);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow:
     0 8px 40px rgba(41, 0, 100, 0.04),
     inset 0 4px 12px rgba(254, 255, 255, 0.04);
+}
+.home-root .contact-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(90deg, rgba(200, 197, 205, 0.8), #8133f1);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .home-root .contact-form {
   display: flex;
@@ -3038,7 +3060,7 @@ html:has(.home-root) {
   width: 100%;
   padding: 12px 0 13px;
   border: none;
-  border-bottom: 1px solid #feffff;
+  border-bottom: 1px solid rgba(254, 255, 255, 0.08);
   background: transparent;
   font-family: var(--font-nunito), "Nunito Sans", "Inter", sans-serif;
   font-size: 20px;
@@ -3052,7 +3074,7 @@ html:has(.home-root) {
 }
 .home-root .contact-field-input:focus {
   outline: none;
-  border-bottom-color: #ceb0fa;
+  border-image: linear-gradient(90deg, rgba(200, 197, 205, 0.8), #8133f1) 1;
 }
 .home-root .contact-field-textarea {
   resize: none;
@@ -3179,7 +3201,7 @@ html:has(.home-root) {
   display: block;
 }
 .home-root .faq-contact-icon-svg.whatsapp {
-  color: #03df5f;
+  color: #d9d7dd;
 }
 .home-root .faq-contact-icon-svg.location {
   color: #d9d7dd;
@@ -3266,12 +3288,29 @@ html:has(.home-root) {
   gap: 80px;
   padding: 120px 40px;
   border-radius: 40px;
-  border: 1px solid rgba(200, 197, 205, 0.8);
+  border: 1px solid transparent;
   background: rgba(103, 107, 106, 0.04);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow: 0 8px 40px rgba(41, 0, 100, 0.04);
   overflow: hidden;
+}
+.home-root .cta-final-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(90deg, rgba(200, 197, 205, 0.8), #8133f1);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .home-root .cta-final-card::after {
   content: "";
@@ -3280,6 +3319,76 @@ html:has(.home-root) {
   border-radius: inherit;
   box-shadow: inset 0 4px 12px rgba(254, 255, 255, 0.04);
   pointer-events: none;
+}
+.home-root .cta-final-deco {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.home-root .cta-deco-plain {
+  position: absolute;
+  display: block;
+}
+.home-root .cta-deco-badge {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(103, 107, 106, 0.1);
+  opacity: 0.3;
+  box-shadow: inset 0 1px 8px rgba(150, 84, 244, 0.2);
+  overflow: hidden;
+}
+.home-root .cta-deco-badge img {
+  width: 40%;
+  height: auto;
+  display: block;
+}
+.home-root .cta-deco-figma {
+  left: 5%;
+  top: 44%;
+  width: 48px;
+  height: 48px;
+  transform: rotate(-16deg);
+}
+.home-root .cta-deco-xd {
+  left: 89%;
+  top: 44%;
+  width: 48px;
+  height: 48px;
+  transform: rotate(16deg);
+}
+.home-root .cta-deco-spiral {
+  left: 15%;
+  top: 9%;
+  width: 48px;
+  height: 48px;
+}
+.home-root .cta-deco-sunburst {
+  left: 86%;
+  top: 9%;
+  width: 48px;
+  height: 48px;
+}
+.home-root .cta-deco-framer {
+  left: 13%;
+  top: 82%;
+  width: 48px;
+  height: 48px;
+  transform: rotate(16deg);
+}
+.home-root .cta-deco-illustrator {
+  left: 84%;
+  top: 82%;
+  width: 48px;
+  height: 48px;
+  transform: rotate(-16deg);
+}
+@media (max-width: 640px) {
+  .home-root .cta-final-deco {
+    display: none;
+  }
 }
 .home-root .cta-final-heading {
   position: relative;
@@ -3553,15 +3662,21 @@ html:has(.home-root) {
 }
 .home-root .brand-band-img {
   display: block;
-  width: 100%;
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: min(1440px, calc(100%));
   height: 100%;
-  object-fit: cover;
+  object-fit: fill;
+  object-position: bottom;
+  padding: 0 -24px;
 }
 
 /* ---------- footer (Figma 1037:4585 / 1037:4587) ---------- */
 .home-root .footer {
   position: relative;
-  background: #010003;
+  background: url("/footer/footer-bg.webp") center bottom / 100% auto no-repeat, #010003;
   overflow: hidden;
   font-family: var(--font-nunito), "Nunito Sans", "Inter", sans-serif;
 }
@@ -3574,27 +3689,7 @@ html:has(.home-root) {
 .home-root .footer-bottom-wrap {
   position: relative;
   overflow: hidden;
-  padding: 4px 0 120px 0;
-}
-.home-root .footer-glow {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: 800px;
-  height: 100%;
-  transform: translateX(-50%);
-  background: radial-gradient(
-    ellipse 50% 100% at 50% 0%,
-    rgba(129, 51, 241, 0.55) 0%,
-    rgba(129, 51, 241, 0) 72%
-  );
-  -webkit-mask-image: url("/footer/glow-dots.webp");
-  mask-image: url("/footer/glow-dots.webp");
-  -webkit-mask-repeat: repeat;
-  mask-repeat: repeat;
-  -webkit-mask-size: 266px 498px;
-  mask-size: 266px 498px;
-  pointer-events: none;
+  padding: 4px 0 60px 0;
 }
 .home-root .footer-divider {
   position: relative;
@@ -3674,7 +3769,7 @@ html:has(.home-root) {
   display: flex;
   flex-wrap: wrap;
   gap: 60px 160px;
-  padding: 60px 0;
+  padding: 60px 0 90px 0;
 }
 .home-root .footer-brand-col {
   display: flex;
@@ -3712,6 +3807,7 @@ html:has(.home-root) {
 }
 
 .home-root .footer-subscribe {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3720,10 +3816,27 @@ html:has(.home-root) {
   max-width: 420px;
   padding: 8px 8px 8px 20px;
   border-radius: 16px;
-  border: 1px solid #262627;
+  border: 1px solid transparent;
   background: rgba(103, 107, 106, 0.04);
   backdrop-filter: blur(2.5px);
   -webkit-backdrop-filter: blur(2.5px);
+}
+.home-root .footer-subscribe::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(90deg, rgba(200, 197, 205, 0.4), rgba(129, 51, 241, 0.45));
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .home-root .footer-subscribe-input {
   flex: 1;
@@ -3826,7 +3939,7 @@ html:has(.home-root) {
 .home-root .footer-col-items {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 28px;
 }
 .home-root .footer-col-item,
 .home-root .footer-col-link {
@@ -3854,7 +3967,7 @@ html:has(.home-root) {
 .home-root .footer-contact-rows {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 28px;
 }
 .home-root .footer-contact-row {
   display: flex;
@@ -3876,6 +3989,8 @@ html:has(.home-root) {
 }
 .home-root .footer-contact-text {
   padding: 8px 16px;
+  margin-top: -8px;
+  margin-bottom: -8px;
   font-size: 16px;
   line-height: 1.5;
   font-weight: 500;
@@ -3889,7 +4004,6 @@ a.footer-contact-row:hover .footer-contact-text {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding-left: 24px;
 }
 .home-root .footer-notice-text {
   width: fit-content;
@@ -3908,7 +4022,7 @@ a.footer-contact-row:hover .footer-contact-text {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
-  padding: 40px 0 28px 0;
+  padding: 34px 0;
 }
 .home-root .footer-copyright {
   display: flex;
@@ -3924,12 +4038,23 @@ a.footer-contact-row:hover .footer-contact-text {
   height: 12px;
 }
 .home-root .footer-payment-cards {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.home-root .footer-payment-icon {
   display: block;
-  width: 267px;
-  height: 44px;
-  border: 1px solid #feffff;
-  border-radius: 4px;
-  object-fit: fill;
+  height: 36px;
+  width: auto;
+  border-radius: 2px;
+}
+.home-root .footer-payment-bkash {
+  background: #ededed;
+  padding: 8px 2px;
+  box-sizing: border-box;
+  width: 48px;
+  height: 36px;
+  object-fit: contain;
 }
 
 @media (max-width: 900px) {
@@ -3978,6 +4103,6 @@ a.footer-contact-row:hover .footer-contact-text {
   .home-root .footer-bottom {
     flex-direction: column;
     align-items: flex-start;
-    padding: 28px 0 40px 0;
+    padding: 32px 0;
   }
 }

@@ -37,7 +37,7 @@ export default function FaqAccordion() {
               </button>
               {isOpen && item.a && <p className="faq-item-a">{item.a}</p>}
             </div>
-            {i < FAQS.length - 1 && <span className="faq-divider" />}
+            {i < FAQS.length - 1 && <span className={`faq-divider${i === open ? ' active' : ''}`} />}
           </div>
         );
       })}
