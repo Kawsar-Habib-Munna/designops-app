@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic';
 
 const interStats = Inter({ subsets: ['latin'], weight: ['500'], variable: '--font-inter-stats', display: 'swap' });
 const nunito = Nunito_Sans({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-nunito', display: 'swap' });
-const playfair = Playfair_Display({ subsets: ['latin'], weight: ['400', '700'], style: ['normal', 'italic'], variable: '--font-playfair', display: 'swap' });
+const playfair = Playfair_Display({ subsets: ['latin'], weight: ['400', '600', '700'], style: ['normal', 'italic'], variable: '--font-playfair', display: 'swap' });
 
 const STATS_TOP = [
   { label: 'Experience', value: '02+' },
@@ -409,7 +409,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="section testimonials-section">
+      <section className="section testimonials-section" id="reviews">
         <div className="testimonials-inner reveal">
           <div className="testimonials-heading">
             <span className="testimonials-eyebrow">

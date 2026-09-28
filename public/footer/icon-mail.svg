@@ -1,0 +1,13 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="arcticons:huawei-email">
+<rect x="0.500001" y="0.500001" width="25" height="25" rx="4.5" stroke="url(#paint0_linear_0_206)" stroke-opacity="0.08"/>
+<path id="Vector" d="M17.7027 8H8.2973C7.58082 8 7 8.5777 7 9.29032V16.7097C7 17.4223 7.58082 18 8.2973 18H17.7027C18.4192 18 19 17.4223 19 16.7097V9.29032C19 8.5777 18.4192 8 17.7027 8Z" stroke="#ADA8B4" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector 7" d="M7 9L13 13L19 9" stroke="#ADA8B4"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_206" x1="1" y1="1" x2="25" y2="25" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FEFFFF"/>
+<stop offset="1" stop-color="#EFE6FD"/>
+</linearGradient>
+</defs>
+</svg>

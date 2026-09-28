@@ -1,0 +1,12 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="hugeicons:call-add">
+<rect x="0.500001" y="0.500001" width="25" height="25" rx="4.5" stroke="url(#paint0_linear_0_160)" stroke-opacity="0.08"/>
+<path id="Vector" d="M8.27465 12.0273L10.0347 10.2673C10.2095 10.0896 10.3332 9.86793 10.3927 9.62577C10.4521 9.38361 10.4452 9.12989 10.3727 8.89134C10.2493 8.48554 10.1404 8.0755 10.046 7.662C9.96865 7.3 9.65065 7 9.27998 7H8.27465C7.53465 7 6.92598 7.60267 7.00731 8.33867C7.62465 13.9333 12.0673 18.3754 17.6613 18.9927C18.3973 19.074 19 18.466 19 17.726V16.7193C19 16.35 18.6987 16.046 18.3347 15.9793C17.9346 15.9015 17.5396 15.7994 17.152 15.6733C16.6407 15.5107 16.0727 15.6253 15.6933 16.004L13.9727 17.7253M16 7.66667V12.3333M18.3333 10H13.6667" stroke="#ADA8B4" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_160" x1="1" y1="1" x2="25" y2="25" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FEFFFF"/>
+<stop offset="1" stop-color="#EFE6FD"/>
+</linearGradient>
+</defs>
+</svg>
