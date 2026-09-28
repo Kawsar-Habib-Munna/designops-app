@@ -175,7 +175,7 @@ export default function LandingFooter() {
                   <span className="footer-contact-text">{CONTACT_EMAIL}</span>
                 </a>
                 <div className="footer-contact-row">
-                  <span className="footer-contact-icon footer-pin-icon">
+                  <span className="footer-contact-icon">
                     <img src="/footer/icon-pin.svg" alt="" />
                   </span>
                   <span className="footer-contact-text">{CONTACT_ADDRESS}</span>

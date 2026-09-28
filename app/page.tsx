@@ -609,6 +609,10 @@ export default async function Home() {
         </div>
       </section>
 
+      <section className="brand-band" aria-hidden="true">
+        <img src="/brand/logo-band.webp" alt="" className="brand-band-img" />
+      </section>
+
       <LandingFooter />
       </div>
 
