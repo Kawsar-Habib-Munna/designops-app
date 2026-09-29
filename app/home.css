@@ -56,16 +56,19 @@
   transform: translateY(0);
 }
 
-/* home-body-এর overflow-x:hidden .home-root-এ (nav-এর ancestor) না বসিয়ে এই
-   sibling wrapper-এ বসানো হয়েছে — নাহলে overflow-x থাকলে ব্রাউজার সেই
-   ancestor-কে position:sticky-এর জন্য "scroll container" ধরে নেয় (overflow-y
-   auto-তে resolve হয়ে যায়), ফলে নেভবার viewport-এর বদলে সেই ancestor-এর
-   সাপেক্ষে sticky হয়ে যায় আর স্ক্রল করলে কনটেন্টের সাথে সরে যায়। nav যেহেতু
-   .home-root-এর direct child (এই wrapper-এর sibling, ancestor না), তাই এখানে
-   overflow-x:hidden দিলে sticky ঠিক থাকে।
+/* আগে overflow-x:hidden .home-body (একটা সাধারণ div) তে বসানো ছিল, .home-root-এ
+   (nav-এর ancestor) না বসিয়ে - কারণ কোনো div-এ overflow-x:hidden দিলে সেটা
+   position:sticky/fixed descendant-দের জন্য "containing block" হয়ে যায়
+   (viewport না), আর overflow-y:visible দিয়েও বাঁচা যায় না - CSS স্পেক অনুযায়ী
+   overflow-x আর overflow-y-এর একটা non-visible হলে অন্যটা visible থাকলেও সেটাকে
+   auto ধরে নেওয়া হয়। ProcessStory-এর pinned scroll-stage (position:sticky, .home-
+   body-এর ভেতরে নেস্টেড) ঠিক এই ফাঁদেই পড়ে scroll করলে pin না হয়ে কনটেন্টের সাথে
+   সরে যাচ্ছিল। আসল সমাধান: overflow-x:hidden রুট <html> এলিমেন্টে বসানো - root-এ
+   বসালে ব্রাউজার এটা সরাসরি viewport-এ propagate করে (সাধারণ containing-block
+   ফাঁদ তৈরি করে না), তাই sticky/fixed সব descendant viewport-এর সাপেক্ষেই কাজ করে,
+   অথচ horizontal overflow clip-ও ঠিক থাকে।
 */
 .home-root .home-body {
-  overflow-x: hidden;
   width: 100%;
 }
 .home-root .nav + .home-body {
@@ -73,6 +76,7 @@
 }
 html:has(.home-root) {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 /* ---------- nav (Figma: Flow 53 Web · 364:9422) ---------- */
@@ -560,12 +564,13 @@ html:has(.home-root) {
   gap: 20px;
 }
 .home-root .hero-start {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 16px;
   padding: 2px 16px 2px 2px;
   border-radius: 14px;
-  border: 1px solid #efe6fd;
+  border: 1px solid transparent;
   background: #010003;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -573,6 +578,23 @@ html:has(.home-root) {
   transition:
     transform 0.2s ease,
     filter 0.2s ease;
+}
+.home-root .hero-start::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, #efe6fd 0%, #6200ee 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .home-root .hero-start:hover {
   transform: translateY(-2px);
@@ -982,13 +1004,57 @@ html:has(.home-root) {
   width: min(1280px, calc(100% - 48px));
   margin: 0 auto;
 }
+.home-root .projects-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 72px;
+}
 .home-root .projects-heading {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 24px;
-  margin-bottom: 72px;
   max-width: 780px;
+}
+.home-root .projects-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+  padding: 2px 16px 2px 2px;
+  border-radius: 14px;
+  border: 1px solid #8133f1;
+  background: #ffffff;
+  box-shadow: 0 12px 20px rgba(129, 51, 241, 0.12);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.home-root .projects-view-all-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 28px;
+  border-radius: 12px;
+  background: rgba(103, 107, 106, 0.1);
+  font-family: var(--font-nunito), "Nunito Sans", "Inter", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #010003;
+  white-space: nowrap;
+}
+.home-root .projects-view-all img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+@media (max-width: 700px) {
+  .home-root .projects-heading-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 .home-root .projects-eyebrow {
   display: inline-flex;
@@ -1334,7 +1400,7 @@ html:has(.home-root) {
   }
 }
 @media (max-width: 640px) {
-  .home-root .projects-heading {
+  .home-root .projects-heading-row {
     margin-bottom: 48px;
   }
   .home-root .project-title {
@@ -2430,7 +2496,9 @@ html:has(.home-root) {
   padding: 20px;
   border: 1px solid #feffff;
   border-radius: 20px;
-  box-shadow: 0 8px 40px rgba(41, 0, 100, 0.04);
+  box-shadow:
+    0 8px 40px rgba(41, 0, 100, 0.04),
+    inset 0 4px 12px rgba(254, 255, 255, 0.04);
 }
 .home-root .process-step::before {
   content: "";
@@ -2442,22 +2510,41 @@ html:has(.home-root) {
   -webkit-backdrop-filter: blur(20px);
   pointer-events: none;
 }
-.home-root .process-step::after {
+/* একবার phase reveal হয়ে গেলে (স্ক্রল করে পার হয়ে গেলেও) gradient বর্ডারটা থেকে
+   যাবে - active থেকে past হয়ে গেলে সাদা বর্ডারে ফিরে যাবে না। তাই এই ring-টা
+   .active না, .revealed (isVisible) ক্লাসের ওপর ভিত্তি করে আঁকা হয় - .active
+   সবসময় .revealed-ও বটে, তাই বর্তমান active card-ও এই একই ring পায়। ভেতরের tint
+   layer (::before) মাত্র 10% opacity বলে সাধারণ padding-box/border-box
+   background-layering ট্রিক এখানে কাজ করে না, তাই আলাদা masked ring (::after)। */
+.home-root .process-step.revealed {
+  border: 1px solid transparent;
+}
+.home-root .process-step.revealed::after {
   content: "";
   position: absolute;
-  inset: -1px;
+  inset: 0;
   border-radius: inherit;
-  box-shadow: inset 0 4px 12px rgba(254, 255, 255, 0.04);
+  padding: 1px;
+  background: linear-gradient(45deg, #c8c5cd 0%, #9654f4 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
   pointer-events: none;
 }
 .home-root .process-step.active {
-  border-color: rgba(200, 197, 205, 0.8);
   background: linear-gradient(
     90deg,
     rgba(239, 230, 253, 0.1),
     rgba(206, 176, 250, 0.1)
   );
-  box-shadow: 0 12px 40px rgba(129, 51, 241, 0.12);
+  box-shadow:
+    0 12px 40px rgba(129, 51, 241, 0.12),
+    inset 0 4px 12px rgba(254, 255, 255, 0.04);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
@@ -2488,14 +2575,59 @@ html:has(.home-root) {
   color: #bdb9c3;
 }
 
+/* ---------- process scroll-story: pinned scroll-driven reveal (desktop), plain
+   scroll-reveal list (mobile) - see app/components/ProcessStory.tsx ---------- */
+.home-root .process-scroll-track {
+  position: relative;
+}
+/* align-items:center আগে diagram-কে stage-এর মাঝ বরাবর বসাত - viewport diagram-এর
+   782px height-এর চেয়ে ছোট হলে overflow টা উপরে-নিচে সমান ভাগ হয়ে যেত, ফলে X-axis
+   (diagram-এর একদম নিচে) কাটা পড়ত। flex-end দিয়ে diagram-এর নিচের প্রান্ত (X-axis)
+   সবসময় stage-এর নিচের কিনারায় anchor করা থাকে - ছোট viewport-এ বাড়তি overflow
+   এখন শুধু উপরের দিকে (Launch কার্ডের আশেপাশে) হয়, X-axis সবসময় visible থাকে।
+*/
+.home-root .process-scroll-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+.home-root .process-scroll-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.home-root .process-mobile-item {
+  position: relative;
+}
+.home-root .process-mobile-connector {
+  display: block;
+  width: 2px;
+  height: 16px;
+  margin: 0 auto;
+  background: rgba(254, 255, 255, 0.16);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.5s ease;
+}
+.home-root .process-mobile-connector.visible {
+  transform: scaleY(1);
+}
+.home-root .process-mobile-connector.active {
+  background: #8133f1;
+}
 @media (max-width: 900px) {
-  .home-root .process-diagram {
+  .home-root .process-diagram-desktop-only {
     display: none;
   }
   .home-root .process-mobile-steps {
     display: flex;
     flex-direction: column;
-    gap: 16px;
   }
   .home-root .process-mobile-steps .process-step {
     position: static;
@@ -2504,7 +2636,7 @@ html:has(.home-root) {
   }
 }
 @media (min-width: 901px) {
-  .home-root .process-mobile-steps {
+  .home-root .process-diagram-mobile-only {
     display: none;
   }
 }
@@ -2851,7 +2983,7 @@ html:has(.home-root) {
 
 .home-root .faq-row {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 24px;
   margin-bottom: 99px;
 }
@@ -3007,6 +3139,8 @@ html:has(.home-root) {
 
 .home-root .contact-card {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   position: relative;
   padding: 40px;
   border-radius: 40px;
@@ -3036,6 +3170,7 @@ html:has(.home-root) {
   pointer-events: none;
 }
 .home-root .contact-form {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 40px;
@@ -3049,6 +3184,9 @@ html:has(.home-root) {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+.home-root .contact-form > .contact-field {
+  flex: 1;
 }
 .home-root .contact-field-label {
   font-size: 16px;
@@ -3077,8 +3215,9 @@ html:has(.home-root) {
   border-image: linear-gradient(90deg, rgba(200, 197, 205, 0.8), #8133f1) 1;
 }
 .home-root .contact-field-textarea {
+  flex: 1;
   resize: none;
-  height: 174px;
+  min-height: 174px;
   padding-top: 12px;
   font-family: inherit;
 }
@@ -3119,7 +3258,7 @@ html:has(.home-root) {
 }
 .home-root .faq-contact-info-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 40px;
 }
 .home-root .faq-contact-info-title {
@@ -3134,12 +3273,21 @@ html:has(.home-root) {
   position: relative;
   flex: 1;
   min-width: 0;
-  height: 1px;
+  height: 20px;
+  display: flex;
+  align-items: center;
 }
+/* SVG-র viewBox আগে ছিল 85.33 উঁচু (blur/glow filter-এর জন্য অনেক বাড়তি জায়গা),
+   আর ভেতরের লাইন+ডট ছিল ~40.6% নিচে - height:8px-এ scale করায় stroke এত সরু হয়ে
+   যাচ্ছিল যে ডটসহ পুরো লাইনটাই প্রায় অদৃশ্য হয়ে গিয়েছিল। তাই এখন CSS-এ আর হ্যাক
+   না করে সরাসরি public/faq/divider-line.svg-র viewBox-ই টাইট করে দেওয়া হয়েছে
+   (0 10 1099.17 50, কনটেন্ট y≈32-37.33-এর চারপাশে সেন্টার করে) - তাতে content
+   এখন viewBox-এর প্রায় ঠিক মাঝখানে, আর 20px height-এও ডট/লাইনের স্ট্রোক-থিকনেস
+   যথেষ্ট বড়, দৃশ্যমান থাকে। */
 .home-root .faq-contact-info-line img {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
 }
 .home-root .faq-contact-cards {
   display: flex;
@@ -3452,6 +3600,7 @@ html:has(.home-root) {
   flex-wrap: wrap;
 }
 .home-root .cta-final-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 16px;
@@ -3468,7 +3617,24 @@ html:has(.home-root) {
   transform: translateY(-2px);
 }
 .home-root .cta-final-btn.primary {
-  border: 1px solid #efe6fd;
+  border: 1px solid transparent;
+}
+.home-root .cta-final-btn.primary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, #efe6fd 0%, #6200ee 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .home-root .cta-final-btn.secondary {
   border: 1px solid #8133f1;
@@ -3657,6 +3823,7 @@ html:has(.home-root) {
   position: relative;
   width: 100%;
   aspect-ratio: 1440 / 610;
+
   background: #010003;
   overflow: hidden;
 }
@@ -3670,20 +3837,24 @@ html:has(.home-root) {
   height: 100%;
   object-fit: fill;
   object-position: bottom;
-  padding: 0 -24px;
+  padding: 0 24px;
+  /* margin-bottom: 120px; */
 }
 
 /* ---------- footer (Figma 1037:4585 / 1037:4587) ---------- */
 .home-root .footer {
   position: relative;
-  background: url("/footer/footer-bg.webp") center bottom / 100% auto no-repeat, #010003;
+  background:
+    url("/footer/footer-bg.webp") center bottom / 100% auto no-repeat,
+    #010003;
   overflow: hidden;
+
   font-family: var(--font-nunito), "Nunito Sans", "Inter", sans-serif;
 }
 .home-root .footer-inner {
   position: relative;
   width: min(1280px, calc(100% - 48px));
-  margin: 0 auto;
+  margin: 80px auto;
   padding-top: 32px;
 }
 .home-root .footer-bottom-wrap {
@@ -3827,7 +3998,8 @@ html:has(.home-root) {
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(90deg, rgba(200, 197, 205, 0.4), rgba(129, 51, 241, 0.45));
+  background: linear-gradient(135deg, #feffff 0%, #efe6fd 100%);
+  opacity: 0.08;
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);

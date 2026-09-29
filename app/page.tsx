@@ -8,6 +8,7 @@ import { WHATSAPP_URL } from '@/app/components/BookCallButton';
 import RevealOnScroll from '@/app/components/RevealOnScroll';
 import ServicesShowcase from '@/app/components/ServicesShowcase';
 import ProjectsCarousel from '@/app/components/ProjectsCarousel';
+import ProcessStory from '@/app/components/ProcessStory';
 import FaqAccordion from '@/app/components/FaqAccordion';
 import ContactForm from '@/app/components/ContactForm';
 
@@ -73,16 +74,6 @@ const WHY_CARDS = [
 ];
 
 const WHY_INDUSTRIES = ['FinTech', 'SaaS', 'E-commerce', 'Healthcare', 'Government', 'Marketplace', 'Education', 'Business', 'Travel', 'Real Estate', 'Foods', 'Logistics'];
-
-// top/left are % of the 1280x782 diagram box (Figma's raw px / box size) so the cards
-// track the diagram's SVG line proportionally as it scales down on narrower viewports.
-const PROCESS_STEPS = [
-  { name: 'Discover', desc: 'Understand the business, users and problem.', top: 51.15, left: 2.34, active: true },
-  { name: 'Define', desc: 'Find opportunities and set product direction.', top: 39.51, left: 22.34 },
-  { name: 'Design', desc: 'Design flows, wireframes and H-fidelity interfaces.', top: 25.58, left: 42.34 },
-  { name: 'Develop', desc: 'Transform designs into digital products.', top: 14.07, left: 62.34 },
-  { name: 'Launch', desc: 'Test, refine and launch with confidence.', top: 0, left: 82.34 },
-];
 
 // The 4 Figma testimonial cards all carry the identical placeholder name/role/quote -
 // only the avatar photo differs - matched here literally rather than inventing real copy.
@@ -228,15 +219,21 @@ export default async function Home() {
       <section className="section projects-section" id="work">
         <div className="projects-grid-lines" aria-hidden="true" />
         <div className="projects-inner reveal">
-          <div className="projects-heading">
-            <span className="projects-eyebrow">
-              <img src="/stats/line.svg" alt="" />
-              <span>Projects</span>
-            </span>
-            <div className="projects-heading-copy">
-              <h2 className="projects-title">Let&rsquo;s Look At What We&rsquo;ve built!</h2>
-              <p className="projects-desc">Discover digital products that transform challenges into engaging solutions.</p>
+          <div className="projects-heading-row">
+            <div className="projects-heading">
+              <span className="projects-eyebrow">
+                <img src="/stats/line.svg" alt="" />
+                <span>Projects</span>
+              </span>
+              <div className="projects-heading-copy">
+                <h2 className="projects-title">Let&rsquo;s Look At What We&rsquo;ve built!</h2>
+                <p className="projects-desc">Discover digital products that transform challenges into engaging solutions.</p>
+              </div>
             </div>
+            <span className="projects-view-all">
+              <span className="projects-view-all-label">View All Projects</span>
+              <img src="/projects/icon-view-arrow.svg" alt="" />
+            </span>
           </div>
           <ProjectsCarousel
             projects={caseStudies.map((p) => ({
@@ -362,30 +359,7 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="process-diagram">
-            <img src="/process/timeline-graph.svg" alt="" className="process-diagram-graph" aria-hidden="true" />
-            <span className="process-axis-y" aria-hidden="true">PROGRESS &amp; TIMELINE</span>
-            <span className="process-axis-x" aria-hidden="true">DESIGN THINKING PROCESS</span>
-            {PROCESS_STEPS.map((s) => (
-              <div
-                className={`process-step${s.active ? ' active' : ''}`}
-                key={s.name}
-                style={{ top: `${s.top}%`, left: `${s.left}%` }}
-              >
-                <h3 className="process-step-title">{s.name}</h3>
-                <p className="process-step-desc">{s.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="process-mobile-steps">
-            {PROCESS_STEPS.map((s) => (
-              <div className={`process-step${s.active ? ' active' : ''}`} key={s.name}>
-                <h3 className="process-step-title">{s.name}</h3>
-                <p className="process-step-desc">{s.desc}</p>
-              </div>
-            ))}
-          </div>
+          <ProcessStory />
         </div>
       </section>
 
