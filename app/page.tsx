@@ -375,11 +375,13 @@ export default async function Home() {
                   <h2 className="projects-title">
                     Let&rsquo;s Look At What We&rsquo;ve built!
                   </h2>
-                  <p className="projects-desc">
-                    Discover digital products that transform challenges into
-                    engaging solutions.
-                  </p>
                 </div>
+              </div>
+              <div className="projects-desc-row">
+                <p className="projects-desc">
+                  Discover digital products that transform challenges into
+                  engaging solutions.
+                </p>
                 <span className="projects-view-all">
                   <span className="projects-view-all-label">
                     View All Projects
@@ -387,12 +389,6 @@ export default async function Home() {
                   <img src="/projects/icon-view-arrow.svg" alt="" />
                 </span>
               </div>
-              {/* <span className="projects-view-all">
-                <span className="projects-view-all-label">
-                  View All Projects
-                </span>
-                <img src="/projects/icon-view-arrow.svg" alt="" />
-              </span> */}
             </div>
             <ProjectsCarousel
               projects={caseStudies.map((p) => ({
