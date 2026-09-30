@@ -1,11 +1,10 @@
 'use client';
 
-// Screen 1 — Client Portal Entry। রিডিজাইন করা হয়েছে যাতে পাবলিক মার্কেটিং সাইটের
-// (app/page.tsx, home.css) সাথে একই ভিজ্যুয়াল আইডেন্টিটি থাকে — dark theme,
-// একই nav/footer প্যাটার্ন (Navbar logo.png, WhatsApp কন্টাক্ট, sharp radius),
-// Fraunces italic হেডলাইন accent। লেআউট স্ট্রাকচার (hero+preview card, access
-// card, feature grid, trust, how-it-works, help, footer) আগের রিডিজাইন থেকে
-// অপরিবর্তিত, শুধু ভিজ্যুয়াল স্কিন বদলেছে।
+// Screen 1 — Client Portal Entry। Figma "Client" ফ্রেম (fileKey 4Thf3ZwakADG9M3x75Fedt,
+// node 1339:812) অনুযায়ী রিডিজাইন করা হয়েছে — আগের elaborate ভার্সনে (hero+preview
+// card, access card, feature grid, trust, how-it-works, help section) যা ছিল তার
+// বদলে এখন শুধু এই ফ্রেমে যা আছে তাই: nav, একটা single hero (heading/desc/CTA/
+// sign-in লাইন + প্রিভিউ ছবি), আর একটা মিনিমাল footer (কপিরাইট + পেমেন্ট আইকন)।
 //
 // সেশন-চেক: ইতিমধ্যে লগইন করা ক্লায়েন্ট এই এন্ট্রি পেজে এলে সরাসরি dashboard/
 // onboarding-এ রিডাইরেক্ট হয়। ব্যর্থ হলেও (নেটওয়ার্ক এরর) fail-open।
@@ -18,55 +17,9 @@ import './client.css';
 
 const WHATSAPP_SUPPORT_URL = 'https://wa.me/8801804409235?text=Hi%20FLOW53,%20I%27m%20having%20trouble%20accessing%20my%20client%20portal.';
 
-const FEATURES = [
-  {
-    title: 'Project Updates',
-    desc: 'Stay up to date with the latest progress and milestones.',
-    icon: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
-  },
-  {
-    title: 'Files & Documents',
-    desc: 'Access project files, deliverables and important documents.',
-    icon: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>',
-  },
-  {
-    title: 'Payments',
-    desc: 'View payment requests, payment history and receipts.',
-    icon: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
-  },
-  {
-    title: 'Approvals & Feedback',
-    desc: 'Review work, provide feedback and approve deliverables.',
-    icon: '<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>',
-  },
-  {
-    title: 'Messages',
-    desc: 'Communicate directly with your project team.',
-    icon: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
-  },
-  {
-    title: 'SOW & Agreements',
-    desc: 'Review and manage your project agreements.',
-    icon: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M9 13h6"/><path d="M9 17h6"/>',
-  },
-];
-
-const TRUST_ITEMS = [
-  { title: 'Secure Access', desc: 'Project-specific permissions', icon: '<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>' },
-  { title: 'Private Files', desc: 'Only authorized users can access files', icon: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>' },
-  { title: 'Protected Information', desc: 'Client data is separated and protected', icon: '<path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/>' },
-];
-
-const STEPS = [
-  { num: '01', title: 'Create your account', desc: 'Enter your basic information to create your client profile.' },
-  { num: '02', title: 'Connect with your project', desc: 'Your agency will create and connect your project to your account.' },
-  { num: '03', title: 'Manage everything in one place', desc: 'Review updates, files, payments, feedback and approvals.' },
-];
-
 export default function ClientPortalEntry() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     supabase.auth
@@ -90,34 +43,6 @@ export default function ClientPortalEntry() {
       .catch(() => setCheckingSession(false));
   }, []);
 
-  // এই effect আলাদা রাখা হয়েছে কারণ checkingSession=true থাকা অবস্থায় (প্রথম
-  // রেন্ডারে) DOM-এ শুধু লোডিং স্পিনার থাকে — .reveal সেকশনগুলো তখনো রেন্ডারই হয়নি।
-  useEffect(() => {
-    if (checkingSession || redirecting) return;
-
-    const els = document.querySelectorAll('.client-entry-root .reveal');
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) e.target.classList.add('in');
-        });
-      },
-      { threshold: 0.1 }
-    );
-    els.forEach((el) => io.observe(el));
-
-    function onScroll() {
-      setScrolled(window.scrollY > 8);
-    }
-    onScroll();
-    window.addEventListener('scroll', onScroll);
-
-    return () => {
-      io.disconnect();
-      window.removeEventListener('scroll', onScroll);
-    };
-  }, [checkingSession, redirecting]);
-
   if (checkingSession || redirecting) {
     return (
       <div className="client-entry-root">
@@ -131,196 +56,73 @@ export default function ClientPortalEntry() {
 
   return (
     <div className="client-entry-root">
+      <div className="client-bg" aria-hidden="true"></div>
+
       {/* ============ NAV ============ */}
-      <nav className={`nav${scrolled ? ' scrolled' : ''}`}>
-        <div className="container nav-inner">
-          <Link href="/" className="nav-logo">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/Navbar logo.png" alt="FLOW 53" className="nav-logo-img" />
+      <nav className="client-nav">
+        <div className="client-nav-inner">
+          <Link href="/" className="client-nav-logo">
+            <img src="/nav-logo-mark.svg" alt="" className="client-nav-logo-mark" />
+            <img src="/nav-logo-text.svg" alt="FLOW 53" className="client-nav-logo-text" />
+            <span className="client-nav-logo-tagline">Innovate-Design-Elevate</span>
           </Link>
-          <span className="nav-center">Client Portal</span>
-          <Link href="/client/sign-in" className="nav-cta">
-            Sign In
-          </Link>
+          <span className="client-nav-center">
+            <span className="client-nav-dot"></span>
+            Client Portal
+          </span>
+          <div className="client-nav-right">
+            <a href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noopener noreferrer" className="client-nav-help">
+              Need help ?
+            </a>
+            <Link href="/client/sign-in" className="client-nav-signin">
+              <span className="client-nav-signin-inner">Sign In</span>
+              <img src="/client-portal/icon-arrow-flat.svg" alt="" />
+            </Link>
+          </div>
         </div>
       </nav>
 
       {/* ============ HERO ============ */}
-      <header className="hero">
-        <div className="container hero-grid">
-          <div className="reveal">
-            <span className="hero-eyebrow">Client Portal</span>
-            <h1 className="hero-title">
-              Your project, <span className="accent-word">all in one place</span>.
-            </h1>
-            <p className="hero-sub">Access your project updates, files, payments, approvals and communication through your secure client portal.</p>
-            <div className="hero-ctas">
-              <Link href="/client/sign-in" className="btn-primary">
-                Sign In
+      <header className="client-hero">
+        <div className="client-hero-inner">
+          <div className="client-hero-copy">
+            <h1 className="client-hero-title">Your project, all in one place.</h1>
+            <p className="client-hero-desc">Access your project updates, files, payments, approvals and communication through our secure client portal.</p>
+            <Link href="/client/register" className="client-hero-cta">
+              <span className="client-hero-cta-inner">Create Client Account</span>
+              <img src="/cta/icon-arrow.svg" alt="" />
+            </Link>
+            <p className="client-hero-signin-line">
+              Already working with Flow53?{' '}
+              <Link href="/client/sign-in" className="client-hero-signin-link">
+                Sign in using your registered email.
               </Link>
-              <Link href="/client/register" className="btn-outline">
-                Create Client Account
-              </Link>
-            </div>
+            </p>
           </div>
-
-          <div className="reveal">
-            <div className="preview-card" role="img" aria-label="Preview of a client project dashboard showing progress and status">
-              <span className="preview-badge">Preview</span>
-              <div className="preview-top">
-                <div>
-                  <div className="preview-proj-name">Fintech Mobile App</div>
-                  <div className="preview-proj-sub">Nova Digital</div>
-                </div>
-                <span className="preview-status-pill">Active</span>
-              </div>
-              <div className="preview-progress-row">
-                <span className="preview-progress-label">Overall Progress</span>
-                <span className="preview-progress-value">45%</span>
-              </div>
-              <div className="preview-track">
-                <div className="preview-fill"></div>
-              </div>
-              <div className="preview-row">
-                <span className="preview-row-label">Current Phase</span>
-                <span className="preview-row-value">UI Design</span>
-              </div>
-              <div className="preview-row">
-                <span className="preview-row-label">Payment</span>
-                <span className="preview-row-value">$3,500 Paid</span>
-              </div>
-              <div className="preview-update-box">
-                <div className="preview-update-title">Latest Update</div>
-                <div className="preview-update-text">UI Design Phase Started</div>
-              </div>
-            </div>
+          <div className="client-hero-photo">
+            <img src="/client-portal/hero-photo.webp" alt="Preview of the Flow 53 client dashboard" />
           </div>
         </div>
       </header>
 
-      {/* ============ ACCESS CARD ============ */}
-      <section className="container">
-        <div className="access-card reveal">
-          <div>
-            <div className="access-title">Access your client portal</div>
-            <p className="access-desc">Sign in to continue working with your project team.</p>
-            <span className="access-secondary-text">
-              New to the portal?{' '}
-              <Link href="/client/register" className="link">
-                Create an Account
-              </Link>
-            </span>
-          </div>
-          <div className="access-actions">
-            <Link href="/client/sign-in" className="btn-primary">
-              Sign In
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ============ FEATURES ============ */}
-      <section className="section">
-        <div className="container">
-          <h2 className="section-title reveal">Everything you need to manage your project.</h2>
-          <div className="feature-grid reveal">
-            {FEATURES.map((f) => (
-              <div className="feature-card" key={f.title}>
-                <div className="feature-icon">
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: f.icon }} />
-                </div>
-                <div className="feature-title">{f.title}</div>
-                <div className="feature-desc">{f.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ============ TRUST ============ */}
-      <section className="section">
-        <div className="container">
-          <h2 className="section-title reveal">Your project information stays private.</h2>
-          <p className="section-sub reveal">Only authorized clients and project members can access project information, files and documents.</p>
-          <div className="trust-grid reveal">
-            {TRUST_ITEMS.map((t) => (
-              <div className="trust-item" key={t.title}>
-                <div className="trust-icon">
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: t.icon }} />
-                </div>
-                <div className="trust-title">{t.title}</div>
-                <div className="trust-desc">{t.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ============ HOW IT WORKS ============ */}
-      <section className="section">
-        <div className="container">
-          <h2 className="section-title reveal">Getting started is simple.</h2>
-          <div className="steps-row reveal">
-            {STEPS.map((s) => (
-              <div className="step-card" key={s.num}>
-                <div className="step-num">{s.num}</div>
-                <div className="step-title">{s.title}</div>
-                <p className="step-desc">{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ============ HELP ============ */}
-      <section className="section">
-        <div className="container">
-          <div className="help-card reveal">
-            <div className="help-title">Need help accessing your project?</div>
-            <p className="help-desc">If you are already working with our team and haven&apos;t received your portal access, contact your project manager.</p>
-            <a href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noopener noreferrer" className="btn-outline">
-              Contact Support
-            </a>
-          </div>
-        </div>
-      </section>
-
       {/* ============ FOOTER ============ */}
-      <footer className="footer">
-        <div className="container">
-          <div className="footer-top">
-            <div className="footer-brand">
-              <Link href="/" className="nav-logo footer-logo">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/Navbar logo.png" alt="FLOW 53" className="nav-logo-img footer-logo-img" />
-              </Link>
-              <p className="footer-tagline">Manage your projects, payments, files, feedback and communication — all in one place.</p>
-            </div>
-
-            <div className="footer-col">
-              <div className="footer-col-title">Portal</div>
-              <Link href="/client/sign-in" className="footer-link">
-                Sign In
-              </Link>
-              <Link href="/client/register" className="footer-link">
-                Create Account
-              </Link>
-            </div>
-
-            <div className="footer-col">
-              <div className="footer-col-title">Get in touch</div>
-              <a href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noopener noreferrer" className="footer-link">
-                WhatsApp
-              </a>
-              <Link href="/dashboard" className="footer-link">
-                Team Login
-              </Link>
+      <footer className="client-footer">
+        <div className="client-footer-inner">
+          <div className="client-footer-line"></div>
+          <div className="client-footer-row">
+            <span className="client-footer-copy">
+              <img src="/client-portal/icon-copyright.svg" alt="" />
+              {new Date().getFullYear()} Flow 53. All Rights Reserved.
+            </span>
+            <div className="client-footer-payments">
+              <img src="/client-portal/pay-generic.svg" alt="" className="client-pay client-pay-generic" />
+              <img src="/client-portal/pay-paypal.svg" alt="PayPal" className="client-pay" />
+              <img src="/client-portal/pay-visa.svg" alt="Visa" className="client-pay" />
+              <img src="/client-portal/pay-mastercard.svg" alt="Mastercard" className="client-pay" />
+              <img src="/client-portal/pay-amex.svg" alt="American Express" className="client-pay" />
             </div>
           </div>
-
-          <div className="footer-bottom">
-            <span className="footer-copy">© {new Date().getFullYear()} FLOW 53 Studio. Dhaka, Bangladesh.</span>
-          </div>
+          <div className="client-footer-line"></div>
         </div>
       </footer>
     </div>
