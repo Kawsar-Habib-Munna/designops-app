@@ -3832,7 +3832,7 @@ html:has(.home-root) {
 .home-root .brand-band {
   position: relative;
   width: 100%;
-  aspect-ratio: 1440 / 610;
+  height: 610px;
   background: #010003;
   overflow: hidden;
 }
