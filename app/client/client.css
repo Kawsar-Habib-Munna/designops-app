@@ -52,28 +52,36 @@
   gap: 24px;
 }
 .client-entry-root .client-nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   position: relative;
+  display: block;
+  width: 124px;
+  height: 27px;
   flex-shrink: 0;
 }
 .client-entry-root .client-nav-logo-mark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 21px;
+  height: 27px;
   display: block;
-  width: 34px;
-  height: 44px;
 }
 .client-entry-root .client-nav-logo-text {
+  position: absolute;
+  left: 28px;
+  top: 0;
+  width: 95px;
+  height: 17px;
   display: block;
-  height: 22px;
 }
 .client-entry-root .client-nav-logo-tagline {
   position: absolute;
-  left: 46px;
-  top: 36px;
-  font-size: 8px;
+  left: 28px;
+  top: 20px;
+  font-size: 7px;
+  line-height: 1;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.45px;
   color: #c8c5cd;
   white-space: nowrap;
 }
