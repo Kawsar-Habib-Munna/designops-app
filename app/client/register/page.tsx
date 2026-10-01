@@ -53,12 +53,13 @@ function EyeIcon({ open }: { open: boolean }) {
 function BrandMark() {
   return (
     <div className="brand-lockup">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/Navbar logo.png" alt="FLOW 53" className="brand-logo-img" />
-      <div>
-        <div className="brand-name">FLOW 53</div>
-        <div className="brand-sub">Client Portal</div>
-      </div>
+      <span className="brand-logo">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/nav-logo-mark.svg" alt="" className="brand-logo-mark" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/nav-logo-text.svg" alt="FLOW 53" className="brand-logo-text" />
+        <span className="brand-logo-tagline">Innovate-Design-Elevate</span>
+      </span>
     </div>
   );
 }
@@ -325,10 +326,6 @@ export default function ClientRegister() {
                 </svg>
                 Your information is securely protected.
               </div>
-
-              <p className="cp-team-link" style={{ marginTop: 16 }}>
-                Part of the FLOW 53 team? <Link href="/dashboard">Sign in here →</Link>
-              </p>
             </div>
           </main>
 

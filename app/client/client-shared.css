@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Gugi&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;700&display=swap");
 
 /* সব /client/* পেজ .client-portal ক্লাস শেয়ার করে (নিজস্ব root class-এর পাশাপাশি)
    — টোকেন ও ফর্ম/বাটন/কার্ড প্রিমিটিভ একবারই সংজ্ঞায়িত, ২৪টা স্ক্রিন জুড়ে ডুপ্লিকেট
@@ -40,7 +41,7 @@
   width: 100%;
   background: var(--bg);
   color: var(--ink);
-  font-family: "Inter", sans-serif;
+  font-family: "Nunito Sans", "Inter", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 @media (prefers-color-scheme: dark) {

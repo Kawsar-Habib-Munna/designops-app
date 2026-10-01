@@ -2196,3 +2196,12 @@ alter table profiles add column if not exists notify_push_enabled boolean defaul
 -- Landing page Projects carousel (Figma 533:505 onward) shows a category pill per
 -- case study (e.g. "E-Commerce", "Fintech") that the previous card-grid design didn't have.
 alter table case_studies add column if not exists category text;
+
+-- Admin dashboard-এ "Delete Client" অপশন যোগ হওয়ায় — clients-এ আগে কোনো delete
+-- পলিসিই ছিল না (ডিফল্ট-ডিনাই), শুধু select/insert/update। on delete cascade
+-- থাকায় client মুছলে তার files/invoices/payments/messages/feedback/approvals/
+-- change_requests/notes সব একসাথে হারিয়ে যায় (projects শুধু client_id null হয়ে
+-- টিকে থাকে) — এই ব্লাস্ট রেডিয়াসের জন্য is_team_member() না, শুধু is_admin()
+-- (activity_log delete পলিসির মতোই)।
+drop policy if exists "admin can delete clients" on clients;
+create policy "admin can delete clients" on clients for delete using (public.is_admin());

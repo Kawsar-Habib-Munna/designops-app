@@ -20,8 +20,7 @@ const WHATSAPP_SUPPORT_URL = 'https://wa.me/8801804409235?text=Hi%20FLOW53,%20I%
 
 const CONTACT_METHODS = ['Email', 'Phone', 'Portal Messages', 'WhatsApp'];
 const COUNTRIES = ['United Kingdom', 'Bangladesh', 'United States', 'Canada', 'Australia', 'Other'];
-const TIMEZONES = ['GMT+6:00 — Dhaka', 'GMT+0:00 — London', 'GMT-5:00 — New York', 'GMT+1:00 — Berlin'];
-const BUSINESS_TYPES = ['Startup', 'Small Business', 'Agency', 'E-commerce', 'SaaS / Technology', 'Enterprise', 'Personal Project', 'Non-profit', 'Other'];
+const BUSINESS_TYPES = ['Startup', 'Small Business', 'Agency', 'E-commerce', 'SaaS / Technology', 'Enterprise', 'Non-profit', 'Other'];
 const COMPANY_SIZES = ['Just me', '2–10', '11–50', '51–200', '201–500', '500+'];
 const ROLES = ['Founder / Owner', 'CEO / Executive', 'Product Manager', 'Marketing', 'Designer', 'Developer', 'Operations', 'Other'];
 const PROJECT_TYPES = ['Website', 'Mobile App', 'Web App', 'SaaS Product', 'Dashboard', 'E-commerce', 'Branding', 'UI/UX Design', 'Product Design', 'Other'];
@@ -37,8 +36,8 @@ type FormState = {
   phone: string;
   preferredContact: string;
   country: string;
-  timezone: string;
   designation: string;
+  accountType: 'company' | 'personal';
   companyName: string;
   website: string;
   businessType: string;
@@ -63,8 +62,8 @@ const EMPTY_FORM: FormState = {
   phone: '',
   preferredContact: 'Email',
   country: 'Bangladesh',
-  timezone: 'GMT+6:00 — Dhaka',
   designation: '',
+  accountType: 'company',
   companyName: '',
   website: '',
   businessType: '',
@@ -102,12 +101,13 @@ function formatBytes(bytes: number): string {
 function BrandMark() {
   return (
     <div className="brand-lockup">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/Navbar logo.png" alt="FLOW 53" className="brand-logo-img" />
-      <div>
-        <div className="brand-name">FLOW 53</div>
-        <div className="brand-sub">Client Portal</div>
-      </div>
+      <span className="brand-logo">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/nav-logo-mark.svg" alt="" className="brand-logo-mark" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/nav-logo-text.svg" alt="FLOW 53" className="brand-logo-text" />
+        <span className="brand-logo-tagline">Innovate-Design-Elevate</span>
+      </span>
     </div>
   );
 }
@@ -156,9 +156,10 @@ export default function ClientOnboarding() {
           fullName: own.primary_contact ?? '',
           phone: own.contact_phone ?? '',
           designation: own.designation ?? '',
-          companyName: own.company_name ?? '',
+          accountType: own.industry === 'Personal Project' ? 'personal' : 'company',
+          companyName: own.industry === 'Personal Project' ? '' : own.company_name ?? '',
           website: own.website ?? '',
-          businessType: own.industry ?? '',
+          businessType: own.industry === 'Personal Project' ? '' : own.industry ?? '',
           companySize: own.company_size ?? '',
         };
 
@@ -216,7 +217,7 @@ export default function ClientOnboarding() {
 
   function validateStep(current: number): string | null {
     if (current === 1 && !form.fullName.trim()) return 'Please enter your full name.';
-    if (current === 2 && !form.companyName.trim()) return 'Please enter your company name.';
+    if (current === 2 && form.accountType === 'company' && !form.companyName.trim()) return 'Please enter your company name.';
     if (current === 3) {
       if (!form.projectName.trim()) return 'Please enter a project name.';
       if (!form.projectType) return 'Please select a project type.';
@@ -322,12 +323,11 @@ export default function ClientOnboarding() {
         contact_phone: form.phone.trim() || null,
         preferred_contact_method: form.preferredContact || null,
         country: form.country || null,
-        timezone: form.timezone || null,
         designation: form.designation.trim() || null,
-        company_name: form.companyName.trim(),
+        company_name: form.accountType === 'personal' ? form.fullName.trim() || 'Personal Project' : form.companyName.trim(),
         website: form.website.trim() || null,
-        industry: form.businessType || null,
-        company_size: form.companySize || null,
+        industry: form.accountType === 'personal' ? 'Personal Project' : form.businessType || null,
+        company_size: form.accountType === 'personal' ? null : form.companySize || null,
         status: 'submitted',
       })
       .eq('id', client.id);
@@ -448,9 +448,8 @@ export default function ClientOnboarding() {
         <div className="form-panel">
           <header className="topbar">
             <div className="topbar-left">
-              <BrandMark />
               <span className="mobile-step-label">
-                · Step {step} of 5
+                Step {step} of 5 <span className="step-label-name">· {STEP_LABELS[step - 1]}</span>
               </span>
             </div>
             <div className="topbar-right">
@@ -498,7 +497,6 @@ export default function ClientOnboarding() {
                 {step === 1 && (
                   <div className="step-panel">
                     <div className="step-head">
-                      <div className="step-eyebrow">Step 1 of 5</div>
                       <h1 className="step-title">Personal Information</h1>
                       <p className="step-sub">Let&apos;s start with the basics.</p>
                     </div>
@@ -522,39 +520,24 @@ export default function ClientOnboarding() {
                       <input id="phone" type="tel" className="field-input" value={form.phone} onChange={(e) => setField('phone', e.target.value)} placeholder="+880 1XXX-XXXXXX" />
                     </div>
                     <div className="field">
-                      <label className="field-label">Preferred contact method</label>
-                      <div className="radio-group">
+                      <label className="field-label" htmlFor="preferredContact">
+                        Preferred contact method
+                      </label>
+                      <select className="field-select" id="preferredContact" value={form.preferredContact} onChange={(e) => setField('preferredContact', e.target.value)}>
                         {CONTACT_METHODS.map((m) => (
-                          <button type="button" key={m} className={`radio-pill${form.preferredContact === m ? ' selected' : ''}`} onClick={() => setField('preferredContact', m)}>
-                            <span className="radio-pill-dot">
-                              <span className="radio-pill-inner"></span>
-                            </span>
-                            {m}
-                          </button>
+                          <option key={m}>{m}</option>
                         ))}
-                      </div>
+                      </select>
                     </div>
-                    <div className="field-grid-2">
-                      <div className="field">
-                        <label className="field-label" htmlFor="country">
-                          Country
-                        </label>
-                        <select className="field-select" id="country" value={form.country} onChange={(e) => setField('country', e.target.value)}>
-                          {COUNTRIES.map((c) => (
-                            <option key={c}>{c}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="field">
-                        <label className="field-label" htmlFor="timezone">
-                          Time zone
-                        </label>
-                        <select className="field-select" id="timezone" value={form.timezone} onChange={(e) => setField('timezone', e.target.value)}>
-                          {TIMEZONES.map((t) => (
-                            <option key={t}>{t}</option>
-                          ))}
-                        </select>
-                      </div>
+                    <div className="field">
+                      <label className="field-label" htmlFor="country">
+                        Country
+                      </label>
+                      <select className="field-select" id="country" value={form.country} onChange={(e) => setField('country', e.target.value)}>
+                        {COUNTRIES.map((c) => (
+                          <option key={c}>{c}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 )}
@@ -563,58 +546,91 @@ export default function ClientOnboarding() {
                 {step === 2 && (
                   <div className="step-panel">
                     <div className="step-head">
-                      <div className="step-eyebrow">Step 2 of 5</div>
-                      <h1 className="step-title">Tell us about your business</h1>
+                      <h1 className="step-title">{form.accountType === 'personal' ? 'Tell us about your project' : 'Tell us about your business'}</h1>
                       <p className="step-sub">This helps us understand who we&apos;re working with.</p>
                     </div>
 
                     <div className="field">
-                      <label className="field-label" htmlFor="companyName">
-                        Company / business name
-                      </label>
-                      <input id="companyName" type="text" className="field-input" value={form.companyName} onChange={(e) => setField('companyName', e.target.value)} placeholder="e.g. Acme Studio" />
+                      <label className="field-label">This project is for</label>
+                      <div className="radio-group">
+                        <button type="button" className={`radio-pill${form.accountType === 'company' ? ' selected' : ''}`} onClick={() => setField('accountType', 'company')}>
+                          <span className="radio-pill-dot">
+                            <span className="radio-pill-inner"></span>
+                          </span>
+                          A company / business
+                        </button>
+                        <button type="button" className={`radio-pill${form.accountType === 'personal' ? ' selected' : ''}`} onClick={() => setField('accountType', 'personal')}>
+                          <span className="radio-pill-dot">
+                            <span className="radio-pill-inner"></span>
+                          </span>
+                          A personal project
+                        </button>
+                      </div>
                     </div>
-                    <div className="field">
-                      <label className="field-label" htmlFor="website">
-                        Website <span className="opt">(optional)</span>
-                      </label>
-                      <input id="website" type="url" className="field-input" value={form.website} onChange={(e) => setField('website', e.target.value)} placeholder="https://example.com" />
-                    </div>
-                    <div className="field-grid-2">
+
+                    {form.accountType === 'company' && (
+                      <>
+                        <div className="field">
+                          <label className="field-label" htmlFor="companyName">
+                            Company / business name
+                          </label>
+                          <input id="companyName" type="text" className="field-input" value={form.companyName} onChange={(e) => setField('companyName', e.target.value)} placeholder="e.g. Acme Studio" />
+                        </div>
+                        <div className="field">
+                          <label className="field-label" htmlFor="website">
+                            Website <span className="opt">(optional)</span>
+                          </label>
+                          <input id="website" type="url" className="field-input" value={form.website} onChange={(e) => setField('website', e.target.value)} placeholder="https://example.com" />
+                        </div>
+                        <div className="field-grid-2">
+                          <div className="field">
+                            <label className="field-label" htmlFor="businessType">
+                              Business type
+                            </label>
+                            <select className="field-select" id="businessType" value={form.businessType} onChange={(e) => setField('businessType', e.target.value)}>
+                              <option value="">Select…</option>
+                              {BUSINESS_TYPES.map((b) => (
+                                <option key={b}>{b}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="field">
+                            <label className="field-label" htmlFor="companySize">
+                              Company size
+                            </label>
+                            <select className="field-select" id="companySize" value={form.companySize} onChange={(e) => setField('companySize', e.target.value)}>
+                              <option value="">Select…</option>
+                              {COMPANY_SIZES.map((s) => (
+                                <option key={s}>{s}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {form.accountType === 'personal' && (
                       <div className="field">
-                        <label className="field-label" htmlFor="businessType">
-                          Business type
+                        <label className="field-label" htmlFor="website">
+                          Portfolio / website <span className="opt">(optional)</span>
                         </label>
-                        <select className="field-select" id="businessType" value={form.businessType} onChange={(e) => setField('businessType', e.target.value)}>
+                        <input id="website" type="url" className="field-input" value={form.website} onChange={(e) => setField('website', e.target.value)} placeholder="https://example.com" />
+                      </div>
+                    )}
+
+                    {form.accountType === 'company' && (
+                      <div className="field">
+                        <label className="field-label" htmlFor="clientRole">
+                          Your role
+                        </label>
+                        <select className="field-select" id="clientRole" value={form.designation} onChange={(e) => setField('designation', e.target.value)}>
                           <option value="">Select…</option>
-                          {BUSINESS_TYPES.map((b) => (
-                            <option key={b}>{b}</option>
+                          {ROLES.map((r) => (
+                            <option key={r}>{r}</option>
                           ))}
                         </select>
                       </div>
-                      <div className="field">
-                        <label className="field-label" htmlFor="companySize">
-                          Company size
-                        </label>
-                        <select className="field-select" id="companySize" value={form.companySize} onChange={(e) => setField('companySize', e.target.value)}>
-                          <option value="">Select…</option>
-                          {COMPANY_SIZES.map((s) => (
-                            <option key={s}>{s}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="field">
-                      <label className="field-label" htmlFor="clientRole">
-                        Your role
-                      </label>
-                      <select className="field-select" id="clientRole" value={form.designation} onChange={(e) => setField('designation', e.target.value)}>
-                        <option value="">Select…</option>
-                        {ROLES.map((r) => (
-                          <option key={r}>{r}</option>
-                        ))}
-                      </select>
-                    </div>
+                    )}
                   </div>
                 )}
 
@@ -622,7 +638,6 @@ export default function ClientOnboarding() {
                 {step === 3 && (
                   <div className="step-panel">
                     <div className="step-head">
-                      <div className="step-eyebrow">Step 3 of 5</div>
                       <h1 className="step-title">Tell us about your project</h1>
                       <p className="step-sub">Give us a quick overview of what you&apos;d like our team to work on.</p>
                     </div>
@@ -703,27 +718,26 @@ export default function ClientOnboarding() {
                 {step === 4 && (
                   <div className="step-panel">
                     <div className="step-head">
-                      <div className="step-eyebrow">Step 4 of 5</div>
                       <h1 className="step-title">What do you need from us?</h1>
                       <p className="step-sub">The more detail you share, the better we can prepare.</p>
                     </div>
 
                     <div className="field">
                       <label className="field-label" htmlFor="goals">
-                        What are the main goals of this project?
+                        What are the main goals of this project? <span className="opt">(optional)</span>
                       </label>
                       <textarea className="field-textarea" id="goals" style={{ minHeight: 70 }} value={form.goals} onChange={(e) => setField('goals', e.target.value)} placeholder="Tell us what you want to achieve with this project..." />
                     </div>
                     <div className="field">
                       <label className="field-label" htmlFor="audience">
-                        Who is this product for?
+                        Who is this product for? <span className="opt">(optional)</span>
                       </label>
                       <textarea className="field-textarea" id="audience" style={{ minHeight: 70 }} value={form.targetAudience} onChange={(e) => setField('targetAudience', e.target.value)} placeholder="Describe your target users or customers." />
                     </div>
 
                     <div className="field">
                       <label className="field-label">
-                        What features do you need? <span className="opt">(press Enter to add)</span>
+                        What features do you need? <span className="opt">(optional — press Enter to add)</span>
                       </label>
                       <div className="tag-input-wrap">
                         {form.features.map((f, i) => (
@@ -838,7 +852,6 @@ export default function ClientOnboarding() {
                 {step === 5 && (
                   <div className="step-panel">
                     <div className="step-head">
-                      <div className="step-eyebrow">Step 5 of 5</div>
                       <h1 className="step-title">Review your information</h1>
                       <p className="step-sub">Make sure everything looks right before submitting.</p>
                     </div>
@@ -857,14 +870,20 @@ export default function ClientOnboarding() {
 
                     <div className="review-section">
                       <div className="review-section-head">
-                        <span className="review-section-title">Company</span>
+                        <span className="review-section-title">{form.accountType === 'personal' ? 'Personal Project' : 'Company'}</span>
                         <button type="button" className="review-edit" onClick={() => jumpToStep(2)}>
                           Edit
                         </button>
                       </div>
-                      <div className="review-line">{form.companyName || '—'}</div>
-                      <div className="review-line muted">{form.businessType || '—'}</div>
-                      <div className="review-line muted">{form.designation || '—'}</div>
+                      {form.accountType === 'personal' ? (
+                        <div className="review-line muted">{form.website || 'No portfolio/website provided.'}</div>
+                      ) : (
+                        <>
+                          <div className="review-line">{form.companyName || '—'}</div>
+                          <div className="review-line muted">{form.businessType || '—'}</div>
+                          <div className="review-line muted">{form.designation || '—'}</div>
+                        </>
+                      )}
                     </div>
 
                     <div className="review-section">
@@ -908,7 +927,7 @@ export default function ClientOnboarding() {
                   <button type="button" className="btn btn-ghost" onClick={goBack} disabled={submitting} style={{ visibility: step === 1 ? 'hidden' : 'visible' }}>
                     Back
                   </button>
-                  <div style={{ display: 'flex', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
                     <button type="button" className="btn-text" onClick={saveNow}>
                       Save &amp; continue later
                     </button>

@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,500&display=swap');
-
 /* Screen 3 — Client Registration। Screen 2 (sign-in/signin.css)-এর একই
    split-screen/brand-panel প্যাটার্ন, .client-register-root স্কোপে ডুপ্লিকেট
    করা হয়েছে (এই কোডবেসের কনভেনশন অনুযায়ী প্রতিটা পেজের CSS স্বয়ংসম্পূর্ণ)।
-   ফর্ম ফিল্ড client-shared.css-এর cp-* প্রিমিটিভ থেকে আসে। */
+   ফর্ম ফিল্ড client-shared.css-এর cp-* প্রিমিটিভ থেকে আসে। হেডলাইনগুলো এখন
+   public site-এর Playfair Display (client-shared.css থেকে) - আগে এখানেই আলাদা
+   ইমপোর্ট করা Fraunces ছিল, body টেক্সট Nunito Sans (আগে Inter)। */
 
 .client-register-root .split-shell {
   display: flex;
@@ -46,17 +46,16 @@
   z-index: 1;
 }
 .client-register-root .brand-panel-headline {
+  font-family: 'Playfair Display', serif;
   font-size: 30px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.28;
   margin-bottom: 16px;
   color: #fff;
 }
 .client-register-root .brand-panel-headline .accent-word {
-  font-family: 'Fraunces', serif;
   font-style: italic;
-  font-weight: 500;
   color: #beb8ff;
 }
 .client-register-root .brand-panel-sub {
@@ -118,27 +117,48 @@
   align-items: center;
   gap: 10px;
 }
-.client-register-root .brand-logo-img {
-  height: 28px;
-  width: auto;
+/* Same logo lockup and exact sizing as /client (public/nav-logo-mark.svg +
+   nav-logo-text.svg, absolute-positioned within a 124x27 wrapper) - replaces
+   the old "Navbar logo.png" + separate "FLOW 53" text-label treatment. */
+.client-register-root .brand-logo {
+  position: relative;
+  display: block;
+  width: 124px;
+  height: 27px;
   flex-shrink: 0;
 }
-.client-register-root .brand-name {
-  font-family: 'Gugi', sans-serif;
-  font-size: 14px;
+.client-register-root .brand-logo-mark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 21px;
+  height: 27px;
+  display: block;
+}
+.client-register-root .brand-logo-text {
+  position: absolute;
+  left: 28px;
+  top: 0;
+  width: 95px;
+  height: 17px;
+  display: block;
+}
+/* The topbar (this page's default context) sits on a LIGHT background,
+   opposite of /client's dark nav - .brand-panel (dark) overrides back to the
+   original light-gray-on-dark treatment. */
+.client-register-root .brand-logo-tagline {
+  position: absolute;
+  left: 28px;
+  top: 20px;
+  font-size: 7px;
+  line-height: 1;
   font-weight: 600;
-  letter-spacing: -0.01em;
-}
-.client-register-root .brand-sub {
-  font-size: 10.5px;
+  letter-spacing: 0.45px;
   color: var(--ink-faint);
-  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
-.client-register-root .brand-panel .brand-name {
-  color: #fff;
-}
-.client-register-root .brand-panel .brand-sub {
-  color: rgba(255, 255, 255, 0.5);
+.client-register-root .brand-panel .brand-logo-tagline {
+  color: #c8c5cd;
 }
 .client-register-root .help-link-light {
   position: relative;
@@ -211,8 +231,9 @@
   margin-bottom: 24px;
 }
 .client-register-root .headline {
+  font-family: 'Playfair Display', serif;
   font-size: 23px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   margin-bottom: 8px;
   color: var(--ink);

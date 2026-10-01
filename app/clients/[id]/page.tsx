@@ -228,6 +228,11 @@ export default function ClientDetailPage() {
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [archiving, setArchiving] = useState(false);
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const [descExpanded, setDescExpanded] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -324,7 +329,7 @@ export default function ClientDetailPage() {
     const { error: updateError } = await supabase
       .from('clients')
       .update({
-        company_name: editForm.company_name.trim(),
+        company_name: editForm.company_name.trim() || editForm.primary_contact?.trim() || 'Unnamed Client',
         primary_contact: editForm.primary_contact?.trim() || null,
         contact_email: editForm.contact_email?.trim() || null,
         contact_phone: editForm.contact_phone?.trim() || null,
@@ -480,6 +485,42 @@ export default function ClientDetailPage() {
     setArchiving(false);
     setShowArchiveModal(false);
     setReloadKey((k) => k + 1);
+  }
+
+  // Archive শুধু ভিজিবিলিটি টগল করে (কিছুই হারায় না); এটা আসল, স্থায়ী delete —
+  // ডাটাবেসে on delete cascade থাকায় client-এর files/invoices/payments/
+  // messages/feedback/approvals/change requests/notes/meetings/attachments সব
+  // একসাথে মুছে যাবে (প্রজেক্ট শুধু client_id null হয়ে টিকে থাকে, কারণ
+  // projects.client_id-এর FK on delete set null, cascade না)। তাই company
+  // নামটা হুবহু টাইপ করানো হচ্ছে confirm করতে — শুধু "আছেন কিনা" জিজ্ঞেস করা
+  // যথেষ্ট না এত বড় blast radius-এর জন্য।
+  async function handleDeleteClient() {
+    if (!client) return;
+    if (deleteConfirmText.trim() !== client.company_name) {
+      setDeleteError('Type the exact company name to confirm.');
+      return;
+    }
+    setDeleting(true);
+    setDeleteError(null);
+
+    const { error: deleteErr } = await supabase.from('clients').delete().eq('id', client.id);
+    if (deleteErr) {
+      setDeleteError(deleteErr.message);
+      setDeleting(false);
+      return;
+    }
+
+    if (user) {
+      await supabase.from('activity_log').insert({
+        actor_id: user.id,
+        action: 'client_deleted',
+        entity_type: 'client',
+        entity_id: client.id,
+        detail: `"${client.company_name}" স্থায়ীভাবে মুছে ফেলা হয়েছে`,
+      });
+    }
+
+    router.push('/clients');
   }
 
   async function handleFilesSelected(e: ChangeEvent<HTMLInputElement>) {
@@ -819,6 +860,18 @@ export default function ClientDetailPage() {
                       }}
                     >
                       <Icon name="archive" size={13} /> {client.is_archived ? 'Unarchive Client' : 'Archive Client'}
+                    </button>
+                    <button
+                      type="button"
+                      className="more-menu-item danger"
+                      onClick={() => {
+                        setDeleteConfirmText('');
+                        setDeleteError(null);
+                        setShowDeleteModal(true);
+                        setOpenHeaderMenu(null);
+                      }}
+                    >
+                      <Icon name="trash" size={13} /> Delete Client
                     </button>
                   </div>
                 </div>
@@ -1337,7 +1390,7 @@ export default function ClientDetailPage() {
               <div className="modal-body">
                 <div className="modal-field">
                   <label className="modal-label">Company Name</label>
-                  <input className="modal-input" type="text" value={editForm.company_name} onChange={(e) => setEditForm({ ...editForm, company_name: e.target.value })} required />
+                  <input className="modal-input" type="text" value={editForm.company_name} onChange={(e) => setEditForm({ ...editForm, company_name: e.target.value })} />
                 </div>
                 <div className="modal-field-grid">
                   <div className="modal-field">
@@ -1426,7 +1479,7 @@ export default function ClientDetailPage() {
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowEdit(false)}>
                   বাতিল
                 </button>
-                <button type="submit" className="btn btn-accent btn-sm" disabled={saving || !editForm.company_name.trim()}>
+                <button type="submit" className="btn btn-accent btn-sm" disabled={saving}>
                   {saving ? 'সেভ হচ্ছে…' : 'Save Changes'}
                 </button>
               </div>
@@ -1513,6 +1566,57 @@ export default function ClientDetailPage() {
               </button>
               <button type="button" className="btn btn-danger-ghost btn-sm" onClick={handleToggleArchive} disabled={archiving}>
                 {archiving ? 'সেভ হচ্ছে…' : client.is_archived ? 'Unarchive Client' : 'Archive Client'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowDeleteModal(false);
+          }}
+        >
+          <div className="modal-box">
+            <div className="modal-head">
+              <span className="modal-title">Delete {client.company_name}?</span>
+              <button type="button" className="modal-close" onClick={() => setShowDeleteModal(false)} aria-label="বন্ধ করুন">
+                <Icon name="close" size={16} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p className="modal-warn-text">
+                This permanently deletes this client and cannot be undone. Their files, invoices, payments, messages, feedback, approvals, change requests and notes will all be
+                deleted with them. Any of their projects will remain but become unassigned.
+              </p>
+              <label className="field-label" htmlFor="deleteConfirm" style={{ marginTop: 12, display: 'block' }}>
+                Type <strong>{client.company_name}</strong> to confirm
+              </label>
+              <input
+                id="deleteConfirm"
+                type="text"
+                className="modal-input"
+                value={deleteConfirmText}
+                onChange={(e) => {
+                  setDeleteConfirmText(e.target.value);
+                  setDeleteError(null);
+                }}
+                autoComplete="off"
+              />
+              {deleteError && (
+                <p className="modal-warn-text" style={{ color: 'var(--danger)', marginTop: 8 }}>
+                  {deleteError}
+                </p>
+              )}
+            </div>
+            <div className="modal-foot">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowDeleteModal(false)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-danger-ghost btn-sm" onClick={handleDeleteClient} disabled={deleting || deleteConfirmText.trim() !== client.company_name}>
+                {deleting ? 'মুছে ফেলা হচ্ছে…' : 'Delete Client'}
               </button>
             </div>
           </div>

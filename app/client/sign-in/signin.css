@@ -1,8 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,500&display=swap');
-
 /* Screen 2 — Client Sign In। ফর্ম ফিল্ড (cp-input/cp-field/cp-btn/cp-alert)
    client-shared.css থেকে আসে — Screens 3-24-এর সাথে সামঞ্জস্যপূর্ণ রাখতে। এখানে
-   শুধু split-screen লেআউট আর brand প্যানেলের (dark, পাবলিক সাইটের মতো) স্টাইল। */
+   শুধু split-screen লেআউট আর brand প্যানেলের (dark, পাবলিক সাইটের মতো) স্টাইল।
+   হেডলাইনগুলো এখন public marketing site-এর মতোই Playfair Display (client-shared.css
+   থেকে ইমপোর্ট করা) — আগে ছিল Fraunces (এই ফাইলেই আলাদা ইমপোর্ট করা), body টেক্সট
+   Nunito Sans (client-shared.css-এ বদলানো হয়েছে, আগে Inter ছিল)। */
 
 .client-signin-root .split-shell {
   display: flex;
@@ -45,17 +46,16 @@
   z-index: 1;
 }
 .client-signin-root .brand-panel-headline {
+  font-family: 'Playfair Display', serif;
   font-size: 30px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.28;
   margin-bottom: 16px;
   color: #fff;
 }
 .client-signin-root .brand-panel-headline .accent-word {
-  font-family: 'Fraunces', serif;
   font-style: italic;
-  font-weight: 500;
   color: #beb8ff;
 }
 .client-signin-root .brand-panel-sub {
@@ -117,27 +117,49 @@
   align-items: center;
   gap: 10px;
 }
-.client-signin-root .brand-logo-img {
-  height: 28px;
-  width: auto;
+/* Same logo lockup and exact sizing as /client (public/nav-logo-mark.svg +
+   nav-logo-text.svg, absolute-positioned within a 124x27 wrapper) - replaces
+   the old "Navbar logo.png" + separate "FLOW 53" text-label treatment. */
+.client-signin-root .brand-logo {
+  position: relative;
+  display: block;
+  width: 124px;
+  height: 27px;
   flex-shrink: 0;
 }
-.client-signin-root .brand-name {
-  font-family: 'Gugi', sans-serif;
-  font-size: 14px;
+.client-signin-root .brand-logo-mark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 21px;
+  height: 27px;
+  display: block;
+}
+.client-signin-root .brand-logo-text {
+  position: absolute;
+  left: 28px;
+  top: 0;
+  width: 95px;
+  height: 17px;
+  display: block;
+}
+/* Same tagline as /client's nav-logo-art. The topbar (this page's default
+   context) sits on a LIGHT background, opposite of /client's dark nav, so the
+   default color here is the light-bg-appropriate one - .brand-panel (dark)
+   overrides back to the original light-gray-on-dark treatment. */
+.client-signin-root .brand-logo-tagline {
+  position: absolute;
+  left: 28px;
+  top: 20px;
+  font-size: 7px;
+  line-height: 1;
   font-weight: 600;
-  letter-spacing: -0.01em;
-}
-.client-signin-root .brand-sub {
-  font-size: 10.5px;
+  letter-spacing: 0.45px;
   color: var(--ink-faint);
-  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
-.client-signin-root .brand-panel .brand-name {
-  color: #fff;
-}
-.client-signin-root .brand-panel .brand-sub {
-  color: rgba(255, 255, 255, 0.5);
+.client-signin-root .brand-panel .brand-logo-tagline {
+  color: #c8c5cd;
 }
 .client-signin-root .help-link-light {
   position: relative;
@@ -210,8 +232,9 @@
   margin-bottom: 24px;
 }
 .client-signin-root .headline {
+  font-family: 'Playfair Display', serif;
   font-size: 23px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   margin-bottom: 8px;
   color: var(--ink);

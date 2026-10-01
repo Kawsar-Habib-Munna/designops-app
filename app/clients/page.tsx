@@ -59,6 +59,7 @@ const ICON_PATHS: Record<string, string> = {
   'folder-plus': '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/><path d="M12 11v4"/><path d="M10 13h4"/>',
   'user-plus': '<path d="M14 19v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="7" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>',
   archive: '<rect x="2" y="4" width="20" height="5" rx="1"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/>',
+  trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
   refresh: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v6h-6"/>',
 };
@@ -216,6 +217,11 @@ export default function ClientsListPage() {
   const [assignFor, setAssignFor] = useState<ClientRow | null>(null);
   const [assignManagerId, setAssignManagerId] = useState('');
   const [assigning, setAssigning] = useState(false);
+
+  const [deleteFor, setDeleteFor] = useState<ClientRow | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -449,6 +455,41 @@ export default function ClientsListPage() {
     }
   }
 
+  // Archive-এর মতো window.confirm() যথেষ্ট না এখানে — delete cascade-এ client-এর
+  // files/invoices/payments/messages/feedback/approvals/notes সব হারিয়ে যায়
+  // (শুধু projects টিকে থাকে, client_id null হয়ে)। তাই company নাম হুবহু টাইপ
+  // করানো হচ্ছে, ডিটেইল পেজের মতোই।
+  async function handleDeleteClient() {
+    if (!deleteFor) return;
+    if (deleteConfirmText.trim() !== deleteFor.company_name) {
+      setDeleteError('Type the exact company name to confirm.');
+      return;
+    }
+    setDeleting(true);
+    setDeleteError(null);
+
+    const { error: deleteErr } = await supabase.from('clients').delete().eq('id', deleteFor.id);
+    if (deleteErr) {
+      setDeleteError(deleteErr.message);
+      setDeleting(false);
+      return;
+    }
+
+    if (user) {
+      await supabase.from('activity_log').insert({
+        actor_id: user.id,
+        action: 'client_deleted',
+        entity_type: 'client',
+        entity_id: deleteFor.id,
+        detail: `"${deleteFor.company_name}" স্থায়ীভাবে মুছে ফেলা হয়েছে`,
+      });
+    }
+
+    setClients((prev) => prev.filter((row) => row.id !== deleteFor.id));
+    setDeleting(false);
+    setDeleteFor(null);
+  }
+
   function handleExport() {
     const header = ['Company', 'Contact', 'Email', 'Phone', 'Status', 'Manager', 'Project Value', 'Added'];
     const rows = filteredSorted.map((c) => {
@@ -541,6 +582,19 @@ export default function ClientsListPage() {
             <div className="ram-divider"></div>
             <button type="button" className="ram-item danger" onClick={() => handleToggleArchive(c)}>
               <Icon name="archive" size={13} /> {c.is_archived ? 'Unarchive Client' : 'Archive Client'}
+            </button>
+            <button
+              type="button"
+              className="ram-item danger"
+              onClick={() => {
+                setDeleteConfirmText('');
+                setDeleteError(null);
+                setDeleteFor(c);
+                setOpenMenuId(null);
+                setMenuPos(null);
+              }}
+            >
+              <Icon name="trash" size={13} /> Delete Client
             </button>
           </div>
         </div>,
@@ -1105,6 +1159,58 @@ export default function ClientsListPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteFor && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setDeleteFor(null);
+          }}
+        >
+          <div className="modal-box">
+            <div className="modal-head">
+              <span className="modal-title">Delete {deleteFor.company_name}?</span>
+              <button type="button" className="modal-close" onClick={() => setDeleteFor(null)} aria-label="বন্ধ করুন">
+                <Icon name="close" size={16} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p className="modal-warn-text">
+                This permanently deletes this client and cannot be undone. Their files, invoices, payments, messages, feedback, approvals, change requests and notes will all be
+                deleted with them. Any of their projects will remain but become unassigned.
+              </p>
+              <label className="modal-label" htmlFor="listDeleteConfirm" style={{ marginTop: 12, display: 'block' }}>
+                Type <strong>{deleteFor.company_name}</strong> to confirm
+              </label>
+              <input
+                id="listDeleteConfirm"
+                type="text"
+                className="modal-input"
+                value={deleteConfirmText}
+                onChange={(e) => {
+                  setDeleteConfirmText(e.target.value);
+                  setDeleteError(null);
+                }}
+                autoComplete="off"
+                autoFocus
+              />
+              {deleteError && (
+                <p className="modal-warn-text" style={{ color: 'var(--danger)', marginTop: 8 }}>
+                  {deleteError}
+                </p>
+              )}
+            </div>
+            <div className="modal-foot">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDeleteFor(null)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-danger-ghost btn-sm" onClick={handleDeleteClient} disabled={deleting || deleteConfirmText.trim() !== deleteFor.company_name}>
+                {deleting ? 'মুছে ফেলা হচ্ছে…' : 'Delete Client'}
+              </button>
+            </div>
           </div>
         </div>
       )}

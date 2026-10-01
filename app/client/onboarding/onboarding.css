@@ -1,8 +1,27 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,500&display=swap');
-
 /* Screen 4 — Client Onboarding। টোকেন (--bg/--accent/--ink ইত্যাদি) client-shared.css-এর
    .client-portal থেকে ইনহেরিট হয় (root div-এ দুটো ক্লাসই থাকে)। এখানে শুধু
-   split-screen লেআউট, step-nav (dark panel), আর ৫ স্টেপের সব নতুন ফিল্ড-টাইপ। */
+   split-screen লেআউট, step-nav (dark panel), আর ৫ স্টেপের সব নতুন ফিল্ড-টাইপ।
+   হেডলাইনগুলো এখন public site-এর Playfair Display (client-shared.css থেকে), body
+   টেক্সট Nunito Sans (আগে Inter)। এই ফাইলের নিজস্ব Fraunces ইমপোর্টটা আসলে কখনোই
+   ব্যবহার হয়নি (dead import) - বাদ দেওয়া হলো। */
+
+/* Blue palette for this page only - overrides client-shared.css's shared purple
+   --accent/--accent-hover/--accent-soft right on this same element (root div
+   carries both .client-portal and .client-onboarding-root, and this file loads
+   after client-shared.css, so these values win here without touching sign-in/
+   register/dashboard, which keep the original purple). --surface-muted (the field
+   background every input/select/textarea uses) was never actually defined
+   anywhere in this codebase - a real latent bug, not just a color choice - fixed
+   here with the soft blue tone requested. */
+.client-onboarding-root {
+  --accent: #4c6ef5;
+  --accent-hover: #3b5bdb;
+  --accent-soft: #eef1fd;
+  --surface-muted: #eef1fd;
+  /* page background behind the form - a touch lighter/cooler than --surface-muted
+     so the fields still read as distinct boxes against it, not blend into it */
+  --bg: #f4f6fd;
+}
 
 .client-onboarding-root .split-shell {
   display: flex;
@@ -14,13 +33,18 @@
   display: none;
   flex-direction: column;
   justify-content: space-between;
-  width: 300px;
-  min-width: 280px;
+  width: 460px;
+  min-width: 400px;
   padding: 40px 32px;
   background: radial-gradient(circle at 20% 15%, rgba(124, 114, 255, 0.16), transparent 45%), radial-gradient(circle at 85% 85%, rgba(124, 114, 255, 0.12), transparent 45%), #0e0e12;
   color: #fff;
-  position: relative;
-  overflow: hidden;
+  /* sticky, not just relative - the form panel is taller than the viewport on most
+     steps, and this stayed a normal flex item that scrolled away with everything else */
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  overflow-y: auto;
 }
 .client-onboarding-root .brand-panel-grid {
   position: absolute;
@@ -40,27 +64,51 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 30px;
+  margin-bottom: 56px;
 }
-.client-onboarding-root .brand-logo-img {
-  height: 26px;
-  width: auto;
+/* Same logo lockup and exact sizing as /client (public/nav-logo-mark.svg +
+   nav-logo-text.svg, absolute-positioned within a 124x27 wrapper) - replaces
+   the old "Navbar logo.png" + separate "FLOW 53" text-label treatment. */
+.client-onboarding-root .brand-logo {
+  position: relative;
+  display: block;
+  width: 124px;
+  height: 27px;
   flex-shrink: 0;
 }
-.client-onboarding-root .brand-panel .brand-name {
-  font-family: 'Gugi', sans-serif;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #fff;
-  letter-spacing: -0.01em;
+.client-onboarding-root .brand-logo-mark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 21px;
+  height: 27px;
+  display: block;
 }
-.client-onboarding-root .brand-panel .brand-sub {
-  font-size: 10.5px;
-  color: rgba(255, 255, 255, 0.5);
+.client-onboarding-root .brand-logo-text {
+  position: absolute;
+  left: 28px;
+  top: 0;
+  width: 95px;
+  height: 17px;
+  display: block;
+}
+.client-onboarding-root .brand-logo-tagline {
+  position: absolute;
+  left: 28px;
+  top: 20px;
+  font-size: 7px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.45px;
+  white-space: nowrap;
+}
+.client-onboarding-root .brand-panel .brand-logo-tagline {
+  color: #c8c5cd;
 }
 .client-onboarding-root .panel-headline {
+  font-family: 'Playfair Display', serif;
   font-size: 19px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.35;
   margin-bottom: 8px;
   color: #fff;
@@ -150,6 +198,9 @@
   min-width: 0;
 }
 .client-onboarding-root .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -164,18 +215,16 @@
   align-items: center;
   gap: 8px;
 }
-.client-onboarding-root .topbar .brand-lockup {
-  margin-bottom: 0;
-}
-.client-onboarding-root .topbar .brand-name {
-  font-family: 'Gugi', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-}
 .client-onboarding-root .mobile-step-label {
   font-size: 11.5px;
   font-weight: 700;
   color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.client-onboarding-root .step-label-name {
+  color: var(--ink-soft);
+  font-weight: 600;
 }
 .client-onboarding-root .topbar-right {
   display: flex;
@@ -228,9 +277,6 @@
   .client-onboarding-root .brand-panel {
     display: flex;
   }
-  .client-onboarding-root .mobile-step-label {
-    display: none;
-  }
 }
 
 .client-onboarding-root .mobile-progress {
@@ -257,17 +303,10 @@
 .client-onboarding-root .step-head {
   margin-bottom: 24px;
 }
-.client-onboarding-root .step-eyebrow {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 8px;
-}
 .client-onboarding-root .step-title {
+  font-family: 'Playfair Display', serif;
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.01em;
   margin-bottom: 8px;
   color: var(--ink);
@@ -326,6 +365,21 @@
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
   min-height: 46px;
+}
+/* padding-right alone didn't move anything because browsers position the NATIVE
+   <select> arrow as part of the form-control chrome, outside the content box it
+   actually respects padding on - adding padding-right doesn't reliably push it
+   anywhere. appearance:none removes that native arrow entirely and replaces it
+   with a background-image chevron we can position exactly, giving real control
+   over the gap to the edge. */
+.client-onboarding-root .field-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23939197' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
 }
 .client-onboarding-root .field-input::placeholder,
 .client-onboarding-root .field-textarea::placeholder {
@@ -691,10 +745,10 @@
   gap: 8px;
   font-size: 13.5px;
   font-weight: 700;
-  padding: 12px 22px;
+  padding: 8px 22px;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
-  min-height: 46px;
+  min-height: 38px;
   transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 .client-onboarding-root .btn:active {

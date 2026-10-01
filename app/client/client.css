@@ -14,7 +14,6 @@
   color: #e6e4e8;
   -webkit-font-smoothing: antialiased;
   width: 100%;
-  overflow-x: hidden;
 }
 .client-entry-root,
 .client-entry-root * {
@@ -39,9 +38,14 @@
 
 /* ---------- nav ---------- */
 .client-entry-root .client-nav {
-  position: relative;
-  z-index: 1;
+  position: sticky;
+  top: 0;
+  z-index: 10;
   padding: 16px 0;
+  background: rgba(1, 0, 3, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(239, 230, 253, 0.08);
 }
 .client-entry-root .client-nav-inner {
   width: min(1280px, calc(100% - 48px));
@@ -151,7 +155,7 @@
 .client-entry-root .client-hero {
   position: relative;
   z-index: 1;
-  padding: 100px 0 80px;
+  padding: 48px 0 80px;
 }
 .client-entry-root .client-hero-inner {
   width: min(1280px, calc(100% - 48px));
@@ -219,7 +223,7 @@
   height: 24px;
 }
 .client-entry-root .client-hero-signin-line {
-  font-size: 20px;
+  font-size: 15px;
   line-height: 1.5;
   font-weight: 500;
   color: #ada8b4;
@@ -342,6 +346,18 @@
   }
   .client-entry-root .client-hero-desc {
     max-width: none;
+  }
+  /* Below this width the photo is a full-width frame rather than the fixed
+     713:468 crop - object-fit:contain shows the whole image with no cropping,
+     and the frame's own background fills any letterboxed space around it. */
+  .client-entry-root .client-hero-photo {
+    aspect-ratio: auto;
+    background: rgba(239, 230, 253, 0.04);
+  }
+  .client-entry-root .client-hero-photo img {
+    height: auto;
+    max-height: 70vh;
+    object-fit: contain;
   }
 }
 @media (max-width: 640px) {
