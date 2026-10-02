@@ -53,7 +53,8 @@ create table tasks (
   status text default 'todo',          -- todo | in_progress | review | done
   workflow_stage text default 'backlog', -- backlog | ready | wireframing | ui_design | ux_review | client_review | revision | handoff | completed
   is_blocked boolean default false,
-  due_date date,
+  due_date date,            -- deadline, ঐচ্ছিক, টাস্ক ভেদে ভিন্ন হতে পারে
+  assigned_date date not null default current_date, -- কোন দিনের টাস্ক হিসেবে দেখানো হবে ("আজকের টাস্ক" ইত্যাদি), due_date থেকে আলাদা
   due_time time,
   estimated_hours numeric,
   logged_hours numeric default 0,
@@ -2205,3 +2206,12 @@ alter table case_studies add column if not exists category text;
 -- (activity_log delete পলিসির মতোই)।
 drop policy if exists "admin can delete clients" on clients;
 create policy "admin can delete clients" on clients for delete using (public.is_admin());
+
+-- Tasks পেজে "assigned date" যোগ — due_date (ডেডলাইন, ঐচ্ছিক, টাস্ক ভেদে ভিন্ন
+-- হতে পারে) থেকে আলাদা একটা কলাম, যেটা দিয়ে বোঝা যায় টাস্কটা কোন দিনের
+-- কাজ-তালিকায় দেখানো হবে ("আজকের টাস্ক" পিল, টুলবারের Assigned-date ফিল্টার,
+-- Team Tasks কার্ড — এই সবগুলোই এখন due_date না, assigned_date চেক করে)।
+-- "not null default current_date" থাকায় আগে থেকে বিদ্যমান সব রো স্বয়ংক্রিয়ভাবে
+-- আজকের তারিখে ব্যাকফিল হয়ে যাবে।
+alter table tasks add column if not exists assigned_date date not null default current_date;
+create index if not exists idx_tasks_assigned_date on tasks(assigned_date);

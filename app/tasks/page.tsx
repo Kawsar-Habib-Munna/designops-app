@@ -10,7 +10,7 @@
 // (disabled), ব্যাকএন্ডে কিছু করে না। Favorites ভিউ-ও তাই — schema-তে
 // favorite/starred কলাম নেই বলে সবসময় খালি দেখাবে।
 
-import { Suspense, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import './tasks.css';
@@ -45,6 +45,7 @@ const ICON_PATHS: Record<string, string> = {
   refresh: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v6h-6"/>',
   import: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/>',
   export: '<path d="M12 15V3"/><path d="M7 8l5-5 5 5"/><path d="M4 19h16"/>',
+  whatsapp: '<path d="M3 21l1.65-4.95A8.5 8.5 0 1 1 8.6 19.4L3 21z"/>',
   bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>',
   filter: '<path d="M4 4h16l-6 8v6l-4 2v-8z"/>',
   sort: '<path d="M7 4v16"/><path d="M3 8l4-4 4 4"/><path d="M17 20V4"/><path d="M21 16l-4 4-4-4"/>',
@@ -99,6 +100,7 @@ type TaskRow = {
   priority: TaskPriority;
   is_blocked: boolean;
   due_date: string | null;
+  assigned_date: string;
   estimated_hours: number | null;
   progress: number | null;
   updated_at: string;
@@ -160,7 +162,7 @@ function matchesView(t: TaskRow, view: SmartView, userId: string, today: string)
     case 'mine':
       return t.assignee_id === userId;
     case 'today':
-      return t.due_date === today;
+      return t.assigned_date === today;
     case 'overdue':
       return !!t.due_date && t.due_date < today && t.status !== 'done';
     case 'blocked':
@@ -179,7 +181,7 @@ function matchesView(t: TaskRow, view: SmartView, userId: string, today: string)
 }
 
 const TASK_SELECT =
-  'id, title, description, status, workflow_stage, priority, is_blocked, due_date, estimated_hours, progress, updated_at, project_id, assignee_id, projects(name), profiles!assignee_id(full_name, avatar_color, avatar_url)';
+  'id, title, description, status, workflow_stage, priority, is_blocked, due_date, assigned_date, estimated_hours, progress, updated_at, project_id, assignee_id, projects(name), profiles!assignee_id(full_name, avatar_color, avatar_url)';
 
 // ---- Weekly Tasks / Weekly Plan (added alongside the existing table view,
 // which becomes the "List" tab — no existing functionality removed) ----
@@ -232,8 +234,13 @@ function TasksPageInner() {
 
   const [activeView, setActiveView] = useState<SmartView>('all');
   const [search, setSearch] = useState('');
+  const [dueDateFilter, setDueDateFilter] = useState('');
+  const [assignedDateFilter, setAssignedDateFilter] = useState('');
   const [advOpen, setAdvOpen] = useState(false);
   const [listScope, setListScope] = useState<WeeklyScope>('team');
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [sharingPdf, setSharingPdf] = useState(false);
+  const teamExportRef = useRef<HTMLDivElement>(null);
 
   const [expandData, setExpandData] = useState<Record<string, ExpandData>>({});
   const [newComment, setNewComment] = useState<Record<string, string>>({});
@@ -246,12 +253,24 @@ function TasksPageInner() {
   const [newAssigneeIds, setNewAssigneeIds] = useState<string[]>([]);
   const [newPriority, setNewPriority] = useState<TaskPriority>('normal');
   const [newDueDate, setNewDueDate] = useState('');
+  // "Assigned date" = কোন দিনের টাস্ক হিসেবে এটা দেখানো হবে (daily লিস্টে/
+  // "আজকের টাস্ক"-এ) — ডেডলাইন (due_date) থেকে সম্পূর্ণ আলাদা, ডেডলাইন ভিন্ন ভিন্ন
+  // দিন হতে পারে কিন্তু assigned date সবসময় থাকবে, ডিফল্ট আজ।
+  const [newAssignedDate, setNewAssignedDate] = useState(todayISO());
   const [newChecklist, setNewChecklist] = useState<string[]>(['']);
   const [creating, setCreating] = useState(false);
 
+  // "Create Task" বাটনে ক্লিক করলে assigned date রিসেট হয়ে আজকের তারিখে আসে —
+  // প্রতিদিনের টাস্ক যোগ করার সময় আলাদা করে বাছাই করতে না হয়; ডেডলাইন (due date)
+  // ইচ্ছাকৃতভাবে খালি/অপরিবর্তিত থাকে, কারণ সেটা টাস্ক ভেদে ভিন্ন হতে পারে।
+  function openCreateTask() {
+    setNewAssignedDate(todayISO());
+    setShowCreate(true);
+  }
+
   // ---- List tab: per-person card view ----
   const [editTaskId, setEditTaskId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ title: '', projectId: '', assigneeId: '', priority: 'normal' as TaskPriority, status: 'todo' as TaskStatus, dueDate: '', description: '' });
+  const [editForm, setEditForm] = useState({ title: '', projectId: '', assigneeId: '', priority: 'normal' as TaskPriority, status: 'todo' as TaskStatus, dueDate: '', assignedDate: '', description: '' });
   const [editSaving, setEditSaving] = useState(false);
   const editingTask = tasks.find((t) => t.id === editTaskId) ?? null;
 
@@ -351,6 +370,7 @@ function TasksPageInner() {
       const assigneeParam = searchParams.get('assignee');
       if (assigneeParam) {
         setNewAssigneeIds([assigneeParam]);
+        setNewAssignedDate(todayISO());
         setShowCreate(true);
       }
     }
@@ -381,6 +401,7 @@ function TasksPageInner() {
           priority: t.priority,
           status: t.status,
           dueDate: t.due_date ?? '',
+          assignedDate: t.assigned_date,
           description: t.description ?? '',
         });
       }
@@ -482,8 +503,14 @@ function TasksPageInner() {
   const filtered = useMemo(() => {
     if (!user) return [];
     const q = search.trim().toLowerCase();
-    return tasks.filter((t) => matchesView(t, activeView, user.id, today) && (!q || t.title.toLowerCase().includes(q)));
-  }, [tasks, activeView, search, user, today]);
+    return tasks.filter(
+      (t) =>
+        matchesView(t, activeView, user.id, today) &&
+        (!q || t.title.toLowerCase().includes(q)) &&
+        (!dueDateFilter || t.due_date === dueDateFilter) &&
+        (!assignedDateFilter || t.assigned_date === assignedDateFilter)
+    );
+  }, [tasks, activeView, search, dueDateFilter, assignedDateFilter, user, today]);
 
   // ---- List tab: per-person card grid (ঠিক /todos-এর member-grid
   // প্যাটার্নে, কিন্তু আসল tasks+checklist_items ডেটা দিয়ে)। প্রতি কার্ডের
@@ -491,7 +518,7 @@ function TasksPageInner() {
   // বর্তমান Smart View + সার্চ দিয়ে ফিল্টার করা (filtered থেকে) — যাতে
   // "My Tasks"/"Overdue" ইত্যাদি pill এখানেও কাজ করে। ----
   const memberTaskCards = useMemo(() => {
-    const noConstraint = activeView === 'all' && !search.trim();
+    const noConstraint = activeView === 'all' && !search.trim() && !dueDateFilter && !assignedDateFilter;
     const people = listScope === 'mine' && user ? assigneeOptions.filter((p) => p.id === user.id) : assigneeOptions;
     return people
       .map((p) => {
@@ -502,7 +529,107 @@ function TasksPageInner() {
         return { profile: p, personTasks, shown, activeCount: active.length, avgProgress };
       })
       .filter((m) => noConstraint || m.shown.length > 0);
-  }, [assigneeOptions, tasks, filtered, activeView, search, listScope, user]);
+  }, [assigneeOptions, tasks, filtered, activeView, search, dueDateFilter, assignedDateFilter, listScope, user]);
+
+  // Team tasks কার্ড-গ্রিড PDF এ এক্সপোর্ট — গ্রুপে শেয়ার করার জন্য। স্ক্রিনে
+  // যা দেখা যাচ্ছে (ডার্ক মোডেও) তার বদলে সবসময় লাইট/প্রিন্ট-স্টাইল একটা হিডেন
+  // ডকুমেন্ট (teamExportRef) ক্যাপচার করা হয় — PDF এর রং UI থিমের সাথে বদলানো উচিত না।
+  async function generateTeamTasksPdfBlob(): Promise<{ blob: Blob; filename: string }> {
+    const node = teamExportRef.current;
+    if (!node) throw new Error('Export content not ready');
+    const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
+    const canvas = await html2canvas(node, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    // addImage নিজে থেকে পেজ-কাট করে না — শুধু পেজের শেষ প্রান্তে (y=pageHeight)
+    // ক্লিপ হয়ে যায়, তাই আগে কনটেন্ট সরাসরি পেজের একদম নিচের কিনারা পর্যন্ত চলে
+    // যেত, কোনো মার্জিন ছাড়াই। এখন প্রতি পেজের উপরে/নিচে marginMM ফাঁকা রাখা হয় —
+    // নিচের অংশটা একটা সাদা রেক্ট্যাঙ্গেল দিয়ে মাস্ক করে (কারণ আসল ছবিটা পেজ-কিনারা
+    // পর্যন্তই রেন্ডার হতে চায়), আর পরের পেজের স্লাইসও সেই অনুযায়ী শিফট করা হয়।
+    const marginMM = 12;
+    const usableHeight = pageHeight - marginMM * 2;
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    function maskMargins() {
+      pdf.setFillColor(255, 255, 255);
+      // পেজ১-এ উপরের ফাঁকা অংশ এমনিতেই ব্ল্যাঙ্ক (ছবিই ওখানে আঁকা হয়নি), কিন্তু
+      // পরের পেজগুলোতে ছবি y=0 থেকে শুরু হয় বলে আগের পেজে যা শেষের দিকে দেখানো
+      // হয়েছিল তারই শেষ ১২মিমি আবার উপরে পুনরাবৃত্তি হয়ে যাচ্ছিল (বাগ — টাস্ক/
+      // চেকলিস্ট আইটেম ডুপ্লিকেট দেখাচ্ছিল)। তাই এখন প্রতি পেজেই উপরে-নিচে দুই
+      // দিকেই মাস্ক করা হয়।
+      pdf.rect(0, 0, pageWidth, marginMM, 'F');
+      pdf.rect(0, pageHeight - marginMM, pageWidth, marginMM, 'F');
+    }
+
+    let heightLeft = imgHeight;
+    let position = marginMM;
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    maskMargins();
+    heightLeft -= usableHeight;
+    while (heightLeft > 0) {
+      position = marginMM - (imgHeight - heightLeft);
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      maskMargins();
+      heightLeft -= usableHeight;
+    }
+    return { blob: pdf.output('blob'), filename: `team-tasks-${todayISO()}.pdf` };
+  }
+
+  async function handleExportTeamTasksPdf() {
+    if (exportingPdf) return;
+    setExportingPdf(true);
+    try {
+      const { blob, filename } = await generateTeamTasksPdfBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      setError('PDF তৈরি করা যায়নি। আবার চেষ্টা করুন।');
+    } finally {
+      setExportingPdf(false);
+    }
+  }
+
+  // WhatsApp-এ শেয়ার: Web Share API ফাইল-সহ সাপোর্ট করলে (বেশিরভাগ মোবাইল ব্রাউজার)
+  // নেটিভ শেয়ার শিট খোলে যেখানে WhatsApp অপশন থাকে। সাপোর্ট না থাকলে (যেমন ডেস্কটপ
+  // ব্রাউজার) PDF ডাউনলোড করে WhatsApp Web-এ একটা মেসেজ বক্স খুলে দেওয়া হয়, যাতে
+  // ইউজার ডাউনলোড হওয়া ফাইলটা ম্যানুয়ালি অ্যাটাচ করে পাঠাতে পারে — ব্রাউজার থেকে
+  // সরাসরি ফাইল-অ্যাটাচড WhatsApp Web লিংক পাঠানোর কোনো পাবলিক API নেই।
+  async function handleShareTeamTasksWhatsApp() {
+    if (sharingPdf) return;
+    setSharingPdf(true);
+    try {
+      const { blob, filename } = await generateTeamTasksPdfBlob();
+      const file = new File([blob], filename, { type: 'application/pdf' });
+      const canShareFile = typeof navigator !== 'undefined' && !!navigator.canShare && navigator.canShare({ files: [file] });
+      if (canShareFile && navigator.share) {
+        await navigator.share({ files: [file], title: 'Team Tasks', text: 'Team tasks summary' });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent('Team tasks summary PDF ডাউনলোড হয়ে গেছে — এটা চ্যাটে অ্যাটাচ করে পাঠান।')}`, '_blank', 'noopener');
+      }
+    } catch (err) {
+      if ((err as Error)?.name !== 'AbortError') {
+        console.error(err);
+        setError('WhatsApp-এ শেয়ার করা যায়নি। আবার চেষ্টা করুন।');
+      }
+    } finally {
+      setSharingPdf(false);
+    }
+  }
 
   const weeklyScopedTasks = useMemo(() => (weeklyScope === 'mine' && user ? tasks.filter((t) => t.assignee_id === user.id) : tasks), [tasks, weeklyScope, user]);
 
@@ -747,6 +874,7 @@ function TasksPageInner() {
           assignee_id: assigneeId,
           priority: newPriority,
           due_date: newDueDate || null,
+          assigned_date: newAssignedDate || todayISO(),
           status: 'todo',
           workflow_stage: 'backlog',
           created_by: user.id,
@@ -809,6 +937,7 @@ function TasksPageInner() {
     setNewAssigneeIds([]);
     setNewPriority('normal');
     setNewDueDate('');
+    setNewAssignedDate(todayISO());
     setNewChecklist(['']);
     setCreating(false);
     setShowCreate(false);
@@ -837,6 +966,7 @@ function TasksPageInner() {
       priority: task.priority,
       status: task.status,
       dueDate: task.due_date ?? '',
+      assignedDate: task.assigned_date,
       description: task.description ?? '',
     });
     setEditTaskId(task.id);
@@ -856,6 +986,7 @@ function TasksPageInner() {
         priority: editForm.priority,
         status: editForm.status,
         due_date: editForm.dueDate || null,
+        assigned_date: editForm.assignedDate || todayISO(),
         description: editForm.description.trim() || null,
       })
       .eq('id', editTaskId)
@@ -934,7 +1065,7 @@ function TasksPageInner() {
               <span className="kbd">⌘K</span>
             </button>
             <div className="topbar-spacer"></div>
-            <button className="btn btn-accent" onClick={() => setShowCreate(true)}>
+            <button className="btn btn-accent" onClick={openCreateTask}>
               <Icon name="plus" /> নতুন তৈরি করুন
             </button>
             <Link className="icon-btn" href="/notifications" aria-label="নোটিফিকেশন">
@@ -961,7 +1092,7 @@ function TasksPageInner() {
                 <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="import" size={13} /> ইমপোর্ট</button>
                 <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="export" size={13} /> এক্সপোর্ট</button>
                 <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="bookmark" size={13} /> Saved Views</button>
-                <button className="btn btn-accent" onClick={() => setShowCreate(true)}>
+                <button className="btn btn-accent" onClick={openCreateTask}>
                   <Icon name="plus" /> টাস্ক তৈরি
                 </button>
               </div>
@@ -1019,7 +1150,45 @@ function TasksPageInner() {
               <button className="filter-chip" disabled title="শীঘ্রই আসছে"><Icon name="filter" size={12} /> Quick Filter</button>
               <button className="filter-chip" disabled title="শীঘ্রই আসছে"><Icon name="sort" size={12} /> Sort</button>
               <button className="filter-chip" disabled title="শীঘ্রই আসছে"><Icon name="layers" size={12} /> Group By</button>
-              <button className="filter-chip" disabled title="শীঘ্রই আসছে"><Icon name="calendar" size={12} /> Date Range</button>
+              <label className={`filter-chip${assignedDateFilter ? ' applied' : ''}`} title="যেদিনের টাস্ক হিসেবে অ্যাসাইন করা হয়েছে">
+                <Icon name="calendar" size={12} /> Assigned
+                <input
+                  type="date"
+                  value={assignedDateFilter}
+                  onChange={(e) => setAssignedDateFilter(e.target.value)}
+                  style={{ border: 'none', background: 'transparent', font: 'inherit', color: 'inherit', padding: 0, outline: 'none', width: 108 }}
+                />
+                {assignedDateFilter && (
+                  <button
+                    type="button"
+                    aria-label="অ্যাসাইনড-ডেট ফিল্টার সরান"
+                    onClick={(e) => { e.preventDefault(); setAssignedDateFilter(''); }}
+                    style={{ display: 'flex', background: 'none', border: 'none', padding: 0, color: 'inherit' }}
+                  >
+                    <Icon name="close" size={10} />
+                  </button>
+                )}
+              </label>
+              <button className={`filter-chip${assignedDateFilter === todayISO() ? ' applied' : ''}`} onClick={() => setAssignedDateFilter(todayISO())}>Today</button>
+              <label className={`filter-chip${dueDateFilter ? ' applied' : ''}`} title="ডেডলাইন অনুযায়ী ফিল্টার">
+                <Icon name="calendar" size={12} /> Due
+                <input
+                  type="date"
+                  value={dueDateFilter}
+                  onChange={(e) => setDueDateFilter(e.target.value)}
+                  style={{ border: 'none', background: 'transparent', font: 'inherit', color: 'inherit', padding: 0, outline: 'none', width: 108 }}
+                />
+                {dueDateFilter && (
+                  <button
+                    type="button"
+                    aria-label="ডিউ-ডেট ফিল্টার সরান"
+                    onClick={(e) => { e.preventDefault(); setDueDateFilter(''); }}
+                    style={{ display: 'flex', background: 'none', border: 'none', padding: 0, color: 'inherit' }}
+                  >
+                    <Icon name="close" size={10} />
+                  </button>
+                )}
+              </label>
               <button className={`filter-chip${advOpen ? ' applied' : ''}`} onClick={() => setAdvOpen((o) => !o)}>
                 <Icon name="sliders" size={12} /> Advanced Filters
               </button>
@@ -1028,6 +1197,8 @@ function TasksPageInner() {
                 onClick={() => {
                   setSearch('');
                   setActiveView('all');
+                  setDueDateFilter('');
+                  setAssignedDateFilter('');
                 }}
               >
                 <Icon name="close" size={12} /> Clear Filters
@@ -1046,13 +1217,25 @@ function TasksPageInner() {
             </div>
 
             {/* per-person card list */}
-            <div className="scope-toggle" style={{ marginBottom: 14 }}>
-              <button className={`scope-btn${listScope === 'mine' ? ' active' : ''}`} onClick={() => setListScope('mine')}>
-                <Icon name="user" size={13} /> My tasks
-              </button>
-              <button className={`scope-btn${listScope === 'team' ? ' active' : ''}`} onClick={() => setListScope('team')}>
-                <Icon name="users2" size={13} /> Team tasks
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <div className="scope-toggle">
+                <button className={`scope-btn${listScope === 'mine' ? ' active' : ''}`} onClick={() => setListScope('mine')}>
+                  <Icon name="user" size={13} /> My tasks
+                </button>
+                <button className={`scope-btn${listScope === 'team' ? ' active' : ''}`} onClick={() => setListScope('team')}>
+                  <Icon name="users2" size={13} /> Team tasks
+                </button>
+              </div>
+              {listScope === 'team' && (
+                <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+                  <button className="btn btn-ghost btn-sm" onClick={handleExportTeamTasksPdf} disabled={exportingPdf || memberTaskCards.length === 0}>
+                    <Icon name="export" size={13} /> {exportingPdf ? 'এক্সপোর্ট হচ্ছে…' : 'Export PDF'}
+                  </button>
+                  <button className="btn btn-ghost btn-sm" style={{ color: '#25D366' }} onClick={handleShareTeamTasksWhatsApp} disabled={sharingPdf || memberTaskCards.length === 0}>
+                    <Icon name="whatsapp" size={13} color="#25D366" /> {sharingPdf ? 'শেয়ার হচ্ছে…' : 'Share to WhatsApp'}
+                  </button>
+                </div>
+              )}
             </div>
             {loading ? (
               <div className="table-scroll">
@@ -1063,7 +1246,7 @@ function TasksPageInner() {
                 <div className="empty-icon"><Icon name="search" /></div>
                 <div className="empty-title">কোনো টাস্ক পাওয়া যায়নি</div>
                 <div className="empty-sub">এই ভিউতে এখনো কোনো টাস্ক যোগ হয়নি, অথবা আপনার ফিল্টারে কোনো ফলাফল মিলছে না।</div>
-                <button className="btn btn-accent btn-sm" onClick={() => setShowCreate(true)}>
+                <button className="btn btn-accent btn-sm" onClick={openCreateTask}>
                   <Icon name="plus" size={13} /> প্রথম টাস্ক তৈরি করুন
                 </button>
               </div>
@@ -1107,8 +1290,11 @@ function TasksPageInner() {
                                 <div className="person-task-main">
                                   <div className={`person-task-title${task.status === 'done' ? ' done' : ''}`}>{task.title}</div>
                                   <div className="person-task-meta tabular">
-                                    {task.progress ?? 0}% · {status.label}{task.due_date ? ` · Due ${task.due_date.slice(8, 10)}/${task.due_date.slice(5, 7)}/${task.due_date.slice(0, 4)}` : ''}
+                                    {task.progress ?? 0}% · {status.label}
+                                    {task.assigned_date !== today ? ` · Scheduled ${task.assigned_date.slice(8, 10)}/${task.assigned_date.slice(5, 7)}` : ''}
+                                    {task.due_date ? ` · Due ${task.due_date.slice(8, 10)}/${task.due_date.slice(5, 7)}/${task.due_date.slice(0, 4)}` : ''}
                                   </div>
+                                  {task.description && <div className="person-task-desc">{task.description}</div>}
                                 </div>
                                 <button className="person-task-action" onClick={() => openEditTask(task)} aria-label="এডিট করুন">
                                   <Icon name="edit" size={13} />
@@ -1136,6 +1322,76 @@ function TasksPageInner() {
                 ))}
               </div>
             )}
+
+            {/* PDF এক্সপোর্টের জন্য হিডেন প্রিন্ট-স্টাইল ডকুমেন্ট — স্ক্রিনে দেখা যায় না
+                (viewport-এর বাইরে বসানো), শুধু html2canvas দিয়ে ক্যাপচার করার জন্য।
+                থিম (dark mode) নির্বিশেষে সবসময় লাইট/হার্ডকোডেড রঙে রেন্ডার হয়। */}
+            <div
+              ref={teamExportRef}
+              style={{ position: 'fixed', top: 0, left: -99999, width: 760, background: '#ffffff', padding: 32, fontFamily: 'Arial, Helvetica, sans-serif', color: '#14141A' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '2px solid #14141A' }}>
+                <div style={{ fontSize: 20, fontWeight: 700 }}>Team Tasks</div>
+                <div style={{ fontSize: 12, color: '#6E6E7A' }}>
+                  {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </div>
+              </div>
+              {memberTaskCards.map((m) => (
+                <div key={m.profile.id} style={{ marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #E8E8EC' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700 }}>{m.profile.full_name}</div>
+                    <div style={{ fontSize: 12, color: '#6E6E7A' }}>
+                      {m.activeCount === 0 ? 'No active To-Dos' : `${m.activeCount} active To-Do${m.activeCount > 1 ? 's' : ''}`}
+                    </div>
+                  </div>
+                  {m.personTasks.length === 0 ? (
+                    <div style={{ fontSize: 12, color: '#A3A3AE' }}>All clear</div>
+                  ) : (
+                    m.personTasks.map((task) => {
+                      const status = STATUS_META[task.status];
+                      const checklist = checklistByTask.get(task.id) ?? [];
+                      return (
+                        <div key={task.id} style={{ padding: '5px 0' }}>
+                          {/* কাস্টম div/span দিয়ে আঁকা bullet/checkbox html2canvas-এ টেক্সটের
+                              সাথে উপরে-নিচে মিসঅ্যালাইন হয়ে যাচ্ছিল (flex/table কোনোটাতেই পুরো
+                              ঠিক হয়নি) — তাই এখন প্লেইন ইউনিকোড ক্যারেক্টার ব্যবহার করা হয়েছে,
+                              এগুলো টেক্সটেরই অংশ বলে লাইনের সাথে এমনিতেই নিখুঁতভাবে বেসলাইন-অ্যালাইন থাকে। */}
+                          <div style={{ display: 'table', width: '100%', fontSize: 12 }}>
+                            <div style={{ display: 'table-cell', textDecoration: task.status === 'done' ? 'line-through' : 'none', color: task.status === 'done' ? '#A3A3AE' : '#14141A' }}>
+                              • {task.title}
+                            </div>
+                            <div style={{ display: 'table-cell', textAlign: 'right', whiteSpace: 'nowrap', color: '#6E6E7A', paddingLeft: 8 }}>
+                              {task.progress ?? 0}% · {status.label}
+                              {task.due_date ? ` · Due ${task.due_date.slice(8, 10)}/${task.due_date.slice(5, 7)}/${task.due_date.slice(0, 4)}` : ''}
+                            </div>
+                          </div>
+                          {task.description && (
+                            <div style={{ fontSize: 11, color: '#6E6E7A', marginTop: 2, whiteSpace: 'pre-wrap' }}>{task.description}</div>
+                          )}
+                          {checklist.length > 0 && (
+                            <div style={{ marginLeft: 14, marginTop: 3 }}>
+                              {checklist.map((item) => (
+                                <div
+                                  key={item.id}
+                                  style={{
+                                    fontSize: 11,
+                                    padding: '2px 0',
+                                    color: item.is_done ? '#A3A3AE' : '#6E6E7A',
+                                    textDecoration: item.is_done ? 'line-through' : 'none',
+                                  }}
+                                >
+                                  {item.is_done ? '☑' : '☐'} {item.label}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              ))}
+            </div>
             </>
             )}
 
@@ -1405,7 +1661,17 @@ function TasksPageInner() {
                 ))}
               </select>
 
-              <label className="field-label">ডেডলাইন</label>
+              <label className="field-label">Assigned Date <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <input
+                className="field-input"
+                type="date"
+                required
+                value={newAssignedDate}
+                onChange={(e) => setNewAssignedDate(e.target.value)}
+              />
+              <p style={{ fontSize: 11.5, color: 'var(--ink-faint)', margin: '2px 0 14px' }}>কোন দিনের টাস্ক হিসেবে এটা তালিকায় দেখাবে — ডেডলাইনের থেকে আলাদা হতে পারে।</p>
+
+              <label className="field-label">ডেডলাইন (ঐচ্ছিক)</label>
               <input className="field-input" type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} />
 
               <div className="modal-foot">
@@ -1482,7 +1748,16 @@ function TasksPageInner() {
                 </div>
               </div>
 
-              <label className="field-label">ডেডলাইন</label>
+              <label className="field-label">Assigned Date <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <input
+                className="field-input"
+                type="date"
+                required
+                value={editForm.assignedDate}
+                onChange={(e) => setEditForm((f) => ({ ...f, assignedDate: e.target.value }))}
+              />
+
+              <label className="field-label">ডেডলাইন (ঐচ্ছিক)</label>
               <input className="field-input" type="date" value={editForm.dueDate} onChange={(e) => setEditForm((f) => ({ ...f, dueDate: e.target.value }))} />
 
               <label className="field-label">Description</label>
