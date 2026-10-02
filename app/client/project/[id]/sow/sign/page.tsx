@@ -13,12 +13,12 @@
 // signed_at ক্লায়েন্ট ঘড়ি থেকে না — sign_sow() সফল হওয়ার পর sows রো আবার fetch
 // করে ডাটাবেজের আসল timestamptz দেখানো হয় (success স্ক্রিনে "Signed On" এটাই)।
 
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
-import { formatBnDateLong, formatDateTime, todayISO } from '@/lib/format';
+import { formatDateLong, formatDateTime, todayISO } from '@/lib/format';
 import { uploadFileToDrive, driveThumbnailUrl } from '@/lib/driveUpload';
 import '../../../../client-shared.css';
 import './sign.css';
@@ -73,14 +73,125 @@ function parseBulletList(text: string | null): string[] {
 
 type SigMethod = 'typed' | 'drawn' | 'uploaded';
 
+const ICONS: Record<string, string> = {
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
+  folder: '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/>',
+  file: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>',
+  doc: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M9 13h6"/><path d="M9 17h6"/>',
+  card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+  message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+  menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
+  close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17h.01"/>',
+};
+function Icon({ name, size = 14 }: { name: string; size?: number }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICONS[name] }} />;
+}
+
+// সাইডবার/টপবার শেল — বাকি client-portal প্রজেক্ট পেজগুলোর (SowShell/
+// PaymentsShell) মতোই, যাতে সাইনিং ফ্লোতে এসেও পুরো পোর্টাল নেভিগেশন (ও
+// "Need help?") হাতের নাগালে থাকে — আগে এই পেজটা পুরোপুরি sidebar-less,
+// standalone একটা ফর্ম ছিল।
+function SignShell({
+  project,
+  client,
+  mobileNavOpen,
+  setMobileNavOpen,
+  onSignOut,
+  children,
+}: {
+  project: ProjectBrief;
+  client: ClientRecord;
+  mobileNavOpen: boolean;
+  setMobileNavOpen: (v: boolean) => void;
+  onSignOut: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="shell">
+      <div className={`mobile-backdrop${mobileNavOpen ? ' open' : ''}`} onClick={() => setMobileNavOpen(false)}></div>
+      <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
+        <div>
+          <div className="cp-brand cp-brand-sidebar">
+            <span className="cp-brand-art">
+              <img src="/nav-logo-mark.svg" alt="" className="cp-brand-mark" />
+              <img src="/nav-logo-text.svg" alt="FLOW 53" className="cp-brand-text" />
+              <span className="cp-brand-tagline">Innovate-Design-Elevate</span>
+            </span>
+            <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
+              <Icon name="close" size={16} />
+            </button>
+          </div>
+          <nav className="nav-group">
+            <Link href="/client/dashboard" className="nav-item">
+              <Icon name="grid" /> Overview
+            </Link>
+            <Link href={`/client/project/${project.id}`} className="nav-item">
+              <Icon name="folder" /> My Project
+            </Link>
+            <Link href={`/client/project/${project.id}/messages`} className="nav-item">
+              <Icon name="message" /> Messages
+            </Link>
+            <Link href={`/client/project/${project.id}/files`} className="nav-item">
+              <Icon name="file" /> Files
+            </Link>
+            <Link href={`/client/project/${project.id}/sow`} className="nav-item active">
+              <Icon name="doc" /> SOW
+            </Link>
+            <Link href={`/client/project/${project.id}/payments`} className="nav-item">
+              <Icon name="card" /> Payments
+            </Link>
+          </nav>
+        </div>
+        <button type="button" className="profile-card" onClick={onSignOut} title="Sign out">
+          <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
+            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+          </div>
+          <div className="profile-meta">
+            <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
+            <div className="profile-role">{client.company_name}</div>
+          </div>
+          <Icon name="logout" />
+        </button>
+      </aside>
+
+      <div className="main">
+        <header className="topbar">
+          <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="Open menu">
+            <Icon name="menu" />
+          </button>
+          <span className="topbar-title">Statement of Work</span>
+        </header>
+
+        <header className="page-topbar">
+          <div className="breadcrumb">
+            <Link href="/client/dashboard">Client Portal</Link> / <Link href={`/client/project/${project.id}`}>{project.name}</Link> / Statement of Work
+          </div>
+          <a
+            className="page-help-link"
+            href={`${WHATSAPP_URL_BASE}?text=${encodeURIComponent(`Hi FLOW53, I need help with the Statement of Work for ${project.name}.`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Icon name="help" size={13} /> Need help?
+          </a>
+        </header>
+
+        <main className="content">{children}</main>
+      </div>
+    </div>
+  );
+}
+
 export default function SowSignPage() {
   const params = useParams();
   const projectId = params.id as string;
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [project, setProject] = useState<ProjectBrief | null>(null);
   const [client, setClient] = useState<ClientRecord | null>(null);
   const [sow, setSow] = useState<Sow | null>(null);
@@ -323,7 +434,7 @@ export default function SowSignPage() {
       action: 'sow_signed',
       entity_type: 'client',
       entity_id: client.id,
-      detail: `${fullName.trim()} SOW ${sow.sow_number ?? `v${sow.version}`} সাইন করেছেন`,
+      detail: `${fullName.trim()} signed SOW ${sow.sow_number ?? `v${sow.version}`}`,
     });
 
     setSigning(false);
@@ -331,10 +442,15 @@ export default function SowSignPage() {
     setJustSigned(true);
   }
 
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    router.push('/client');
+  }
+
   if (loading) {
     return (
       <div className="client-portal client-sign-root">
-        <div className="cp-loading-shell">লোড হচ্ছে…</div>
+        <div className="cp-loading-shell">Loading…</div>
       </div>
     );
   }
@@ -359,13 +475,14 @@ export default function SowSignPage() {
   if (!sow) {
     return (
       <div className="client-portal client-sign-root">
-        <div className="sg-shell">
-          <Link href={`/client/project/${project.id}`} className="sg-back">← {project.name}</Link>
-          <div className="sg-state-card">
-            <div className="sg-state-title">Statement of Work is being prepared</div>
-            <p className="sg-state-sub">Our team is currently preparing your project agreement.</p>
+        <SignShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
+          <div className="sg-shell">
+            <div className="sg-state-card">
+              <div className="sg-state-title">Statement of Work is being prepared</div>
+              <p className="sg-state-sub">Our team is currently preparing your project agreement.</p>
+            </div>
           </div>
-        </div>
+        </SignShell>
       </div>
     );
   }
@@ -373,15 +490,17 @@ export default function SowSignPage() {
   if (versionMismatch) {
     return (
       <div className="client-portal client-sign-root">
-        <div className="sg-shell">
-          <div className="sg-state-card">
-            <div className="sg-state-title">This Statement of Work has been updated</div>
-            <p className="sg-state-sub">A newer version is available. Please review the latest version before signing.</p>
-            <div className="sg-state-actions">
-              <button type="button" className="cp-btn cp-btn-primary" onClick={() => window.location.reload()}>View Latest Version</button>
+        <SignShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
+          <div className="sg-shell">
+            <div className="sg-state-card">
+              <div className="sg-state-title">This Statement of Work has been updated</div>
+              <p className="sg-state-sub">A newer version is available. Please review the latest version before signing.</p>
+              <div className="sg-state-actions">
+                <button type="button" className="cp-btn cp-btn-primary" onClick={() => window.location.reload()}>View Latest Version</button>
+              </div>
             </div>
           </div>
-        </div>
+        </SignShell>
       </div>
     );
   }
@@ -389,16 +508,17 @@ export default function SowSignPage() {
   if (sow.status === 'cancelled') {
     return (
       <div className="client-portal client-sign-root">
-        <div className="sg-shell">
-          <Link href={`/client/project/${project.id}`} className="sg-back">← {project.name}</Link>
-          <div className="sg-state-card">
-            <div className="sg-state-title">Signing Unavailable</div>
-            <p className="sg-state-sub">This Statement of Work is no longer active.</p>
-            <div className="sg-state-actions">
-              <Link href={`/client/project/${project.id}`} className="cp-btn cp-btn-primary">Back to Project</Link>
+        <SignShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
+          <div className="sg-shell">
+            <div className="sg-state-card">
+              <div className="sg-state-title">Signing Unavailable</div>
+              <p className="sg-state-sub">This Statement of Work is no longer active.</p>
+              <div className="sg-state-actions">
+                <Link href={`/client/project/${project.id}`} className="cp-btn cp-btn-primary">Back to Project</Link>
+              </div>
             </div>
           </div>
-        </div>
+        </SignShell>
       </div>
     );
   }
@@ -406,16 +526,17 @@ export default function SowSignPage() {
   if (sow.status === 'superseded') {
     return (
       <div className="client-portal client-sign-root">
-        <div className="sg-shell">
-          <Link href={`/client/project/${project.id}`} className="sg-back">← {project.name}</Link>
-          <div className="sg-state-card">
-            <div className="sg-state-title">New Version Available</div>
-            <p className="sg-state-sub">This version has been replaced by a newer Statement of Work.</p>
-            <div className="sg-state-actions">
-              <Link href={`/client/project/${project.id}/sow`} className="cp-btn cp-btn-primary">View Latest Version</Link>
+        <SignShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
+          <div className="sg-shell">
+            <div className="sg-state-card">
+              <div className="sg-state-title">New Version Available</div>
+              <p className="sg-state-sub">This version has been replaced by a newer Statement of Work.</p>
+              <div className="sg-state-actions">
+                <Link href={`/client/project/${project.id}/sow`} className="cp-btn cp-btn-primary">View Latest Version</Link>
+              </div>
             </div>
           </div>
-        </div>
+        </SignShell>
       </div>
     );
   }
@@ -424,19 +545,20 @@ export default function SowSignPage() {
   if (isExpired) {
     return (
       <div className="client-portal client-sign-root">
-        <div className="sg-shell">
-          <Link href={`/client/project/${project.id}`} className="sg-back">← {project.name}</Link>
-          <div className="sg-state-card">
-            <div className="sg-state-title">Signature Request Expired</div>
-            <p className="sg-state-sub">This Statement of Work is no longer available for signing.</p>
-            <div className="sg-state-actions">
-              <a href={`${WHATSAPP_URL_BASE}?text=${encodeURIComponent(`Hi FLOW53, my SOW for ${project.name} has expired — could you resend it?`)}`} target="_blank" rel="noopener noreferrer" className="cp-btn cp-btn-primary">
-                Contact Project Manager
-              </a>
-              <Link href={`/client/project/${project.id}`} className="cp-btn cp-btn-secondary">Back to Project</Link>
+        <SignShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
+          <div className="sg-shell">
+            <div className="sg-state-card">
+              <div className="sg-state-title">Signature Request Expired</div>
+              <p className="sg-state-sub">This Statement of Work is no longer available for signing.</p>
+              <div className="sg-state-actions">
+                <a href={`${WHATSAPP_URL_BASE}?text=${encodeURIComponent(`Hi FLOW53, my SOW for ${project.name} has expired — could you resend it?`)}`} target="_blank" rel="noopener noreferrer" className="cp-btn cp-btn-primary">
+                  Contact Project Manager
+                </a>
+                <Link href={`/client/project/${project.id}`} className="cp-btn cp-btn-secondary">Back to Project</Link>
+              </div>
             </div>
           </div>
-        </div>
+        </SignShell>
       </div>
     );
   }
@@ -444,50 +566,51 @@ export default function SowSignPage() {
   const manager = toOne(project.project_manager);
   const sym = CURRENCY_SYMBOL[sow.currency ?? 'BDT'] ?? sow.currency ?? '';
   const services = parseBulletList(sow.scope);
-  const fromSignInParam = searchParams.get('from');
 
   // ---- already signed / just signed ----
   if (sow.status === 'signed') {
     return (
       <div className="client-portal client-sign-root">
-        <div className="sg-shell">
-          <div className="sg-success-card">
-            <div className="sg-success-icon">✓</div>
-            <h1 className="sg-success-title">{justSigned ? 'SOW signed successfully' : 'SOW Already Signed'}</h1>
-            <p className="sg-success-sub">
-              {justSigned
-                ? `Your Statement of Work for ${project.name} has been signed and confirmed.`
-                : `This Statement of Work for ${project.name} was already signed.`}
-            </p>
+        <SignShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
+          <div className="sg-shell">
+            <div className="sg-success-card">
+              <div className="sg-success-icon">✓</div>
+              <h1 className="sg-success-title">{justSigned ? 'SOW signed successfully' : 'SOW Already Signed'}</h1>
+              <p className="sg-success-sub">
+                {justSigned
+                  ? `Your Statement of Work for ${project.name} has been signed and confirmed.`
+                  : `This Statement of Work for ${project.name} was already signed.`}
+              </p>
 
-            <div className="sg-success-grid">
-              <div><span className="sg-success-label">Project</span><p>{project.name}</p></div>
-              <div><span className="sg-success-label">SOW</span><p>{sow.sow_number ?? `v${sow.version}`}</p></div>
-              <div><span className="sg-success-label">Version</span><p>v{sow.version}.0</p></div>
-              <div><span className="sg-success-label">Signed By</span><p>{sow.signed_by_name}</p></div>
-              <div className="sg-success-full"><span className="sg-success-label">Signed On</span><p>{sow.signed_at ? formatDateTime(sow.signed_at) : ''}</p></div>
-            </div>
-
-            {sow.signature_image_url && (
-              <div className="sg-success-sig-preview">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={driveThumbnailUrl(sow.signature_image_url)} alt="Signature" />
+              <div className="sg-success-grid">
+                <div><span className="sg-success-label">Project</span><p>{project.name}</p></div>
+                <div><span className="sg-success-label">SOW</span><p>{sow.sow_number ?? `v${sow.version}`}</p></div>
+                <div><span className="sg-success-label">Version</span><p>v{sow.version}.0</p></div>
+                <div><span className="sg-success-label">Signed By</span><p>{sow.signed_by_name}</p></div>
+                <div className="sg-success-full"><span className="sg-success-label">Signed On</span><p>{sow.signed_at ? formatDateTime(sow.signed_at) : ''}</p></div>
               </div>
-            )}
 
-            <span className="cp-badge cp-badge-success sg-success-badge">Signed ✓</span>
+              {sow.signature_image_url && (
+                <div className="sg-success-sig-preview">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={driveThumbnailUrl(sow.signature_image_url)} alt="Signature" />
+                </div>
+              )}
 
-            <div className="sg-success-next">
-              <div className="sg-success-next-title">Next Step</div>
-              <p>Your agency will provide the next project step shortly.</p>
-            </div>
+              <span className="cp-badge cp-badge-success sg-success-badge">Signed ✓</span>
 
-            <div className="sg-state-actions">
-              <Link href={`/client/project/${project.id}`} className="cp-btn cp-btn-primary">Back to Project</Link>
-              <Link href={`/client/project/${project.id}/sow${justSigned ? '?signed=1' : ''}`} className="cp-btn cp-btn-secondary">View Signed SOW</Link>
+              <div className="sg-success-next">
+                <div className="sg-success-next-title">Next Step</div>
+                <p>Your agency will provide the next project step shortly.</p>
+              </div>
+
+              <div className="sg-state-actions">
+                <Link href={`/client/project/${project.id}`} className="cp-btn cp-btn-primary">Back to Project</Link>
+                <Link href={`/client/project/${project.id}/sow${justSigned ? '?signed=1' : ''}`} className="cp-btn cp-btn-secondary">View Signed SOW</Link>
+              </div>
             </div>
           </div>
-        </div>
+        </SignShell>
       </div>
     );
   }
@@ -495,12 +618,8 @@ export default function SowSignPage() {
   // ---- signing form ----
   return (
     <div className="client-portal client-sign-root">
+      <SignShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
       <div className="sg-shell">
-        <Link href={fromSignInParam === 'sow' ? `/client/project/${project.id}/sow` : `/client/project/${project.id}`} className="sg-back">
-          ← {fromSignInParam === 'sow' ? 'Statement of Work' : project.name}
-        </Link>
-
-        <div className="sg-breadcrumb">My Project / Statement of Work / Sign</div>
         <div className="sg-header-row">
           <div>
             <h1 className="sg-title">Sign Statement of Work</h1>
@@ -532,7 +651,7 @@ export default function SowSignPage() {
             {(sow.start_date || sow.delivery_date) && (
               <div>
                 <span className="sg-summary-label">Timeline</span>
-                <p>{sow.start_date ? formatBnDateLong(sow.start_date) : '—'} – {sow.delivery_date ? formatBnDateLong(sow.delivery_date) : '—'}</p>
+                <p>{sow.start_date ? formatDateLong(sow.start_date) : '—'} – {sow.delivery_date ? formatDateLong(sow.delivery_date) : '—'}</p>
               </div>
             )}
           </div>
@@ -686,6 +805,7 @@ export default function SowSignPage() {
           </a>
         </div>
       </div>
+      </SignShell>
 
       {showConfirmModal && (
         <div className="sg-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && !signing) setShowConfirmModal(false); }}>

@@ -10,7 +10,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClientProject } from '@/lib/clientPortal';
-import { relativeTimeBn } from '@/lib/format';
+import { relativeTime } from '@/lib/format';
 import '../../../client-shared.css';
 
 type Approval = { id: string; item: string; status: string; comment: string | null; created_at: string };
@@ -69,7 +69,7 @@ export default function ClientApprovalsPage() {
   if (loading || !project) {
     return (
       <div className="client-portal">
-        <div className="cp-loading-shell">লোড হচ্ছে…</div>
+        <div className="cp-loading-shell">Loading…</div>
       </div>
     );
   }
@@ -93,7 +93,7 @@ export default function ClientApprovalsPage() {
                 <div className="cp-item-top">
                   <div>
                     <span className="cp-item-title">{a.item}</span>
-                    <div className="cp-item-meta">{relativeTimeBn(a.created_at)}</div>
+                    <div className="cp-item-meta">{relativeTime(a.created_at)}</div>
                   </div>
                   <span className={`cp-badge ${STATUS_BADGE[a.status] ?? 'cp-badge-pending'}`}>{STATUS_LABEL[a.status] ?? a.status}</span>
                 </div>
@@ -111,7 +111,7 @@ export default function ClientApprovalsPage() {
                           Cancel
                         </button>
                         <button type="submit" className="cp-btn cp-btn-primary" disabled={submitting}>
-                          {submitting ? 'পাঠানো হচ্ছে…' : 'Submit'}
+                          {submitting ? 'Sending…' : 'Submit'}
                         </button>
                       </div>
                     </form>

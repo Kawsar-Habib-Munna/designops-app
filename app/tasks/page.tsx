@@ -603,25 +603,37 @@ function TasksPageInner() {
   // ব্রাউজার) PDF ডাউনলোড করে WhatsApp Web-এ একটা মেসেজ বক্স খুলে দেওয়া হয়, যাতে
   // ইউজার ডাউনলোড হওয়া ফাইলটা ম্যানুয়ালি অ্যাটাচ করে পাঠাতে পারে — ব্রাউজার থেকে
   // সরাসরি ফাইল-অ্যাটাচড WhatsApp Web লিংক পাঠানোর কোনো পাবলিক API নেই।
+  //
+  // গুরুত্বপূর্ণ: navigator.share()/window.open() শুধু ক্লিকের পরের একটা ছোট্ট
+  // "user activation" উইন্ডোর (Chromium-এ ~৫ সেকেন্ড) মধ্যেই কাজ করে। PDF বানাতে
+  // (html2canvas + jsPDF) যদি তার বেশি সময় লাগে, তাহলে ওই সময় পার হয়ে গিয়ে
+  // ব্রাউজার চুপচাপ শেয়ার/popup ব্লক করে দেয় — কোনো এরর ছাড়াই বাটন "কাজ করছে না"
+  // মনে হয়। তাই ডেস্কটপ ফলব্যাক ট্যাবটা সব অ্যাসিঙ্ক কাজের আগেই (ক্লিকের একদম
+  // সাথে সাথে, কোনো await-এর আগে) খুলে রাখা হয় — পরে শুধু তার URL বদলে দেওয়া হয়।
   async function handleShareTeamTasksWhatsApp() {
     if (sharingPdf) return;
     setSharingPdf(true);
+    const dummyFile = new File([''], 'team-tasks.pdf', { type: 'application/pdf' });
+    const canShareFile = typeof navigator !== 'undefined' && !!navigator.canShare && !!navigator.share && navigator.canShare({ files: [dummyFile] });
+    const fallbackTab = canShareFile ? null : window.open('about:blank', '_blank', 'noopener');
     try {
       const { blob, filename } = await generateTeamTasksPdfBlob();
-      const file = new File([blob], filename, { type: 'application/pdf' });
-      const canShareFile = typeof navigator !== 'undefined' && !!navigator.canShare && navigator.canShare({ files: [file] });
-      if (canShareFile && navigator.share) {
+      if (canShareFile) {
+        const file = new File([blob], filename, { type: 'application/pdf' });
         await navigator.share({ files: [file], title: 'Team Tasks', text: 'Team tasks summary' });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
-        window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent('Team tasks summary PDF ডাউনলোড হয়ে গেছে — এটা চ্যাটে অ্যাটাচ করে পাঠান।')}`, '_blank', 'noopener');
+        return;
       }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      const waUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent('Team tasks summary PDF ডাউনলোড হয়ে গেছে — এটা চ্যাটে অ্যাটাচ করে পাঠান।')}`;
+      if (fallbackTab) fallbackTab.location.href = waUrl;
+      else window.open(waUrl, '_blank', 'noopener');
     } catch (err) {
+      fallbackTab?.close();
       if ((err as Error)?.name !== 'AbortError') {
         console.error(err);
         setError('WhatsApp-এ শেয়ার করা যায়নি। আবার চেষ্টা করুন।');

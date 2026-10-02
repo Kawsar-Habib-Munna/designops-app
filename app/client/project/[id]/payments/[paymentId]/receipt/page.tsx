@@ -10,7 +10,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClientProject, type ClientRecord } from '@/lib/clientPortal';
-import { formatBnDateLong } from '@/lib/format';
+import { formatDateLong } from '@/lib/format';
 import '../../../../../client-shared.css';
 import './receipt.css';
 
@@ -68,7 +68,7 @@ export default function ClientReceiptPage() {
   if (loading || !client || !payment) {
     return (
       <div className="client-portal">
-        <div className="cp-loading-shell">লোড হচ্ছে…</div>
+        <div className="cp-loading-shell">Loading…</div>
       </div>
     );
   }
@@ -81,7 +81,7 @@ export default function ClientReceiptPage() {
             ← Payments
           </Link>
           <div className="cp-dash-card">
-            <p className="cp-page-empty">এই পেমেন্টটা এখনো কনফার্ম হয়নি, তাই রসিদ প্রস্তুত না।</p>
+            <p className="cp-page-empty">This payment hasn&apos;t been confirmed yet, so the receipt isn&apos;t ready.</p>
           </div>
         </div>
       </div>
@@ -113,7 +113,7 @@ export default function ClientReceiptPage() {
             </div>
             <div>
               <div className="receipt-meta-label">Date</div>
-              <div className="receipt-meta-value">{formatBnDateLong(payment.payment_date)}</div>
+              <div className="receipt-meta-value">{formatDateLong(payment.payment_date)}</div>
             </div>
           </div>
 

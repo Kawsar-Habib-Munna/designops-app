@@ -25,7 +25,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
 import { uploadFileToDrive, guessFileType, driveThumbnailUrl } from '@/lib/driveUpload';
-import { relativeTimeBn, formatBnDate, formatBnDateLong, todayISO } from '@/lib/format';
+import { relativeTime, formatDate, formatDateLong, todayISO } from '@/lib/format';
 import '../client-shared.css';
 import './dashboard.css';
 
@@ -49,6 +49,7 @@ const ICONS: Record<string, string> = {
   send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>',
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
   paperclip: '<path d="M21.44 11.05 12.25 20.24a5.5 5.5 0 0 1-7.78-7.78l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95L9.42 17.4a1.5 1.5 0 0 1-2.12-2.12l7.78-7.78"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17h.01"/>',
 };
 function Icon({ name, size = 14 }: { name: string; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICONS[name] }} />;
@@ -148,7 +149,7 @@ function resolvePendingAction(project: ProjectDetail, sow: SowBrief | null, invo
       key: 'payment',
       label: 'Payment Required',
       title: 'Your initial project payment is ready.',
-      desc: `${inv.currency} ${inv.amount.toLocaleString('en-US')}${inv.due_date ? ` due ${formatBnDate(inv.due_date)}` : ''}`,
+      desc: `${inv.currency} ${inv.amount.toLocaleString('en-US')}${inv.due_date ? ` due ${formatDate(inv.due_date)}` : ''}`,
       ctaLabel: 'View Payment',
       href: `/client/project/${project.id}/payments`,
       moreCount: pendingInvoices.length > 1 ? pendingInvoices.length - 1 : undefined,
@@ -336,7 +337,7 @@ export default function ClientDashboard() {
           setFilesCount((n) => n + 1);
         })
         .catch((err: unknown) => {
-          const message = err instanceof Error ? err.message : 'আপলোড ব্যর্থ হয়েছে।';
+          const message = err instanceof Error ? err.message : 'Upload failed.';
           setFiles((prev) => prev.map((f) => (f.key === key ? { ...f, status: 'error', error: message } : f)));
         });
     }
@@ -345,7 +346,7 @@ export default function ClientDashboard() {
   if (loading || (!client && !loadError)) {
     return (
       <div className="client-portal client-dashboard-root">
-        <div className="cp-loading-shell">লোড হচ্ছে…</div>
+        <div className="cp-loading-shell">Loading…</div>
       </div>
     );
   }
@@ -423,12 +424,12 @@ export default function ClientDashboard() {
           <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
             <div>
               <div className="cp-brand cp-brand-sidebar">
-                <div className="cp-brand-mark" aria-hidden="true"></div>
-                <div>
-                  <div className="cp-brand-text">FLOW 53</div>
-                  <div className="cp-brand-tagline">Innovate · Design · Elevate</div>
-                </div>
-                <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন">
+                <span className="cp-brand-art">
+                  <img src="/nav-logo-mark.svg" alt="" className="cp-brand-mark" />
+                  <img src="/nav-logo-text.svg" alt="FLOW 53" className="cp-brand-text" />
+                  <span className="cp-brand-tagline">Innovate-Design-Elevate</span>
+                </span>
+                <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
                   <Icon name="close" size={16} />
                 </button>
               </div>
@@ -468,15 +469,20 @@ export default function ClientDashboard() {
 
           <div className="main">
             <header className="topbar">
-              <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="মেনু খুলুন">
+              <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="Open menu">
                 <Icon name="menu" />
               </button>
               <span className="topbar-title">Overview</span>
             </header>
 
-            <main className="content">
+            <header className="page-topbar">
               <div className="breadcrumb">Client Portal / Overview</div>
+              <a className="page-help-link" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+                <Icon name="help" size={13} /> Need help?
+              </a>
+            </header>
 
+            <main className="content">
               <div className="ov-welcome-card">
                 <div className="ov-welcome-left">
                   <div className="ov-greeting-row">
@@ -550,7 +556,7 @@ export default function ClientDashboard() {
                     <div>
                       <Icon name="calendar" size={12} />
                       <span className="ov-mini-label">Expected Delivery</span>
-                      <span className="ov-mini-value">{formatBnDate(project.due_date) || '—'}</span>
+                      <span className="ov-mini-value">{formatDate(project.due_date) || '—'}</span>
                     </div>
                     <div>
                       <Icon name="user" size={12} />
@@ -635,7 +641,7 @@ export default function ClientDashboard() {
                       ) : (
                         <span className="ov-pill">Being Prepared</span>
                       )}
-                      {sow?.signed_at && <div className="ov-ap-meta">Signed on {formatBnDate(sow.signed_at)}</div>}
+                      {sow?.signed_at && <div className="ov-ap-meta">Signed on {formatDate(sow.signed_at)}</div>}
                       <Link href={`/client/project/${project.id}/sow`} className="btn btn-ghost btn-sm" style={{ marginTop: 12 }}>
                         View SOW
                       </Link>
@@ -704,7 +710,7 @@ export default function ClientDashboard() {
                       <div>
                         <div className="ov-msg-sender">{latestMessage.sender === 'client' ? 'You' : (manager?.full_name ?? 'FLOW 53 Team')}</div>
                         <div className="ov-msg-text">{latestMessage.message}</div>
-                        <div className="ov-msg-time">{relativeTimeBn(latestMessage.created_at)}</div>
+                        <div className="ov-msg-time">{relativeTime(latestMessage.created_at)}</div>
                       </div>
                     </div>
                   ) : (
@@ -735,7 +741,7 @@ export default function ClientDashboard() {
                           </div>
                           <div>
                             <div className="ov-update-title">{u.title}</div>
-                            <div className="ov-update-time">{relativeTimeBn(u.created_at)}</div>
+                            <div className="ov-update-time">{relativeTime(u.created_at)}</div>
                           </div>
                         </div>
                       ))}
@@ -765,7 +771,7 @@ export default function ClientDashboard() {
                           <div className="ov-file-info">
                             <span className="ov-file-name">{f.name}</span>
                             <span className="ov-file-meta">
-                              {(f.file_type ?? 'file').toUpperCase()} · {formatBytes(f.size_bytes ?? 0)} · {formatBnDate(f.created_at)}
+                              {(f.file_type ?? 'file').toUpperCase()} · {formatBytes(f.size_bytes ?? 0)} · {formatDate(f.created_at)}
                             </span>
                           </div>
                           <a href={driveThumbnailUrl(f.drive_url)} target="_blank" rel="noopener noreferrer" className="icon-btn" style={{ width: 28, height: 28 }}>
@@ -826,7 +832,7 @@ export default function ClientDashboard() {
                       <div className="cp-item-top">
                         <div>
                           <span className="cp-item-title">{a.item}</span>
-                          <div className="cp-item-meta">{relativeTimeBn(a.created_at)}</div>
+                          <div className="cp-item-meta">{relativeTime(a.created_at)}</div>
                         </div>
                         <span className={`cp-badge ${APPROVAL_STATUS_BADGE[a.status] ?? 'cp-badge-pending'}`}>{APPROVAL_STATUS_LABEL[a.status] ?? a.status}</span>
                       </div>
@@ -844,7 +850,7 @@ export default function ClientDashboard() {
                                 Cancel
                               </button>
                               <button type="submit" className="cp-btn cp-btn-primary" disabled={submittingApproval}>
-                                {submittingApproval ? 'পাঠানো হচ্ছে…' : 'Submit'}
+                                {submittingApproval ? 'Sending…' : 'Submit'}
                               </button>
                             </div>
                           </form>
@@ -885,12 +891,12 @@ export default function ClientDashboard() {
         <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
           <div>
             <div className="cp-brand cp-brand-sidebar">
-              <div className="cp-brand-mark" aria-hidden="true"></div>
-              <div>
-                <div className="cp-brand-text">FLOW 53</div>
-                <div className="cp-brand-tagline">Innovate · Design · Elevate</div>
-              </div>
-              <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন">
+              <span className="cp-brand-art">
+                <img src="/nav-logo-mark.svg" alt="" className="cp-brand-mark" />
+                <img src="/nav-logo-text.svg" alt="FLOW 53" className="cp-brand-text" />
+                <span className="cp-brand-tagline">Innovate-Design-Elevate</span>
+              </span>
+              <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
                 <Icon name="close" size={16} />
               </button>
             </div>
@@ -919,10 +925,17 @@ export default function ClientDashboard() {
 
         <div className="main">
           <header className="topbar">
-            <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="মেনু খুলুন">
+            <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="Open menu">
               <Icon name="menu" />
             </button>
             <span className="topbar-title">Client Portal</span>
+          </header>
+
+          <header className="page-topbar">
+            <div className="breadcrumb">Client Portal</div>
+            <a className="page-help-link" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+              <Icon name="help" size={13} /> Need help?
+            </a>
           </header>
 
           <main className="content">
@@ -1132,7 +1145,7 @@ export default function ClientDashboard() {
                   </div>
                   <div className="summary-row">
                     <span>Submitted</span>
-                    <span>{formatBnDateLong(requirements.created_at)}</span>
+                    <span>{formatDateLong(requirements.created_at)}</span>
                   </div>
                   <div className="summary-row">
                     <span>Files</span>
@@ -1156,7 +1169,7 @@ export default function ClientDashboard() {
                         </div>
                         <div>
                           <div className="timeline-text">{a.detail ?? a.action}</div>
-                          <div className="timeline-time">{relativeTimeBn(a.created_at)}</div>
+                          <div className="timeline-time">{relativeTime(a.created_at)}</div>
                         </div>
                       </div>
                     ))

@@ -60,6 +60,16 @@
 .client-sow-root .topbar { display: none; height: 56px; border-bottom: 1px solid var(--border); background: var(--surface); align-items: center; gap: 10px; padding: 0 16px; position: sticky; top: 0; z-index: 20; }
 .client-sow-root .icon-btn { width: 32px; height: 32px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; color: var(--ink-soft); flex-shrink: 0; }
 .client-sow-root .topbar-title { font-size: 14px; font-weight: 700; }
+/* ডেস্কটপে সব client-portal পেজের লিংক + "Need help?" সহ স্টিকি টপবার — মোবাইলে
+   উপরের .topbar (হ্যামবার্গার মেনু + টাইটেল)-ই যথেষ্ট, তাই সেখানে লুকানো থাকে। */
+.client-sow-root .page-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 52px; padding: 0 40px; position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--border); }
+/* page-topbar-এর ভেতরে breadcrumb-এর নিজস্ব margin-bottom লাগবে না (flex রো-তে
+   align-items:center থাকায় সেটা উল্লম্ব কেন্দ্র থেকে সরিয়ে দেয়) — history পেজে
+   এই একই .breadcrumb ক্লাস সাধারণ কনটেন্ট-ফ্লোতে ব্যবহার হয় বলে বেস রুল থেকে
+   margin-bottom বাদ দেওয়া হয়নি, শুধু এখানে স্কোপ করে ০ করা হলো। */
+.client-sow-root .page-topbar .breadcrumb { margin-bottom: 0; }
+.client-sow-root .page-help-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--accent); white-space: nowrap; flex-shrink: 0; }
+.client-sow-root .page-help-link:hover { text-decoration: underline; }
 .client-sow-root .content { max-width: 1240px; width: 100%; margin: 0 auto; padding: 32px 40px 64px; }
 .client-sow-root .breadcrumb { font-size: 12px; color: var(--ink-faint); margin-bottom: 14px; }
 .client-sow-root .breadcrumb a:hover { color: var(--ink); }
@@ -103,7 +113,6 @@
 .client-sow-root .sw-history-banner a { color: inherit; text-decoration: underline; }
 
 .client-sow-root .doc-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 40px 38px 36px; margin-bottom: 20px; overflow: hidden; }
-.client-sow-root .doc-topbar { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); }
 .client-sow-root .doc-letterhead-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
 .client-sow-root .doc-brand-mark { width: 34px; height: 34px; flex-shrink: 0; background-image: url("/flow53-logo.svg"); background-size: contain; background-position: center; background-repeat: no-repeat; }
 .client-sow-root .doc-letterhead { font-size: 17px; font-weight: 800; color: var(--accent); line-height: 1.2; }
@@ -171,6 +180,7 @@
 /* ---------- responsive (identical breakpoint to Screen 9) ---------- */
 @media (max-width: 860px) {
   .client-sow-root .topbar { display: flex; }
+  .client-sow-root .page-topbar { display: none; }
   .client-sow-root .menu-btn { display: flex; }
   .client-sow-root .sidebar-close-btn { display: flex; }
   .client-sow-root .content { padding: 22px 18px 48px; }
@@ -190,6 +200,7 @@
   @page { size: A4; margin: 18mm 16mm; }
   .client-sow-root .sidebar,
   .client-sow-root .topbar,
+  .client-sow-root .page-topbar,
   .client-sow-root .breadcrumb,
   .client-sow-root .ph-row .btn,
   .client-sow-root .sw-just-signed-banner,

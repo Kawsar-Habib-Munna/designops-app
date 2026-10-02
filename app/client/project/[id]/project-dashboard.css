@@ -127,7 +127,12 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
+  /* overflow-x:hidden এখানে ছিল — এটা non-visible হলে ব্রাউজার overflow-y
+     নিজে থেকে auto ধরে নেয়, ফলে .main নিজেই একটা স্ক্রল কন্টেইনার হয়ে যায় এবং
+     এর ভেতরের .page-topbar (position:sticky) উইন্ডো স্ক্রলের বদলে এই কন্টেইনারের
+     সাপেক্ষে স্টিক করতে চায় — যেহেতু .main নিজে কখনো স্ক্রল হয় না, sticky
+     কার্যকরভাবে কাজ করেনি। বাকি client-portal পেজগুলোতে (files/messages/sow/
+     payments) এই rule নেই, সেখানে sticky ঠিকই কাজ করছে — তাই এখানেও বাদ দেওয়া হলো। */
 }
 .client-projectdash-root .topbar {
   display: none;
@@ -157,6 +162,34 @@
   font-size: 14px;
   font-weight: 700;
 }
+/* ডেস্কটপে সব client-portal পেজের লিংক + "Need help?" সহ স্টিকি টপবার — মোবাইলে
+   উপরের .topbar (হ্যামবার্গার মেনু + টাইটেল)-ই যথেষ্ট, তাই সেখানে লুকানো থাকে। */
+.client-projectdash-root .page-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 52px;
+  padding: 0 40px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.client-projectdash-root .page-help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.client-projectdash-root .page-help-link:hover {
+  text-decoration: underline;
+}
 .client-projectdash-root .content {
   max-width: 1240px;
   width: 100%;
@@ -166,7 +199,6 @@
 .client-projectdash-root .breadcrumb {
   font-size: 12px;
   color: var(--ink-faint);
-  margin-bottom: 14px;
 }
 .client-projectdash-root .breadcrumb a:hover {
   color: var(--ink);
@@ -398,9 +430,15 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 20px 22px;
-  height: 100%;
   min-width: 0;
   min-height: 140px;
+}
+/* height:100% শুধু .content-2col-এর পাশাপাশি কার্ডগুলোর জন্য — যাতে দুটো কার্ডের
+   কনটেন্ট উচ্চতা আলাদা হলেও একই রো-তে সমান উচ্চতায় দেখায়। Milestones-এর মতো
+   একা দাঁড়ানো (standalone, 2-col গ্রিডের বাইরে) .dcard-এ এটা থাকলে পেজের বাকি
+   খালি উচ্চতা পর্যন্ত কার্ডটা অস্বাভাবিকভাবে স্ট্রেচ হয়ে যায়। */
+.client-projectdash-root .content-2col .dcard {
+  height: 100%;
 }
 .client-projectdash-root .dcard-head {
   display: flex;
@@ -813,6 +851,9 @@
 @media (max-width: 860px) {
   .client-projectdash-root .topbar {
     display: flex;
+  }
+  .client-projectdash-root .page-topbar {
+    display: none;
   }
   .client-projectdash-root .menu-btn {
     display: flex;

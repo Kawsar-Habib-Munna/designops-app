@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClientProject, type ClientRecord } from '@/lib/clientPortal';
 import { uploadFileToDrive } from '@/lib/driveUpload';
-import { relativeTimeBn } from '@/lib/format';
+import { relativeTime } from '@/lib/format';
 import '../../../client-shared.css';
 
 type ChangeRequest = { id: string; title: string; description: string | null; reason: string | null; status: string; additional_cost: number | null; additional_time: string | null; admin_notes: string | null; created_at: string };
@@ -107,7 +107,7 @@ export default function ClientChangeRequestsPage() {
   if (loading || !project) {
     return (
       <div className="client-portal">
-        <div className="cp-loading-shell">লোড হচ্ছে…</div>
+        <div className="cp-loading-shell">Loading…</div>
       </div>
     );
   }
@@ -125,26 +125,26 @@ export default function ClientChangeRequestsPage() {
             {error && <div className="cp-alert cp-alert-error">{error}</div>}
             <div className="cp-field">
               <label className="cp-label">Title</label>
-              <input className="cp-input" type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="যেমন: Add Dark Mode" required autoFocus />
+              <input className="cp-input" type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Add Dark Mode" required autoFocus />
             </div>
             <div className="cp-field">
               <label className="cp-label">Description</label>
-              <textarea className="cp-input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="কী পরিবর্তন চান?" />
+              <textarea className="cp-input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What change would you like?" />
             </div>
             <div className="cp-field">
               <label className="cp-label">Reason</label>
-              <textarea className="cp-input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="কেন এটা দরকার?" />
+              <textarea className="cp-input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why is this needed?" />
             </div>
             <input ref={fileInputRef} type="file" hidden onChange={handleAttachment} />
             <button type="button" className="cp-btn cp-btn-secondary cp-btn-block" style={{ marginBottom: 16 }} onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-              {uploading ? 'আপলোড হচ্ছে…' : attachmentUrl ? '✓ Attachment added' : '+ Upload Attachment (optional)'}
+              {uploading ? 'Uploading…' : attachmentUrl ? '✓ Attachment added' : '+ Upload Attachment (optional)'}
             </button>
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" className="cp-btn cp-btn-secondary" onClick={() => setShowForm(false)}>
                 Cancel
               </button>
               <button type="submit" className="cp-btn cp-btn-primary" disabled={submitting || !title.trim()}>
-                {submitting ? 'জমা হচ্ছে…' : 'Submit Request'}
+                {submitting ? 'Submitting…' : 'Submit Request'}
               </button>
             </div>
           </form>
@@ -165,7 +165,7 @@ export default function ClientChangeRequestsPage() {
                 <div className="cp-item-top">
                   <div>
                     <span className="cp-item-title">{cr.title}</span>
-                    <div className="cp-item-meta">{relativeTimeBn(cr.created_at)}</div>
+                    <div className="cp-item-meta">{relativeTime(cr.created_at)}</div>
                   </div>
                   <span className={`cp-badge ${STATUS_BADGE[cr.status] ?? 'cp-badge-pending'}`}>{STATUS_LABEL[cr.status] ?? cr.status}</span>
                 </div>

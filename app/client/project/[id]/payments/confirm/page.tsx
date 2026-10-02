@@ -16,7 +16,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
-import { formatDateTime, formatBnDateLong, todayISO } from '@/lib/format';
+import { formatDateTime, formatDateLong, todayISO } from '@/lib/format';
 import { uploadFileToDrive, driveThumbnailUrl } from '@/lib/driveUpload';
 import '../../../../client-shared.css';
 import './confirm.css';
@@ -207,7 +207,7 @@ export default function ConfirmPaymentPage() {
       action: 'payment_confirmation_submitted',
       entity_type: 'client',
       entity_id: client.id,
-      detail: `${senderName.trim() || client.primary_contact} পেমেন্ট কনফার্মেশন জমা দিয়েছেন — ${invoice.currency} ${invoice.amount.toLocaleString('en-US')}`,
+      detail: `${senderName.trim() || client.primary_contact} submitted a payment confirmation — ${invoice.currency} ${invoice.amount.toLocaleString('en-US')}`,
     });
 
     setSubmitting(false);
@@ -217,7 +217,7 @@ export default function ConfirmPaymentPage() {
   if (loading) {
     return (
       <div className="client-portal client-confirm-root">
-        <div className="cp-loading-shell">লোড হচ্ছে…</div>
+        <div className="cp-loading-shell">Loading…</div>
       </div>
     );
   }
@@ -265,7 +265,7 @@ export default function ConfirmPaymentPage() {
               </div>
               <div>
                 <span className="cf-success-label">Paid</span>
-                <p>{latestPayment?.confirmed_at ? formatBnDateLong(latestPayment.confirmed_at) : '—'}</p>
+                <p>{latestPayment?.confirmed_at ? formatDateLong(latestPayment.confirmed_at) : '—'}</p>
               </div>
               <div>
                 <span className="cf-success-label">Payment Method</span>
@@ -408,7 +408,7 @@ export default function ConfirmPaymentPage() {
             </div>
             <div>
               <span className="cf-summary-label">Due Date</span>
-              <p>{invoice.due_date ? formatBnDateLong(invoice.due_date) : '—'}</p>
+              <p>{invoice.due_date ? formatDateLong(invoice.due_date) : '—'}</p>
             </div>
             <div>
               <span className="cf-summary-label">Payment Method</span>
@@ -495,7 +495,7 @@ export default function ConfirmPaymentPage() {
             ) : (
               <button type="button" className="cp-btn cp-btn-secondary" onClick={() => fileInputRef.current?.click()} disabled={uploadingProof}>
                 {uploadingProof && <span className="cp-spinner" />}
-                {uploadingProof ? 'আপলোড হচ্ছে…' : 'Upload receipt or payment confirmation'}
+                {uploadingProof ? 'Uploading…' : 'Upload receipt or payment confirmation'}
               </button>
             )}
           </div>

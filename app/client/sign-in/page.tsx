@@ -103,7 +103,7 @@ export default function ClientSignIn() {
     const { error: signInError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
 
     if (signInError) {
-      setError(signInError.message === 'Invalid login credentials' ? 'ইমেইল বা পাসওয়ার্ড ভুল।' : signInError.message);
+      setError(signInError.message === 'Invalid login credentials' ? 'Incorrect email or password.' : signInError.message);
       setSubmitting(false);
       return;
     }
@@ -131,7 +131,7 @@ export default function ClientSignIn() {
     e.preventDefault();
     setRecoveryError(null);
     if (newPassword.length < 8) {
-      setRecoveryError('পাসওয়ার্ড কমপক্ষে ৮ ক্যারেক্টার হতে হবে।');
+      setRecoveryError('Password must be at least 8 characters.');
       return;
     }
     setRecoverySubmitting(true);
@@ -147,7 +147,7 @@ export default function ClientSignIn() {
   if (checkingSession) {
     return (
       <div className="client-portal client-signin-root">
-        <div className="cp-loading-shell">লোড হচ্ছে…</div>
+        <div className="cp-loading-shell">Loading…</div>
       </div>
     );
   }
@@ -211,17 +211,17 @@ export default function ClientSignIn() {
                   <>
                     <div className="auth-head">
                       <h1 className="headline">Password Updated</h1>
-                      <p className="subtext">আপনার পাসওয়ার্ড পরিবর্তন হয়ে গেছে। এখন নতুন পাসওয়ার্ড দিয়ে সাইন-ইন করুন।</p>
+                      <p className="subtext">Your password has been changed. Sign in with your new password.</p>
                     </div>
                     <button type="button" className="cp-btn cp-btn-primary cp-btn-block" onClick={() => (window.location.href = '/client/sign-in')}>
-                      সাইন-ইন করুন
+                      Sign In
                     </button>
                   </>
                 ) : (
                   <>
                     <div className="auth-head">
                       <h1 className="headline">Set a New Password</h1>
-                      <p className="subtext">আপনার অ্যাকাউন্টের জন্য একটা নতুন পাসওয়ার্ড দিন।</p>
+                      <p className="subtext">Enter a new password for your account.</p>
                     </div>
                     <form onSubmit={handleRecoverySubmit}>
                       {recoveryError && <div className="cp-alert cp-alert-error">{recoveryError}</div>}
@@ -237,12 +237,12 @@ export default function ClientSignIn() {
                           autoFocus
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="কমপক্ষে ৮ ক্যারেক্টার"
+                          placeholder="At least 8 characters"
                         />
                       </div>
                       <button type="submit" className="cp-btn cp-btn-primary cp-btn-block" disabled={recoverySubmitting}>
                         {recoverySubmitting && <span className="cp-spinner" />}
-                        {recoverySubmitting ? 'আপডেট হচ্ছে…' : 'Update Password'}
+                        {recoverySubmitting ? 'Updating…' : 'Update Password'}
                       </button>
                     </form>
                   </>
@@ -255,16 +255,16 @@ export default function ClientSignIn() {
                   {forgotSent ? (
                     <>
                       <p className="subtext" style={{ marginBottom: 22 }}>
-                        <strong>{forgotEmail}</strong>-এ একটা পাসওয়ার্ড-রিসেট লিংক পাঠানো হয়েছে। ইনবক্স চেক করুন।
+                        A password reset link has been sent to <strong>{forgotEmail}</strong>. Check your inbox.
                       </p>
                       <button type="button" className="cp-btn cp-btn-secondary cp-btn-block" onClick={() => setForgotOpen(false)}>
-                        ফিরে যান
+                        Go Back
                       </button>
                     </>
                   ) : (
                     <form onSubmit={handleForgotSubmit}>
                       <p className="subtext" style={{ marginBottom: 22 }}>
-                        আপনার ইমেইল দিন — একটা রিসেট লিংক পাঠানো হবে।
+                        Enter your email — we&apos;ll send you a reset link.
                       </p>
                       {forgotError && <div className="cp-alert cp-alert-error">{forgotError}</div>}
                       <div className="cp-field">
@@ -284,7 +284,7 @@ export default function ClientSignIn() {
                       </div>
                       <button type="submit" className="cp-btn cp-btn-primary cp-btn-block" disabled={forgotSending}>
                         {forgotSending && <span className="cp-spinner" />}
-                        {forgotSending ? 'পাঠানো হচ্ছে…' : 'Send Reset Link'}
+                        {forgotSending ? 'Sending…' : 'Send Reset Link'}
                       </button>
                       <button type="button" className="cp-btn cp-btn-ghost cp-btn-block" style={{ marginTop: 8 }} onClick={() => setForgotOpen(false)}>
                         Cancel
@@ -370,7 +370,7 @@ export default function ClientSignIn() {
 
                     <button type="submit" className="cp-btn cp-btn-primary cp-btn-block" disabled={submitting}>
                       {submitting && <span className="cp-spinner" />}
-                      {submitting ? 'সাইন-ইন হচ্ছে…' : 'Sign In'}
+                      {submitting ? 'Signing in…' : 'Sign In'}
                     </button>
                   </form>
 

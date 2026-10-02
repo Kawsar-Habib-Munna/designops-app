@@ -1,5 +1,8 @@
 /* Screen 11 — SOW Signature (dedicated /sow/sign route)।
-   cp-* প্রিমিটিভ client-shared.css থেকে, বাকি সব sg-* এই পাতায় স্কোপড। */
+   cp-* প্রিমিটিভ client-shared.css থেকে, বাকি সব sg-* এই পাতায় স্কোপড। সাইডবার/
+   টপবার/page-topbar — বাকি client-portal প্রজেক্ট পেজগুলোর (sow.css/
+   project-dashboard.css) থেকে হুবহু কপি করা একই app-shell, আগে এই পেজটা পুরো
+   sidebar ছাড়া standalone একটা ফর্ম ছিল। */
 
 .client-sign-root {
   --warning: #f5a524;
@@ -12,10 +15,49 @@
   }
 }
 
-.client-sign-root .sg-shell { max-width: 640px; margin: 0 auto; padding: 32px 20px 140px; }
-.client-sign-root .sg-back { font-size: 13px; color: var(--ink-faint); font-weight: 600; display: inline-block; margin-bottom: 14px; }
-.client-sign-root .sg-back:hover { color: var(--ink); }
-.client-sign-root .sg-breadcrumb { font-size: 11.5px; color: var(--ink-faint); margin-bottom: 6px; }
+/* ---------- shell (sidebar/topbar — identical to Screen 9/10) ---------- */
+.client-sign-root .shell { display: flex; min-height: 100vh; }
+.client-sign-root .sidebar { width: 240px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; padding: 18px 14px; position: sticky; top: 0; height: 100vh; }
+.client-sign-root .sidebar-close-btn { display: none; position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 7px; align-items: center; justify-content: center; color: var(--ink-faint); background: transparent; border: none; }
+.client-sign-root .sidebar-close-btn:hover { background: var(--bg); color: var(--ink); }
+.client-sign-root .nav-group { display: flex; flex-direction: column; gap: 2px; }
+.client-sign-root .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius-sm); font-size: 13.5px; color: var(--ink-soft); font-weight: 500; }
+.client-sign-root .nav-item.active { background: var(--accent-soft); color: var(--accent); }
+.client-sign-root .profile-card { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg); width: 100%; text-align: left; }
+.client-sign-root .profile-card:hover { background: var(--accent-soft); }
+.client-sign-root .avatar { border-radius: 999px; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; color: #fff; background: var(--accent); }
+.client-sign-root .profile-meta { flex: 1; min-width: 0; }
+.client-sign-root .profile-name { font-size: 13px; font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.client-sign-root .profile-role { font-size: 11px; color: var(--ink-faint); line-height: 1.2; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.client-sign-root .mobile-backdrop { display: none; }
+
+.client-sign-root .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.client-sign-root .topbar { display: none; height: 56px; border-bottom: 1px solid var(--border); background: var(--surface); align-items: center; gap: 10px; padding: 0 16px; position: sticky; top: 0; z-index: 20; }
+.client-sign-root .icon-btn { width: 32px; height: 32px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; color: var(--ink-soft); flex-shrink: 0; }
+.client-sign-root .topbar-title { font-size: 14px; font-weight: 700; }
+/* ডেস্কটপে সব client-portal পেজের লিংক + "Need help?" সহ স্টিকি টপবার — মোবাইলে
+   উপরের .topbar (হ্যামবার্গার মেনু + টাইটেল)-ই যথেষ্ট, তাই সেখানে লুকানো থাকে। */
+.client-sign-root .page-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 52px; padding: 0 40px; position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--border); }
+.client-sign-root .page-topbar .breadcrumb { margin-bottom: 0; }
+.client-sign-root .page-help-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--accent); white-space: nowrap; flex-shrink: 0; }
+.client-sign-root .page-help-link:hover { text-decoration: underline; }
+.client-sign-root .breadcrumb { font-size: 12px; color: var(--ink-faint); }
+.client-sign-root .breadcrumb a:hover { color: var(--ink); }
+.client-sign-root .content { width: 100%; }
+
+@media (max-width: 860px) {
+  .client-sign-root .topbar { display: flex; }
+  .client-sign-root .page-topbar { display: none; }
+  .client-sign-root .menu-btn { display: flex; }
+  .client-sign-root .sidebar-close-btn { display: flex; }
+  .client-sign-root .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; z-index: 200; transform: translateX(-100%); transition: transform 0.2s ease; box-shadow: var(--shadow-lg); }
+  .client-sign-root .sidebar.open { transform: translateX(0); }
+  .client-sign-root .mobile-backdrop { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); z-index: 190; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+  .client-sign-root .mobile-backdrop.open { opacity: 1; pointer-events: auto; }
+  .client-sign-root .sg-shell { padding: 22px 18px 120px; }
+}
+
+.client-sign-root .sg-shell { padding: 32px 40px 140px; }
 
 .client-sign-root .sg-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
 .client-sign-root .sg-title { margin: 0 0 4px; font-size: 21px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }

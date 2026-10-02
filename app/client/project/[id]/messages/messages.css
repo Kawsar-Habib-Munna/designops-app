@@ -33,8 +33,11 @@
 .msg-root .topbar { display: none; height: 56px; border-bottom: 1px solid var(--border); background: var(--surface); align-items: center; gap: 10px; padding: 0 16px; position: sticky; top: 0; z-index: 20; flex-shrink: 0; }
 .msg-root .icon-btn { width: 32px; height: 32px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; color: var(--ink-soft); flex-shrink: 0; }
 .msg-root .topbar-title { font-size: 14px; font-weight: 700; }
-.msg-root .breadcrumb { font-size: 12px; color: var(--ink-faint); flex-shrink: 0; }
-.msg-root .breadcrumb a:hover { color: var(--ink); }
+/* ডেস্কটপে breadcrumb + "Need help?" সহ স্টিকি টপবার — মোবাইলে উপরের .topbar-ই
+   যথেষ্ট, তাই সেখানে লুকানো থাকে। */
+.msg-root .page-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 52px; flex-shrink: 0; padding: 0 32px; position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--border); }
+.msg-root .page-help-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--accent); white-space: nowrap; flex-shrink: 0; }
+.msg-root .page-help-link:hover { text-decoration: underline; }
 
 .msg-root .skel { background: linear-gradient(90deg, var(--surface) 25%, var(--bg) 37%, var(--surface) 63%); background-size: 400% 100%; animation: msg-shimmer 1.4s ease infinite; border-radius: var(--radius-md); }
 @keyframes msg-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
@@ -45,7 +48,10 @@
 .msg-root .msg-state-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
 /* ---------- page content — fixed-height chat layout ---------- */
-.msg-root .msg-content { display: flex; flex-direction: column; max-width: 1400px; width: 100%; margin: 0 auto; padding: 24px 32px 24px; height: 100vh; box-sizing: border-box; }
+/* ডেস্কটপে নতুন .page-topbar (52px) .msg-content-এর আগে বসায়, তাই পুরো 100vh
+   রাখলে চ্যাট বক্সের নিচের অংশ ভিউপোর্টের বাইরে চলে যেত — তাই সেই 52px বাদ
+   দেওয়া হলো (মোবাইলে .page-topbar লুকানো থাকে বলে সেখানে আগের মতোই 100vh)। */
+.msg-root .msg-content { display: flex; flex-direction: column; max-width: 1400px; width: 100%; margin: 0 auto; padding: 24px 32px 24px; height: calc(100vh - 52px); box-sizing: border-box; }
 .msg-root .msg-top-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; flex-shrink: 0; }
 .msg-root .msg-title { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
 .msg-root .msg-page-sub { margin: 0; font-size: 13px; color: var(--ink-soft); }
@@ -126,9 +132,10 @@
 /* ---------- responsive ---------- */
 @media (max-width: 860px) {
   .msg-root .topbar { display: flex; }
+  .msg-root .page-topbar { display: none; }
   .msg-root .menu-btn { display: flex; }
   .msg-root .sidebar-close-btn { display: flex; }
-  .msg-root .msg-content { padding: 16px 16px 12px; }
+  .msg-root .msg-content { padding: 16px 16px 12px; height: 100vh; }
   .msg-root .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; z-index: 200; transform: translateX(-100%); transition: transform 0.2s ease; box-shadow: var(--shadow-lg); }
   .msg-root .sidebar.open { transform: translateX(0); }
   .msg-root .mobile-backdrop { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); z-index: 190; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }

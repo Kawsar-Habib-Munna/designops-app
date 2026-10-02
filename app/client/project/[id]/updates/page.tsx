@@ -8,7 +8,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClientProject } from '@/lib/clientPortal';
-import { formatBnDateLong, relativeTimeBn } from '@/lib/format';
+import { formatDateLong, relativeTime } from '@/lib/format';
 import '../../../client-shared.css';
 
 type Update = { id: string; title: string; description: string | null; attachment_url: string | null; created_at: string };
@@ -44,7 +44,7 @@ export default function ClientUpdatesPage() {
   if (loading || !project) {
     return (
       <div className="client-portal">
-        <div className="cp-loading-shell">লোড হচ্ছে…</div>
+        <div className="cp-loading-shell">Loading…</div>
       </div>
     );
   }
@@ -67,7 +67,7 @@ export default function ClientUpdatesPage() {
               <div className="cp-dash-card" key={u.id}>
                 <div className="cp-item-title">{u.title}</div>
                 <div className="cp-item-meta">
-                  {formatBnDateLong(u.created_at)} · {relativeTimeBn(u.created_at)}
+                  {formatDateLong(u.created_at)} · {relativeTime(u.created_at)}
                 </div>
                 {u.description && <p className="cp-item-desc">{u.description}</p>}
                 {u.attachment_url && (

@@ -83,43 +83,63 @@
   justify-content: center;
   margin-bottom: 22px;
 }
+/* public ল্যান্ডিং নেভবারের (.nav-logo-art, LandingNav.tsx/home.css) এবং sign-in/
+   register-এর brand-logo-র সাথে হুবহু মেলানো একই ফিক্সড-বক্স + absolute lockup —
+   এই একই মাপেই nav-logo-mark/nav-logo-text.svg ডিজাইন করা। আগে এখানে height
+   ভিত্তিক flex-row (mark পাশে, text+tagline কলামে) দিয়ে অ্যাড-হক স্কেল করা হচ্ছিল,
+   তাতে ট্যাগলাইন টেক্সট লোগোর চেয়ে চওড়া হয়ে যাচ্ছিল। সাইডবার সবসময় হালকা
+   ব্যাকগ্রাউন্ডে থাকে, তাই ট্যাগলাইনের রং public nav-এর ".on-light" ভ্যারিয়েন্ট
+   (#7b7780) থেকে নেওয়া — কোনো আলাদা ডার্ক প্যানেল ব্যাকগ্রাউন্ড লাগছে না। */
+.client-portal .cp-brand-art {
+  position: relative;
+  display: block;
+  width: 124px;
+  height: 27px;
+}
 .client-portal .cp-brand-mark {
-  width: 26px;
-  height: 26px;
-  background-image: url("/flow53-logo.svg");
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  flex-shrink: 0;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 21px;
+  height: 27px;
+  display: block;
 }
 .client-portal .cp-brand-text {
-  font-family: "Gugi", sans-serif;
-  font-size: 17px;
+  position: absolute;
+  left: 28px;
+  top: 0;
+  width: 95px;
+  height: 17px;
+  display: block;
+}
+.client-portal .cp-brand-tagline {
+  position: absolute;
+  left: 28px;
+  top: 20px;
+  font-size: 7px;
+  line-height: 1;
   font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--ink);
+  letter-spacing: 0.45px;
+  color: #7b7780;
+  white-space: nowrap;
 }
 
-/* ---- sidebar brand lockup — matches the team dashboard's bordered brand box ---- */
+/* ---- sidebar brand lockup ----
+   sign-in/register-এর dark .brand-panel-এর মতোই একটা dark ব্যাকগ্রাউন্ড — mark/
+   text-এর হালকা বেগুনি গ্রেডিয়েন্ট মূলত এই রকম dark ব্যাকগ্রাউন্ডের জন্যই আঁকা।
+   ট্যাগলাইনের ".on-light" রং (#7b7780) এই dark বক্সে কনট্রাস্ট পাবে না, তাই এখানে
+   sign-in/register-এর dark-panel ভ্যারিয়েন্ট (#c8c5cd) দিয়ে ওভাররাইড করা হলো। */
 .client-portal .cp-brand-sidebar {
   position: relative;
   justify-content: flex-start;
-  border: 1px solid var(--border);
+  border: 1px solid #2a2733;
   border-radius: var(--radius-md);
   padding: 10px;
   margin-bottom: 12px;
+  background: #0e0e12;
 }
-.client-portal .cp-brand-sidebar .cp-brand-mark {
-  width: 30px;
-  height: 30px;
-}
-.client-portal .cp-brand-sidebar .cp-brand-text {
-  font-size: 14px;
-}
-.client-portal .cp-brand-tagline {
-  font-size: 10.5px;
-  color: var(--ink-faint);
-  margin-top: 1px;
+.client-portal .cp-brand-sidebar .cp-brand-tagline {
+  color: #c8c5cd;
 }
 
 /* ---- centered auth shell ---- */

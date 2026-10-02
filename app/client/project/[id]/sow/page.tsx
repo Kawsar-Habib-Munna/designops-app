@@ -34,7 +34,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
-import { formatBnDateLong, todayISO } from '@/lib/format';
+import { formatDateLong, todayISO } from '@/lib/format';
 import { driveThumbnailUrl } from '@/lib/driveUpload';
 import '../../../client-shared.css';
 import './sow.css';
@@ -50,6 +50,7 @@ const ICONS: Record<string, string> = {
   menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
   close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17h.01"/>',
 };
 function Icon({ name, size = 14 }: { name: string; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICONS[name] }} />;
@@ -139,12 +140,12 @@ function SowShell({
       <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
         <div>
           <div className="cp-brand cp-brand-sidebar">
-            <div className="cp-brand-mark" aria-hidden="true"></div>
-            <div>
-              <div className="cp-brand-text">FLOW 53</div>
-              <div className="cp-brand-tagline">Innovate · Design · Elevate</div>
-            </div>
-            <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন">
+            <span className="cp-brand-art">
+              <img src="/nav-logo-mark.svg" alt="" className="cp-brand-mark" />
+              <img src="/nav-logo-text.svg" alt="FLOW 53" className="cp-brand-text" />
+              <span className="cp-brand-tagline">Innovate-Design-Elevate</span>
+            </span>
+            <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
               <Icon name="close" size={16} />
             </button>
           </div>
@@ -183,16 +184,27 @@ function SowShell({
 
       <div className="main">
         <header className="topbar">
-          <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="মেনু খুলুন">
+          <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="Open menu">
             <Icon name="menu" />
           </button>
           <span className="topbar-title">Statement of Work</span>
         </header>
 
-        <main className="content">
+        <header className="page-topbar">
           <div className="breadcrumb">
             <Link href="/client/dashboard">Client Portal</Link> / <Link href={`/client/project/${project.id}`}>{project.name}</Link> / Statement of Work
           </div>
+          <a
+            className="page-help-link"
+            href={`${WHATSAPP_URL_BASE}?text=${encodeURIComponent(`Hi FLOW53, I need help with the Statement of Work for ${project.name}.`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Icon name="help" size={13} /> Need help?
+          </a>
+        </header>
+
+        <main className="content">
           {children}
         </main>
       </div>
@@ -439,16 +451,13 @@ export default function ClientSowPage() {
 
           {justSigned && <div className="sw-just-signed-banner">✓ SOW signed successfully — your signature now appears below.</div>}
 
-          {isSigned && (
-            <div className="sw-doc-toolbar">
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => window.print()}>
-                <Icon name="download" size={13} /> Download Signed PDF
-              </button>
-            </div>
-          )}
+          <div className="sw-doc-toolbar">
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => window.print()}>
+              <Icon name="download" size={13} /> {isSigned ? 'Download Signed PDF' : 'Download PDF'}
+            </button>
+          </div>
 
           <div className="doc-card">
-            <div className="doc-topbar"></div>
             <div className="doc-letterhead-row">
               <div className="doc-brand-mark" aria-hidden="true"></div>
               <div>
@@ -514,9 +523,9 @@ export default function ClientSowPage() {
               )}
               {(sow.start_date || sow.delivery_date) && (
                 <p className="doc-p">
-                  {sow.start_date && `Start: ${formatBnDateLong(sow.start_date)}`}
+                  {sow.start_date && `Start: ${formatDateLong(sow.start_date)}`}
                   {sow.start_date && sow.delivery_date && ' · '}
-                  {sow.delivery_date && `Expected Delivery: ${formatBnDateLong(sow.delivery_date)}`}
+                  {sow.delivery_date && `Expected Delivery: ${formatDateLong(sow.delivery_date)}`}
                 </p>
               )}
             </div>
@@ -572,7 +581,7 @@ export default function ClientSowPage() {
                         <div className="sig-block-typed">{sow.signed_by_name}</div>
                       )}
                       <div className="sig-block-caption">{sow.signature_method === 'drawn' ? 'Drawn Signature' : sow.signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
-                      <div className="sig-block-meta">Signed on {sow.signed_at ? formatBnDateLong(sow.signed_at) : ''}</div>
+                      <div className="sig-block-meta">Signed on {sow.signed_at ? formatDateLong(sow.signed_at) : ''}</div>
                     </>
                   ) : (
                     <div className="sig-block-pending">Awaiting Signature</div>
@@ -591,7 +600,7 @@ export default function ClientSowPage() {
                         <div className="sig-block-typed">{sow.agency_signer_name}</div>
                       )}
                       <div className="sig-block-caption">{sow.agency_signature_method === 'drawn' ? 'Drawn Signature' : sow.agency_signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
-                      <div className="sig-block-meta">Signed on {formatBnDateLong(sow.agency_signed_at)}</div>
+                      <div className="sig-block-meta">Signed on {formatDateLong(sow.agency_signed_at)}</div>
                     </>
                   ) : (
                     <div className="sig-block-pending">Pending Agency Signature</div>
@@ -646,7 +655,7 @@ export default function ClientSowPage() {
                     <>
                       <textarea className="cp-input" rows={3} value={changesText} onChange={(e) => setChangesText(e.target.value)} placeholder="Let FLOW53 know what you'd like changed..." style={{ resize: 'vertical' }} />
                       <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} disabled={!changesText.trim() || submittingChanges} onClick={handleSubmitChanges}>
-                        {submittingChanges ? 'পাঠানো হচ্ছে…' : 'Submit Feedback'}
+                        {submittingChanges ? 'Sending…' : 'Submit Feedback'}
                       </button>
                     </>
                   )}

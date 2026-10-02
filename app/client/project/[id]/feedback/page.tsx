@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClientProject, type ClientRecord } from '@/lib/clientPortal';
 import { uploadFileToDrive } from '@/lib/driveUpload';
-import { relativeTimeBn } from '@/lib/format';
+import { relativeTime } from '@/lib/format';
 import '../../../client-shared.css';
 
 type Feedback = { id: string; title: string; description: string | null; attachment_url: string | null; status: string; created_at: string };
@@ -102,7 +102,7 @@ export default function ClientFeedbackPage() {
   if (loading || !project) {
     return (
       <div className="client-portal">
-        <div className="cp-loading-shell">লোড হচ্ছে…</div>
+        <div className="cp-loading-shell">Loading…</div>
       </div>
     );
   }
@@ -124,18 +124,18 @@ export default function ClientFeedbackPage() {
             </div>
             <div className="cp-field">
               <label className="cp-label">Comment</label>
-              <textarea className="cp-input" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="আপনার মতামত বিস্তারিত লিখুন…" />
+              <textarea className="cp-input" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Write your feedback in detail…" />
             </div>
             <input ref={fileInputRef} type="file" hidden onChange={handleAttachment} />
             <button type="button" className="cp-btn cp-btn-secondary cp-btn-block" style={{ marginBottom: 16 }} onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-              {uploading ? 'আপলোড হচ্ছে…' : attachmentUrl ? '✓ Attachment added' : '+ Upload Attachment (optional)'}
+              {uploading ? 'Uploading…' : attachmentUrl ? '✓ Attachment added' : '+ Upload Attachment (optional)'}
             </button>
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" className="cp-btn cp-btn-secondary" onClick={() => setShowForm(false)}>
                 Cancel
               </button>
               <button type="submit" className="cp-btn cp-btn-primary" disabled={submitting || !title.trim()}>
-                {submitting ? 'জমা হচ্ছে…' : 'Submit Feedback'}
+                {submitting ? 'Submitting…' : 'Submit Feedback'}
               </button>
             </div>
           </form>
@@ -156,7 +156,7 @@ export default function ClientFeedbackPage() {
                 <div className="cp-item-top">
                   <div>
                     <span className="cp-item-title">{f.title}</span>
-                    <div className="cp-item-meta">{relativeTimeBn(f.created_at)}</div>
+                    <div className="cp-item-meta">{relativeTime(f.created_at)}</div>
                   </div>
                   <span className={`cp-badge ${STATUS_BADGE[f.status] ?? 'cp-badge-pending'}`}>{STATUS_LABEL[f.status] ?? f.status}</span>
                 </div>

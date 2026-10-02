@@ -106,19 +106,19 @@ export default function ClientRegister() {
     setError(null);
 
     if (!fullName.trim() || !companyName.trim() || !email.trim() || !password) {
-      setError('সব আবশ্যক ঘর পূরণ করুন।');
+      setError('Please fill in all required fields.');
       return;
     }
     if (password.length < 8) {
-      setError('পাসওয়ার্ড কমপক্ষে ৮ ক্যারেক্টার হতে হবে।');
+      setError('Password must be at least 8 characters.');
       return;
     }
     if (password !== confirmPassword) {
-      setError('দুটো পাসওয়ার্ড মিলছে না।');
+      setError("Passwords don't match.");
       return;
     }
     if (!agreed) {
-      setError('চালিয়ে যেতে Terms & Conditions মেনে নিতে হবে।');
+      setError('You must agree to the Terms & Conditions to continue.');
       return;
     }
 
@@ -132,7 +132,7 @@ export default function ClientRegister() {
     const data = await res.json();
 
     if (!res.ok) {
-      setError(data.error ?? 'অ্যাকাউন্ট তৈরি করা যায়নি।');
+      setError(data.error ?? 'Could not create account.');
       setSubmitting(false);
       return;
     }
@@ -150,7 +150,7 @@ export default function ClientRegister() {
   if (checkingSession) {
     return (
       <div className="client-portal client-register-root">
-        <div className="cp-loading-shell">লোড হচ্ছে…</div>
+        <div className="cp-loading-shell">Loading…</div>
       </div>
     );
   }
@@ -211,7 +211,7 @@ export default function ClientRegister() {
             <div className="auth-card">
               <div className="auth-head">
                 <h1 className="headline">Create Your Client Account</h1>
-                <p className="subtext">আপনার প্রজেক্ট শুরু করতে কয়েক মিনিটে অ্যাকাউন্ট তৈরি করুন।</p>
+                <p className="subtext">Create your account in minutes to get your project started.</p>
               </div>
 
               <form onSubmit={handleSubmit} noValidate>
@@ -269,7 +269,7 @@ export default function ClientRegister() {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="কমপক্ষে ৮ ক্যারেক্টার"
+                        placeholder="At least 8 characters"
                         autoComplete="new-password"
                       />
                       <button type="button" className="pw-toggle" onClick={() => setShowPassword((s) => !s)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
@@ -289,7 +289,7 @@ export default function ClientRegister() {
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="আবার লিখুন"
+                        placeholder="Re-enter your password"
                         autoComplete="new-password"
                       />
                       <button type="button" className="pw-toggle" onClick={() => setShowConfirm((s) => !s)} aria-label={showConfirm ? 'Hide password' : 'Show password'}>
@@ -302,18 +302,18 @@ export default function ClientRegister() {
                 <label className="cp-checkbox-row">
                   <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
                   <span>
-                    আমি FLOW 53-এর <strong>Terms &amp; Conditions</strong> এবং <strong>Privacy Policy</strong>-তে সম্মত।
+                    I agree to FLOW 53&apos;s <strong>Terms &amp; Conditions</strong> and <strong>Privacy Policy</strong>.
                   </span>
                 </label>
 
                 <button type="submit" className="cp-btn cp-btn-primary cp-btn-block" disabled={submitting}>
                   {submitting && <span className="cp-spinner" />}
-                  {submitting ? 'অ্যাকাউন্ট তৈরি হচ্ছে…' : 'Create Client Account'}
+                  {submitting ? 'Creating account…' : 'Create Client Account'}
                 </button>
               </form>
 
               <p className="register-line">
-                আগে থেকেই অ্যাকাউন্ট আছে?{' '}
+                Already have an account?{' '}
                 <Link href="/client/sign-in" className="link">
                   Sign In
                 </Link>

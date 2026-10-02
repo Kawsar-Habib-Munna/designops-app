@@ -22,7 +22,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClientProject, type ClientRecord } from '@/lib/clientPortal';
 import { uploadFileToDrive, guessFileType, driveThumbnailUrl } from '@/lib/driveUpload';
-import { formatBnDateLong } from '@/lib/format';
+import { formatDateLong } from '@/lib/format';
 import '../../../client-shared.css';
 import './messages.css';
 
@@ -45,10 +45,15 @@ const ICONS: Record<string, string> = {
   check: '<path d="M20 6L9 17l-5-5"/>',
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
   smile: '<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17h.01"/>',
 };
 function Icon({ name, size = 14 }: { name: string; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICONS[name] }} />;
 }
+
+// বাকি client portal পেজগুলোর "Contact Support"/"Need help?" লিংকের মতোই
+// সরাসরি WhatsApp-এ প্রি-ফিল্ড মেসেজ নিয়ে যায়।
+const WHATSAPP_URL_BASE = 'https://wa.me/8801804409235';
 
 type ProjectInfo = { id: string; name: string };
 type SenderProfile = { id: string; full_name: string; role: string | null; avatar_url: string | null };
@@ -95,7 +100,7 @@ function dayLabel(iso: string): string {
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
   if (isSameDay(iso, yesterday.toISOString())) return 'Yesterday';
-  return formatBnDateLong(d.toISOString());
+  return formatDateLong(d.toISOString());
 }
 
 export default function ClientMessagesPage() {
@@ -375,12 +380,12 @@ export default function ClientMessagesPage() {
         <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
           <div>
             <div className="cp-brand cp-brand-sidebar">
-              <div className="cp-brand-mark" aria-hidden="true"></div>
-              <div>
-                <div className="cp-brand-text">FLOW 53</div>
-                <div className="cp-brand-tagline">Innovate · Design · Elevate</div>
-              </div>
-              <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন">
+              <span className="cp-brand-art">
+                <img src="/nav-logo-mark.svg" alt="" className="cp-brand-mark" />
+                <img src="/nav-logo-text.svg" alt="FLOW 53" className="cp-brand-text" />
+                <span className="cp-brand-tagline">Innovate-Design-Elevate</span>
+              </span>
+              <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
                 <Icon name="close" size={16} />
               </button>
             </div>
@@ -428,17 +433,27 @@ export default function ClientMessagesPage() {
 
         <div className="main">
           <header className="topbar">
-            <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="মেনু খুলুন">
+            <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="Open menu">
               <Icon name="menu" />
             </button>
             <span className="topbar-title">Messages</span>
           </header>
 
-          <main className="content msg-content">
+          <header className="page-topbar">
             <div className="breadcrumb">
               <Link href="/client/dashboard">Client Portal</Link> / Messages
             </div>
+            <a
+              className="page-help-link"
+              href={`${WHATSAPP_URL_BASE}?text=${encodeURIComponent(`Hi FLOW53, I need help with messages for ${project.name}.`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Icon name="help" size={13} /> Need help?
+            </a>
+          </header>
 
+          <main className="content msg-content">
             <div className="msg-top-row">
               <div>
                 <h1 className="msg-title">Messages</h1>

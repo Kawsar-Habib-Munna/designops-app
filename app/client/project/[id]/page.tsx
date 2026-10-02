@@ -35,7 +35,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
 import { driveThumbnailUrl } from '@/lib/driveUpload';
-import { relativeTimeBn, formatBnDate } from '@/lib/format';
+import { relativeTime, formatDate } from '@/lib/format';
 import '../../client-shared.css';
 import './project-dashboard.css';
 
@@ -55,6 +55,7 @@ const ICONS: Record<string, string> = {
   eye: '<path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8z"/><circle cx="12" cy="12" r="3"/>',
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
   paperclip: '<path d="M21.44 11.05 12.25 20.24a5.5 5.5 0 0 1-7.78-7.78l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95L9.42 17.4a1.5 1.5 0 0 1-2.12-2.12l7.78-7.78"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17h.01"/>',
 };
 function Icon({ name, size = 14 }: { name: string; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICONS[name] }} />;
@@ -121,7 +122,7 @@ function resolvePendingAction(project: ProjectDetail, sow: SowBrief | null, invo
       key: 'payment',
       label: 'Payment Required',
       title: 'Your initial project payment is ready.',
-      desc: `${inv.currency} ${inv.amount.toLocaleString('en-US')}${inv.due_date ? ` due ${formatBnDate(inv.due_date)}` : ''}`,
+      desc: `${inv.currency} ${inv.amount.toLocaleString('en-US')}${inv.due_date ? ` due ${formatDate(inv.due_date)}` : ''}`,
       ctaLabel: 'View Payment',
       href: `/client/project/${project.id}/payments`,
       moreCount: pendingInvoices.length > 1 ? pendingInvoices.length - 1 : undefined,
@@ -309,12 +310,12 @@ export default function ClientProjectDashboard() {
         <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
           <div>
             <div className="cp-brand cp-brand-sidebar">
-              <div className="cp-brand-mark" aria-hidden="true"></div>
-              <div>
-                <div className="cp-brand-text">FLOW 53</div>
-                <div className="cp-brand-tagline">Innovate · Design · Elevate</div>
-              </div>
-              <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন">
+              <span className="cp-brand-art">
+                <img src="/nav-logo-mark.svg" alt="" className="cp-brand-mark" />
+                <img src="/nav-logo-text.svg" alt="FLOW 53" className="cp-brand-text" />
+                <span className="cp-brand-tagline">Innovate-Design-Elevate</span>
+              </span>
+              <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
                 <Icon name="close" size={16} />
               </button>
             </div>
@@ -353,17 +354,27 @@ export default function ClientProjectDashboard() {
 
         <div className="main">
           <header className="topbar">
-            <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="মেনু খুলুন">
+            <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="Open menu">
               <Icon name="menu" />
             </button>
             <span className="topbar-title">My Project</span>
           </header>
 
-          <main className="content">
+          <header className="page-topbar">
             <div className="breadcrumb">
               <Link href="/client/dashboard">Client Portal</Link> / My Project
             </div>
+            <a
+              className="page-help-link"
+              href={`${WHATSAPP_URL_BASE}?text=${encodeURIComponent(`Hi FLOW53, I need help with my project ${project.name}.`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Icon name="help" size={13} /> Need help?
+            </a>
+          </header>
 
+          <main className="content">
             <div className="ph-row block">
               <div>
                 <div className="ph-title-row">
@@ -387,7 +398,7 @@ export default function ClientProjectDashboard() {
                       <span className="ph-dot"></span>
                     </>
                   )}
-                  {project.due_date && <span>Expected Delivery: {formatBnDate(project.due_date)}</span>}
+                  {project.due_date && <span>Expected Delivery: {formatDate(project.due_date)}</span>}
                 </div>
               </div>
             </div>
@@ -400,7 +411,7 @@ export default function ClientProjectDashboard() {
               <>
                 <section className="block completed-banner">
                   <div className="completed-title">Project Completed ✓</div>
-                  <div className="completed-sub">{project.completed_at ? `Completed ${formatBnDate(project.completed_at)}` : 'This project has been marked complete.'}</div>
+                  <div className="completed-sub">{project.completed_at ? `Completed ${formatDate(project.completed_at)}` : 'This project has been marked complete.'}</div>
                 </section>
 
                 <section className="block content-2col">
@@ -422,7 +433,7 @@ export default function ClientProjectDashboard() {
                           <div className="file-row-main">
                             <div className="file-row-name">{f.name}</div>
                             <div className="file-row-meta">
-                              {formatBytes(f.size_bytes)} · {formatBnDate(f.created_at)}
+                              {formatBytes(f.size_bytes)} · {formatDate(f.created_at)}
                             </div>
                           </div>
                           <div className="file-actions">
@@ -468,7 +479,7 @@ export default function ClientProjectDashboard() {
                   </div>
                   <div className="detail-row">
                     <span>Start Date</span>
-                    <span>{formatBnDate(project.start_date) || '—'}</span>
+                    <span>{formatDate(project.start_date) || '—'}</span>
                   </div>
                   <div className="detail-row">
                     <span>Project Manager</span>
@@ -493,7 +504,7 @@ export default function ClientProjectDashboard() {
                     </div>
                     <div>
                       <div className="pm-label">Expected Delivery</div>
-                      <div className="pm-value">{formatBnDate(project.due_date) || '—'}</div>
+                      <div className="pm-value">{formatDate(project.due_date) || '—'}</div>
                     </div>
                   </div>
                 </section>
@@ -561,7 +572,7 @@ export default function ClientProjectDashboard() {
                           </div>
                           <span className="phase-pct">{currentMilestone.progress ?? 0}%</span>
                         </div>
-                        {currentMilestone.due_date && <div className="empty-inline">Expected: {formatBnDate(currentMilestone.due_date)}</div>}
+                        {currentMilestone.due_date && <div className="empty-inline">Expected: {formatDate(currentMilestone.due_date)}</div>}
                       </>
                     ) : (
                       <p className="empty-inline">{milestones.length === 0 ? 'Your project phases will appear here once our team sets them up.' : 'All phases are complete — finishing up final details.'}</p>
@@ -577,11 +588,11 @@ export default function ClientProjectDashboard() {
                     </div>
                     <div className="detail-row">
                       <span>Start Date</span>
-                      <span>{formatBnDate(project.start_date) || '—'}</span>
+                      <span>{formatDate(project.start_date) || '—'}</span>
                     </div>
                     <div className="detail-row">
                       <span>Expected Delivery</span>
-                      <span>{formatBnDate(project.due_date) || '—'}</span>
+                      <span>{formatDate(project.due_date) || '—'}</span>
                     </div>
                     <div className="detail-row">
                       <span>Project Manager</span>
@@ -610,7 +621,7 @@ export default function ClientProjectDashboard() {
                             </div>
                             <div className="ms-info">
                               <div className="ms-title">{m.title}</div>
-                              <div className="ms-meta">{isDone ? `Completed${m.completed_at ? ` · ${formatBnDate(m.completed_at)}` : ''}` : isCurrent ? 'In Progress' : m.due_date ? formatBnDate(m.due_date) : 'Upcoming'}</div>
+                              <div className="ms-meta">{isDone ? `Completed${m.completed_at ? ` · ${formatDate(m.completed_at)}` : ''}` : isCurrent ? 'In Progress' : m.due_date ? formatDate(m.due_date) : 'Upcoming'}</div>
                             </div>
                           </div>
                         );
@@ -633,7 +644,7 @@ export default function ClientProjectDashboard() {
                           <span className="dot"></span>Signed ✓
                         </div>
                         <p className="empty-inline" style={{ marginBottom: 12 }}>
-                          {sow.signed_at ? `Signed ${formatBnDate(sow.signed_at)}` : ''}
+                          {sow.signed_at ? `Signed ${formatDate(sow.signed_at)}` : ''}
                         </p>
                         <Link href={`/client/project/${project.id}/sow`} className="btn btn-ghost btn-sm">
                           View SOW
@@ -708,7 +719,7 @@ export default function ClientProjectDashboard() {
                       <>
                         <div className="update-title">{latestUpdate.title}</div>
                         <div className="update-meta">
-                          {formatBnDate(latestUpdate.created_at)} · Posted by {toOne(latestUpdate.author)?.full_name ?? 'FLOW 53 Team'}
+                          {formatDate(latestUpdate.created_at)} · Posted by {toOne(latestUpdate.author)?.full_name ?? 'FLOW 53 Team'}
                         </div>
                         {latestUpdate.description && <p className="update-body">{latestUpdate.description}</p>}
                         {latestUpdate.attachment_url && (
@@ -734,7 +745,7 @@ export default function ClientProjectDashboard() {
                       <div className="msg-preview">
                         <div className="msg-sender">{latestMessage.sender === 'client' ? 'You' : manager?.full_name ?? 'FLOW 53 Team'}</div>
                         <div className="msg-text">{latestMessage.message}</div>
-                        <div className="msg-time">{relativeTimeBn(latestMessage.created_at)}</div>
+                        <div className="msg-time">{relativeTime(latestMessage.created_at)}</div>
                       </div>
                     )}
                   </div>
@@ -760,7 +771,7 @@ export default function ClientProjectDashboard() {
                           <div className="file-row-main">
                             <div className="file-row-name">{f.name}</div>
                             <div className="file-row-meta">
-                              {formatBytes(f.size_bytes)} · {formatBnDate(f.created_at)}
+                              {formatBytes(f.size_bytes)} · {formatDate(f.created_at)}
                             </div>
                           </div>
                           <div className="file-actions">
@@ -819,7 +830,7 @@ export default function ClientProjectDashboard() {
                         </div>
                         <div>
                           <div className="timeline-text">{a.text}</div>
-                          <div className="timeline-time">{relativeTimeBn(a.time)}</div>
+                          <div className="timeline-time">{relativeTime(a.time)}</div>
                         </div>
                       </div>
                     ))
@@ -852,7 +863,7 @@ export default function ClientProjectDashboard() {
                     <div className="cp-item-top">
                       <div>
                         <span className="cp-item-title">{a.item}</span>
-                        <div className="cp-item-meta">{relativeTimeBn(a.created_at)}</div>
+                        <div className="cp-item-meta">{relativeTime(a.created_at)}</div>
                       </div>
                       <span className={`cp-badge ${APPROVAL_STATUS_BADGE[a.status] ?? 'cp-badge-pending'}`}>{APPROVAL_STATUS_LABEL[a.status] ?? a.status}</span>
                     </div>
@@ -870,7 +881,7 @@ export default function ClientProjectDashboard() {
                               Cancel
                             </button>
                             <button type="submit" className="cp-btn cp-btn-primary" disabled={submittingApproval}>
-                              {submittingApproval ? 'পাঠানো হচ্ছে…' : 'Submit'}
+                              {submittingApproval ? 'Sending…' : 'Submit'}
                             </button>
                           </div>
                         </form>

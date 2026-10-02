@@ -32,8 +32,14 @@
 .files-root .topbar { display: none; height: 56px; border-bottom: 1px solid var(--border); background: var(--surface); align-items: center; gap: 10px; padding: 0 16px; position: sticky; top: 0; z-index: 20; }
 .files-root .icon-btn { width: 32px; height: 32px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; color: var(--ink-soft); flex-shrink: 0; }
 .files-root .topbar-title { font-size: 14px; font-weight: 700; }
+/* ডেস্কটপে breadcrumb + "Need help?" সহ স্টিকি টপবার — স্ক্রল করলেও সবসময় উপরে
+   দেখা যায়। মোবাইলে উপরের .topbar (হ্যামবার্গার মেনু + টাইটেল)-ই যথেষ্ট, তাই
+   এটা সেখানে লুকানো থাকে। */
+.files-root .page-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 52px; padding: 0 40px; position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--border); }
+.files-root .page-help-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--accent); white-space: nowrap; flex-shrink: 0; }
+.files-root .page-help-link:hover { text-decoration: underline; }
 .files-root .content { max-width: 1320px; width: 100%; margin: 0 auto; padding: 32px 40px 64px; }
-.files-root .breadcrumb { font-size: 12px; color: var(--ink-faint); margin-bottom: 14px; }
+.files-root .breadcrumb { font-size: 12px; color: var(--ink-faint); }
 .files-root .breadcrumb a:hover { color: var(--ink); }
 
 .files-root .skel { background: linear-gradient(90deg, var(--surface) 25%, var(--bg) 37%, var(--surface) 63%); background-size: 400% 100%; animation: files-shimmer 1.4s ease infinite; border-radius: var(--radius-md); }
@@ -147,6 +153,7 @@
 /* ---------- responsive ---------- */
 @media (max-width: 860px) {
   .files-root .topbar { display: flex; }
+  .files-root .page-topbar { display: none; }
   .files-root .menu-btn { display: flex; }
   .files-root .sidebar-close-btn { display: flex; }
   .files-root .content { padding: 22px 18px 48px; }

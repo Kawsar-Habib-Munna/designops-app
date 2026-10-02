@@ -138,7 +138,11 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
+  /* overflow-x:hidden বাদ দেওয়া হলো — non-visible overflow-x থাকলে ব্রাউজার
+     overflow-y নিজে থেকে auto ধরে নেয়, ফলে .main নিজেই একটা স্ক্রল কন্টেইনার হয়ে
+     যায় আর ভেতরের .page-topbar (position:sticky) উইন্ডো স্ক্রলের বদলে এই
+     কন্টেইনারের সাপেক্ষে স্টিক করতে চেয়ে কার্যত স্টিক হয় না (My Project পেজেও
+     একই বাগ ছিল)। */
 }
 .client-dashboard-root .topbar {
   display: none;
@@ -167,6 +171,34 @@
 .client-dashboard-root .topbar-title {
   font-size: 14px;
   font-weight: 700;
+}
+/* ডেস্কটপে breadcrumb + "Need help?" সহ স্টিকি টপবার — মোবাইলে উপরের .topbar
+   (হ্যামবার্গার মেনু + টাইটেল)-ই যথেষ্ট, তাই সেখানে লুকানো থাকে। */
+.client-dashboard-root .page-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 52px;
+  padding: 0 32px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.client-dashboard-root .page-help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.client-dashboard-root .page-help-link:hover {
+  text-decoration: underline;
 }
 
 .client-dashboard-root .content {
@@ -703,7 +735,7 @@
 .client-dashboard-root .status-badge.b-done { background: var(--positive-soft); color: var(--positive); }
 .client-dashboard-root .nav-tag-accent { background: var(--accent); color: #fff; border-radius: 999px; padding: 1px 6px; font-size: 10px; }
 
-.client-dashboard-root .breadcrumb { margin-bottom: 18px; }
+.client-dashboard-root .breadcrumb { margin-bottom: 0; }
 .client-dashboard-root .ov-welcome-card { display: flex; align-items: stretch; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 22px; min-height: 128px; box-shadow: var(--shadow-lg); max-width: 100%; }
 .client-dashboard-root .ov-welcome-left { flex: 1.2; min-width: 0; padding: 22px 26px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
 .client-dashboard-root .ov-greeting-row { display: flex; align-items: center; gap: 12px; }
@@ -715,7 +747,6 @@
   .client-dashboard-root .ov-welcome-banner { display: none; }
   .client-dashboard-root .ov-welcome-card { min-height: auto; }
   .client-dashboard-root .ov-welcome-left { padding: 18px; }
-  .client-dashboard-root .breadcrumb { margin-bottom: 14px; }
 }
 
 .client-dashboard-root .ov-action-banner { display: flex; align-items: center; gap: 18px; background: linear-gradient(155deg, var(--warning-soft) 0%, var(--surface) 65%); border: 1px solid var(--warning); border-radius: var(--radius-lg); padding: 22px 26px; flex-wrap: wrap; }
@@ -840,6 +871,9 @@
 @media (max-width: 860px) {
   .client-dashboard-root .topbar {
     display: flex;
+  }
+  .client-dashboard-root .page-topbar {
+    display: none;
   }
   .client-dashboard-root .menu-btn {
     display: flex;

@@ -12,7 +12,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
-import { formatBnDateLong } from '@/lib/format';
+import { formatDateLong } from '@/lib/format';
 import '../../../../client-shared.css';
 import '../sow.css';
 import './history.css';
@@ -78,12 +78,12 @@ function HistoryShell({
       <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
         <div>
           <div className="cp-brand cp-brand-sidebar">
-            <div className="cp-brand-mark" aria-hidden="true"></div>
-            <div>
-              <div className="cp-brand-text">FLOW 53</div>
-              <div className="cp-brand-tagline">Innovate · Design · Elevate</div>
-            </div>
-            <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন">
+            <span className="cp-brand-art">
+              <img src="/nav-logo-mark.svg" alt="" className="cp-brand-mark" />
+              <img src="/nav-logo-text.svg" alt="FLOW 53" className="cp-brand-text" />
+              <span className="cp-brand-tagline">Innovate-Design-Elevate</span>
+            </span>
+            <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
               <Icon name="close" size={16} />
             </button>
           </div>
@@ -122,7 +122,7 @@ function HistoryShell({
 
       <div className="main">
         <header className="topbar">
-          <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="মেনু খুলুন">
+          <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="Open menu">
             <Icon name="menu" />
           </button>
           <span className="topbar-title">Version History</span>
@@ -267,7 +267,7 @@ export default function SowHistoryPage() {
                         <span className={`hv-status-pill ${meta.cls}`}>{meta.label}</span>
                       </div>
                       <div className="hv-card-meta">
-                        {dateLabel && formatBnDateLong(dateLabel)}
+                        {dateLabel && formatDateLong(dateLabel)}
                         {v.project_value != null && ` · ${sym}${v.project_value.toLocaleString('en-US')}`}
                       </div>
                       {v.status === 'signed' && v.signed_by_name && (

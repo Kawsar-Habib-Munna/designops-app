@@ -10,7 +10,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClientProject } from '@/lib/clientPortal';
-import { formatBnDate } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 import '../../../client-shared.css';
 
 type Milestone = { id: string; title: string; description: string | null; due_date: string | null; completed_at: string | null; progress: number | null };
@@ -49,7 +49,7 @@ export default function ClientProgressPage() {
   if (loading || !project) {
     return (
       <div className="client-portal">
-        <div className="cp-loading-shell">লোড হচ্ছে…</div>
+        <div className="cp-loading-shell">Loading…</div>
       </div>
     );
   }
@@ -83,8 +83,8 @@ export default function ClientProgressPage() {
                         {status === 'done' ? '✓ ' : status === 'active' ? '● ' : '○ '}
                         {m.title}
                       </span>
-                      {m.completed_at && <div className="cp-item-meta">Completed {formatBnDate(m.completed_at)}</div>}
-                      {!m.completed_at && m.due_date && <div className="cp-item-meta">Expected {formatBnDate(m.due_date)}</div>}
+                      {m.completed_at && <div className="cp-item-meta">Completed {formatDate(m.completed_at)}</div>}
+                      {!m.completed_at && m.due_date && <div className="cp-item-meta">Expected {formatDate(m.due_date)}</div>}
                     </div>
                     <span className={`cp-badge ${status === 'done' ? 'cp-badge-success' : 'cp-badge-pending'}`}>{status === 'done' ? 'Done' : status === 'active' ? 'In Progress' : 'Pending'}</span>
                   </div>

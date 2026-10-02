@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClientProject } from '@/lib/clientPortal';
 import { driveThumbnailUrl } from '@/lib/driveUpload';
-import { formatBnDateLong } from '@/lib/format';
+import { formatDateLong } from '@/lib/format';
 import '../../../client-shared.css';
 
 type ProjectInfo = { id: string; name: string; status: string; completed_at: string | null; final_delivery_status: string | null };
@@ -62,7 +62,7 @@ export default function ClientCompletionPage() {
   if (loading || !project) {
     return (
       <div className="client-portal">
-        <div className="cp-loading-shell">লোড হচ্ছে…</div>
+        <div className="cp-loading-shell">Loading…</div>
       </div>
     );
   }
@@ -91,7 +91,7 @@ export default function ClientCompletionPage() {
           <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink)' }}>Project Completed ✓</div>
           <div style={{ fontSize: 14, color: 'var(--ink-soft)', marginTop: 4 }}>{project.name}</div>
-          {project.completed_at && <div className="cp-item-meta" style={{ marginTop: 6 }}>{formatBnDateLong(project.completed_at)}</div>}
+          {project.completed_at && <div className="cp-item-meta" style={{ marginTop: 6 }}>{formatDateLong(project.completed_at)}</div>}
         </div>
 
         <div className="cp-dash-card">

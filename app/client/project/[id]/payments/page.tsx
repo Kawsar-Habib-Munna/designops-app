@@ -18,7 +18,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
-import { formatBnDateLong, todayISO } from '@/lib/format';
+import { formatDateLong, todayISO } from '@/lib/format';
 import '../../../client-shared.css';
 import './payments.css';
 
@@ -123,12 +123,12 @@ function PaymentsShell({
       <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
         <div>
           <div className="cp-brand cp-brand-sidebar">
-            <div className="cp-brand-mark" aria-hidden="true"></div>
-            <div>
-              <div className="cp-brand-text">FLOW 53</div>
-              <div className="cp-brand-tagline">Innovate · Design · Elevate</div>
-            </div>
-            <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন">
+            <span className="cp-brand-art">
+              <img src="/nav-logo-mark.svg" alt="" className="cp-brand-mark" />
+              <img src="/nav-logo-text.svg" alt="FLOW 53" className="cp-brand-text" />
+              <span className="cp-brand-tagline">Innovate-Design-Elevate</span>
+            </span>
+            <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
               <Icon name="close" size={16} />
             </button>
           </div>
@@ -167,16 +167,27 @@ function PaymentsShell({
 
       <div className="main">
         <header className="topbar">
-          <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="মেনু খুলুন">
+          <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="Open menu">
             <Icon name="menu" />
           </button>
           <span className="topbar-title">Payments</span>
         </header>
 
-        <main className="content">
+        <header className="page-topbar">
           <div className="breadcrumb">
             <Link href="/client/dashboard">Client Portal</Link> / Payments
           </div>
+          <a
+            className="page-help-link"
+            href={`${WHATSAPP_URL_BASE}?text=${encodeURIComponent(`Hi FLOW53, I have a question about my payments for ${project.name}.`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Icon name="help" size={13} /> Need help?
+          </a>
+        </header>
+
+        <main className="content">
           {children}
         </main>
       </div>
@@ -304,7 +315,7 @@ export default function ClientPaymentsPage() {
         setReceiptPdfUrl(objectUrl);
       } catch (err) {
         console.error(err);
-        if (!cancelled) setReceiptPdfError('PDF প্রিভিউ তৈরি করা যায়নি।');
+        if (!cancelled) setReceiptPdfError("Couldn't generate PDF preview.");
       } finally {
         if (!cancelled) setGeneratingReceiptPdf(false);
       }
@@ -529,7 +540,7 @@ export default function ClientPaymentsPage() {
                         </div>
                       </div>
                       <div className="pm-schedule-meta">
-                        {status.key === 'paid' && pay?.payment_date ? `Paid on ${formatBnDateLong(pay.payment_date)}` : inv.due_date ? `Due ${formatBnDateLong(inv.due_date)}` : 'Due before project completion'}
+                        {status.key === 'paid' && pay?.payment_date ? `Paid on ${formatDateLong(pay.payment_date)}` : inv.due_date ? `Due ${formatDateLong(inv.due_date)}` : 'Due before project completion'}
                         {pay?.receipt_number && (
                           <button type="button" className="pm-receipt-link" onClick={() => setViewingReceipt({ inv, pay })}>
                             Receipt: {pay.receipt_number}
@@ -643,7 +654,7 @@ export default function ClientPaymentsPage() {
                         <td className="tabular">
                           {inv.currency} {inv.amount.toLocaleString('en-US')}
                         </td>
-                        <td>{status.key === 'paid' && pay?.payment_date ? formatBnDateLong(pay.payment_date) : inv.due_date ? formatBnDateLong(inv.due_date) : '—'}</td>
+                        <td>{status.key === 'paid' && pay?.payment_date ? formatDateLong(pay.payment_date) : inv.due_date ? formatDateLong(inv.due_date) : '—'}</td>
                         <td>{pay?.payment_method ?? inv.payment_method ?? '—'}</td>
                         <td>
                           <span className={`pm-status-pill ${status.key}`}>{status.label}</span>
@@ -701,7 +712,7 @@ export default function ClientPaymentsPage() {
                   download={`${viewingReceipt.pay.receipt_number ?? viewingReceipt.inv.request_number ?? 'receipt'}.pdf`}
                   onClick={(e) => { if (!receiptPdfUrl) e.preventDefault(); }}
                 >
-                  <Icon name="download" size={13} /> {generatingReceiptPdf ? 'তৈরি হচ্ছে…' : 'Download'}
+                  <Icon name="download" size={13} /> {generatingReceiptPdf ? 'Generating…' : 'Download'}
                 </a>
                 <button type="button" className="receipt-modal-close" aria-label="Close" onClick={() => setViewingReceipt(null)}>
                   <Icon name="close" size={16} />
@@ -713,7 +724,7 @@ export default function ClientPaymentsPage() {
               {receiptPdfUrl ? (
                 <iframe src={receiptPdfUrl} className="receipt-pdf-frame" title="Payment Receipt PDF" />
               ) : (
-                <div className="receipt-modal-loading">{receiptPdfError ?? 'PDF প্রিভিউ তৈরি হচ্ছে…'}</div>
+                <div className="receipt-modal-loading">{receiptPdfError ?? 'Generating PDF preview…'}</div>
               )}
 
               <div className="receipt-doc-offscreen" aria-hidden="true">
@@ -730,7 +741,7 @@ export default function ClientPaymentsPage() {
                     </div>
                     <div>
                       <div className="receipt-meta-label">Date</div>
-                      <div className="receipt-meta-value">{formatBnDateLong(viewingReceipt.pay.payment_date)}</div>
+                      <div className="receipt-meta-value">{formatDateLong(viewingReceipt.pay.payment_date)}</div>
                     </div>
                   </div>
 

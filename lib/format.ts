@@ -65,3 +65,28 @@ export function relativeTimeBn(dateStr: string) {
   if (diffDay < 7) return `${diffDay} দিন আগে`;
   return formatBnDate(dateStr);
 }
+
+// formatBnDate/formatBnDateLong/relativeTimeBn-এর ইংরেজি ভার্সন — client dashboard-এর
+// মতো পুরোপুরি-ইংরেজি পেজের জন্য, বাকি (বাংলা) পেজগুলোর আউটপুট বদলায় না।
+export function formatDate(d: string | null) {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+}
+
+export function formatDateLong(d: string | null) {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+export function relativeTime(dateStr: string) {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const diffMin = Math.round(diffMs / 60000);
+
+  if (diffMin < 1) return 'Just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.round(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.round(diffHr / 24);
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return formatDate(dateStr);
+}

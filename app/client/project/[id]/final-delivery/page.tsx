@@ -69,7 +69,7 @@ export default function ClientFinalDeliveryPage() {
   if (loading || !project) {
     return (
       <div className="client-portal">
-        <div className="cp-loading-shell">লোড হচ্ছে…</div>
+        <div className="cp-loading-shell">Loading…</div>
       </div>
     );
   }
@@ -131,7 +131,7 @@ export default function ClientFinalDeliveryPage() {
                       Cancel
                     </button>
                     <button type="submit" className="cp-btn cp-btn-primary" disabled={submitting}>
-                      {submitting ? 'পাঠানো হচ্ছে…' : 'Submit'}
+                      {submitting ? 'Sending…' : 'Submit'}
                     </button>
                   </div>
                 </form>

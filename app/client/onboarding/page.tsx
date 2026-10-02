@@ -298,7 +298,7 @@ export default function ClientOnboarding() {
           setFiles((prev) => prev.map((f) => (f.key === key ? { ...f, status: 'done', progress: 100, result } : f)));
         })
         .catch((err: unknown) => {
-          const message = err instanceof Error ? err.message : 'আপলোড ব্যর্থ হয়েছে।';
+          const message = err instanceof Error ? err.message : 'Upload failed.';
           setFiles((prev) => prev.map((f) => (f.key === key ? { ...f, status: 'error', error: message } : f)));
         });
     }
@@ -368,7 +368,7 @@ export default function ClientOnboarding() {
       action: 'requirements_submitted',
       entity_type: 'client',
       entity_id: client.id,
-      detail: 'ক্লায়েন্ট প্রজেক্ট রিকোয়ারমেন্ট জমা দিয়েছে',
+      detail: 'Client submitted project requirements',
     });
 
     const doneFiles = files.filter((f) => f.status === 'done' && f.result);
@@ -404,7 +404,7 @@ export default function ClientOnboarding() {
   if (loading) {
     return (
       <div className="client-portal client-onboarding-root">
-        <div className="cp-loading-shell">লোড হচ্ছে…</div>
+        <div className="cp-loading-shell">Loading…</div>
       </div>
     );
   }
