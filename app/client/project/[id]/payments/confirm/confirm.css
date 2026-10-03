@@ -1,5 +1,7 @@
 /* Screen 13 — Payment Confirmation (client)। cp-* প্রিমিটিভ client-shared.css থেকে,
-   এখানে শুধু সামারি/ফর্ম/সাকসেস-স্টেট লেআউট। */
+   এখানে শুধু সামারি/ফর্ম/সাকসেস-স্টেট লেআউট। সাইডবার/টপবার — বাকি client-portal
+   প্রজেক্ট পেজগুলোর (sow.css/sign.css) থেকে হুবহু কপি করা একই app-shell, আগে এই
+   পেজটা পুরো sidebar ছাড়া standalone একটা ফর্ম ছিল। */
 
 .client-confirm-root {
   --warning: #f5a524;
@@ -12,10 +14,47 @@
   }
 }
 
-.client-confirm-root .cf-shell { max-width: 640px; margin: 0 auto; padding: 32px 20px 64px; }
-.client-confirm-root .cf-back { font-size: 13px; color: var(--ink-faint); font-weight: 600; display: inline-block; margin-bottom: 14px; }
-.client-confirm-root .cf-back:hover { color: var(--ink); }
-.client-confirm-root .cf-breadcrumb { font-size: 11.5px; color: var(--ink-faint); margin-bottom: 6px; }
+/* ---------- shell (sidebar/topbar) ---------- */
+.client-confirm-root .shell { display: flex; min-height: 100vh; }
+.client-confirm-root .sidebar { width: 240px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; padding: 18px 14px; position: sticky; top: 0; height: 100vh; }
+.client-confirm-root .sidebar-close-btn { display: none; position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 7px; align-items: center; justify-content: center; color: var(--ink-faint); background: transparent; border: none; }
+.client-confirm-root .sidebar-close-btn:hover { background: var(--bg); color: var(--ink); }
+.client-confirm-root .nav-group { display: flex; flex-direction: column; gap: 2px; }
+.client-confirm-root .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius-sm); font-size: 13.5px; color: var(--ink-soft); font-weight: 500; }
+.client-confirm-root .nav-item.active { background: var(--accent-soft); color: var(--accent); }
+.client-confirm-root .profile-card { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg); width: 100%; text-align: left; }
+.client-confirm-root .profile-card:hover { background: var(--accent-soft); }
+.client-confirm-root .avatar { border-radius: 999px; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; color: #fff; background: var(--accent); }
+.client-confirm-root .profile-meta { flex: 1; min-width: 0; }
+.client-confirm-root .profile-name { font-size: 13px; font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.client-confirm-root .profile-role { font-size: 11px; color: var(--ink-faint); line-height: 1.2; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.client-confirm-root .mobile-backdrop { display: none; }
+
+.client-confirm-root .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.client-confirm-root .topbar { display: none; height: 56px; border-bottom: 1px solid var(--border); background: var(--surface); align-items: center; gap: 10px; padding: 0 16px; position: sticky; top: 0; z-index: 20; }
+.client-confirm-root .icon-btn { width: 32px; height: 32px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; color: var(--ink-soft); flex-shrink: 0; }
+.client-confirm-root .topbar-title { font-size: 14px; font-weight: 700; }
+/* ডেস্কটপে breadcrumb + "Need help?" সহ স্টিকি টপবার — মোবাইলে উপরের .topbar
+   (হ্যামবার্গার মেনু + টাইটেল)-ই যথেষ্ট, তাই সেখানে লুকানো থাকে। */
+.client-confirm-root .page-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 52px; padding: 0 40px; position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--border); }
+.client-confirm-root .breadcrumb { font-size: 12px; color: var(--ink-faint); }
+.client-confirm-root .page-help-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--accent); white-space: nowrap; flex-shrink: 0; }
+.client-confirm-root .page-help-link:hover { text-decoration: underline; }
+.client-confirm-root .content { width: 100%; }
+
+@media (max-width: 860px) {
+  .client-confirm-root .topbar { display: flex; }
+  .client-confirm-root .page-topbar { display: none; }
+  .client-confirm-root .menu-btn { display: flex; }
+  .client-confirm-root .sidebar-close-btn { display: flex; }
+  .client-confirm-root .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; z-index: 200; transform: translateX(-100%); transition: transform 0.2s ease; box-shadow: var(--shadow-lg); }
+  .client-confirm-root .sidebar.open { transform: translateX(0); }
+  .client-confirm-root .mobile-backdrop { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); z-index: 190; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+  .client-confirm-root .mobile-backdrop.open { opacity: 1; pointer-events: auto; }
+  .client-confirm-root .cf-shell { padding: 22px 18px 48px; }
+}
+
+.client-confirm-root .cf-shell { padding: 32px 40px 64px; }
 .client-confirm-root .cf-title { margin: 0 0 4px; font-size: 21px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
 .client-confirm-root .cf-sub { margin: 0 0 18px; font-size: 13px; color: var(--ink-soft); }
 

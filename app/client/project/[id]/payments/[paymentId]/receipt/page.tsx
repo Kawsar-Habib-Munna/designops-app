@@ -101,67 +101,90 @@ export default function ClientReceiptPage() {
         </div>
 
         <div className="receipt-doc">
-          <div className="receipt-doc-head">
-            <div className="receipt-brand">FLOW 53</div>
-            <div className="receipt-doc-title">Payment Receipt</div>
-          </div>
-
-          <div className="receipt-meta-row">
-            <div>
-              <div className="receipt-meta-label">Receipt Number</div>
-              <div className="receipt-meta-value">{payment.receipt_number ?? '—'}</div>
-            </div>
-            <div>
-              <div className="receipt-meta-label">Date</div>
-              <div className="receipt-meta-value">{formatDateLong(payment.payment_date)}</div>
+          <div className="receipt-top">
+            <div className="receipt-title">RECEIPT</div>
+            <div className="receipt-brand-block">
+              <div className="receipt-brand-mark" aria-hidden="true"></div>
+              <div className="receipt-brand-name">Flow 53</div>
             </div>
           </div>
 
-          <div className="receipt-divider"></div>
+          <div className="receipt-parties">
+            <div className="receipt-label">Billed To</div>
+            <div className="receipt-party-name">{client.primary_contact ?? client.company_name}</div>
+            {client.primary_contact && <div className="receipt-party-sub">{client.company_name}</div>}
+          </div>
 
-          <div className="receipt-field-grid">
+          <div className="receipt-info-strip">
             <div>
-              <div className="receipt-meta-label">Client</div>
-              <div className="receipt-meta-value">{client.primary_contact ?? '—'}</div>
+              <div className="receipt-label">Receipt No</div>
+              <div className="receipt-value">{payment.receipt_number ?? '—'}</div>
             </div>
             <div>
-              <div className="receipt-meta-label">Company</div>
-              <div className="receipt-meta-value">{client.company_name}</div>
+              <div className="receipt-label">Date</div>
+              <div className="receipt-value">{formatDateLong(payment.payment_date)}</div>
             </div>
             <div>
-              <div className="receipt-meta-label">Project</div>
-              <div className="receipt-meta-value">{projectName}</div>
-            </div>
-            <div>
-              <div className="receipt-meta-label">Status</div>
-              <div className="receipt-meta-value">Paid ✓</div>
+              <div className="receipt-label">Project</div>
+              <div className="receipt-value">{projectName}</div>
             </div>
           </div>
 
-          <div className="receipt-divider"></div>
+          <table className="receipt-table">
+            <thead>
+              <tr>
+                <th>Item Description</th>
+                <th>Price</th>
+                <th>Qty</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="receipt-item-desc">{invoice?.description || (invoice?.payment_type ? invoice.payment_type.replace('_', ' ') : 'Payment')}</td>
+                <td className="tabular">
+                  {invoice?.currency ?? ''} {payment.amount?.toLocaleString('en-US') ?? '—'}
+                </td>
+                <td className="tabular">1</td>
+                <td className="tabular">
+                  {invoice?.currency ?? ''} {payment.amount?.toLocaleString('en-US') ?? '—'}
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
-          <div className="receipt-amount-row">
-            <div>
-              <div className="receipt-meta-label">Description</div>
-              <div className="receipt-meta-value">{invoice?.description || (invoice?.payment_type ? invoice.payment_type.replace('_', ' ') : 'Payment')}</div>
-            </div>
-            <div className="receipt-amount">
-              {invoice?.currency ?? ''} {payment.amount?.toLocaleString('en-US') ?? '—'}
+          <div className="receipt-totals">
+            <div className="receipt-totals-box">
+              <div className="receipt-total-final">
+                <span>Total Paid</span>
+                <span>
+                  {invoice?.currency ?? ''} {payment.amount?.toLocaleString('en-US') ?? '—'}
+                </span>
+              </div>
             </div>
           </div>
 
-          <div className="receipt-field-grid">
+          <div className="receipt-bottom-grid">
             <div>
-              <div className="receipt-meta-label">Payment Method</div>
-              <div className="receipt-meta-value">{payment.payment_method ?? '—'}</div>
+              <div className="receipt-label">Payment Method</div>
+              <div className="receipt-value">{payment.payment_method ?? '—'}</div>
             </div>
             <div>
-              <div className="receipt-meta-label">Transaction ID</div>
-              <div className="receipt-meta-value">{payment.transaction_id ?? '—'}</div>
+              <div className="receipt-label">Transaction ID</div>
+              <div className="receipt-value">{payment.transaction_id ?? '—'}</div>
+            </div>
+            <div>
+              <div className="receipt-label">Status</div>
+              <div className="receipt-value receipt-status-paid">Paid ✓</div>
             </div>
           </div>
 
-          <div className="receipt-footer">Thank you for your business — FLOW 53</div>
+          <div className="receipt-footer">
+            Thank you for your business — FLOW 53. Questions about this payment?{' '}
+            <a href="https://wa.me/8801804409235" target="_blank" rel="noopener noreferrer">
+              Contact us on WhatsApp
+            </a>
+          </div>
         </div>
       </div>
     </div>

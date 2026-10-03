@@ -11,7 +11,7 @@
 // পাইপলাইনেই যায় (এই কোডবেসের একমাত্র real ফাইল স্টোরেজ) — unguessable লিংক-ভিত্তিক
 // অ্যাক্সেস, সত্যিকারের প্রাইভেট ACL না (SOW সিগনেচার/ডকুমেন্টের মতোই honest সীমাবদ্ধতা)।
 
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
@@ -20,6 +20,117 @@ import { formatDateTime, formatDateLong, todayISO } from '@/lib/format';
 import { uploadFileToDrive, driveThumbnailUrl } from '@/lib/driveUpload';
 import '../../../../client-shared.css';
 import './confirm.css';
+
+const ICONS: Record<string, string> = {
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
+  folder: '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/>',
+  file: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>',
+  doc: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M9 13h6"/><path d="M9 17h6"/>',
+  card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+  message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+  menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
+  close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17h.01"/>',
+};
+function Icon({ name, size = 14 }: { name: string; size?: number }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICONS[name] }} />;
+}
+
+// সাইডবার/টপবার শেল — বাকি client-portal প্রজেক্ট পেজগুলোর (SowShell/SignShell/
+// PaymentsShell) মতোই, যাতে পেমেন্ট কনফার্ম করার সময়েও পুরো পোর্টাল নেভিগেশন
+// হাতের নাগালে থাকে — আগে এই পেজটা পুরোপুরি sidebar-less, standalone ফর্ম ছিল।
+function ConfirmShell({
+  project,
+  client,
+  mobileNavOpen,
+  setMobileNavOpen,
+  onSignOut,
+  children,
+}: {
+  project: ProjectBrief;
+  client: ClientRecord;
+  mobileNavOpen: boolean;
+  setMobileNavOpen: (v: boolean) => void;
+  onSignOut: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="shell">
+      <div className={`mobile-backdrop${mobileNavOpen ? ' open' : ''}`} onClick={() => setMobileNavOpen(false)}></div>
+      <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
+        <div>
+          <div className="cp-brand cp-brand-sidebar">
+            <div className="cp-brand-mark" aria-hidden="true"></div>
+            <div>
+              <div className="cp-brand-text">FLOW 53</div>
+              <div className="cp-brand-tagline">Innovate · Design · Elevate</div>
+            </div>
+            <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
+              <Icon name="close" size={16} />
+            </button>
+          </div>
+          <nav className="nav-group">
+            <Link href="/client/dashboard" className="nav-item">
+              <Icon name="grid" /> Overview
+            </Link>
+            <Link href={`/client/project/${project.id}`} className="nav-item">
+              <Icon name="folder" /> My Project
+            </Link>
+            <Link href={`/client/project/${project.id}/messages`} className="nav-item">
+              <Icon name="message" /> Messages
+            </Link>
+            <Link href={`/client/project/${project.id}/files`} className="nav-item">
+              <Icon name="file" /> Files
+            </Link>
+            <Link href={`/client/project/${project.id}/sow`} className="nav-item">
+              <Icon name="doc" /> SOW
+            </Link>
+            <Link href={`/client/project/${project.id}/payments`} className="nav-item active">
+              <Icon name="card" /> Payments
+            </Link>
+          </nav>
+        </div>
+        <button type="button" className="profile-card" onClick={onSignOut} title="Sign out">
+          <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
+            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+          </div>
+          <div className="profile-meta">
+            <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
+            <div className="profile-role">{client.company_name}</div>
+          </div>
+          <Icon name="logout" />
+        </button>
+      </aside>
+
+      <div className="main">
+        <header className="topbar">
+          <button type="button" className="icon-btn menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="Open menu">
+            <Icon name="menu" />
+          </button>
+          <span className="topbar-title">Confirm Payment</span>
+        </header>
+
+        <header className="page-topbar">
+          <div className="breadcrumb">
+            <Link href="/client/dashboard">Client Portal</Link> / <Link href={`/client/project/${project.id}`}>{project.name}</Link> /{' '}
+            <Link href={`/client/project/${project.id}/payments`}>Payments</Link> / Confirm Payment
+          </div>
+          <a
+            className="page-help-link"
+            href={`${WHATSAPP_URL_BASE}?text=${encodeURIComponent(`Hi FLOW53, I need help confirming my payment for ${project.name}.`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Icon name="help" size={13} /> Need help?
+          </a>
+        </header>
+
+        <main className="content">{children}</main>
+      </div>
+    </div>
+  );
+}
 
 type ProjectBrief = { id: string; name: string; client_id: string };
 type SowBrief = { id: string; sow_number: string | null; version: number; status: string };
@@ -65,6 +176,7 @@ export default function ConfirmPaymentPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [project, setProject] = useState<ProjectBrief | null>(null);
   const [client, setClient] = useState<ClientRecord | null>(null);
@@ -214,6 +326,11 @@ export default function ConfirmPaymentPage() {
     setReloadKey((k) => k + 1);
   }
 
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    router.push('/client');
+  }
+
   if (loading) {
     return (
       <div className="client-portal client-confirm-root">
@@ -249,10 +366,8 @@ export default function ConfirmPaymentPage() {
   if (invoice.status === 'paid') {
     return (
       <div className="client-portal client-confirm-root">
+        <ConfirmShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
         <div className="cf-shell">
-          <Link href={`/client/project/${project.id}/payments`} className="cf-back">
-            ← Payments
-          </Link>
           <div className="cf-success-card">
             <div className="cf-success-icon">✓</div>
             <h1 className="cf-success-title">Payment Confirmed ✓</h1>
@@ -288,6 +403,7 @@ export default function ConfirmPaymentPage() {
             </div>
           </div>
         </div>
+        </ConfirmShell>
       </div>
     );
   }
@@ -296,6 +412,7 @@ export default function ConfirmPaymentPage() {
   if (invoice.status === 'cancelled') {
     return (
       <div className="client-portal client-confirm-root">
+        <ConfirmShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
         <div className="cf-shell">
           <div className="cf-state-card">
             <div className="cf-state-title">Payment Request Cancelled</div>
@@ -307,6 +424,7 @@ export default function ConfirmPaymentPage() {
             </div>
           </div>
         </div>
+        </ConfirmShell>
       </div>
     );
   }
@@ -315,10 +433,8 @@ export default function ConfirmPaymentPage() {
   if (invoice.status === 'processing') {
     return (
       <div className="client-portal client-confirm-root">
+        <ConfirmShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
         <div className="cf-shell">
-          <Link href={`/client/project/${project.id}/payments`} className="cf-back">
-            ← Payments
-          </Link>
           <div className="cf-success-card">
             <div className="cf-success-icon">✓</div>
             <h1 className="cf-success-title">Payment confirmation submitted</h1>
@@ -354,6 +470,7 @@ export default function ConfirmPaymentPage() {
             </div>
           </div>
         </div>
+        </ConfirmShell>
       </div>
     );
   }
@@ -364,11 +481,8 @@ export default function ConfirmPaymentPage() {
 
   return (
     <div className="client-portal client-confirm-root">
+      <ConfirmShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
       <div className="cf-shell">
-        <Link href={`/client/project/${project.id}/payments`} className="cf-back">
-          ← Payments
-        </Link>
-        <div className="cf-breadcrumb">My Project / Payments / Confirm Payment</div>
         <h1 className="cf-title">Confirm Your Payment</h1>
         <p className="cf-sub">Submit your payment details so our team can verify the transaction.</p>
 
@@ -529,6 +643,7 @@ export default function ConfirmPaymentPage() {
           </a>
         </p>
       </div>
+      </ConfirmShell>
     </div>
   );
 }
