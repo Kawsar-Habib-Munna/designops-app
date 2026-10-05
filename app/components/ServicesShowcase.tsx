@@ -13,6 +13,7 @@ type Service = {
   name: string;
   subtitle: string;
   tags: string[];
+  image: string;
 };
 
 const SERVICES: Service[] = [
@@ -21,48 +22,41 @@ const SERVICES: Service[] = [
     name: 'UI UX Design',
     subtitle: 'User focused intuitive digital experiences',
     tags: ['Research', 'Wireframing', 'UI Design', 'Prototyping', 'Testing', 'Design Systems'],
+    image: '/services/illustration-01-ui-ux-design.png',
   },
   {
     number: '02',
     name: 'Web And App Design',
     subtitle: 'Modern responsive web and mobile interfaces',
     tags: ['Websites', 'Mobile App', 'Landing Page', 'Dashboards', 'AI Web & App', 'Redesign'],
+    image: '/services/illustration-02-web-app-design.png',
   },
   {
     number: '03',
     name: 'Web Development',
     subtitle: 'Fast secure scalable web solutions',
     tags: ['Frontend', 'Backend', 'CMS & APIs', 'Optimization', 'Deployment', 'Database'],
+    image: '/services/illustration-03-web-development.png',
   },
   {
     number: '04',
     name: 'Brand Identity Design',
     subtitle: 'Memorable brands with consistent visual identity',
     tags: ['Logos', 'Colors', 'Social', 'Stationery', 'Business Card', 'Packaging'],
+    image: '/services/illustration-04-brand-identity.png',
   },
   {
     number: '05',
     name: 'Digital Marketing',
     subtitle: 'Grow traffic and boost online visibility',
     tags: ['SEO', 'Keywords', 'Content', 'Analytics', 'Backlinks', 'Campaigns'],
+    image: '/services/illustration-05-digital-marketing.png',
   },
-];
-
-// Figma cropped one shared AI-generated sprite sheet (all 5 illustrations in a 3+2
-// grid) per card via a scaled + offset <img>, instead of exporting 5 separate images.
-// Reproduced here with the same percentages so the exact asset is reused unedited.
-const ILLUSTRATION_CROPS = [
-  { width: '351.6%', height: '276.36%', left: '-13.91%', top: '-15.57%' },
-  { width: '358.56%', height: '276.36%', left: '-127.44%', top: '-15.57%' },
-  { width: '350.16%', height: '276.36%', left: '-236.8%', top: '-17.02%' },
-  { width: '387.96%', height: '347.01%', left: '-72.46%', top: '-190.75%' },
-  { width: '362.85%', height: '326%', left: '-200.9%', top: '-176.83%' },
 ];
 
 export default function ServicesShowcase() {
   const [active, setActive] = useState(0);
   const service = SERVICES[active];
-  const crop = ILLUSTRATION_CROPS[active];
 
   return (
     <div className="services-tabs">
@@ -92,11 +86,7 @@ export default function ServicesShowcase() {
             </div>
             <div className="services-card-illustration">
               <div className="services-card-illustration-inner">
-                <img
-                  src="/services/illustration-sprite.png"
-                  alt={service.name}
-                  style={{ width: crop.width, height: crop.height, left: crop.left, top: crop.top }}
-                />
+                <img src={service.image} alt={service.name} />
               </div>
             </div>
           </motion.div>

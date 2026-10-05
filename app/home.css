@@ -100,9 +100,12 @@ html:has(.home-root) {
   background: rgba(103, 107, 106, 0.08);
   border: 1px solid rgba(254, 255, 255, 0.1);
   border-radius: 14px;
+  /* "T Shadow" (Figma named effect style, node 364:6430) — drop-shadow
+     0/8/20/rgba(129,51,241,.04) + background-blur 20px। আগে backdrop-blur
+     ১০px ছিল, Figma-র আসল স্পেক অনুযায়ী ২০px। */
   box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 .home-root .nav-logo {
   justify-self: start;
@@ -212,6 +215,19 @@ html:has(.home-root) {
   width: 192px;
   height: 60px;
   padding: 8px;
+  border: 2px solid transparent;
+  /* আউটার স্ট্রোক = "Card Stoke 2" রেফারেন্স (Linear Gradient, 8% opacity,
+     #FEFFFF → #EFE6FD) — .nav-pill থেকে পাওয়া ডিফল্ট rgba(254,255,255,.1)
+     বর্ডার/ব্যাকগ্রাউন্ড এখানে ওভাররাইড করা হলো একই দুই-স্তর background কৌশলে। */
+  background:
+    linear-gradient(rgba(103, 107, 106, 0.08), rgba(103, 107, 106, 0.08))
+      padding-box,
+    linear-gradient(
+        180deg,
+        rgba(254, 255, 255, 0.08),
+        rgba(239, 230, 253, 0.08)
+      )
+      border-box;
 }
 .home-root .nav-cta {
   display: flex;
@@ -222,12 +238,22 @@ html:has(.home-root) {
   width: 100%;
   height: 44px;
   padding: 1px 12px 1px 1px;
-  border: 1px solid #8133f1;
+  border: 1px solid transparent;
   border-radius: 10px;
-  background: #010003;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  filter: drop-shadow(0 12px 20px rgba(129, 51, 241, 0.12));
+  /* ইনার স্ট্রোক = "S Stoke" রেফারেন্স (Linear Gradient, #8133F1 → #6200EE,
+     দুটোই 100% opacity) — CSS-এ border সরাসরি গ্রেডিয়েন্ট নিতে পারে না, তাই
+     দুই স্তরের background (padding-box ফিল + border-box গ্রেডিয়েন্ট) কৌশল। */
+  background:
+    linear-gradient(#010003, #010003) padding-box,
+    linear-gradient(180deg, #8133f1, #6200ee) border-box;
+  /* "S Shadow" (Figma named effect style, node 309:2741) — drop-shadow
+     0/12/40/rgba(129,51,241,.12) + background-blur 40px। আগে দুটোই ২০px
+     ছিল, Figma-র আসল স্পেক অনুযায়ী ৪০px — এটাই সেই নরম বেগুনি গ্লো যেটা
+     স্ক্রিনশটে বাটনের চারপাশে দেখা যায়, আগের ছোট blur radius-এ সেটা প্রায়
+     অদৃশ্য হয়ে যাচ্ছিল। */
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  filter: drop-shadow(0 12px 40px rgba(129, 51, 241, 0.12));
   transition:
     filter 0.2s ease,
     transform 0.2s ease;
@@ -713,12 +739,34 @@ html:has(.home-root) {
 .home-root .hero-partners-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
   height: 64px;
   margin-top: 24px;
-  padding: 8px 68px;
+  padding: 8px 0;
   background: #010003;
+  overflow: hidden;
+}
+.home-root .hero-partners-track {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  animation: hero-partners-scroll 32s linear infinite;
+}
+.home-root .hero-partners-row:hover .hero-partners-track {
+  animation-play-state: paused;
+}
+@keyframes hero-partners-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-root .hero-partners-track {
+    animation: none;
+  }
 }
 .home-root .hero-partner {
   position: relative;
@@ -1080,6 +1128,7 @@ html:has(.home-root) {
   display: block;
   width: 40px;
   height: 1px;
+  transform: scaleX(-1);
 }
 .home-root .projects-heading-copy {
   display: flex;
@@ -1346,10 +1395,10 @@ html:has(.home-root) {
   height: 32px;
   padding: 8px;
   border-radius: 16px;
-  border: 2px solid #ffffff;
+  border: 2px solid transparent;
   background: none;
   cursor: pointer;
-  box-shadow: 0 0 0 1px #e6e4e8;
+  transition: border-color 0.2s ease;
 }
 .home-root .project-dot span {
   display: block;
@@ -1360,7 +1409,6 @@ html:has(.home-root) {
 }
 .home-root .project-dot.active {
   border-color: #9654f4;
-  box-shadow: none;
 }
 .home-root .project-dot.active span {
   background: linear-gradient(90deg, #8133f1, #6200ee);
@@ -1912,7 +1960,7 @@ html:has(.home-root) {
 }
 .home-root .why-tailored-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 40px;
 }
 .home-root .why-tailored-title {
@@ -1927,12 +1975,14 @@ html:has(.home-root) {
   position: relative;
   flex: 1;
   min-width: 0;
-  height: 1px;
+  height: 20px;
+  display: flex;
+  align-items: center;
 }
 .home-root .why-tailored-line img {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
 }
 .home-root .why-tags {
   position: relative;
@@ -2222,13 +2272,18 @@ html:has(.home-root) {
 }
 .home-root .services-card-illustration-inner {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   aspect-ratio: 280/212;
   overflow: hidden;
 }
 .home-root .services-card-illustration-inner img {
-  position: absolute;
-  max-width: none;
+  display: block;
+  width: 85%;
+  height: 85%;
+  object-fit: contain;
   pointer-events: none;
 }
 
@@ -2296,7 +2351,6 @@ html:has(.home-root) {
   margin-top: 6px;
   padding: 6px;
   border-radius: 2px;
-  border: 1px solid rgba(254, 255, 255, 0.5);
   background: linear-gradient(
     135deg,
     rgba(254, 255, 255, 0.08),
@@ -2305,16 +2359,18 @@ html:has(.home-root) {
   box-shadow: inset 0 4px 12px rgba(254, 255, 255, 0.04);
   transition:
     background 0.2s ease,
-    border-color 0.2s ease,
     box-shadow 0.2s ease;
 }
 .home-root .services-list-icon img {
   display: block;
   width: 24px;
   height: 24px;
+  transition: transform 0.3s ease;
+}
+.home-root .services-list-item:hover .services-list-icon img {
+  transform: rotate(45deg);
 }
 .home-root .services-list-item.active .services-list-icon {
-  border-color: rgba(239, 230, 253, 0.6);
   background: linear-gradient(90deg, #ffffff, #ceb0fa);
   box-shadow:
     0 8px 20px rgba(41, 0, 100, 0.3),
@@ -2468,7 +2524,7 @@ html:has(.home-root) {
 }
 .home-root .process-axis-y {
   position: absolute;
-  top: 22.6%;
+  top: 0%;
   left: 1.02%;
   width: 24px;
   height: 22.6%;
@@ -2545,7 +2601,12 @@ html:has(.home-root) {
   mask-composite: exclude;
   pointer-events: none;
 }
-.home-root .process-step.active {
+/* আগে এই রঙিন ব্যাকগ্রাউন্ড/গ্লো/টেক্সট-কালার শুধু .active (বর্তমান ধাপ) পেত -
+   পরের ধাপে সরে গেলে আগের কার্ডটা আবার সাদামাটা (শুধু .revealed border) হয়ে
+   যেত। এখন .active-এর বদলে .revealed-এর ওপর ভিত্তি করে আঁকা হচ্ছে - তাই একবার
+   কোনো কার্ড "selected"/active হয়ে গেলে, স্ক্রল করে পরের ধাপে চলে গেলেও সেই
+   রংটাই থেকে যায় (.active সবসময় .revealed-ও বটে)। */
+.home-root .process-step.revealed {
   background: linear-gradient(
     90deg,
     rgba(239, 230, 253, 0.1),
@@ -2557,7 +2618,7 @@ html:has(.home-root) {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
-.home-root .process-step.active::before {
+.home-root .process-step.revealed::before {
   content: none;
 }
 .home-root .process-step-title {
@@ -2568,7 +2629,7 @@ html:has(.home-root) {
   font-weight: 600;
   color: #d9d7dd;
 }
-.home-root .process-step.active .process-step-title {
+.home-root .process-step.revealed .process-step-title {
   color: #efe6fd;
 }
 .home-root .process-step-desc {
@@ -2580,28 +2641,33 @@ html:has(.home-root) {
   width: 186px;
   max-width: 100%;
 }
-.home-root .process-step.active .process-step-desc {
+.home-root .process-step.revealed .process-step-desc {
   color: #bdb9c3;
 }
 
-/* ---------- process scroll-story: pinned scroll-driven reveal (desktop), plain
+/* ---------- process story: pinned scroll-driven reveal (desktop), plain
    scroll-reveal list (mobile) - see app/components/ProcessStory.tsx ---------- */
 .home-root .process-scroll-track {
   position: relative;
 }
-/* align-items:center আগে diagram-কে stage-এর মাঝ বরাবর বসাত - viewport diagram-এর
-   782px height-এর চেয়ে ছোট হলে overflow টা উপরে-নিচে সমান ভাগ হয়ে যেত, ফলে X-axis
-   (diagram-এর একদম নিচে) কাটা পড়ত। flex-end দিয়ে diagram-এর নিচের প্রান্ত (X-axis)
-   সবসময় stage-এর নিচের কিনারায় anchor করা থাকে - ছোট viewport-এ বাড়তি overflow
-   এখন শুধু উপরের দিকে (Launch কার্ডের আশেপাশে) হয়, X-axis সবসময় visible থাকে।
+/* align-items:flex-end (diagram-এর নিচের প্রান্ত সবসময় viewport-এর নিচে anchor)
+   আগে ব্যবহার হতো, কিন্তু top/height এখন ProcessStory.tsx থেকে ইনলাইন স্টাইলে
+   navbar-এর height বাদ দিয়ে সেট হয় (sticky navbar-এর ঠিক নিচ থেকে stage শুরু) -
+   flex-end থাকলে diagram নিজে এখনো viewport-এর একদম নিচেই anchor থাকত (stage-এর
+   top বদলালেও bottom অপরিবর্তিত), ফলে overflow-টা উল্টো আরও বেশি হয়ে Launch-এর
+   কার্ড পুরোপুরি clip হয়ে যেত। flex-start দিয়ে এখন diagram-এর ওপরের প্রান্ত
+   (Launch) navbar-এর ঠিক নিচেই শুরু হয় - viewport ছোট হলে বাড়তি overflow এখন
+   নিচের দিকে (Discover/X-axis-এর আশেপাশে) হয়। overflow:hidden বাদ দেওয়া হয়েছে -
+   এতদিন bottom overflow (X-axis) পুরো pin চলাকালীন স্থায়ীভাবে কেটে ফেলা হতো; এখন
+   শুধু viewport-এর বাইরে (তাই অদৃশ্য) থাকে কিন্তু ক্লিপড না - track-টা শেষ হয়ে
+   stage unpin হওয়ার পর স্বাভাবিক স্ক্রলেই সেটা ধীরে ধীরে viewport-এ উঠে আসে।
 */
 .home-root .process-scroll-stage {
   position: sticky;
   top: 0;
   height: 100vh;
   display: flex;
-  align-items: flex-end;
-  overflow: hidden;
+  align-items: flex-start;
 }
 .home-root .process-scroll-svg {
   position: absolute;
@@ -2671,6 +2737,16 @@ html:has(.home-root) {
    divider-line SVG's asymmetric partial dividers are drawn for. All 4 cards carry Figma's
    own identical placeholder name/role/quote text; only the avatar photo differs. */
 .home-root .testimonials-section {
+  /* position:relative (কোনো অফসেট ছাড়াই) এই সেকশনটাকে static থেকে "positioned,
+     z-index:auto" স্ট্যাকিং ক্যাটাগরিতে নিয়ে যায় - CSS stacking-এর নিয়ম অনুযায়ী
+     positioned উপাদান (এখানকার আগের .process-scroll-stage, যেটা position:sticky
+     বলে positioned) সবসময় static উপাদানের ওপরে আঁকা হয়, DOM order যাই হোক না কেন।
+     তাই Process section-এর diagram-এর bottom overflow (X-axis, যেটা এখন আর
+     overflow:hidden দিয়ে ক্লিপ করা হয় না - ক্লিপ করলে position:sticky নিজেই ভেঙে
+     যায়) এই সাদা background-এর ওপর দিয়ে "bleed through" করে দেখাচ্ছিল। এই সেকশনকেও
+     positioned বানিয়ে দেওয়ায় - আর DOM-এ এটা process section-এর পরে আসে বলে - এখন
+     এটাই ওপরে আঁকা হয়, bleed-through আর দেখা যায় না। */
+  position: relative;
   background: #ffffff;
   padding: 120px 0;
   font-family: var(--font-nunito), "Nunito Sans", "Inter", sans-serif;
@@ -2877,7 +2953,8 @@ html:has(.home-root) {
   width: 32px;
   height: 32px;
   border-radius: 16px;
-  border: 2px solid #fff;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease;
 }
 .home-root .testimonials-dot::before {
   content: "";

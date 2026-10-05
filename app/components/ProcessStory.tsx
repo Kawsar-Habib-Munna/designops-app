@@ -1,18 +1,17 @@
 'use client';
 
-// "How Do We Bring Ideas To Life?" সেকশনের scroll-driven প্রোটোটাইপ। ব্যবহারকারীর
-// স্পেক অনুযায়ী: সেকশনে ঢুকলে শুধু প্রথম ধাপ (Discover) হাইলাইট থাকে, বাকিগুলো হিডেন;
-// স্ক্রল করলে এক ধাপ করে (Define → Design → Develop → Launch) reveal হয় - প্রতিবার
-// পরের line-segment purple-এ আঁকা হয়, কার্ডটা fade-up করে দেখা যায়, আগের ধাপগুলো
-// visible থাকে কিন্তু subdued (dim) হয়ে যায়। Launch শেষ হলে সেকশন release হয়ে
-// স্বাভাবিক স্ক্রল চলতে থাকে - এটা wheel-event hijack না করে framer-motion এর
-// useScroll (একটা লম্বা track + position:sticky stage) দিয়ে করা, যাতে reverse
-// scroll/trackpad momentum স্বাভাবিকভাবেই কাজ করে, কোনো preventDefault লাগে না।
+// "How Do We Bring Ideas To Life?" সেকশন - pinned scroll-driven: একটা লম্বা track
+// (VH_PER_STEP * ধাপসংখ্যা) স্ক্রল করার পুরো সময়টায় diagram-টা position:sticky
+// দিয়ে viewport-এ আটকে (pinned) থাকে, আর সেই স্ক্রল-প্রোগ্রেসই activeStep ঠিক করে।
+// সেকশনটা viewport-এ ঢোকার সাথে সাথেই ৫টা কার্ড একসাথে দেখা যায় (useInView,
+// once:true, Figma-র static ডিজাইনের মতো), তারপর স্ক্রল করলে লাইন/ডট হাইলাইট
+// Discover→Launch ধাপে ধাপে এগোয় (উল্টো স্ক্রলে আগের ধাপেও ফিরে যায়)। সেগমেন্ট/ডট
+// আঁকার visual logic (SegmentLine/SegmentDot/segmentState ইত্যাদি) অপরিবর্তিত।
 //
 // টাইমিং/পজিশন সবই নিচের কনস্ট্যান্টে - পরে সহজে টিউন করা যাবে।
 
-import { useRef, useState, useSyncExternalStore } from 'react';
-import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { motion, useInView, useScroll, useMotionValueEvent, useTransform } from 'framer-motion';
 
 export type ProcessStep = { name: string; desc: string; top: number; left: number };
 
@@ -144,15 +143,15 @@ function SegmentDot({ point, state, r = 5 }: { point: { x: number; y: number }; 
   );
 }
 
-function StepCard({ step, index, activeStep }: { step: ProcessStep; index: number; activeStep: number }) {
-  const isVisible = index <= activeStep;
+function StepCard({ step, index, activeStep, cardsVisible }: { step: ProcessStep; index: number; activeStep: number; cardsVisible: boolean }) {
+  const isRevealed = index <= activeStep;
   const isActive = index === activeStep;
   return (
     <motion.div
-      className={`process-step${isVisible ? ' revealed' : ''}${isActive ? ' active' : ''}`}
+      className={`process-step${isRevealed ? ' revealed' : ''}${isActive ? ' active' : ''}`}
       style={{ top: `${step.top}%`, left: `${step.left}%` }}
       initial={false}
-      animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
+      animate={cardsVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
       transition={{ duration: STEP_TRANSITION_SEC, ease: EASE }}
     >
       <h3 className="process-step-title">{step.name}</h3>
@@ -184,20 +183,58 @@ function tickState(pointIndex: number, activeStep: number): 'hidden' | 'active' 
   return dotState(ownerStep, activeStep);
 }
 
-function DesktopScrollDiagram() {
+function DesktopDiagram() {
   const trackRef = useRef<HTMLDivElement>(null);
+  const diagramRef = useRef<HTMLDivElement>(null);
+  // once:true মানে inView একবার true হয়ে গেলে আর কখনো false-এ ফেরে না, তাই এটাই
+  // সরাসরি "কার্ডগুলো দেখা যাবে কিনা" হিসেবে ব্যবহার করা যায় - আলাদা cardsVisible
+  // state লাগে না।
+  const inView = useInView(diagramRef, { once: true, amount: 0.4 });
   const [activeStep, setActiveStep] = useState(0);
+  const [navOffset, setNavOffset] = useState(0);
+  const [panDistance, setPanDistance] = useState(0);
   const anchors = ANCHORS;
 
-  const { scrollYProgress } = useScroll({
-    target: trackRef,
-    offset: ['start start', 'end end'],
-  });
+  // ছোট/কম-উচ্চতার viewport-এ diagram (782px, size বদলানো যাবে না) পুরো 100vh
+  // stage-এর চেয়ে লম্বা হয়ে গেলে উপরের অংশ (Develop/Launch) sticky navbar-এর
+  // আড়ালে ঢাকা পড়ে যাচ্ছিল। এখন stage-টা viewport-এর একদম উপর (top:0) থেকে না,
+  // navbar-এর ঠিক নিচ থেকে pin হয় - .nav নিজেও sticky (top:-28px) বলে তার আসল
+  // visible bottom edge-টা CSS থেকে আন্দাজ না করে সরাসরি মেপে নেওয়া হচ্ছে। একই
+  // মাপ থেকে panDistance-ও বের করা হয় (diagram-এর আসল height বনাম stage-এর
+  // দৃশ্যমান height-এর পার্থক্য) - এটাই Launch-এর ধাপে diagram-টা ঠিক কতটা উপরে
+  // প্যান করলে bottom-এর X-axis পুরোপুরি দেখা যাবে তার পরিমাণ। mount-এর সময়
+  // (scrollY=0) nav তখনো "stuck" অবস্থায় যায়নি, তাই ভুল (অনেক বড়) offset মাপবে -
+  // inView true হলে (ততক্ষণে nav নিশ্চিতভাবেই stuck) আবার মাপা হয়।
+  useEffect(() => {
+    function measure() {
+      const nav = document.querySelector('.home-root .nav');
+      const navBottom = nav ? nav.getBoundingClientRect().bottom : 0;
+      setNavOffset(navBottom);
+      if (diagramRef.current) {
+        const diagramHeight = diagramRef.current.getBoundingClientRect().height;
+        const available = window.innerHeight - navBottom;
+        setPanDistance(Math.max(0, diagramHeight - available));
+      }
+    }
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [inView]);
 
+  // সেকশনটা এখন আবার pinned - একটা লম্বা track (VH_PER_STEP * ধাপসংখ্যা) স্ক্রল
+  // করার পুরোটা সময় diagram-টা position:sticky দিয়ে viewport-এ আটকে থাকে, আর সেই
+  // স্ক্রল-প্রোগ্রেসই activeStep ঠিক করে (['start start','end end'] - track-এর
+  // শুরু থেকে শেষ পর্যন্ত পুরোটাই 0→1 progress)।
+  const { scrollYProgress } = useScroll({ target: trackRef, offset: ['start start', 'end end'] });
   useMotionValueEvent(scrollYProgress, 'change', (v) => {
     const idx = Math.min(PROCESS_STEPS.length - 1, Math.max(0, Math.floor(v * PROCESS_STEPS.length)));
     setActiveStep((prev) => (prev === idx ? prev : idx));
   });
+  // Launch active হওয়ার ঠিক আগে-পরে (v: 0.8→1, যেটা activeStep-এর নিজস্ব হিসাবেই
+  // Launch-এর bin) diagram-টা ওপরে প্যান করে, যাতে bottom-এর X-axis পুরোপুরি
+  // দেখা যায় পিন শেষ হওয়ার আগেই - আলাদা করে পিন-পরবর্তী লম্বা "dead scroll"
+  // লাগে না এটা দেখতে।
+  const panY = useTransform(scrollYProgress, [0.8, 1], [0, -panDistance]);
 
   return (
     <div
@@ -205,8 +242,8 @@ function DesktopScrollDiagram() {
       ref={trackRef}
       style={{ height: `${PROCESS_STEPS.length * VH_PER_STEP}vh` }}
     >
-      <div className="process-scroll-stage">
-        <div className="process-diagram">
+      <div className="process-scroll-stage" style={{ top: navOffset, height: `calc(100vh - ${navOffset}px)` }}>
+        <motion.div className="process-diagram" ref={diagramRef} style={{ y: panY }}>
           <img src="/process/timeline-graph.svg" alt="" className="process-diagram-graph" aria-hidden="true" />
           <span className="process-axis-y" aria-hidden="true">PROGRESS &amp; TIMELINE</span>
           <span className="process-axis-x" aria-hidden="true">DESIGN THINKING PROCESS</span>
@@ -265,9 +302,9 @@ function DesktopScrollDiagram() {
           </svg>
 
           {PROCESS_STEPS.map((step, i) => (
-            <StepCard key={step.name} step={step} index={i} activeStep={activeStep} />
+            <StepCard key={step.name} step={step} index={i} activeStep={activeStep} cardsVisible={inView} />
           ))}
-        </div>
+        </motion.div>
       </div>
     </div>
   );
@@ -398,7 +435,7 @@ export default function ProcessStory() {
   return (
     <>
       <div className="process-diagram-desktop-only">
-        <DesktopScrollDiagram />
+        <DesktopDiagram />
       </div>
       <div className="process-diagram-mobile-only">
         <MobileStepList />

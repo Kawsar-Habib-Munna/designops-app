@@ -300,11 +300,13 @@ export default async function Home() {
             <div className="hero-partners">
               <p className="hero-partners-title">Trusted By Partners</p>
               <div className="hero-partners-row">
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                  <span className="hero-partner" key={n}>
-                    <img src={`/hero/partner-${n}.svg`} alt="" />
-                  </span>
-                ))}
+                <div className="hero-partners-track">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8].map((n, i) => (
+                    <span className="hero-partner" key={i} aria-hidden={i >= 8}>
+                      <img src={`/hero/partner-${n}.svg`} alt="" />
+                    </span>
+                  ))}
+                </div>
               </div>
               <div className="hero-partners-fade"></div>
             </div>
