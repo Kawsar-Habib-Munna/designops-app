@@ -2356,6 +2356,7 @@ html:has(.home-root) {
    visible, just the soft fill + shadow). */
 .home-root .services-tabs-card {
   position: relative;
+  border: 1px solid transparent;
   border-radius: 40px;
   background: rgba(103, 107, 106, 0.1);
   box-shadow:
@@ -2364,6 +2365,28 @@ html:has(.home-root) {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   overflow: hidden;
+}
+/* এই কার্ডটা সবসময়ই currently-active service দেখায় (AnimatePresence দিয়ে
+   content swap হয়), তাই stat-circle-এর hover-এ যে gradient ring দেখা যায়
+   (90deg, #efe6fd → #6200ee) সেই একই stroke এখানে সবসময় (persistent) দেখানো
+   হচ্ছে - এই কার্ডটাই "active" কার্ড। background opaque না বলে সরাসরি
+   background-layer ট্রিক না, safe masked-ring ::after। */
+.home-root .services-tabs-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(90deg, #efe6fd 0%, #6200ee 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .home-root .services-card-inner {
   display: flex;
