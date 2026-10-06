@@ -173,6 +173,7 @@
 .portfolio-root .modal-close-btn:hover{background:var(--border-soft);color:var(--ink);}
 .portfolio-root .field-label{font-size:12px;font-weight:500;color:var(--ink-soft);margin-bottom:5px;display:block;}
 .portfolio-root .field-hint{font-size:11px;color:var(--ink-faint);margin:-8px 0 12px;}
+.portfolio-root .field-hint.warn{color:var(--warning);font-weight:600;}
 .portfolio-root .field-input{width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;background:var(--surface);color:var(--ink);outline:none;font-family:inherit;margin-bottom:12px;}
 .portfolio-root .field-input:focus{border-color:var(--accent);}
 .portfolio-root textarea.field-input{resize:vertical;min-height:64px;line-height:1.5;}

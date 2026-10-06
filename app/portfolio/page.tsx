@@ -85,6 +85,13 @@ type SectionKey =
   | 'moscow' | 'kano' | 'ia_sitemap' | 'user_flow' | 'wireframe' | 'screens_brief' | 'mockups'
   | 'prototype' | 'usability_testing' | 'ai_help' | 'team';
 
+// পাবলিক /work/[slug] পেজে টাইটেল (48px bold, max-width 820px) আর বিবরণ (15.5px,
+// max-width 680px) দুটোই এক লাইনে দেখানো হয় - এর বেশি লম্বা হলে wrap করে বা পরের
+// লাইনে উপচে পড়ে। হেডলেস ব্রাউজারে real টাইটেল/বিবরণ বসিয়ে মেপে এই সীমা দুটো
+// বের করা হয়েছে (desktop সাইজে, যেখানে ফন্ট সবচেয়ে বড় থাকে)।
+const TITLE_SAFE_CHARS = 30;
+const SUMMARY_SAFE_CHARS = 95;
+
 const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: 'overview', label: 'Overview' },
   { key: 'problem_solution', label: 'Problem & Solution' },
@@ -654,6 +661,9 @@ export default function PortfolioPage() {
             <form onSubmit={handleCreate}>
               <label className="field-label">টাইটেল</label>
               <input className="field-input" type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="যেমন: Aarambho" autoFocus required />
+              <p className={`field-hint${newTitle.length > TITLE_SAFE_CHARS ? ' warn' : ''}`}>
+                {newTitle.length} / {TITLE_SAFE_CHARS} অক্ষর — এর বেশি হলে পাবলিক পেজে টাইটেল এক লাইনে নাও ধরতে পারে
+              </p>
               <p className="field-hint">তৈরি হওয়ার পর ডিটেইলস (স্লাগ, ছবি, ট্যাগ, সব সেকশন) এডিট করতে পারবেন।</p>
               {createError && <p style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 10 }}>{createError}</p>}
               <div className="modal-foot" style={{ justifyContent: 'flex-end' }}>
@@ -692,6 +702,9 @@ export default function PortfolioPage() {
                 <div>
                   <label className="field-label">টাইটেল</label>
                   <input className="field-input" style={{ marginBottom: 0 }} type="text" value={eTitle} onChange={(e) => setETitle(e.target.value)} required />
+                  <span className={`field-hint${eTitle.length > TITLE_SAFE_CHARS ? ' warn' : ''}`}>
+                    {eTitle.length} / {TITLE_SAFE_CHARS} অক্ষর — এর বেশি হলে পাবলিক কেস-স্টাডি পেজে টাইটেল এক লাইনে নাও ধরতে পারে
+                  </span>
                 </div>
                 <div>
                   <label className="field-label">স্লাগ (পাবলিক লিংক: /work/{eSlug || '...'})</label>
@@ -712,6 +725,9 @@ export default function PortfolioPage() {
 
               <label className="field-label">সংক্ষিপ্ত বিবরণ (কার্ডে দেখাবে)</label>
               <textarea className="field-input" value={eSummary} onChange={(e) => setESummary(e.target.value)} rows={2} />
+              <span className={`field-hint${eSummary.length > SUMMARY_SAFE_CHARS ? ' warn' : ''}`}>
+                {eSummary.length} / {SUMMARY_SAFE_CHARS} অক্ষর — এর বেশি হলে কেস-স্টাডি পেজে বিবরণ এক লাইনে নাও ধরতে পারে
+              </span>
 
               <label className="field-label">ট্যাগ (কমা দিয়ে আলাদা করুন)</label>
               <input className="field-input" type="text" value={eTags} onChange={(e) => setETags(e.target.value)} placeholder="UI/UX design, Mobile App" />
