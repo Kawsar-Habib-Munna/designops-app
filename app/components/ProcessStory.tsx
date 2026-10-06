@@ -87,12 +87,18 @@ const GRADIENT_TO = '#9654F4';
 // শেষ না হওয়া পর্যন্ত)। রং বদলানোটা আলাদাভাবে অনেক দ্রুত (150ms) রাখায় "কোন ধাপ এখন
 // active" এই ফিডব্যাক স্ক্রলের সাথে প্রায় সাথে সাথেই মেলে, draw/reveal animation-টা
 // তার নিজের ধীর গতিতেই থাকে।
+// আগে শুধু 'active' (বর্তমান ধাপ) সেগমেন্ট/ডট পারপল গ্র্যাডিয়েন্ট পেত - পরের
+// ধাপে সরে গেলে 'past' হয়ে আবার dim ধূসর রঙে ফিরে যেত। .process-step.revealed-এর
+// মতোই (একবার active হলে স্ক্রল করে পরের ধাপে গেলেও রংটা থেকে যায়) এখন
+// সেগমেন্ট/ডট-ও 'active' আর 'past' দুটোতেই একই পূর্ণ রঙিন treatment পায় -
+// শুধু 'hidden' (এখনো reveal হয়নি) dim/অদৃশ্য থাকে।
 function SegmentLine({ from, to, state }: { from: { x: number; y: number }; to: { x: number; y: number }; state: 'hidden' | 'active' | 'past' }) {
   // url(#...) gradient reference framer-motion দিয়ে color হিসেবে animate করা যায় না
   // (RGB ইন্টারপোলেশন ভেঙে পড়ে), তাই stroke-টা animate={} প্রপের বাইরে রেখে সরাসরি
   // attribute হিসেবে সেট করা হয়েছে - active↔dim সুইচ তাৎক্ষণিক হয়, যা 150ms-এর দ্রুত
   // ফ্লিপের সাথে দৃশ্যত অভিন্ন।
   const gradientId = `segline-grad-${from.x}-${from.y}-${to.x}-${to.y}`;
+  const isRevealed = state !== 'hidden';
   return (
     <>
       <defs>
@@ -107,12 +113,12 @@ function SegmentLine({ from, to, state }: { from: { x: number; y: number }; to: 
         x2={to.x}
         y2={to.y}
         strokeLinecap="round"
-        stroke={state === 'active' ? `url(#${gradientId})` : DIM}
+        stroke={isRevealed ? `url(#${gradientId})` : DIM}
         initial={false}
         animate={{
           pathLength: state === 'hidden' ? 0 : 1,
           opacity: state === 'hidden' ? 0 : 1,
-          strokeWidth: state === 'active' ? 2.5 : 2,
+          strokeWidth: isRevealed ? 2.5 : 2,
         }}
         transition={{
           default: { duration: STEP_TRANSITION_SEC, ease: EASE },
@@ -133,7 +139,7 @@ function SegmentDot({ point, state, r = 5 }: { point: { x: number; y: number }; 
       animate={{
         scale: state === 'hidden' ? 0 : state === 'active' ? 1.2 : 1,
         opacity: state === 'hidden' ? 0 : 1,
-        fill: state === 'active' ? PURPLE : DIM,
+        fill: state === 'hidden' ? DIM : PURPLE,
       }}
       transition={{
         default: { duration: STEP_TRANSITION_SEC, ease: EASE },

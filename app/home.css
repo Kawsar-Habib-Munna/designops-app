@@ -620,9 +620,18 @@ html:has(.home-root) {
     transform 0.2s ease,
     filter 0.2s ease;
 }
+/* Figma "Style=Secondery, State=Hover" (304:2058) - hover-এ বাইরের স্ট্রোকটা আর
+   gradient থাকে না, flat solid #EFE6FD হয়ে যায় (border-box layer-টাকে একই
+   রঙের দুই-স্টপ "ভান" গ্র্যাডিয়েন্ট বানিয়ে flat করা হলো, যেভাবে .hero-start-এর
+   বেস background-image layering করা হয়েছে ঠিক সেই একই টেকনিকে), আর ভেতরের
+   label হালকা সাদা থেকে গাঢ় বেগুনি গ্র্যাডিয়েন্টে (#6200EE → #290064) বদলে
+   যায়, টেক্সট কালারও তাই #efe6fd-তে ফ্লিপ হয় (Figma স্পেক অনুযায়ী)। */
 .home-root .hero-start:hover {
   transform: translateY(-2px);
-  filter: drop-shadow(0 14px 26px rgba(129, 51, 241, 0.38));
+  filter: drop-shadow(0 12px 20px rgba(129, 51, 241, 0.2));
+  background-image:
+    linear-gradient(#010003, #010003),
+    linear-gradient(#efe6fd, #efe6fd);
 }
 .home-root .hero-start-label {
   display: flex;
@@ -636,6 +645,13 @@ html:has(.home-root) {
   font-weight: 500;
   color: #010003;
   white-space: nowrap;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+.home-root .hero-start:hover .hero-start-label {
+  background: linear-gradient(90deg, #6200ee, #290064);
+  color: #efe6fd;
 }
 .home-root .hero-start-icon {
   display: block;
@@ -2013,10 +2029,28 @@ html:has(.home-root) {
   flex-direction: column;
   gap: 116px;
   padding: 40px;
-  /* border: 1px solid #feffff; */
+  border: 1px solid transparent;
   border-radius: 36px;
   box-shadow: 0 8px 40px rgba(41, 0, 100, 0.12);
   overflow: hidden;
+}
+/* ::before/::after এখানে আগে থেকেই tint/inset-shadow-এর জন্য ব্যবহৃত হচ্ছে,
+   তাই masked-ring pseudo যোগ না করে সরাসরি .why-card-এর নিজের
+   border/background-image দিয়েই (hero-start-এর একই দুই-লেয়ার কৌশল) hover-এ
+   শুধু stroke-টা আঁকা হচ্ছে। প্রথম layer-টা অবশ্যই opaque হতে হবে (--bg দিয়ে
+   fake flat) - transparent দিলে ভুল হয় (আগে এই ভুলেই পুরো কার্ড গ্র্যাডিয়েন্ট
+   হয়ে গিয়েছিল), কারণ ::before-এর tint নিজেই প্রায়-স্বচ্ছ (4% opacity), তাই
+   padding-box-এ opaque fake-layer না থাকলে border-box-এর আসল gradient
+   (layer 2) পুরো কার্ড জুড়েই চুঁইয়ে দেখা যায়, শুধু 1px ring-এ না। এই ring-টা
+   সরাসরি element-এর নিজের background (কোনো আলাদা pseudo না), তাই এতে CSS
+   `opacity` প্রপার্টি লাগালে পুরো কার্ডই (টেক্সট-সহ) আবছা হয়ে যেত - তাই
+   stroke-এর 60% opacity gradient-এর rgba স্টপেই বেক করা হয়েছে। */
+.home-root .why-card:hover {
+  background-image:
+    linear-gradient(var(--bg), var(--bg)),
+    linear-gradient(90deg, rgba(239, 230, 253, 0.6) 0%, rgba(98, 0, 238, 0.6) 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
 }
 .home-root .why-card::before {
   content: "";
@@ -2171,13 +2205,14 @@ html:has(.home-root) {
   animation: why-tags-scroll 32s linear infinite;
 }
 .home-root .why-tag {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 26px 32px;
   border-radius: 20px;
-  border: 1px solid rgba(200, 197, 205, 0.4);
+  border: 1px solid transparent;
   background: rgba(103, 107, 106, 0.04);
   box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
   backdrop-filter: blur(10px);
@@ -2188,6 +2223,24 @@ html:has(.home-root) {
   color: #ada8b4;
   white-space: nowrap;
   flex-shrink: 0;
+}
+.home-root .why-tag::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(90deg, rgba(200, 197, 205, 0.8), #8133f1);
+  opacity: 0.6;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 @keyframes why-tags-scroll {
   from {
@@ -2380,7 +2433,7 @@ html:has(.home-root) {
   border-radius: inherit;
   padding: 1px;
   background: linear-gradient(90deg, #efe6fd 0%, #6200ee 100%);
-  opacity: 0.5;
+  opacity: 0.6;
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -2820,6 +2873,7 @@ html:has(.home-root) {
   border-radius: inherit;
   padding: 1px;
   background: linear-gradient(45deg, #c8c5cd 0%, #9654f4 100%);
+  opacity: 0.6;
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -3385,6 +3439,7 @@ html:has(.home-root) {
   border-radius: inherit;
   padding: 1px;
   background: linear-gradient(90deg, rgba(200, 197, 205, 0.8), #8133f1);
+  opacity: 0.6;
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -3521,6 +3576,7 @@ html:has(.home-root) {
   border-radius: inherit;
   padding: 1px;
   background: linear-gradient(90deg, rgba(200, 197, 205, 0.8), #8133f1);
+  opacity: 0.6;
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -4006,6 +4062,14 @@ html:has(.home-root) {
   background-origin: border-box;
   background-clip: padding-box, border-box;
 }
+/* Figma "Style=Secondery, State=Hover" (304:2058) - .hero-start-এ যেভাবে
+   প্রয়োগ হয়েছে ঠিক সেই একই hover treatment এখানেও: বাইরের স্ট্রোক flat solid
+   #EFE6FD, ভেতরের fill গাঢ় বেগুনি গ্র্যাডিয়েন্টে (#6200EE → #290064)। */
+.home-root .cta-final-btn.primary:hover {
+  background-image:
+    linear-gradient(#010003, #010003),
+    linear-gradient(#efe6fd, #efe6fd);
+}
 .home-root .cta-final-btn.secondary {
   border: 1px solid #8133f1;
 }
@@ -4019,10 +4083,17 @@ html:has(.home-root) {
   line-height: 1.5;
   font-weight: 500;
   white-space: nowrap;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 .home-root .cta-final-btn.primary .cta-final-btn-inner {
   background: linear-gradient(90deg, #ffffff, #ceb0fa);
   color: #010003;
+}
+.home-root .cta-final-btn.primary:hover .cta-final-btn-inner {
+  background: linear-gradient(90deg, #6200ee, #290064);
+  color: #efe6fd;
 }
 .home-root .cta-final-btn.secondary .cta-final-btn-inner {
   background: linear-gradient(
