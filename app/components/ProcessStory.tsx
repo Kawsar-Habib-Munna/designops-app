@@ -296,9 +296,6 @@ function DesktopDiagram() {
               state={segmentState(anchors.length - 1, activeStep)}
               r={3}
             />
-            {anchors.map((point, i) => (
-              <SegmentDot key={`dot-${PROCESS_STEPS[i].name}`} point={point} state={tickState(i, activeStep)} />
-            ))}
           </svg>
 
           {PROCESS_STEPS.map((step, i) => (

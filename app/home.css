@@ -122,36 +122,20 @@ html:has(.home-root) {
 }
 .home-root .nav-logo-art {
   position: relative;
-  display: block;
-  width: 124px;
-  height: 27px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 40px;
 }
-.home-root .nav-logo-mark {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 21px;
-  height: 27px;
+/* আগে mark/text দুটো আলাদা svg হিসেবে absolute পজিশনে বসানো ছিল, নিচে একটা
+   ট্যাগলাইনও ছিল - নতুন আপলোড করা লোগোতে mark+wordmark একই ফাইলে একসাথে আঁকা
+   আর ট্যাগলাইন বাদ দেওয়া হয়েছে, তাই এখন শুধু একটাই <img>। */
+.home-root .nav-logo-img {
   display: block;
-}
-.home-root .nav-logo-text {
-  position: absolute;
-  left: 28px;
-  top: 0;
-  width: 95px;
-  height: 17px;
-  display: block;
-}
-.home-root .nav-logo-tagline {
-  position: absolute;
-  left: 28px;
-  top: 20px;
-  font-size: 7px;
-  line-height: 1;
-  font-weight: 600;
-  letter-spacing: 0.45px;
-  color: #c8c5cd;
-  white-space: nowrap;
+  height: 80px;
+  width: 156px;
+  /* border: 1px solid white; */
 }
 .home-root .nav-links {
   display: flex;
@@ -212,22 +196,19 @@ html:has(.home-root) {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+
   width: 192px;
   height: 60px;
   padding: 8px;
-  border: 2px solid transparent;
-  /* আউটার স্ট্রোক = "Card Stoke 2" রেফারেন্স (Linear Gradient, 8% opacity,
-     #FEFFFF → #EFE6FD) — .nav-pill থেকে পাওয়া ডিফল্ট rgba(254,255,255,.1)
-     বর্ডার/ব্যাকগ্রাউন্ড এখানে ওভাররাইড করা হলো একই দুই-স্তর background কৌশলে। */
-  background:
-    linear-gradient(rgba(103, 107, 106, 0.08), rgba(103, 107, 106, 0.08))
-      padding-box,
-    linear-gradient(
-        180deg,
-        rgba(254, 255, 255, 0.08),
-        rgba(239, 230, 253, 0.08)
-      )
-      border-box;
+
+  border: 1px solid #19181c;
+  border-radius: 14px;
+  background-color: #676b6a0a;
+
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 20px 0 #8133f10a;
 }
 .home-root .nav-cta {
   display: flex;
@@ -316,9 +297,6 @@ html:has(.home-root) {
 }
 .home-root .nav.on-light .nav-link:hover {
   color: #13002f;
-}
-.home-root .nav.on-light .nav-logo-tagline {
-  color: #7b7780;
 }
 .home-root .nav.on-light .nav-menu-btn {
   color: #13002f;
@@ -429,7 +407,7 @@ html:has(.home-root) {
 }
 .home-root .hero-fig {
   position: relative;
-  padding: clamp(180px, 26vh, 260px) 0 120px 0;
+  padding: clamp(180px, 26vh, 260px) 0 100px 0;
   font-family: var(--font-nunito), "Nunito Sans", "Inter", sans-serif;
 }
 .home-root .hero-fig-bg {
@@ -571,6 +549,32 @@ html:has(.home-root) {
   font-style: italic;
   font-weight: 400;
 }
+.home-root .hero-title-cursor {
+  display: inline-block;
+  width: 3px;
+  height: 0.85em;
+  margin-left: 3px;
+  background: #efe6fd;
+  box-shadow: 0 0 12px rgba(129, 51, 241, 0.65);
+  vertical-align: -0.1em;
+  animation: hero-cursor-blink 0.85s steps(1) infinite;
+}
+@keyframes hero-cursor-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-root .hero-title-cursor {
+    animation: none;
+    opacity: 0;
+  }
+}
 .home-root .hero-sub {
   width: 100%;
   max-width: 737px;
@@ -589,6 +593,13 @@ html:has(.home-root) {
   flex-wrap: wrap;
   gap: 20px;
 }
+/* এখানে স্ট্রোকটা আলাদা ::before মাস্কড-রিং দিয়ে না, সরাসরি .hero-start-এর
+   নিজের border/background দিয়েই আঁকা হচ্ছে - দুইটা background-image লেয়ার
+   (একটা flat #010003 রঙের গ্র্যাডিয়েন্ট "ভান", padding-box-এ ক্লিপ করা, আর
+   আসল gradient-টা border-box-এ) দিয়ে। plain <color> কে এভাবে একটা
+   multi-layer background-এ অন্য layer-এর সাথে comma দিয়ে বসানো যায় না (শুধু
+   সর্বশেষ layer-এর সাথেই background-color বসে) - আগের ভার্সনে এই ভুল সিনট্যাক্সের
+   কারণে পুরো background-ই আসলে gradient হয়ে গিয়েছিল (ভেতরের কালো অংশও)। */
 .home-root .hero-start {
   position: relative;
   display: inline-flex;
@@ -597,30 +608,17 @@ html:has(.home-root) {
   padding: 2px 16px 2px 2px;
   border-radius: 14px;
   border: 1px solid transparent;
-  background: #010003;
+  background-image:
+    linear-gradient(#010003, #010003),
+    linear-gradient(90deg, #efe6fd 0%, #6200ee 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   filter: drop-shadow(0 12px 20px rgba(129, 51, 241, 0.2));
   transition:
     transform 0.2s ease,
     filter 0.2s ease;
-}
-.home-root .hero-start::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, #efe6fd 0%, #6200ee 100%);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
 }
 .home-root .hero-start:hover {
   transform: translateY(-2px);
@@ -881,14 +879,20 @@ html:has(.home-root) {
   width: min(1280px, calc(100% - 48px));
   margin: 0 auto;
 }
+/* .hero-start-এর মতো সরাসরি background-দুই-লেয়ার ট্রিক এখানে ব্যবহার করা
+   যায়নি, কারণ এখানকার background আগে থেকেই semi-transparent (opaque না) -
+   সেই কৌশলটা শুধু পুরো opaque background-এর ক্ষেত্রেই নিরাপদ (আগে
+   footer-subscribe/process-step-এও এই একই কারণে ভেঙেছিল)। তাই এখানে
+   masked-ring ::before পদ্ধতিই ব্যবহার করা হচ্ছে, Figma-র আসল স্ট্রোক রঙ দিয়ে। */
 .home-root .stats-eyebrow {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 70px;
   padding: 12px 20px 12px 0;
   border-radius: 10px;
-  border: 1px solid rgba(239, 230, 253, 0.2);
+  border: 1px solid transparent;
   background: rgba(103, 107, 106, 0.04);
   box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
   backdrop-filter: blur(10px);
@@ -899,6 +903,27 @@ html:has(.home-root) {
   font-weight: 500;
   color: #ceb0fa;
   white-space: nowrap;
+}
+.home-root .stats-eyebrow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(200, 197, 205, 0.4),
+    rgba(150, 84, 244, 0.4)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .home-root .stats-eyebrow img {
   display: block;
@@ -949,6 +974,7 @@ html:has(.home-root) {
   color: #ada8b4;
 }
 .home-root .stat-circle {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -961,8 +987,66 @@ html:has(.home-root) {
   background: rgba(103, 107, 106, 0.04);
   border: 1px solid rgba(254, 255, 255, 0.1);
   text-align: center;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+/* .hero-start/.cta-final-btn.primary-এর মতো সরাসরি background-দুই-লেয়ার ট্রিক
+   এখানে ব্যবহার করা যায়নি, কারণ .stat-circle-এর নিজের background আগে থেকেই
+   semi-transparent (rgba(103,107,106,0.04), opaque না) - সেই টেকনিক শুধু পুরো
+   opaque background-এর ক্ষেত্রেই নিরাপদ (এই একই কারণে আগে .stats-eyebrow/
+   footer-subscribe/process-step-এও ভেঙেছিল)। তাই এখানে masked-ring ::after
+   পদ্ধতি, রংটা হুবহু Start A Project বাটনের গ্র্যাডিয়েন্ট (90deg, #efe6fd →
+   #6200ee) - কিন্তু বাটনের থেকে ভিন্ন, এটা শুধু hover হলেই দেখা যায় (opacity
+   fade), default অবস্থায় আগের flat হালকা বর্ডারই থাকে। circle shape বলে
+   border-radius: inherit (50%) ::after-ও নিজে থেকেই গোল হয়ে যায়। */
+.home-root .stat-circle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(90deg, #efe6fd 0%, #6200ee 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.home-root .stat-circle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    rgba(239, 230, 253, 0.1),
+    rgba(206, 176, 250, 0.1)
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.home-root .stat-circle:hover {
+  border-color: transparent;
+  box-shadow:
+    0 12px 40px rgba(129, 51, 241, 0.12),
+    inset 0 4px 12px rgba(254, 255, 255, 0.04);
+  transform: translateY(-4px);
+}
+.home-root .stat-circle:hover::before,
+.home-root .stat-circle:hover::after {
+  opacity: 1;
 }
 .home-root .stat-label {
+  position: relative;
   display: block;
   width: 100%;
   margin-bottom: -8px;
@@ -970,8 +1054,13 @@ html:has(.home-root) {
   line-height: 1.5;
   font-weight: 500;
   color: #7b7780;
+  transition: color 0.3s ease;
+}
+.home-root .stat-circle:hover .stat-label {
+  color: #bdb9c3;
 }
 .home-root .stat-value {
+  position: relative;
   display: block;
   width: 100%;
   font-family: var(--font-playfair), "Playfair Display", serif;
@@ -979,6 +1068,10 @@ html:has(.home-root) {
   line-height: 1.5;
   font-weight: 700;
   color: #ada8b4;
+  transition: color 0.3s ease;
+}
+.home-root .stat-circle:hover .stat-value {
+  color: #efe6fd;
 }
 .home-root .stat-arrow {
   display: block;
@@ -1107,12 +1200,13 @@ html:has(.home-root) {
   }
 }
 .home-root .projects-eyebrow {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 12px;
   padding: 12px 20px 12px 0;
   border-radius: 10px;
-  border: 1px solid rgba(150, 84, 244, 0.35);
+  border: 1px solid transparent;
   background: rgba(103, 107, 106, 0.04);
   box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
   backdrop-filter: blur(10px);
@@ -1123,6 +1217,27 @@ html:has(.home-root) {
   font-weight: 500;
   color: #9654f4;
   white-space: nowrap;
+}
+.home-root .projects-eyebrow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(200, 197, 205, 0.4),
+    rgba(150, 84, 244, 0.4)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .home-root .projects-eyebrow img {
   display: block;
@@ -1500,12 +1615,13 @@ html:has(.home-root) {
   text-align: center;
 }
 .home-root .about-eyebrow {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 12px;
   padding: 12px 20px 12px 0;
   border-radius: 10px;
-  border: 1px solid rgba(239, 230, 253, 0.2);
+  border: 1px solid transparent;
   background: rgba(103, 107, 106, 0.04);
   box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
   backdrop-filter: blur(10px);
@@ -1516,6 +1632,27 @@ html:has(.home-root) {
   font-weight: 500;
   color: #ceb0fa;
   white-space: nowrap;
+}
+.home-root .about-eyebrow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(200, 197, 205, 0.4),
+    rgba(150, 84, 244, 0.4)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .home-root .about-eyebrow img {
   display: block;
@@ -1796,12 +1933,13 @@ html:has(.home-root) {
   text-align: center;
 }
 .home-root .why-eyebrow {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 12px;
   padding: 12px 20px 12px 0;
   border-radius: 10px;
-  border: 1px solid rgba(200, 197, 205, 0.4);
+  border: 1px solid transparent;
   background: rgba(103, 107, 106, 0.04);
   box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
   backdrop-filter: blur(10px);
@@ -1812,6 +1950,27 @@ html:has(.home-root) {
   font-weight: 500;
   color: #ceb0fa;
   white-space: nowrap;
+}
+.home-root .why-eyebrow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(200, 197, 205, 0.4),
+    rgba(150, 84, 244, 0.4)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .home-root .why-eyebrow img {
   display: block;
@@ -2103,12 +2262,13 @@ html:has(.home-root) {
   margin: 0 auto;
 }
 .home-root .services-eyebrow {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 12px;
   padding: 12px 20px 12px 0;
   border-radius: 10px;
-  border: 1px solid rgba(239, 230, 253, 0.2);
+  border: 1px solid transparent;
   background: rgba(103, 107, 106, 0.04);
   box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
   backdrop-filter: blur(10px);
@@ -2119,6 +2279,27 @@ html:has(.home-root) {
   font-weight: 500;
   color: #ceb0fa;
   white-space: nowrap;
+}
+.home-root .services-eyebrow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(200, 197, 205, 0.4),
+    rgba(150, 84, 244, 0.4)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .home-root .services-eyebrow img {
   display: block;
@@ -2453,12 +2634,13 @@ html:has(.home-root) {
   margin-bottom: 80px;
 }
 .home-root .process-eyebrow {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 12px;
   padding: 12px 20px 12px 0;
   border-radius: 10px;
-  border: 1px solid rgba(200, 197, 205, 0.4);
+  border: 1px solid transparent;
   background: rgba(103, 107, 106, 0.04);
   box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
   backdrop-filter: blur(10px);
@@ -2469,6 +2651,27 @@ html:has(.home-root) {
   font-weight: 500;
   color: #ceb0fa;
   white-space: nowrap;
+}
+.home-root .process-eyebrow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(200, 197, 205, 0.4),
+    rgba(150, 84, 244, 0.4)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .home-root .process-eyebrow img {
   display: block;
@@ -2559,7 +2762,7 @@ html:has(.home-root) {
   width: 17.656%;
   min-width: 170px;
   padding: 20px;
-  border: 1px solid #feffff;
+  border: 1px solid #19181c;
   border-radius: 20px;
   box-shadow:
     0 8px 40px rgba(41, 0, 100, 0.04),
@@ -2764,12 +2967,13 @@ html:has(.home-root) {
   text-align: center;
 }
 .home-root .testimonials-eyebrow {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 12px;
   padding: 12px 20px 12px 0;
   border-radius: 10px;
-  border: 1px solid rgba(200, 197, 205, 0.4);
+  border: 1px solid transparent;
   background: rgba(103, 107, 106, 0.04);
   box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
   backdrop-filter: blur(10px);
@@ -2780,6 +2984,27 @@ html:has(.home-root) {
   font-weight: 500;
   color: #9654f4;
   white-space: nowrap;
+}
+.home-root .testimonials-eyebrow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(200, 197, 205, 0.4),
+    rgba(150, 84, 244, 0.4)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .home-root .testimonials-eyebrow img {
   display: block;
@@ -3025,12 +3250,13 @@ html:has(.home-root) {
   text-align: center;
 }
 .home-root .faq-eyebrow {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 12px;
   padding: 12px 20px 12px 0;
   border-radius: 10px;
-  border: 1px solid rgba(200, 197, 205, 0.4);
+  border: 1px solid transparent;
   background: rgba(103, 107, 106, 0.04);
   box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
   backdrop-filter: blur(10px);
@@ -3041,6 +3267,27 @@ html:has(.home-root) {
   font-weight: 500;
   color: #ceb0fa;
   white-space: nowrap;
+}
+.home-root .faq-eyebrow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(200, 197, 205, 0.4),
+    rgba(150, 84, 244, 0.4)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .home-root .faq-eyebrow img {
   display: block;
@@ -3634,12 +3881,13 @@ html:has(.home-root) {
   text-align: center;
 }
 .home-root .cta-final-eyebrow {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 12px;
   padding: 12px 20px 12px 0;
   border-radius: 10px;
-  border: 1px solid rgba(200, 197, 205, 0.4);
+  border: 1px solid transparent;
   background: rgba(103, 107, 106, 0.04);
   box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
   backdrop-filter: blur(10px);
@@ -3650,6 +3898,27 @@ html:has(.home-root) {
   font-weight: 500;
   color: #ceb0fa;
   white-space: nowrap;
+}
+.home-root .cta-final-eyebrow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(200, 197, 205, 0.4),
+    rgba(150, 84, 244, 0.4)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .home-root .cta-final-eyebrow img {
   display: block;
@@ -3705,23 +3974,11 @@ html:has(.home-root) {
 }
 .home-root .cta-final-btn.primary {
   border: 1px solid transparent;
-}
-.home-root .cta-final-btn.primary::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, #efe6fd 0%, #6200ee 100%);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
+  background-image:
+    linear-gradient(#010003, #010003),
+    linear-gradient(135deg, #efe6fd 0%, #6200ee 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
 }
 .home-root .cta-final-btn.secondary {
   border: 1px solid #8133f1;

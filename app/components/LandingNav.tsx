@@ -92,9 +92,7 @@ export default function LandingNav() {
           onClick={(e) => { e.preventDefault(); goTo(LINKS[0]); }}
         >
           <span className="nav-logo-art">
-            <img src="/nav-logo-mark.svg" alt="" className="nav-logo-mark" />
-            <img src="/nav-logo-text.svg" alt="FLOW 53" className="nav-logo-text" />
-            <span className="nav-logo-tagline">Innovate-Design-Elevate</span>
+            <img src="/Flow53 logo.svg" alt="FLOW 53" className="nav-logo-img" />
           </span>
         </a>
 

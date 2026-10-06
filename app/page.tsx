@@ -11,6 +11,7 @@ import ProjectsCarousel from "@/app/components/ProjectsCarousel";
 import ProcessStory from "@/app/components/ProcessStory";
 import FaqAccordion from "@/app/components/FaqAccordion";
 import ContactForm from "@/app/components/ContactForm";
+import HeroTitleTyped from "@/app/components/HeroTitleTyped";
 
 // পাবলিক ল্যান্ডিং পেজ — লগইন ছাড়াই সবাই দেখে, তাই profiles টেবিলের RLS
 // (শুধু authenticated ইউজার read করতে পারে) এই পেজের জন্য প্রযোজ্য না। এটা
@@ -258,10 +259,7 @@ export default async function Home() {
                 </span>
               </div>
 
-              <h1 className="hero-title">
-                We Design And Build Digital Products That <em>Create</em>{" "}
-                Impact!
-              </h1>
+              <HeroTitleTyped />
 
               <p className="hero-sub">
                 Flow 53 is a UI/UX design and development agency helping
@@ -347,7 +345,7 @@ export default async function Home() {
             <div className="services-heading">
               <span className="services-eyebrow">
                 <img src="/stats/line.svg" alt="" />
-                <span>Services</span>
+                <span>SERVICES</span>
               </span>
               <div className="services-heading-copy">
                 <h2 className="services-title">What Can We Build Together?</h2>
@@ -426,7 +424,7 @@ export default async function Home() {
               />
               <span className="about-eyebrow">
                 <img src="/stats/line.svg" alt="" />
-                <span>About Us</span>
+                <span>ABOUT US</span>
               </span>
               <div className="about-heading-copy">
                 <h2 className="about-title">So, Who Are We?</h2>
@@ -563,7 +561,7 @@ export default async function Home() {
             <div className="process-heading">
               <span className="process-eyebrow">
                 <img src="/stats/line.svg" alt="" />
-                <span>Process</span>
+                <span>PROCESS</span>
               </span>
               <div className="process-heading-copy">
                 <h2 className="process-title">
