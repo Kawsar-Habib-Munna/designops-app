@@ -2378,6 +2378,7 @@ html:has(.home-root) {
   border-radius: inherit;
   padding: 1px;
   background: linear-gradient(90deg, #efe6fd 0%, #6200ee 100%);
+  opacity: 0.5;
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -2469,7 +2470,7 @@ html:has(.home-root) {
   max-width: 100%;
   padding: 24px 60px;
   border-radius: 40px 40px 0 0;
-  background: rgba(103, 107, 106, 0.04);
+  background: rgba(103, 107, 106, 0.1);
   box-shadow:
     0 8px 40px rgba(41, 0, 100, 0.12),
     inset 0 4px 12px rgba(254, 255, 255, 0.04);
