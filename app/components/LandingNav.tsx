@@ -8,6 +8,7 @@
 // করা হলো (2026-10-05)।
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { WHATSAPP_URL } from './BookCallButton';
 
@@ -40,6 +41,14 @@ function PhoneIcon() {
 }
 
 export default function LandingNav() {
+  // হোমপেজে এই নেভবারের লিংকগুলো (Service/Project/About/Process/Contact) একই
+  // পেজের #id সেকশনে scrollIntoView করে - কিন্তু /work/[slug]-এর মতো অন্য কোনো
+  // পেজে বসালে সেই id-গুলো এই পেজে থাকেই না, querySelector খালি রিটার্ন করবে
+  // আর লিংকগুলো কিছুই করবে না (চুপচাপ ভাঙা)। তাই হোমপেজ ছাড়া অন্য পেজে থাকলে
+  // in-page স্ক্রলের বদলে সরাসরি হোমপেজে navigate করে (/#section), আগের
+  // work/[slug]-এর হার্ডকোড করা নেভবার যেভাবে করত ঠিক সেভাবেই।
+  const pathname = usePathname();
+  const isHome = pathname === '/';
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState('Home');
   const [scrolled, setScrolled] = useState(false);
@@ -49,6 +58,7 @@ export default function LandingNav() {
   useEffect(() => {
     function onScroll() {
       setScrolled(window.scrollY > 8);
+      if (!isHome) return;
       if (lockRef.current) {
         if (lockTimer.current) clearTimeout(lockTimer.current);
         lockTimer.current = setTimeout(() => { lockRef.current = false; }, 140);
@@ -66,11 +76,15 @@ export default function LandingNav() {
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [isHome]);
 
   function goTo(item: NavItem) {
     if (!item.target) return;
     setOpen(false);
+    if (!isHome) {
+      window.location.href = item.target === '#top' ? '/' : `/${item.target}`;
+      return;
+    }
     setActive(item.label);
     lockRef.current = true;
     if (lockTimer.current) clearTimeout(lockTimer.current);

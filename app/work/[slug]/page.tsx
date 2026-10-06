@@ -5,9 +5,8 @@ import '../work.css';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { driveFullImageUrl, driveEmbedUrl } from '@/lib/driveUpload';
 import LandingFooter from '@/app/components/LandingFooter';
+import LandingNav from '@/app/components/LandingNav';
 import BookCallButton from '@/app/components/BookCallButton';
-
-const WHATSAPP_URL = 'https://wa.me/8801804409235?text=Hi%20FLOW53,%20I%27m%20interested%20in%20your%20UI%2FUX%20design%20services.%20I%27d%20like%20to%20discuss%20my%20project';
 
 // পাবলিক কেস স্টাডি পেজ — /portfolio (app-এর ভেতরের admin পেজ) থেকে টিম যেই
 // কেস স্টাডি publish করে, সেটাই এখানে Overview থেকে Team পর্যন্ত ১৬টা সেকশন
@@ -119,18 +118,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
 
   return (
     <div className="home-root">
-      <nav className="nav scrolled">
-        <div className="container nav-inner">
-          <Link href="/" className="nav-logo"><img src="/Navbar logo.png" alt="FLOW 53" className="nav-logo-img" /></Link>
-          <div className="nav-links">
-            <Link href="/#work" className="nav-link">Work</Link>
-            <Link href="/#process" className="nav-link">Process</Link>
-            <Link href="/#services" className="nav-link">Services</Link>
-            <Link href="/#team" className="nav-link">Team</Link>
-          </div>
-          <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="nav-cta">Book a call</a>
-        </div>
-      </nav>
+      <LandingNav />
 
       <div className="home-body">
       <header className="work-hero">

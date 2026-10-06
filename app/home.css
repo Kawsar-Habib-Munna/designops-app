@@ -1324,7 +1324,9 @@ html:has(.home-root) {
   padding: 8px 40px 8px 8px;
   border-radius: 40px;
   border: 1px solid #e6e4e8;
-  background: rgba(103, 107, 106, 0.04);
+  /* background: rgba(103, 107, 106, 0.04); */
+  background: #f9f9f9;
+
   box-shadow:
     0 8px 40px rgba(41, 0, 100, 0.04),
     inset 0 4px 12px rgba(254, 255, 255, 0.04);
