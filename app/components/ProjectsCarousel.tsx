@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
 // Figma: "Let's Look At What We've built!" (533:505 heading, 565:2813 / 565:2814 the two
 // example slides, 577:3342 the prev/dots/next controls) shows one full-width slide at a
@@ -73,6 +73,7 @@ const PAGE_SIZE = 2;
 
 export default function ProjectsCarousel({ projects }: { projects: ProjectCard[] }) {
   const [page, setPage] = useState(0);
+  const reduceMotion = useReducedMotion();
 
   if (projects.length === 0) return null;
 
@@ -93,8 +94,24 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
   return (
     <div className="projects-carousel">
       <div className="project-stack">
+        {/* এই দুটো whileInView entrance সেকশনে স্ক্রল করে ঢোকার নিজস্ব অ্যানিমেশন -
+            ভেতরের AnimatePresence-চালিত pagination transition (page বদলালে
+            fade/slide) থেকে আলাদা, তাই একে অপরের সাথে কনফ্লিক্ট করে না। প্রথম
+            (front/current) প্রজেক্ট বাঁ দিক থেকে, দ্বিতীয় (back/next, পেছনে উঁকি
+            দেওয়া কার্ড) ডান দিক থেকে আসে। once:false - উপর থেকে স্ক্রল করে নামলে
+            বা নিচ থেকে স্ক্রল করে উপরে উঠলে, দুই দিক থেকেই সেকশনে ঢুকলে অ্যানিমেশন
+            চলবে। Services কার্ডে once:false + বড় VERTICAL offset মিলিয়ে বারবার
+            re-trigger হয়ে "ভাইব্রেট" করেছিল - এখানে offset HORIZONTAL (x), যেটা
+            vertical স্ক্রল-পজিশনের সাথে সরাসরি না লড়াই করায় সেই ফিডব্যাক-লুপ হয়
+            না। */}
         {next && (
-          <div className="project-stack-slot back">
+          <motion.div
+            className="project-stack-slot back"
+            initial={reduceMotion ? undefined : { opacity: 0, x: 260 }}
+            whileInView={reduceMotion ? undefined : { opacity: 1, x: 0 }}
+            viewport={{ once: false, amount: 0.2 }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          >
             <AnimatePresence mode="wait">
               <motion.div
                 key={next.slug}
@@ -106,9 +123,15 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
                 <ProjectMiniCard project={next} reversed={nextIndex % 2 === 1} number={String(nextIndex + 1).padStart(2, '0')} />
               </motion.div>
             </AnimatePresence>
-          </div>
+          </motion.div>
         )}
-        <div className="project-stack-slot front">
+        <motion.div
+          className="project-stack-slot front"
+          initial={reduceMotion ? undefined : { opacity: 0, x: -260 }}
+          whileInView={reduceMotion ? undefined : { opacity: 1, x: 0 }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={current.slug}
@@ -120,7 +143,7 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
               <ProjectMiniCard project={current} reversed={index % 2 === 1} number={String(index + 1).padStart(2, '0')} />
             </motion.div>
           </AnimatePresence>
-        </div>
+        </motion.div>
       </div>
 
       {totalPages > 1 && (

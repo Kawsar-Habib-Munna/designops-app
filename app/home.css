@@ -3240,6 +3240,17 @@ html:has(.home-root) {
   box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.home-root .testimonials-pager-btn:hover {
+  background: rgba(103, 107, 106, 0.1);
+  transform: translateY(-1px);
+}
+.home-root .testimonials-pager-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
 }
 .home-root .testimonials-pager-btn img {
   display: block;
@@ -3257,8 +3268,11 @@ html:has(.home-root) {
   justify-content: center;
   width: 32px;
   height: 32px;
+  padding: 0;
   border-radius: 16px;
   border: 2px solid transparent;
+  background: none;
+  cursor: pointer;
   transition: border-color 0.2s ease;
 }
 .home-root .testimonials-dot::before {

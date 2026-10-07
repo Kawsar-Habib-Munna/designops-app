@@ -130,6 +130,17 @@ type CaseStudy = {
 type CSSection = { id: string; case_study_id: string; section_key: SectionKey; content: string | null };
 type CSMedia = { id: string; case_study_id: string; section_key: SectionKey; media_type: MediaType; url: string; caption: string | null; order_index: number };
 
+type Testimonial = {
+  id: string;
+  name: string;
+  role: string;
+  quote: string;
+  rating: string;
+  avatar_url: string | null;
+  order_index: number;
+  published: boolean;
+};
+
 function slugify(text: string) {
   return text
     .toLowerCase()
@@ -147,16 +158,18 @@ function linkLabel(url: string) {
 }
 
 async function fetchAll() {
-  const [csRes, secRes, medRes] = await Promise.all([
+  const [csRes, secRes, medRes, testRes] = await Promise.all([
     supabase.from('case_studies').select('id, slug, title, client_name, category, summary, tags, cover_image, figma_prototype_url, order_index, published').order('order_index'),
     supabase.from('case_study_sections').select('id, case_study_id, section_key, content'),
     supabase.from('case_study_media').select('id, case_study_id, section_key, media_type, url, caption, order_index').order('order_index'),
+    supabase.from('testimonials').select('id, name, role, quote, rating, avatar_url, order_index, published').order('order_index'),
   ]);
   return {
-    errorMessage: csRes.error?.message ?? secRes.error?.message ?? medRes.error?.message ?? null,
+    errorMessage: csRes.error?.message ?? secRes.error?.message ?? medRes.error?.message ?? testRes.error?.message ?? null,
     caseStudies: (csRes.data as CaseStudy[]) ?? [],
     sections: (secRes.data as CSSection[]) ?? [],
     media: (medRes.data as CSMedia[]) ?? [],
+    testimonials: (testRes.data as Testimonial[]) ?? [],
   };
 }
 
@@ -201,12 +214,28 @@ export default function PortfolioPage() {
   const [uploadInfo, setUploadInfo] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
 
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [showTestimonialModal, setShowTestimonialModal] = useState(false);
+  const [editingTestimonialId, setEditingTestimonialId] = useState<string | null>(null);
+  const [tName, setTName] = useState('');
+  const [tRole, setTRole] = useState('');
+  const [tQuote, setTQuote] = useState('');
+  const [tRating, setTRating] = useState('5.0');
+  const [tAvatar, setTAvatar] = useState<string | null>(null);
+  const [tPublished, setTPublished] = useState(false);
+  const [savingTestimonial, setSavingTestimonial] = useState(false);
+  const [testimonialError, setTestimonialError] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarProgress, setAvatarProgress] = useState(0);
+  const [deletingTestimonial, setDeletingTestimonial] = useState(false);
+
   async function reload() {
     const result = await fetchAll();
     setError(result.errorMessage);
     setCaseStudies(result.caseStudies);
     setSections(result.sections);
     setMedia(result.media);
+    setTestimonials(result.testimonials);
   }
 
   useEffect(() => {
@@ -220,6 +249,7 @@ export default function PortfolioPage() {
       setCaseStudies(result.caseStudies);
       setSections(result.sections);
       setMedia(result.media);
+      setTestimonials(result.testimonials);
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);
       setLoading(false);
     }
@@ -531,11 +561,130 @@ export default function PortfolioPage() {
     if (editingId === id) closeEditor();
   }
 
+  function openTestimonialCreate() {
+    setEditingTestimonialId(null);
+    setTName('');
+    setTRole('');
+    setTQuote('');
+    setTRating('5.0');
+    setTAvatar(null);
+    setTPublished(false);
+    setTestimonialError(null);
+    setShowTestimonialModal(true);
+  }
+
+  function openTestimonialEditor(t: Testimonial) {
+    setEditingTestimonialId(t.id);
+    setTName(t.name);
+    setTRole(t.role);
+    setTQuote(t.quote);
+    setTRating(t.rating);
+    setTAvatar(t.avatar_url);
+    setTPublished(t.published);
+    setTestimonialError(null);
+    setShowTestimonialModal(true);
+  }
+
+  function closeTestimonialModal() {
+    setShowTestimonialModal(false);
+  }
+
+  async function handleSaveTestimonial(e: FormEvent) {
+    e.preventDefault();
+    setSavingTestimonial(true);
+    setTestimonialError(null);
+
+    if (editingTestimonialId) {
+      const { data, error: err } = await supabase
+        .from('testimonials')
+        .update({ name: tName.trim(), role: tRole.trim(), quote: tQuote.trim(), rating: tRating.trim() || '5.0', published: tPublished })
+        .eq('id', editingTestimonialId)
+        .select('id, name, role, quote, rating, avatar_url, order_index, published')
+        .single();
+      setSavingTestimonial(false);
+      if (err || !data) {
+        setTestimonialError(err?.message ?? 'সেভ করা যায়নি।');
+        return;
+      }
+      setTestimonials((prev) => prev.map((t) => (t.id === editingTestimonialId ? (data as Testimonial) : t)));
+      setShowTestimonialModal(false);
+    } else {
+      const maxOrder = testimonials.reduce((m, t) => Math.max(m, t.order_index), 0);
+      const { data, error: err } = await supabase
+        .from('testimonials')
+        .insert({ name: tName.trim(), role: tRole.trim(), quote: tQuote.trim(), rating: tRating.trim() || '5.0', avatar_url: tAvatar, order_index: maxOrder + 1, published: tPublished, created_by: profile?.id ?? null })
+        .select('id, name, role, quote, rating, avatar_url, order_index, published')
+        .single();
+      setSavingTestimonial(false);
+      if (err || !data) {
+        setTestimonialError(err?.message ?? 'টেস্টিমোনিয়াল তৈরি করা যায়নি।');
+        return;
+      }
+      setTestimonials((prev) => [...prev, data as Testimonial]);
+      setShowTestimonialModal(false);
+    }
+  }
+
+  async function handleAvatarFile(file: File) {
+    setAvatarUploading(true);
+    setAvatarProgress(0);
+    setTestimonialError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('সেশন পাওয়া যায়নি — আবার লগইন করুন।');
+      const result = await uploadFileToDrive(file, session.access_token, setAvatarProgress);
+      setTAvatar(result.webViewLink);
+      if (editingTestimonialId) {
+        const { data, error: err } = await supabase
+          .from('testimonials')
+          .update({ avatar_url: result.webViewLink })
+          .eq('id', editingTestimonialId)
+          .select('id, name, role, quote, rating, avatar_url, order_index, published')
+          .single();
+        if (err || !data) throw new Error(err?.message ?? 'ছবি সেভ করা যায়নি।');
+        setTestimonials((prev) => prev.map((t) => (t.id === editingTestimonialId ? (data as Testimonial) : t)));
+      }
+    } catch (err) {
+      setTestimonialError(err instanceof Error ? err.message : 'আপলোড ব্যর্থ হয়েছে।');
+    } finally {
+      setAvatarUploading(false);
+      setAvatarProgress(0);
+    }
+  }
+
+  async function handleMoveTestimonial(id: string, dir: -1 | 1) {
+    const sorted = [...testimonials].sort((a, b) => a.order_index - b.order_index);
+    const idx = sorted.findIndex((t) => t.id === id);
+    const swapIdx = idx + dir;
+    if (idx < 0 || swapIdx < 0 || swapIdx >= sorted.length) return;
+    const a = sorted[idx];
+    const b = sorted[swapIdx];
+    setTestimonials((prev) => prev.map((t) => (t.id === a.id ? { ...t, order_index: b.order_index } : t.id === b.id ? { ...t, order_index: a.order_index } : t)));
+    await Promise.all([
+      supabase.from('testimonials').update({ order_index: b.order_index }).eq('id', a.id),
+      supabase.from('testimonials').update({ order_index: a.order_index }).eq('id', b.id),
+    ]);
+  }
+
+  async function handleDeleteTestimonial(id: string, name: string) {
+    if (!window.confirm(`"${name}"-এর টেস্টিমোনিয়ালটা মুছে ফেলতে চান? এই অ্যাকশন ফেরানো যাবে না।`)) return;
+    setDeletingTestimonial(true);
+    const { error: err } = await supabase.from('testimonials').delete().eq('id', id);
+    setDeletingTestimonial(false);
+    if (err) {
+      setTestimonialError(err.message);
+      return;
+    }
+    setTestimonials((prev) => prev.filter((t) => t.id !== id));
+    if (editingTestimonialId === id) setShowTestimonialModal(false);
+  }
+
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
 
   const sortedCaseStudies = [...caseStudies].sort((a, b) => a.order_index - b.order_index);
   const editing = caseStudies.find((c) => c.id === editingId) ?? null;
+  const sortedTestimonials = [...testimonials].sort((a, b) => a.order_index - b.order_index);
 
   return (
     <div className={`portfolio-root${dark ? ' dark' : ''}`}>
@@ -642,6 +791,45 @@ export default function PortfolioPage() {
                             <button className="btn btn-ghost btn-sm" onClick={() => openEditor(cs)}><Icon name="edit" size={13} /> এডিট</button>
                             {cs.published && <a className="btn btn-ghost btn-sm" href={`/work/${cs.slug}`} target="_blank" rel="noopener noreferrer"><Icon name="globe" size={13} /> দেখুন</a>}
                             <button className="btn btn-danger btn-sm" onClick={() => handleDeleteCaseStudy(cs.id, cs.title)}><Icon name="trash" size={13} /></button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            <section className="block">
+              <div className="section-title-row">
+                <span className="section-title">সব টেস্টিমোনিয়াল</span>
+                <button className="btn btn-accent btn-sm" onClick={openTestimonialCreate}><Icon name="plus" size={13} /> নতুন টেস্টিমোনিয়াল</button>
+              </div>
+              {loading ? (
+                <p style={{ fontSize: 13, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
+              ) : sortedTestimonials.length === 0 ? (
+                <div className="panel"><div className="empty-state"><div className="empty-icon"><Icon name="message" /></div><div className="empty-title">এখনো কোনো টেস্টিমোনিয়াল নেই</div><div className="empty-sub">&ldquo;নতুন টেস্টিমোনিয়াল&rdquo; চেপে প্রথমটা তৈরি করুন।</div></div></div>
+              ) : (
+                <div className="cs-grid">
+                  {sortedTestimonials.map((t, i) => {
+                    const avatar = t.avatar_url ? driveThumbnailUrl(t.avatar_url) : null;
+                    return (
+                      <div className="cs-card" key={t.id}>
+                        <div className="cs-cover" style={avatar ? { backgroundImage: `url(${avatar})` } : undefined}>
+                          {!avatar && <Icon name="image" size={28} />}
+                          <div className="cs-order-btns">
+                            <button onClick={() => handleMoveTestimonial(t.id, -1)} disabled={i === 0} aria-label="উপরে সরান"><Icon name="up" size={12} /></button>
+                            <button onClick={() => handleMoveTestimonial(t.id, 1)} disabled={i === sortedTestimonials.length - 1} aria-label="নিচে সরান"><Icon name="down" size={12} /></button>
+                          </div>
+                          <span className={`cs-badge ${t.published ? 'pub' : 'draft'}`}>{t.published ? 'Published' : 'Draft'}</span>
+                        </div>
+                        <div className="cs-body">
+                          <div className="cs-title">{t.name}</div>
+                          <span className="cs-tag">{t.role}</span>
+                          <div className="cs-summary">{t.quote}</div>
+                          <div className="cs-actions">
+                            <button className="btn btn-ghost btn-sm" onClick={() => openTestimonialEditor(t)}><Icon name="edit" size={13} /> এডিট</button>
+                            <button className="btn btn-danger btn-sm" onClick={() => handleDeleteTestimonial(t.id, t.name)}><Icon name="trash" size={13} /></button>
                           </div>
                         </div>
                       </div>
@@ -835,6 +1023,66 @@ export default function PortfolioPage() {
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {showTestimonialModal && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) closeTestimonialModal(); }}>
+          <div className="modal-box">
+            <div className="modal-head-row">
+              <span className="modal-title">{editingTestimonialId ? 'টেস্টিমোনিয়াল এডিট করুন' : 'নতুন টেস্টিমোনিয়াল'}</span>
+              <button className="modal-close-btn" onClick={closeTestimonialModal}><Icon name="close" size={14} /></button>
+            </div>
+
+            <form onSubmit={handleSaveTestimonial}>
+              <div className="cover-row">
+                <div className="cover-preview" style={tAvatar ? { backgroundImage: `url(${driveThumbnailUrl(tAvatar)})` } : undefined}>
+                  {!tAvatar && <Icon name="image" size={22} />}
+                </div>
+                <div className="cover-actions">
+                  <div className="cover-actions-row">
+                    <input id="avatar-file-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAvatarFile(f); }} />
+                    <button type="button" className="btn btn-ghost btn-sm" disabled={avatarUploading} onClick={() => document.getElementById('avatar-file-input')?.click()}>{avatarUploading ? `আপলোড হচ্ছে ${avatarProgress}%` : 'ছবি আপলোড'}</button>
+                  </div>
+                  <span className="field-hint" style={{ margin: 0 }}>কার্ডে ছোট গোল অ্যাভাটার হিসেবে দেখাবে</span>
+                </div>
+              </div>
+
+              <div className="field-row-2" style={{ marginBottom: 12 }}>
+                <div>
+                  <label className="field-label">নাম</label>
+                  <input className="field-input" style={{ marginBottom: 0 }} type="text" value={tName} onChange={(e) => setTName(e.target.value)} required />
+                </div>
+                <div>
+                  <label className="field-label">পদবি / প্রতিষ্ঠান</label>
+                  <input className="field-input" style={{ marginBottom: 0 }} type="text" value={tRole} onChange={(e) => setTRole(e.target.value)} placeholder="CEO, Company Name" required />
+                </div>
+              </div>
+
+              <label className="field-label">মন্তব্য (Quote)</label>
+              <textarea className="field-input" value={tQuote} onChange={(e) => setTQuote(e.target.value)} rows={3} required />
+
+              <label className="field-label">রেটিং</label>
+              <input className="field-input" type="text" value={tRating} onChange={(e) => setTRating(e.target.value)} placeholder="5.0" />
+
+              <label className="field-check-row">
+                <input type="checkbox" checked={tPublished} onChange={(e) => setTPublished(e.target.checked)} />
+                পাবলিশ করুন (চালু থাকলে এটা পাবলিক ল্যান্ডিং পেজে দেখা যাবে)
+              </label>
+
+              {testimonialError && <p style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 10 }}>{testimonialError}</p>}
+
+              <div className="modal-foot">
+                {editingTestimonialId ? (
+                  <button type="button" className="btn btn-danger btn-sm" disabled={deletingTestimonial} onClick={() => handleDeleteTestimonial(editingTestimonialId, tName)}><Icon name="trash" size={13} /> ডিলিট করুন</button>
+                ) : <span />}
+                <div className="modal-foot-right">
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={closeTestimonialModal}>বাতিল</button>
+                  <button type="submit" className="btn btn-accent btn-sm" disabled={savingTestimonial}>{savingTestimonial ? 'সেভ হচ্ছে…' : 'সেভ করুন'}</button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}

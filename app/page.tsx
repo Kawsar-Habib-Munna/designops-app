@@ -12,6 +12,8 @@ import ProcessStory from "@/app/components/ProcessStory";
 import FaqAccordion from "@/app/components/FaqAccordion";
 import ContactForm from "@/app/components/ContactForm";
 import HeroTitleTyped from "@/app/components/HeroTitleTyped";
+import BouncyStat from "@/app/components/BouncyStat";
+import TestimonialsGrid from "@/app/components/TestimonialsGrid";
 
 // পাবলিক ল্যান্ডিং পেজ — লগইন ছাড়াই সবাই দেখে, তাই profiles টেবিলের RLS
 // (শুধু authenticated ইউজার read করতে পারে) এই পেজের জন্য প্রযোজ্য না। এটা
@@ -51,16 +53,6 @@ const STATS_BOTTOM = [
   { label: "Countries Reached", value: "04+" },
   { label: "Achievements", value: "03+" },
 ];
-
-function StatCircle({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="stat-circle">
-      <span className="stat-label">{label}</span>
-      <span className="stat-value">{value}</span>
-      <img src="/stats/arrow.svg" alt="" className="stat-arrow" />
-    </div>
-  );
-}
 
 // Work সেকশনের প্রজেক্টগুলো আগে কোডে হার্ডকোড করা placeholder ছিল, এখন
 // app-এর ভেতরের /portfolio পেজ থেকে টিম যেই কেস স্টাডি publish করে সেটাই
@@ -139,52 +131,29 @@ const WHY_INDUSTRIES = [
   "Logistics",
 ];
 
-// The 4 Figma testimonial cards all carry the identical placeholder name/role/quote -
-// only the avatar photo differs - matched here literally rather than inventing real copy.
-// top/left/width are % of the 1280x548 grid box; the staggered (brick, not aligned-grid)
-// layout is exactly what Figma has: row 1 spans columns A+B, row 2 spans columns B+C.
-const TESTIMONIALS = [
-  {
-    avatar: "/testimonials/avatar-1.webp",
-    name: "Adam Alane Walker",
-    role: "Honorable Client",
-    quote:
-      "Fast trades, clean interface, and secure transactions. Cryzen makes crypto investing simple and stress-free.",
-    rating: "4.4",
-    top: 0.18,
-    left: 0,
-  },
-  {
-    avatar: "/testimonials/avatar-2.webp",
-    name: "Adam Alane Walker",
-    role: "Honorable Client",
-    quote:
-      "Fast trades, clean interface, and secure transactions. Cryzen makes crypto investing simple and stress-free.",
-    rating: "4.4",
-    top: 0.18,
-    left: 33.36,
-  },
-  {
-    avatar: "/testimonials/avatar-3.webp",
-    name: "Adam Alane Walker",
-    role: "Honorable Client",
-    quote:
-      "Fast trades, clean interface, and secure transactions. Cryzen makes crypto investing simple and stress-free.",
-    rating: "4.4",
-    top: 50.18,
-    left: 33.36,
-  },
-  {
-    avatar: "/testimonials/avatar-4.webp",
-    name: "Adam Alane Walker",
-    role: "Honorable Client",
-    quote:
-      "Fast trades, clean interface, and secure transactions. Cryzen makes crypto investing simple and stress-free.",
-    rating: "4.4",
-    top: 50.18,
-    left: 66.72,
-  },
-];
+// টেস্টিমোনিয়াল আগে এই ফাইলে ৪টা হার্ডকোড placeholder ছিল - এখন case_studies-এর
+// মতোই /portfolio অ্যাডমিন পেজ থেকে ম্যানেজ করা হয় (TestimonialsGrid কম্পোনেন্ট)।
+type TestimonialCard = {
+  name: string;
+  role: string;
+  quote: string;
+  rating: string;
+  avatar_url: string | null;
+};
+
+async function fetchTestimonials(): Promise<TestimonialCard[]> {
+  try {
+    const admin = getSupabaseAdmin();
+    const { data } = await admin
+      .from("testimonials")
+      .select("name, role, quote, rating, avatar_url")
+      .eq("published", true)
+      .order("order_index");
+    return (data as TestimonialCard[]) ?? [];
+  } catch {
+    return [];
+  }
+}
 
 type TeamMember = {
   id: string;
@@ -214,9 +183,10 @@ async function fetchTeam(): Promise<TeamMember[]> {
 }
 
 export default async function Home() {
-  const [team, caseStudies] = await Promise.all([
+  const [team, caseStudies, testimonials] = await Promise.all([
     fetchTeam(),
     fetchCaseStudies(),
+    fetchTestimonials(),
   ]);
 
   return (
@@ -320,7 +290,7 @@ export default async function Home() {
 
             <div className="stats-body">
               <div className="stats-top">
-                <StatCircle {...STATS_TOP[0]} />
+                <BouncyStat {...STATS_TOP[0]} index={0} />
                 <div className="stats-heading">
                   <h2 className="stats-title">Numbers That Speak!</h2>
                   <p className="stats-desc">
@@ -329,11 +299,11 @@ export default async function Home() {
                     and learning along the way.
                   </p>
                 </div>
-                <StatCircle {...STATS_TOP[1]} />
+                <BouncyStat {...STATS_TOP[1]} index={1} />
               </div>
               <div className="stats-bottom">
-                {STATS_BOTTOM.map((s) => (
-                  <StatCircle key={s.label} {...s} />
+                {STATS_BOTTOM.map((s, i) => (
+                  <BouncyStat key={s.label} {...s} index={i + 2} />
                 ))}
               </div>
             </div>
@@ -578,78 +548,38 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="section testimonials-section" id="reviews">
-          <div className="testimonials-inner reveal">
-            <div className="testimonials-heading">
-              <span className="testimonials-eyebrow">
-                <img src="/stats/line.svg" alt="" />
-                <span>TESTIMONIALS</span>
-              </span>
-              <div className="testimonials-heading-copy">
-                <h2 className="testimonials-title">
-                  Don&rsquo;t Just Take Our Word For It!
-                </h2>
-                <p className="testimonials-lead">
-                  Hear from the people we&rsquo;ve worked with and discover how
-                  thoughtful collaboration, clear communication, and purposeful
-                  design shaped their experience with us.
-                </p>
-              </div>
-            </div>
-
-            <div className="testimonials-grid">
-              <img
-                src="/testimonials/grid-lines.svg"
-                alt=""
-                className="testimonials-grid-lines"
-                aria-hidden="true"
-              />
-              {TESTIMONIALS.map((t, i) => (
-                <div
-                  className="testimonial-card"
-                  key={i}
-                  style={{ top: `${t.top}%`, left: `${t.left}%` }}
-                >
-                  <div className="testimonial-top">
-                    <img src={t.avatar} alt="" className="testimonial-avatar" />
-                    <div className="testimonial-who">
-                      <p className="testimonial-name">{t.name}</p>
-                      <p className="testimonial-role">{t.role}</p>
-                    </div>
-                  </div>
-                  <p className="testimonial-quote">{t.quote}</p>
-                  <div className="testimonial-foot">
-                    <span className="testimonial-rating">
-                      {t.rating}
-                      <img src="/testimonials/star-icon.svg" alt="" />
-                    </span>
-                    <img
-                      src="/testimonials/quote-icon.svg"
-                      alt=""
-                      className="testimonial-quote-mark"
-                    />
-                  </div>
+        {testimonials.length > 0 && (
+          <section className="section testimonials-section" id="reviews">
+            <div className="testimonials-inner reveal">
+              <div className="testimonials-heading">
+                <span className="testimonials-eyebrow">
+                  <img src="/stats/line.svg" alt="" />
+                  <span>TESTIMONIALS</span>
+                </span>
+                <div className="testimonials-heading-copy">
+                  <h2 className="testimonials-title">
+                    Don&rsquo;t Just Take Our Word For It!
+                  </h2>
+                  <p className="testimonials-lead">
+                    Hear from the people we&rsquo;ve worked with and discover how
+                    thoughtful collaboration, clear communication, and purposeful
+                    design shaped their experience with us.
+                  </p>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            <div className="testimonials-pager" aria-hidden="true">
-              <span className="testimonials-pager-btn">
-                <img src="/testimonials/arrow-left.svg" alt="" />
-              </span>
-              <span className="testimonials-dots">
-                <span className="testimonials-dot"></span>
-                <span className="testimonials-dot"></span>
-                <span className="testimonials-dot active"></span>
-                <span className="testimonials-dot"></span>
-                <span className="testimonials-dot"></span>
-              </span>
-              <span className="testimonials-pager-btn">
-                <img src="/testimonials/arrow-right.svg" alt="" />
-              </span>
+              <TestimonialsGrid
+                testimonials={testimonials.map((t) => ({
+                  name: t.name,
+                  role: t.role,
+                  quote: t.quote,
+                  rating: t.rating,
+                  avatar: t.avatar_url ? driveThumbnailUrl(t.avatar_url) : null,
+                }))}
+              />
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         <section className="section faq-section">
           <div className="faq-inner reveal">
@@ -696,7 +626,7 @@ export default async function Home() {
               <div className="faq-contact-cards">
                 <a
                   className="faq-contact-card"
-                  href="https://wa.me/8801979291001"
+                  href="https://wa.me/8801996925819"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -722,17 +652,17 @@ export default async function Home() {
                     </svg>
                   </span>
                   <span className="faq-contact-lines">
-                    <span>+088 01979 291 001</span>
-                    <span>+088 01979 291 001</span>
+                    <span>+88 01996925819</span>
+                    <span>+88 01804409235</span>
                   </span>
                 </a>
-                <a className="faq-contact-card" href="mailto:flow53@gmail.com">
+                <a className="faq-contact-card" href="mailto:info@flow53design.com">
                   <span className="faq-contact-icon">
                     <img src="/faq/icon-email.svg" alt="" />
                   </span>
                   <span className="faq-contact-lines">
-                    <span>flow53@gmail.com</span>
-                    <span>oparthibtuhin@gmail.com</span>
+                    <span>info@flow53design.com</span>
+                    <span>flow53design@gmail.com</span>
                   </span>
                 </a>
                 <div className="faq-contact-card faq-contact-card-wide">
@@ -761,8 +691,8 @@ export default async function Home() {
                     </svg>
                   </span>
                   <span className="faq-contact-lines">
-                    <span>5/A, Dhaka, Bangladesh</span>
-                    <span>5/A, Dhaka, United Kingdom</span>
+                    <span>Dhaka</span>
+                    <span>Bangladesh</span>
                   </span>
                 </div>
               </div>

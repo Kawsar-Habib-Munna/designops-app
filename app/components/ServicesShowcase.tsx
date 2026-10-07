@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
 // Figma: Flow 53 Web · "What Can We Build Together?" (429:2152 heading, 496:3499 list,
 // 500:3595…3689 the five numbered cards). Figma lays the 5 cards out stacked down the
@@ -57,10 +57,26 @@ const SERVICES: Service[] = [
 export default function ServicesShowcase() {
   const [active, setActive] = useState(0);
   const service = SERVICES[active];
+  const reduceMotion = useReducedMotion();
 
   return (
     <div className="services-tabs">
-      <div className="services-tabs-card">
+      {/* এই কার্ডটা সেকশনে ঢোকার সময় উপর থেকে নেমে আসে, smooth ease (কোনো
+          bounce/overshoot ছাড়া)। এটা ভেতরের AnimatePresence-চালিত tab-swap
+          অ্যানিমেশন থেকে আলাদা - সেটা অক্ষত রাখা হয়েছে, বাইরের এই মোশন শুধু পুরো
+          কার্ডটার নিজের স্ক্রল-এন্ট্রান্স। আগে once:false + বড় offset (-400) +
+          কম amount (0.1) মিলিয়ে কার্ডটা নিজেই নড়তে নড়তে বারবার 0.1 threshold
+          পার হয়ে যাচ্ছিল, ফলে অ্যানিমেশন মাঝপথে বারবার re-trigger হয়ে "ভাইব্রেট"
+          করছিল মনে হতো। once:true দিয়ে এই ফিডব্যাক-লুপ বন্ধ করা হলো (এখন শুধু
+          প্রথমবার স্ক্রল করে এলেই চলে, বারবার না - BouncyStat-এর ছোট circle-গুলোর
+          জন্য once:false নিরাপদ ছিল কারণ offset অনেক কম)। */}
+      <motion.div
+        className="services-tabs-card"
+        initial={reduceMotion ? undefined : { opacity: 0, y: -400 }}
+        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={active}
@@ -91,7 +107,7 @@ export default function ServicesShowcase() {
             </div>
           </motion.div>
         </AnimatePresence>
-      </div>
+      </motion.div>
 
       <div className="services-tabs-list">
         {SERVICES.map((s, i) => {

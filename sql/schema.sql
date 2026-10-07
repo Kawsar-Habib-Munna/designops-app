@@ -2215,3 +2215,32 @@ create policy "admin can delete clients" on clients for delete using (public.is_
 -- আজকের তারিখে ব্যাকফিল হয়ে যাবে।
 alter table tasks add column if not exists assigned_date date not null default current_date;
 create index if not exists idx_tasks_assigned_date on tasks(assigned_date);
+
+-- পাবলিক ল্যান্ডিং পেজের Testimonials সেকশন আগে ৪টা হার্ডকোড placeholder ছিল —
+-- case_studies-এর মতোই এখন /portfolio অ্যাডমিন পেজ থেকে টিম নিজেই add/edit/
+-- delete/reorder/publish করতে পারে। পাবলিক-রিড পলিসি লাগে না — হোমপেজ
+-- getSupabaseAdmin() (service role) দিয়ে fetch করে, case_studies-এর মতোই।
+create table if not exists testimonials (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  role text not null,
+  quote text not null,
+  rating text not null default '5.0',
+  avatar_url text,
+  order_index int default 0,
+  published boolean default false,
+  created_by uuid references profiles(id),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+alter table testimonials enable row level security;
+drop policy if exists "team can read testimonials" on testimonials;
+create policy "team can read testimonials" on testimonials for select using (public.is_team_member());
+drop policy if exists "team can write testimonials" on testimonials;
+create policy "team can write testimonials" on testimonials for insert with check (public.is_team_member());
+drop policy if exists "team can update testimonials" on testimonials;
+create policy "team can update testimonials" on testimonials for update using (public.is_team_member());
+drop policy if exists "team can delete testimonials" on testimonials;
+create policy "team can delete testimonials" on testimonials for delete using (public.is_team_member());
+drop trigger if exists set_testimonials_updated_at on testimonials;
+create trigger set_testimonials_updated_at before update on testimonials for each row execute procedure public.set_updated_at();

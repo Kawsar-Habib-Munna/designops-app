@@ -12,9 +12,9 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-const WHATSAPP_CALL_URL = 'https://wa.me/8801979291001';
-const CONTACT_EMAIL = 'flow53@gmail.com';
-const CONTACT_ADDRESS = '5/A, Dhaka, Bangladesh';
+const WHATSAPP_CALL_URL = 'https://wa.me/8801996925819';
+const CONTACT_EMAIL = 'info@flow53design.com';
+const CONTACT_ADDRESS = 'Dhaka, Bangladesh';
 
 const QUICK_LINKS = [
   { label: 'Project', href: '/#work' },
@@ -166,7 +166,7 @@ export default function LandingFooter() {
                   <span className="footer-contact-icon">
                     <img src="/footer/icon-call.svg" alt="" />
                   </span>
-                  <span className="footer-contact-text">+088 01979 291 001</span>
+                  <span className="footer-contact-text">+88 01996925819</span>
                 </a>
                 <a href={`mailto:${CONTACT_EMAIL}`} className="footer-contact-row">
                   <span className="footer-contact-icon">

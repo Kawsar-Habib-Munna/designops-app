@@ -2,21 +2,36 @@
 
 import { useState } from 'react';
 
-// FAQ items ও কনটেন্ট Figma ফাইলে যেভাবে আছে ঠিক সেভাবে (node 931:3646) - প্রথমটা
-// ডিফল্ট খোলা, বাকিগুলো বন্ধ। এখানে useState দিয়ে টগল করা - Figma-তে শুধু প্রথম
-// আইটেমের "খোলা" ভিজ্যুয়াল স্টেট দেখানো ছিল, বাকি ৫টার answer টেক্সট ফাইলে নেই,
-// তাই সেগুলো একবার খোলা হলে শুধু প্রশ্নটাই দেখা যায় (কোনো ভুল answer বানিয়ে বসানো হয়নি)।
+// FAQ প্রশ্নগুলো Figma ফাইলে যেভাবে আছে ঠিক সেভাবে (node 931:3646) - প্রথমটা
+// ডিফল্ট খোলা, বাকিগুলো বন্ধ। Figma-তে শুধু প্রথম প্রশ্নের answer টেক্সট ছিল;
+// বাকি ৫টার answer সাইটের বিদ্যমান কনটেন্ট (Services/Process সেকশন ইত্যাদি)-এর
+// সাথে মিলিয়ে লেখা হয়েছে।
 
 const FAQS = [
   {
     q: 'What services does Flow 53 offer?',
     a: 'We offer UI/UX Design, Web App Design, Web Development, Brand Identity Design, and SEO & Digital Growth to help businesses create meaningful digital experiences.',
   },
-  { q: 'What types of projects do you work on?', a: null },
-  { q: 'Can you redesign an existing product?', a: null },
-  { q: 'How does your design process work?', a: null },
-  { q: 'How long does a project usually take?', a: null },
-  { q: 'How can I start a project with Flow 53?', a: null },
+  {
+    q: 'What types of projects do you work on?',
+    a: 'We work on web apps, mobile apps, SaaS platforms, e-commerce stores, dashboards, and brand identity projects — for startups building their first product as well as established businesses redesigning an existing one.',
+  },
+  {
+    q: 'Can you redesign an existing product?',
+    a: 'Yes. We audit your current product, identify where users or business goals are falling short, and redesign it with the same care as a brand-new build — without losing what already works.',
+  },
+  {
+    q: 'How does your design process work?',
+    a: 'We follow five steps: Discover (understand the business, users and problem), Define (find opportunities and set direction), Design (flows, wireframes and high-fidelity interfaces), Develop (turn designs into a working product), and Launch (test, refine and ship with confidence).',
+  },
+  {
+    q: 'How long does a project usually take?',
+    a: 'It depends on scope — a focused redesign can take a few weeks, while a full product build usually takes a couple of months. We always share a clear timeline before work begins, once we understand your project.',
+  },
+  {
+    q: 'How can I start a project with Flow 53?',
+    a: 'Just hit "Start A Project" or "Book A Call" on this page. We’ll set up a quick call to understand your goals, then follow up with a proposal and timeline.',
+  },
 ];
 
 export default function FaqAccordion() {
