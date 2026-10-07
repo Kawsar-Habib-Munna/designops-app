@@ -143,7 +143,6 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
         <div className="container">
           {embedUrl && (
             <section className="work-section">
-              <div className="work-section-title">Live Prototype</div>
               <div className="work-proto-frame"><iframe src={embedUrl} allowFullScreen title={`${caseStudy.title} prototype`} /></div>
               <a className="work-proto-link" href={caseStudy.figma_prototype_url ?? '#'} target="_blank" rel="noopener noreferrer">Open in Figma ↗</a>
             </section>
@@ -154,7 +153,6 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
             const items = (mediaByKey.get(sec.key) ?? []).sort((a, b) => a.order_index - b.order_index);
             return (
               <section className="work-section" key={sec.key}>
-                <div className="work-section-title">{sec.label}</div>
                 {content && content.trim() && <p className="work-section-text">{content}</p>}
                 {items.length > 0 && (
                   <div className="work-gallery">
