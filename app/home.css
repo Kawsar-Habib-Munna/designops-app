@@ -326,18 +326,25 @@ html:has(.home-root) {
     overflow: hidden;
     border: 1px solid transparent;
     border-radius: 14px;
-    background: rgba(14, 10, 24, 0.92);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    background: transparent;
     transition:
       max-height 0.25s ease,
       padding 0.25s ease,
-      border-color 0.25s ease;
+      border-color 0.25s ease,
+      background-color 0.25s ease;
   }
+  /* closed অবস্থায় (max-height:0) background/backdrop-filter একদমই লাগানো হয় না -
+     আগে এই দুটো .open-নির্বিশেষে সবসময় বসানো ছিল, যেটার near-black রং
+     (rgba(14,10,24,.92)) 0-height প্যানেলের edge-এ কিছু ব্রাউজারে 1-2px চিকন
+     লাইন হিসেবে bleed করছিল (ছোট স্ক্রিনে navbar-এর ঠিক নিচে) - .open ক্লাস ছাড়া
+     রং/ব্লার আর কখনোই সেট হয় না বলে এখন bleed করার মতো কোনো background-ই থাকে না। */
   .home-root .nav-mobile-panel.open {
     max-height: 420px;
     padding: 8px;
     border-color: rgba(254, 255, 255, 0.1);
+    background: rgba(14, 10, 24, 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
   }
   .home-root .nav-mobile-link {
     font-size: 16px;
@@ -368,7 +375,7 @@ html:has(.home-root) {
     margin-top: 6px;
     text-align: center;
   }
-  .home-root .nav.on-light .nav-mobile-panel {
+  .home-root .nav.on-light .nav-mobile-panel.open {
     background: rgba(255, 255, 255, 0.97);
     border-color: #e6e4e8;
   }
