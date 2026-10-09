@@ -20,18 +20,13 @@ export type ProjectCard = {
   cover: string | null;
 };
 
-// কার্ডের ছোট জায়গায় summary যেন লম্বা হয়ে কার্ড ভেঙে না ফেলে বা title/tags-এর
-// সাথে ধাক্কা না খায় - ৪০ অক্ষরের বেশি হলে কেটে "..." বসানো হয়।
-const SUMMARY_PREVIEW_CHARS = 40;
-
 function ProjectMiniCard({ project, reversed, number }: { project: ProjectCard; reversed: boolean; number: string }) {
   // Guards a real data-entry slip (a project's Summary field got set to its own slug,
   // e.g. "crypto-trading-web-app-ui-ux-design-case-study-concept") rather than a real
-  // description - render nothing instead of that raw slug text.
-  const rawSummary = project.summary && project.summary.trim() !== project.slug ? project.summary : null;
-  const summary = rawSummary && rawSummary.length > SUMMARY_PREVIEW_CHARS
-    ? `${rawSummary.slice(0, SUMMARY_PREVIEW_CHARS).trimEnd()}...`
-    : rawSummary;
+  // description - render nothing instead of that raw slug text. Length is no longer
+  // capped here - .project-title/.project-summary (home.css) truncate to a single
+  // line with CSS text-overflow:ellipsis instead.
+  const summary = project.summary && project.summary.trim() !== project.slug ? project.summary : null;
 
   return (
     <div className={`project-row${reversed ? ' reversed' : ''}`}>

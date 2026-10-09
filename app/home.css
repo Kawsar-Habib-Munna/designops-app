@@ -1412,6 +1412,8 @@ html:has(.home-root) {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
+  min-width: 0;
 }
 .home-root .project-title {
   font-family: var(--font-playfair), "Playfair Display", serif;
@@ -1419,17 +1421,26 @@ html:has(.home-root) {
   line-height: 1.5;
   font-weight: 600;
   color: #13002f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 .home-root .project-summary {
   font-size: 16px;
   line-height: 1.5;
   font-weight: 500;
   color: #5f5c63;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 .home-root .project-tags-row {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  margin-top: 12px;
 }
 .home-root .project-tag-pill {
   display: flex;
@@ -1582,7 +1593,10 @@ html:has(.home-root) {
   .home-root .project-card-pill,
   .home-root .project-row.reversed .project-card-pill {
     flex-direction: column;
-    padding: 24px;
+    /* ডান পাশের padding gap-এর (image ও content-এর মাঝের, 40px) সমান রাখা হলো -
+       আগে এখানে uniform 24px ছিল, ফলে ডান দিকের gap বাঁ দিকেরটার চেয়ে ছোট
+       দেখাচ্ছিল। */
+    padding: 24px 40px 24px 24px;
     border-radius: 32px;
   }
   .home-root .project-image {
@@ -3173,7 +3187,7 @@ html:has(.home-root) {
   width: 70px;
   height: 70px;
   flex-shrink: 0;
-  border: 1px solid #feffff;
+  border: 1px solid #e6e4e8;
   border-radius: 16px;
   object-fit: cover;
 }
