@@ -155,6 +155,10 @@ async function fetchTestimonials(): Promise<TestimonialCard[]> {
   }
 }
 
+// অনুরোধে Team সেকশন সাময়িকভাবে পাবলিক পেজ থেকে hide করা হয়েছে - fetchTeam()
+// ডেটা এখনো লোড হয়, শুধু সেকশনটা রেন্ডার হয় না; আবার দেখাতে true করলেই হবে।
+const SHOW_TEAM_SECTION = false;
+
 type TeamMember = {
   id: string;
   full_name: string;
@@ -784,92 +788,94 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="section team-section" id="team">
-          <div className="container reveal">
-            <h2
-              className="section-title"
-              style={{
-                textTransform: "uppercase",
-                letterSpacing: "0.04em",
-                fontSize: 18,
-              }}
-            >
-              Our Team
-            </h2>
-            {team.length === 0 ? (
-              <p
+        {SHOW_TEAM_SECTION && (
+          <section className="section team-section" id="team">
+            <div className="container reveal">
+              <h2
+                className="section-title"
                 style={{
-                  color: "var(--ink-faint)",
-                  fontSize: 13,
-                  marginTop: 20,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  fontSize: 18,
                 }}
               >
-                টিমের তথ্য এই মুহূর্তে লোড করা যায়নি।
-              </p>
-            ) : (
-              <div className="team-grid" style={{ marginTop: 20 }}>
-                {team.map((m) => {
-                  const img = m.avatar_url
-                    ? driveThumbnailUrl(m.avatar_url)
-                    : null;
-                  const initial =
-                    Array.from(m.full_name.trim())[0]?.toUpperCase() ?? "?";
-                  return (
-                    <div className="team-card" key={m.id}>
-                      <div
-                        className="team-photo"
-                        style={
-                          img
-                            ? { backgroundImage: `url(${img})` }
-                            : {
-                                background:
-                                  m.avatar_color ?? "var(--ink-faint)",
-                              }
-                        }
-                      >
-                        {!img && initial}
-                      </div>
-                      <div className="team-overlay-bar">
-                        <div>
-                          <div className="team-name">{m.full_name}</div>
-                          <div className="team-title">
-                            {m.role ?? "Team Member"}
-                          </div>
+                Our Team
+              </h2>
+              {team.length === 0 ? (
+                <p
+                  style={{
+                    color: "var(--ink-faint)",
+                    fontSize: 13,
+                    marginTop: 20,
+                  }}
+                >
+                  টিমের তথ্য এই মুহূর্তে লোড করা যায়নি।
+                </p>
+              ) : (
+                <div className="team-grid" style={{ marginTop: 20 }}>
+                  {team.map((m) => {
+                    const img = m.avatar_url
+                      ? driveThumbnailUrl(m.avatar_url)
+                      : null;
+                    const initial =
+                      Array.from(m.full_name.trim())[0]?.toUpperCase() ?? "?";
+                    return (
+                      <div className="team-card" key={m.id}>
+                        <div
+                          className="team-photo"
+                          style={
+                            img
+                              ? { backgroundImage: `url(${img})` }
+                              : {
+                                  background:
+                                    m.avatar_color ?? "var(--ink-faint)",
+                                }
+                          }
+                        >
+                          {!img && initial}
                         </div>
-                        {(m.behance_url || m.linkedin_url) && (
-                          <div className="team-socials">
-                            {m.behance_url && (
-                              <a
-                                className="team-social-btn"
-                                href={m.behance_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                aria-label={`${m.full_name}-এর Behance`}
-                              >
-                                Be
-                              </a>
-                            )}
-                            {m.linkedin_url && (
-                              <a
-                                className="team-social-btn"
-                                href={m.linkedin_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                aria-label={`${m.full_name}-এর LinkedIn`}
-                              >
-                                in
-                              </a>
-                            )}
+                        <div className="team-overlay-bar">
+                          <div>
+                            <div className="team-name">{m.full_name}</div>
+                            <div className="team-title">
+                              {m.role ?? "Team Member"}
+                            </div>
                           </div>
-                        )}
+                          {(m.behance_url || m.linkedin_url) && (
+                            <div className="team-socials">
+                              {m.behance_url && (
+                                <a
+                                  className="team-social-btn"
+                                  href={m.behance_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  aria-label={`${m.full_name}-এর Behance`}
+                                >
+                                  Be
+                                </a>
+                              )}
+                              {m.linkedin_url && (
+                                <a
+                                  className="team-social-btn"
+                                  href={m.linkedin_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  aria-label={`${m.full_name}-এর LinkedIn`}
+                                >
+                                  in
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </section>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         <section className="brand-band" aria-hidden="true">
           <img src="/brand/logo-band.webp" alt="" className="brand-band-img" />
