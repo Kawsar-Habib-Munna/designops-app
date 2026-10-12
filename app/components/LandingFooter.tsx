@@ -26,17 +26,6 @@ const QUICK_LINKS = [
 
 const SERVICES = ['UI UX Design', 'Web & App Design', 'Web Development', 'Logo & Branding', 'Digital Marketing'];
 
-function ArrowIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="footer-subscribe-icon">
-      <path
-        d="M12.45 3.2c.27-.27.72-.27 1 0l8.35 8.3c.13.13.2.3.2.5s-.07.36-.2.5l-8.35 8.3c-.28.27-.72.27-1 0-.27-.27-.27-.7 0-.97l7.15-7.11H2a.71.71 0 010-1.42h17.4l-7.15-7.1c-.27-.28-.27-.71 0-.99z"
-        fill="#EFE6FD"
-      />
-    </svg>
-  );
-}
-
 function BehanceIcon() {
   return <img src="/footer/social-be.svg" alt="" className="footer-social-icon" />;
 }
@@ -122,7 +111,7 @@ export default function LandingFooter() {
                 />
                 <button type="submit" className="footer-subscribe-btn">
                   <span className="footer-subscribe-label">Subscribe</span>
-                  <ArrowIcon />
+                  <img src="/footer/icon-subscribe-arrow.svg" alt="" width={24} height={24} className="footer-subscribe-icon" />
                 </button>
               </form>
             </div>

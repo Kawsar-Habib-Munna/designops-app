@@ -94,7 +94,7 @@ html:has(.home-root) {
   align-items: center;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0;
 }
 .home-root .nav-pill {
   background: rgba(103, 107, 106, 0.08);
@@ -637,8 +637,7 @@ html:has(.home-root) {
   transform: translateY(-2px);
   filter: drop-shadow(0 12px 20px rgba(129, 51, 241, 0.2));
   background-image:
-    linear-gradient(#010003, #010003),
-    linear-gradient(#efe6fd, #efe6fd);
+    linear-gradient(#010003, #010003), linear-gradient(#efe6fd, #efe6fd);
 }
 .home-root .hero-start-label {
   display: flex;
@@ -912,7 +911,7 @@ html:has(.home-root) {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 70px;
+  margin-bottom: 24px;
   padding: 12px 20px 12px 0;
   border-radius: 10px;
   border: 1px solid transparent;
@@ -966,14 +965,19 @@ html:has(.home-root) {
 }
 .home-root .stats-top > .stat-circle:first-child {
   justify-self: start;
+  align-self: start;
+  margin-top: -74px;
 }
 .home-root .stats-top > .stat-circle:last-child {
   justify-self: end;
+  align-self: start;
+  margin-top: -74px;
 }
 .home-root .stats-bottom {
   display: flex;
   justify-content: center;
   gap: 60px;
+  margin-top: -30px;
 }
 .home-root .stats-heading {
   justify-self: center;
@@ -1173,8 +1177,8 @@ html:has(.home-root) {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 24px;
-  margin-bottom: 72px;
+  gap: 4px;
+  margin-bottom: 80px;
 }
 .home-root .projects-heading {
   display: flex;
@@ -1326,7 +1330,7 @@ html:has(.home-root) {
 .home-root .project-stack-slot.back {
   position: absolute;
   top: 400px;
-  left: 60px;
+  left: 0;
   right: 0;
   z-index: 1;
 }
@@ -2070,7 +2074,11 @@ html:has(.home-root) {
   border-color: transparent;
   background-image:
     linear-gradient(var(--bg), var(--bg)),
-    linear-gradient(90deg, rgba(239, 230, 253, 0.6) 0%, rgba(98, 0, 238, 0.6) 100%);
+    linear-gradient(
+      90deg,
+      rgba(239, 230, 253, 0.6) 0%,
+      rgba(98, 0, 238, 0.6) 100%
+    );
   background-origin: border-box;
   background-clip: padding-box, border-box;
 }
@@ -3159,13 +3167,46 @@ html:has(.home-root) {
   flex-direction: column;
   gap: 20px;
   padding: 32px 32px 28px;
-  border: 1px solid #feffff;
+  border: 1px solid rgba(254, 255, 255, 1);
+  border-radius: 32px;
   box-shadow: 0 8px 40px rgba(41, 0, 100, 0.04);
+  transition: border-color 0.2s ease;
+}
+/* Figma "Hover" variant (node 2206:8705): card border turns a visible
+   lavender-gray, avatar border turns purple, the name becomes a purple
+   gradient fill, and the quote mark swaps to its purple-tinted asset. */
+.home-root .testimonial-card:hover {
+  border-color: #b78af7;
+}
+/* box-shadow সবসময় কার্ডের নিজের border-radius (32px) অনুসরণ করে - তাই
+   square frame-এর জন্য ::after-কেই পুনর্ব্যবহার করা হলো (border-radius:0,
+   inset দিয়ে কার্ডের বাইরে বড়, z-index:-1 দিয়ে কার্ডের পেছনে)। */
+.home-root .testimonial-card:hover::after {
+  inset: 0;
+  border-radius: 0;
+  background: #e6e4e8;
+  z-index: -1;
+}
+.home-root .testimonial-card:hover::before {
+  background: #ffffff;
+}
+.home-root .testimonial-card:hover .testimonial-avatar {
+  border-color: rgba(129, 51, 241, 0.4);
+}
+.home-root .testimonial-card:hover .testimonial-name {
+  background: linear-gradient(90deg, #8133f1, #6200ee);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+.home-root .testimonial-card:hover .testimonial-quote-mark {
+  content: url("/testimonials/quote-icon-hover.svg");
 }
 .home-root .testimonial-card::before {
   content: "";
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   background: rgba(103, 107, 106, 0.04);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -3173,6 +3214,7 @@ html:has(.home-root) {
 }
 .home-root .testimonial-card::after {
   content: "";
+  border-radius: inherit;
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -3188,7 +3230,7 @@ html:has(.home-root) {
   width: 70px;
   height: 70px;
   flex-shrink: 0;
-  border: 1px solid #e6e4e8;
+  border: 1px solid #ceb0fa;
   border-radius: 16px;
   object-fit: cover;
 }
@@ -3263,7 +3305,9 @@ html:has(.home-root) {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
 }
 .home-root .testimonials-pager-btn:hover {
   background: rgba(103, 107, 106, 0.1);
@@ -4106,8 +4150,7 @@ html:has(.home-root) {
    #EFE6FD, ভেতরের fill গাঢ় বেগুনি গ্র্যাডিয়েন্টে (#6200EE → #290064)। */
 .home-root .cta-final-btn.primary:hover {
   background-image:
-    linear-gradient(#010003, #010003),
-    linear-gradient(#efe6fd, #efe6fd);
+    linear-gradient(#010003, #010003), linear-gradient(#efe6fd, #efe6fd);
 }
 .home-root .cta-final-btn.secondary {
   border: 1px solid #8133f1;
