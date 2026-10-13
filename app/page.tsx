@@ -17,7 +17,7 @@ import TestimonialsGrid from "@/app/components/TestimonialsGrid";
 import WhyCardsGrid from "@/app/components/WhyCardsGrid";
 import HeroIntro from "@/app/components/HeroIntro";
 import ScrollRevealText from "@/app/components/ScrollRevealText";
-import MouseTrail from "@/app/components/MouseTrail";
+import LiquidReveal from "@/app/components/LiquidReveal";
 
 // পাবলিক ল্যান্ডিং পেজ — লগইন ছাড়াই সবাই দেখে, তাই profiles টেবিলের RLS
 // (শুধু authenticated ইউজার read করতে পারে) এই পেজের জন্য প্রযোজ্য না। এটা
@@ -201,7 +201,6 @@ export default async function Home() {
     <div
       className={`home-root ${nunito.variable} ${playfair.variable} ${interStats.variable}`}
     >
-      <MouseTrail />
       <LandingNav />
 
       <div className="home-body">
@@ -214,6 +213,7 @@ export default async function Home() {
               alt=""
               aria-hidden="true"
             />
+            <LiquidReveal />
 
             <div className="hero-fig-inner">
               <div className="hero-trust">
