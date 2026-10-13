@@ -2,6 +2,12 @@
 
 /* Scoped to .home-root so this stylesheet never leaks into other routes. */
 
+.home-root .mouse-trail {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+}
 .home-root {
   --bg: #0e0e12;
   --surface: #17171d;

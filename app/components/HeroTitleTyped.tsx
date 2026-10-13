@@ -16,7 +16,7 @@ const EM = 'Create';
 const POST = ' Impact!';
 
 const START_DELAY = 1.25;
-const PER_LETTER = 0.025;
+const PER_LETTER = 0.018;
 
 function Word({ word, startIndex, italic }: { word: string; startIndex: number; italic?: boolean }) {
   const content = (

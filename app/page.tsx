@@ -16,6 +16,8 @@ import BouncyStat from "@/app/components/BouncyStat";
 import TestimonialsGrid from "@/app/components/TestimonialsGrid";
 import WhyCardsGrid from "@/app/components/WhyCardsGrid";
 import HeroIntro from "@/app/components/HeroIntro";
+import ScrollRevealText from "@/app/components/ScrollRevealText";
+import MouseTrail from "@/app/components/MouseTrail";
 
 // পাবলিক ল্যান্ডিং পেজ — লগইন ছাড়াই সবাই দেখে, তাই profiles টেবিলের RLS
 // (শুধু authenticated ইউজার read করতে পারে) এই পেজের জন্য প্রযোজ্য না। এটা
@@ -199,6 +201,7 @@ export default async function Home() {
     <div
       className={`home-root ${nunito.variable} ${playfair.variable} ${interStats.variable}`}
     >
+      <MouseTrail />
       <LandingNav />
 
       <div className="home-body">
@@ -326,11 +329,10 @@ export default async function Home() {
               </span>
               <div className="services-heading-copy">
                 <h2 className="services-title">What Can We Build Together?</h2>
-                <p className="services-desc">
-                  Whether you&rsquo;re starting from an idea or improving an
-                  existing product, we help shape, design, and build experiences
-                  from strategy to launch.
-                </p>
+                <ScrollRevealText
+                  className="services-desc"
+                  text="Whether you’re starting from an idea or improving an existing product, we help shape, design, and build experiences from strategy to launch."
+                />
               </div>
             </div>
           </div>

@@ -5,7 +5,11 @@
 // framer-motion-এর spring transition-এ বেশি bounce ভ্যালু দিলে overshoot করে
 // কয়েকবার দুলে থেমে যায়, যেটাই সেই "বাউন্সিং" অনুভূতি দেয়। page.tsx একটা Server
 // Component, তাই এই motion/scroll-trigger লজিকটা আলাদা client কম্পোনেন্টে।
+// Count-up: value-র leading digits (যেমন "19+"-এর "19") 0 থেকে শুরু করে
+// ease-out করে আসল সংখ্যায় উঠে আসে, circle-টা viewport-এ ঢোকার সাথে সাথেই -
+// once:false বলে বারবার ঢুকলে প্রতিবারই আবার 0 থেকে কাউন্ট হয়।
 
+import { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 // প্রতিটা ইনডেক্সের জন্য আলাদা শুরুর কোণ/দূরত্ব - প্রতিটা বল সত্যিই ভিন্ন দিক থেকে
@@ -18,9 +22,53 @@ const ENTRY_OFFSETS: { x: number; y: number }[] = [
   { x: 140, y: 160 }, // নিচে-ডান দিক থেকে
 ];
 
+const COUNT_DURATION = 900;
+const ENTRANCE_DURATION_MS = 900; // transition.duration (spring) নিচে, সেকেন্ড থেকে ms
+const ENTRANCE_DELAY_STEP_MS = 60; // transition.delay: index * 0.06 (সেকেন্ড)
+
+function parseValue(value: string) {
+  const match = value.match(/^(\d+)(.*)$/);
+  if (!match) return { target: 0, digits: 0, suffix: value };
+  return { target: parseInt(match[1], 10), digits: match[1].length, suffix: match[2] };
+}
+
 export default function BouncyStat({ label, value, index }: { label: string; value: string; index: number }) {
   const reduceMotion = useReducedMotion();
   const offset = ENTRY_OFFSETS[index % ENTRY_OFFSETS.length];
+  const { target, digits, suffix } = parseValue(value);
+  const [display, setDisplay] = useState(() => (reduceMotion ? target : 0));
+  const frameRef = useRef<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  function startCount() {
+    if (reduceMotion) return;
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      const start = performance.now();
+      function tick(now: number) {
+        const t = Math.min(1, (now - start) / COUNT_DURATION);
+        const eased = 1 - Math.pow(1 - t, 3);
+        setDisplay(Math.round(eased * target));
+        if (t < 1) frameRef.current = requestAnimationFrame(tick);
+      }
+      frameRef.current = requestAnimationFrame(tick);
+    }, index * ENTRANCE_DELAY_STEP_MS + ENTRANCE_DURATION_MS);
+  }
+
+  function resetCount() {
+    if (reduceMotion) return;
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setDisplay(0);
+  }
 
   if (reduceMotion) {
     return (
@@ -32,16 +80,20 @@ export default function BouncyStat({ label, value, index }: { label: string; val
     );
   }
 
+  const shownValue = String(display).padStart(digits, '0') + suffix;
+
   return (
     <motion.div
       className="stat-circle"
       initial={{ opacity: 0, x: offset.x, y: offset.y, scale: 0.3 }}
       whileInView={{ opacity: 1, x: 0, y: 0, scale: 1 }}
       viewport={{ once: false, amount: 0.5 }}
-      transition={{ type: 'spring', bounce: 0.55, duration: 1.1, delay: index * 0.12 }}
+      onViewportEnter={startCount}
+      onViewportLeave={resetCount}
+      transition={{ duration: 0.9, delay: index * 0.06, ease: [0.22, 1, 0.36, 1] }}
     >
       <span className="stat-label">{label}</span>
-      <span className="stat-value">{value}</span>
+      <span className="stat-value">{shownValue}</span>
       <img src="/stats/arrow.svg" alt="" className="stat-arrow" />
     </motion.div>
   );

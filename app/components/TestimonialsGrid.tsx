@@ -47,15 +47,19 @@ export default function TestimonialsGrid({ testimonials }: { testimonials: Testi
           className="testimonials-grid-lines"
           aria-hidden="true"
         />
-        {current.map((t, i) => (
+        {current.map((t, i) => {
+          // top row (slot 0-1) বাঁ দিক থেকে, bottom row (slot 2-3) ডান দিক থেকে -
+          // WhyCardsGrid-এর একই row-ভিত্তিক দিক-নির্ধারণ প্যাটার্ন।
+          const fromLeft = i < 2;
+          return (
           <motion.div
             className="testimonial-card"
             key={`${page}-${i}`}
             style={{ top: `${SLOT_POSITIONS[i].top}%`, left: `${SLOT_POSITIONS[i].left}%` }}
-            initial={reduceMotion ? undefined : { opacity: 0, y: 40, scale: 0.96 }}
-            whileInView={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.6, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+            initial={reduceMotion ? undefined : { opacity: 0, x: fromLeft ? -80 : 80 }}
+            whileInView={reduceMotion ? undefined : { opacity: 1, x: 0 }}
+            viewport={{ once: false, amount: 0.3 }}
+            transition={{ duration: 0.6, delay: (i % 2) * 0.1, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="testimonial-top">
               {t.avatar ? (
@@ -81,7 +85,8 @@ export default function TestimonialsGrid({ testimonials }: { testimonials: Testi
               />
             </div>
           </motion.div>
-        ))}
+          );
+        })}
       </div>
 
       {totalPages > 1 && (
