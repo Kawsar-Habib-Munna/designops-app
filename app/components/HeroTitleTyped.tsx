@@ -1,55 +1,80 @@
 'use client';
 
-// হিরো টাইটেল একবার (page load-এ) কেউ টাইপ করছে এমন effect-এ অক্ষর ধরে ধরে বসে -
-// page.tsx একটা Server Component, তাই এই setInterval/state-টুকু আলাদা client
-// কম্পোনেন্টে সরানো হয়েছে (RevealOnScroll-এর মতোই প্যাটার্ন)। মাঝের "Create"
-// শব্দটা italic <em> স্টাইলে থাকা দরকার, তাই পুরো স্ট্রিংটা তিন ভাগে (আগে/em/পরে)
-// ভেঙে total char-count থেকে প্রতিটা অংশ কতটুকু দেখানো হবে তা হিসাব করা হয়।
-
-import { useEffect, useState } from 'react';
+// হিরো টাইটেল আগে টাইপরাইটার effect-এ ছিল (page.tsx: আগের "Add a typewriter-style
+// entrance" request) - এখন ekon.framer.ai-এর hero সিকোয়েন্সের (curtain + wordmark
+// + background reveal) সাথে মেলাতে সেই একই per-letter blur+rise reveal কৌশল
+// এখানেও পোর্ট করা হলো: প্রতিটা অক্ষর আলাদা span, শুরুতে opacity:0.001,
+// blur(8px), translateY(10px) - তারপর স্বাভাবিক অবস্থায় reveal হয়, stagger করে।
+// প্রতিটা শব্দ একটা white-space:nowrap wrapper-এ রাখা হয়েছে যাতে লাইন wrap
+// হলে কোনো শব্দ মাঝখান থেকে না ভাঙে। START_DELAY হিরো ব্যাকগ্রাউন্ড
+// reveal-এর (home.css: hero-fig-bg animation-delay 1.2s) কাছাকাছি, যাতে curtain
+// wipe শুরু হওয়ার সাথে সাথেই টাইটেলও reveal হতে শুরু করে।
+import { motion, useReducedMotion } from 'framer-motion';
 
 const PRE = 'We Design And Build Digital Products That ';
 const EM = 'Create';
 const POST = ' Impact!';
-const FULL_LEN = PRE.length + EM.length + POST.length;
-const MS_PER_CHAR = 38;
 
-// reduced-motion প্রেফারেন্স থাকলে effect-এর ভেতর সিঙ্ক্রোনাসভাবে setState কল না
-// করে (react-hooks/set-state-in-effect ভাঙে - ProcessStory.tsx-এও আগে একই কারণে
-// ভেঙেছিল), useState-এর lazy initializer-এই সরাসরি পুরো দৈর্ঘ্য বসানো হয়।
-function initialCount() {
-  if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    return FULL_LEN;
-  }
-  return 0;
+const START_DELAY = 1.25;
+const PER_LETTER = 0.025;
+
+function Word({ word, startIndex, italic }: { word: string; startIndex: number; italic?: boolean }) {
+  const content = (
+    <span style={{ whiteSpace: 'nowrap', display: 'inline-block' }}>
+      {word.split('').map((ch, i) => (
+        <motion.span
+          key={i}
+          initial={{ opacity: 0.001, filter: 'blur(8px)', y: 10 }}
+          animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
+          transition={{ duration: 0.6, delay: START_DELAY + (startIndex + i) * PER_LETTER, ease: [0.22, 1, 0.36, 1] }}
+          style={{ display: 'inline-block' }}
+        >
+          {ch}
+        </motion.span>
+      ))}
+    </span>
+  );
+  return italic ? <em>{content}</em> : content;
+}
+
+function AnimatedWords({ text, baseIndex, italic }: { text: string; baseIndex: number; italic?: boolean }) {
+  const parts = text.split(' ');
+  const starts = parts.reduce<number[]>((acc, word, i) => {
+    acc.push(i === 0 ? baseIndex : acc[i - 1] + parts[i - 1].length + 1);
+    return acc;
+  }, []);
+  return (
+    <>
+      {parts.map((word, i) => (
+        <span key={i}>
+          {word.length > 0 && <Word word={word} startIndex={starts[i]} italic={italic} />}
+          {i < parts.length - 1 && ' '}
+        </span>
+      ))}
+    </>
+  );
 }
 
 export default function HeroTitleTyped() {
-  const [count, setCount] = useState(initialCount);
+  const reduceMotion = useReducedMotion();
+  const fullText = `${PRE}${EM}${POST}`;
 
-  useEffect(() => {
-    if (count >= FULL_LEN) return;
-    let i = count;
-    const id = setInterval(() => {
-      i += 1;
-      setCount(i);
-      if (i >= FULL_LEN) clearInterval(id);
-    }, MS_PER_CHAR);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const preShown = PRE.slice(0, Math.min(count, PRE.length));
-  const emShown = EM.slice(0, Math.max(0, Math.min(count - PRE.length, EM.length)));
-  const postShown = POST.slice(0, Math.max(0, count - PRE.length - EM.length));
+  if (reduceMotion) {
+    return (
+      <h1 className="hero-title">
+        {PRE}
+        <em>{EM}</em>
+        {POST}
+      </h1>
+    );
+  }
 
   return (
-    <h1 className="hero-title" aria-label={`${PRE}${EM}${POST}`}>
+    <h1 className="hero-title" aria-label={fullText}>
       <span aria-hidden="true">
-        {preShown}
-        <em>{emShown}</em>
-        {postShown}
-        {count < FULL_LEN && <span className="hero-title-cursor" />}
+        <AnimatedWords text={PRE} baseIndex={0} />
+        <AnimatedWords text={EM} baseIndex={PRE.length} italic />
+        <AnimatedWords text={POST} baseIndex={PRE.length + EM.length} />
       </span>
     </h1>
   );

@@ -412,6 +412,38 @@ html:has(.home-root) {
   padding: 0;
   overflow: hidden;
 }
+/* ekon.framer.ai hero loading-curtain port - see HeroIntro.tsx. ৪টা সমান-প্রস্থ
+   কালো panel পাশাপাশি বসে পুরো .hero ঢেকে রাখে, মাঝে "FLOW 53" wordmark। */
+.home-root .hero-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.home-root .hero-intro-panels {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+.home-root .hero-intro-panel {
+  flex: 1;
+  background: #ffffff;
+}
+.home-root .hero-intro-word {
+  position: relative;
+  display: flex;
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-weight: 700;
+  font-size: clamp(32px, 6vw, 64px);
+  letter-spacing: 0.02em;
+  color: #010003;
+}
+.home-root .hero-intro-word span {
+  display: inline-block;
+}
 .home-root .hero-fig {
   position: relative;
   padding: clamp(180px, 26vh, 260px) 0 100px 0;
@@ -426,6 +458,31 @@ html:has(.home-root) {
   object-fit: cover;
   pointer-events: none;
   user-select: none;
+  opacity: 0;
+  transform: scale(1.2);
+  animation: hero-fig-bg-reveal 1.4s cubic-bezier(0.22, 1, 0.36, 1) 1.2s forwards;
+}
+/* ekon.framer.ai hero-র background "Ken Burns" reveal (opacity 0 + scale 1.2 -> 1,
+   1, 0) - নিচের 1.2s delay HeroIntro.tsx-এর HOLD_MS (1300ms)-এর সাথে মেলানো,
+   যাতে curtain wipe শুরু হওয়ার প্রায় সাথে সাথেই background zoom-out+fade-in
+   শুরু হয়। prefers-reduced-motion-এ animation বন্ধ করে সরাসরি চূড়ান্ত অবস্থা
+   দেখানো হয়। */
+@keyframes hero-fig-bg-reveal {
+  from {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-root .hero-fig-bg {
+    animation: none;
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 .home-root .hero-fig-inner {
   position: relative;
@@ -555,32 +612,6 @@ html:has(.home-root) {
 .home-root .hero-title em {
   font-style: italic;
   font-weight: 400;
-}
-.home-root .hero-title-cursor {
-  display: inline-block;
-  width: 3px;
-  height: 0.85em;
-  margin-left: 3px;
-  background: #efe6fd;
-  box-shadow: 0 0 12px rgba(129, 51, 241, 0.65);
-  vertical-align: -0.1em;
-  animation: hero-cursor-blink 0.85s steps(1) infinite;
-}
-@keyframes hero-cursor-blink {
-  0%,
-  50% {
-    opacity: 1;
-  }
-  50.01%,
-  100% {
-    opacity: 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .home-root .hero-title-cursor {
-    animation: none;
-    opacity: 0;
-  }
 }
 .home-root .hero-sub {
   width: 100%;

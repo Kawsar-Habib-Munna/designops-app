@@ -14,6 +14,8 @@ import ContactForm from "@/app/components/ContactForm";
 import HeroTitleTyped from "@/app/components/HeroTitleTyped";
 import BouncyStat from "@/app/components/BouncyStat";
 import TestimonialsGrid from "@/app/components/TestimonialsGrid";
+import WhyCardsGrid from "@/app/components/WhyCardsGrid";
+import HeroIntro from "@/app/components/HeroIntro";
 
 // পাবলিক ল্যান্ডিং পেজ — লগইন ছাড়াই সবাই দেখে, তাই profiles টেবিলের RLS
 // (শুধু authenticated ইউজার read করতে পারে) এই পেজের জন্য প্রযোজ্য না। এটা
@@ -201,6 +203,7 @@ export default async function Home() {
 
       <div className="home-body">
         <header className="hero">
+          <HeroIntro />
           <div className="hero-fig">
             <img
               className="hero-fig-bg"
@@ -489,24 +492,7 @@ export default async function Home() {
               </div>
             </div>
 
-            <div className="why-grid">
-              {WHY_CARDS.map((c) => (
-                <div className={`why-card${c.alt ? " alt" : ""}`} key={c.title}>
-                  <div className="why-card-top">
-                    <span className="why-card-icon">
-                      <img src={c.icon} alt="" />
-                    </span>
-                    <span className="why-card-line">
-                      <img src="/why/card-line.svg" alt="" />
-                    </span>
-                  </div>
-                  <div className="why-card-copy">
-                    <h3 className="why-card-title">{c.title}</h3>
-                    <p className="why-card-desc">{c.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <WhyCardsGrid cards={WHY_CARDS} />
 
             <div className="why-tailored">
               <div className="why-tailored-head">

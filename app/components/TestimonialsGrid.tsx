@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 
 // Figma-র ফিক্সড ৪-স্লট brick লেআউট (row 1: কলাম A+B, row 2: কলাম B+C) —
 // top/left % আগে TESTIMONIALS কনস্ট্যান্টে প্রতিটা আইটেমের নিজস্ব ডেটা
@@ -26,6 +27,7 @@ export type TestimonialCard = {
 
 export default function TestimonialsGrid({ testimonials }: { testimonials: TestimonialCard[] }) {
   const [page, setPage] = useState(0);
+  const reduceMotion = useReducedMotion();
 
   if (testimonials.length === 0) return null;
 
@@ -46,10 +48,14 @@ export default function TestimonialsGrid({ testimonials }: { testimonials: Testi
           aria-hidden="true"
         />
         {current.map((t, i) => (
-          <div
+          <motion.div
             className="testimonial-card"
             key={`${page}-${i}`}
             style={{ top: `${SLOT_POSITIONS[i].top}%`, left: `${SLOT_POSITIONS[i].left}%` }}
+            initial={reduceMotion ? undefined : { opacity: 0, y: 40, scale: 0.96 }}
+            whileInView={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="testimonial-top">
               {t.avatar ? (
@@ -74,7 +80,7 @@ export default function TestimonialsGrid({ testimonials }: { testimonials: Testi
                 className="testimonial-quote-mark"
               />
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
