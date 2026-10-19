@@ -26,6 +26,17 @@
 .home-root .mouse-trail {
   position: fixed;
   inset: 0;
+  /* canvas একটা "replaced element" (<img>-এর মতো) - position:fixed+inset:0
+     দিয়ে সাধারণ div ঠিকই viewport-এর সাথে stretch হয়ে যায়, কিন্তু replaced
+     element-দের জন্য CSS স্পেক আলাদা নিয়ম মানে (CSS2.1 §10.3.7): explicit
+     width/height না দিলে এরা ভরে-ফেলার বদলে নিজের intrinsic size (এখানে
+     canvas-এর width/height HTML attribute, যেটা MouseTrail.tsx-এ drawing-
+     buffer resolution হিসেবে বসানো হয় - DPR গুণ করা একটা অনেক বড় পিক্সেল-
+     সংখ্যা, আদৌ CSS px না) ব্যবহার করে - এই কারণেই canvas viewport-এর চেয়ে
+     চওড়া হয়ে ডান পাশে একটা ফাঁকা গ্যাপ/scroll তৈরি করছিল। width/height:100%
+     স্পষ্টভাবে বসালে এই fallback আর হয় না। */
+  width: 100%;
+  height: 100%;
   z-index: 999;
   pointer-events: none;
 }
