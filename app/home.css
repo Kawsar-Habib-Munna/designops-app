@@ -1799,6 +1799,12 @@ html:has(.home-root) {
   .home-root .project-number {
     display: none;
   }
+  .home-root .project-tags-row {
+    display: none;
+  }
+  .home-root .project-content {
+    gap: 20px;
+  }
   .home-root .project-details-btn {
     align-self: stretch;
     justify-content: center;
@@ -4993,7 +4999,7 @@ a.footer-contact-row:hover .footer-contact-text {
     padding: 0 20px;
   }
   .home-root .section {
-    padding: 64px 0;
+    padding: 48px 0;
   }
   .home-root .cta-band {
     padding: 72px 0;

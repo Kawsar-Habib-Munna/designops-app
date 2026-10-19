@@ -22,9 +22,9 @@ const ENTRY_OFFSETS: { x: number; y: number }[] = [
   { x: 140, y: 160 }, // নিচে-ডান দিক থেকে
 ];
 
-const COUNT_DURATION = 900;
-const ENTRANCE_DURATION_MS = 900; // transition.duration (spring) নিচে, সেকেন্ড থেকে ms
-const ENTRANCE_DELAY_STEP_MS = 60; // transition.delay: index * 0.06 (সেকেন্ড)
+const COUNT_DURATION = 600;
+const ENTRANCE_DURATION_MS = 500; // transition.duration নিচে, সেকেন্ড থেকে ms
+const ENTRANCE_DELAY_STEP_MS = 40; // transition.delay: index * 0.04 (সেকেন্ড)
 
 function parseValue(value: string) {
   const match = value.match(/^(\d+)(.*)$/);
@@ -90,7 +90,7 @@ export default function BouncyStat({ label, value, index }: { label: string; val
       viewport={{ once: false, amount: 0.5 }}
       onViewportEnter={startCount}
       onViewportLeave={resetCount}
-      transition={{ duration: 0.9, delay: index * 0.06, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.5, delay: index * 0.04, ease: [0.22, 1, 0.36, 1] }}
     >
       <span className="stat-label">{label}</span>
       <span className="stat-value">{shownValue}</span>
