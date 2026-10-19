@@ -11,6 +11,7 @@
 // রিপোতে নেই) — তাই সাবমিটে শুধু রিলোড আটকানো হয়, fake success দেখানো হয় না।
 import Link from 'next/link';
 import { useState } from 'react';
+import SlideSwapLabel from './SlideSwapLabel';
 
 const WHATSAPP_CALL_URL = 'https://wa.me/8801996925819';
 const CONTACT_EMAIL = 'info@flow53design.com';
@@ -110,7 +111,7 @@ export default function LandingFooter() {
                   aria-label="আপনার ইমেইল ঠিকানা"
                 />
                 <button type="submit" className="footer-subscribe-btn">
-                  <span className="footer-subscribe-label">Subscribe</span>
+                  <span className="footer-subscribe-label"><SlideSwapLabel text="Subscribe" /></span>
                   <img src="/footer/icon-subscribe-arrow.svg" alt="" width={24} height={24} className="footer-subscribe-icon" />
                 </button>
               </form>

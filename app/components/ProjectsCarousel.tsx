@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import SlideSwapLabel from './SlideSwapLabel';
 
 // Figma: "Let's Look At What We've built!" (533:505 heading, 565:2813 / 565:2814 the two
 // example slides, 577:3342 the prev/dots/next controls) shows one full-width slide at a
@@ -54,7 +55,7 @@ function ProjectMiniCard({ project, reversed, number }: { project: ProjectCard; 
             )}
           </div>
           <Link href={`/work/${project.slug}`} className="project-details-btn">
-            <span>See More Details</span>
+            <SlideSwapLabel text="See More Details" />
             <img src="/projects/arrow-details.svg" alt="" />
           </Link>
         </div>
@@ -68,6 +69,13 @@ const PAGE_SIZE = 2;
 
 export default function ProjectsCarousel({ projects }: { projects: ProjectCard[] }) {
   const [page, setPage] = useState(0);
+  // মোবাইলে (≤860px) desktop-এর fixed-pair pagination (PAGE_SIZE=2) থেকে
+  // আলাদা, নিজস্ব state - প্রতি পেজে ১টা প্রজেক্ট, সবগুলো প্রজেক্ট একে একে
+  // cycle করে। desktop-এর PAGE_SIZE=2 দিয়ে mobile-এ চালালে শুধু জোড়-ইনডেক্সের
+  // (0,2,4...) প্রজেক্টই "front" হিসেবে দেখা যেত (বিজোড়-ইনডেক্স কখনো একা front
+  // হতো না, কারণ ওরা সবসময় কোনো না কোনো পেজের "back" - যেটা মোবাইলে hidden),
+  // তাই অর্ধেক প্রজেক্ট দেখাই যেত না।
+  const [mobilePage, setMobilePage] = useState(0);
   const reduceMotion = useReducedMotion();
 
   if (projects.length === 0) return null;
@@ -82,13 +90,64 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
   const nextIndex = index + 1;
   const next = nextIndex < total ? projects[nextIndex] : null;
 
+  const mobileCurrent = projects[mobilePage];
+
   function go(delta: number) {
     setPage((p) => (p + delta + totalPages) % totalPages);
   }
 
+  function goMobile(delta: number) {
+    setMobilePage((p) => (p + delta + total) % total);
+  }
+
   return (
     <div className="projects-carousel">
-      <div className="project-stack">
+      {/* মোবাইলে (≤860px) desktop-এর stacked-pair + peek-behind ডিজাইনটা অর্থহীন
+          (back card আগে থেকেই ওই breakpoint-এ hidden), আর desktop-এর PAGE_SIZE=2
+          pagination ব্যবহার করলে বিজোড়-ইনডেক্সের প্রজেক্টগুলো কখনো একা দেখাই
+          যেত না। তাই মোবাইলে আলাদা, নিজস্ব ১-প্রজেক্ট-প্রতি-পেজ pagination
+          (mobilePage state) - একই .project-stack-slot.front কার্ড পুনর্ব্যবহার
+          করে, শুধু নিচের নেভিগেশন (arrow/dots) mobilePage নিয়ন্ত্রণ করে। CSS
+          দিয়ে টগল করা - দুটোই DOM-এ থাকে, hydration mismatch এড়াতে। */}
+      <div className="project-stack-mobile mobile-only">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={mobileCurrent.slug}
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -24 }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <ProjectMiniCard project={mobileCurrent} reversed={false} number={String(mobilePage + 1).padStart(2, '0')} />
+          </motion.div>
+        </AnimatePresence>
+        {total > 1 && (
+          <div className="project-nav">
+            <button type="button" className="project-nav-arrow" onClick={() => goMobile(-1)} aria-label="Previous project">
+              <img src="/projects/arrow-prev.svg" alt="" />
+            </button>
+            <div className="project-dots">
+              {Array.from({ length: total }, (_, i) => (
+                <button
+                  type="button"
+                  key={i}
+                  className={`project-dot${i === mobilePage ? ' active' : ''}`}
+                  onClick={() => setMobilePage(i)}
+                  aria-label={`Go to project ${i + 1}`}
+                  aria-current={i === mobilePage}
+                >
+                  <span />
+                </button>
+              ))}
+            </div>
+            <button type="button" className="project-nav-arrow" onClick={() => goMobile(1)} aria-label="Next project">
+              <img src="/projects/arrow-next.svg" alt="" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="project-stack desktop-only">
         {/* এই দুটো whileInView entrance সেকশনে স্ক্রল করে ঢোকার নিজস্ব অ্যানিমেশন -
             ভেতরের AnimatePresence-চালিত pagination transition (page বদলালে
             fade/slide) থেকে আলাদা, তাই একে অপরের সাথে কনফ্লিক্ট করে না। প্রথম
@@ -142,7 +201,7 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
       </div>
 
       {totalPages > 1 && (
-        <div className="project-nav">
+        <div className="project-nav desktop-only">
           <button type="button" className="project-nav-arrow" onClick={() => go(-1)} aria-label="Previous projects">
             <img src="/projects/arrow-prev.svg" alt="" />
           </button>

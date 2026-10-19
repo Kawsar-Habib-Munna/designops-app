@@ -45,13 +45,22 @@ export default function MouseTrail() {
     const target: Point = { x: -100, y: -100 };
 
     function resize() {
+      // canvas-এর CSS সাইজ (display width/height) বসানো হয় না এখানে - .mouse-
+      // trail CSS rule-এর position:fixed + inset:0 ইতিমধ্যেই এটা viewport-এর
+      // সাথে auto-fill করে। আগে এখানে canvas.style.width/height-ও সেট করা
+      // হতো window.innerWidth/innerHeight দিয়ে - inline style থাকায় সেটাই
+      // inset:0-কে override করত, আর window.innerWidth কখনো সত্যিকার visual
+      // viewport-এর চেয়ে বেশি মাপলে (zoom/scrollbar/devtools quirk) canvas-টা
+      // viewport-এর চেয়ে চওড়া হয়ে পেজের ডান পাশে একটা ফাঁকা গ্যাপ তৈরি করত।
+      // এখন শুধু drawing-buffer resolution (canvas.width/height, আসল পিক্সেল
+      // কাউন্ট) সেট করা হয় - সাইজ মাপা হয় getBoundingClientRect() দিয়ে, যেটা
+      // CSS-চালিত আসল রেন্ডারড সাইজ রিপোর্ট করে, window.innerWidth না।
       const dpr = window.devicePixelRatio || 1;
-      width = window.innerWidth;
-      height = window.innerHeight;
+      const rect = canvas!.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
       canvas!.width = width * dpr;
       canvas!.height = height * dpr;
-      canvas!.style.width = `${width}px`;
-      canvas!.style.height = `${height}px`;
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 

@@ -2,6 +2,27 @@
 
 /* Scoped to .home-root so this stylesheet never leaks into other routes. */
 
+/* SlideSwapLabel.tsx - shared "text slide-swap" hover markup/CSS. 1.2em
+   height/line-height-এর ফলে এটা যে কোনো বাটনের নিজস্ব font-size-এ স্বয়ংক্রিয়ভাবে
+   ঠিকভাবে বসে যায় (ফিক্সড px না)। actual hover-trigger (:hover) প্রতিটা
+   বাটনের নিজস্ব সিলেক্টর দিয়ে আলাদাভাবে নিচে সংজ্ঞায়িত। */
+.home-root .slide-swap-clip {
+  display: inline-block;
+  overflow: hidden;
+  height: 1.2em;
+  vertical-align: top;
+}
+.home-root .slide-swap-track {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.home-root .slide-swap-line {
+  display: block;
+  height: 1.2em;
+  line-height: 1.2em;
+}
+
 .home-root .mouse-trail {
   position: fixed;
   inset: 0;
@@ -266,6 +287,29 @@ html:has(.home-root) {
   font-weight: 500;
   color: #efe6fd;
   white-space: nowrap;
+  overflow: hidden;
+}
+/* "Book A Call"-এর hover-এ text slide-swap: দুটো একই লেখার লাইন খাড়াভাবে
+   stacked, একটা 24px (font-size 16px * line-height 1.5) clip window-এর
+   ভেতরে - hover-এ পুরো track 50% (মানে ঠিক এক লাইন) ওপরে সরে প্রথম লাইনটা
+   ওপরে বেরিয়ে যায়, দ্বিতীয় (হুবহু একই) লাইনটা নিচ থেকে উঠে তার জায়গা নেয়। */
+.home-root .nav-cta-label-clip {
+  display: block;
+  height: 24px;
+  overflow: hidden;
+}
+.home-root .nav-cta-label-track {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.home-root .nav-cta:hover .nav-cta-label-track {
+  transform: translateY(-50%);
+}
+.home-root .nav-cta-label-line {
+  display: block;
+  height: 24px;
+  line-height: 24px;
 }
 .home-root .nav-menu-btn {
   display: none;
@@ -676,6 +720,9 @@ html:has(.home-root) {
   background-image:
     linear-gradient(#010003, #010003), linear-gradient(#efe6fd, #efe6fd);
 }
+.home-root .hero-start:hover .slide-swap-track {
+  transform: translateY(-50%);
+}
 .home-root .hero-start-label {
   display: flex;
   align-items: center;
@@ -744,6 +791,9 @@ html:has(.home-root) {
   height: 54.5px;
   max-width: none;
   transform: translate(-50%, -50%);
+}
+.home-root .hero-view:hover .slide-swap-track {
+  transform: translateY(-50%);
 }
 .home-root .hero-view-label {
   display: inline-flex;
@@ -1154,6 +1204,15 @@ html:has(.home-root) {
   .home-root .stats-bottom {
     display: contents;
   }
+  /* desktop গ্রিড-এ circle-গুলোকে উপরের "TRUSTED GLOBALLY" pill-এর সাথে
+     align করতে negative margin-top বসানো হয়েছিল - কিন্তু .stats-top/.stats-
+     bottom এখানে display:contents হয়ে যাওয়ায় (ওপরে) সেই margin এখনো সরাসরি
+     circle-গুলোর ওপর বসে থাকে, wrap করা mobile flex-row-এ টেনে উঠিয়ে ফাঁক
+     তৈরি করছিল - তাই এই breakpoint-এ রিসেট করা হলো। */
+  .home-root .stats-top > .stat-circle:first-child,
+  .home-root .stats-top > .stat-circle:last-child {
+    margin-top: 0;
+  }
   .home-root .stats-heading {
     order: -1;
     flex-basis: 100%;
@@ -1214,7 +1273,7 @@ html:has(.home-root) {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 4px;
+  gap: 24px;
   margin-bottom: 80px;
 }
 .home-root .projects-heading {
@@ -1236,6 +1295,9 @@ html:has(.home-root) {
   box-shadow: 0 12px 20px rgba(129, 51, 241, 0.12);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+}
+.home-root .projects-view-all:hover .slide-swap-track {
+  transform: translateY(-50%);
 }
 .home-root .projects-view-all-label {
   display: flex;
@@ -1500,6 +1562,9 @@ html:has(.home-root) {
   color: #5f5c63;
   white-space: nowrap;
 }
+.home-root .project-details-btn:hover .slide-swap-track {
+  transform: translateY(-50%);
+}
 .home-root .project-details-btn {
   display: inline-flex;
   align-self: flex-start;
@@ -1625,11 +1690,32 @@ html:has(.home-root) {
     display: none;
   }
 }
+.home-root .mobile-only {
+  display: none;
+}
 @media (max-width: 860px) {
+  /* মোবাইলে desktop-এর ২-এর-pair pagination (.desktop-only) লুকিয়ে, বদলে
+     নিজস্ব ১-প্রজেক্ট-প্রতি-পেজ pagination (.project-stack-mobile) দেখানো
+     হয় - আগে desktop-এর PAGE_SIZE=2 state মোবাইলে ব্যবহার করায় বিজোড়-
+     ইনডেক্সের প্রজেক্টগুলো (যেগুলো সবসময় কোনো pair-এর "back", মোবাইলে hidden)
+     কখনো একা front হিসেবে দেখাই যেত না। */
+  .home-root .desktop-only {
+    display: none;
+  }
+  .home-root .mobile-only {
+    display: block;
+  }
+  .home-root .project-stack-mobile .project-nav {
+    margin-top: 32px;
+  }
   .home-root .project-row,
   .home-root .project-row.reversed {
     flex-direction: column;
     gap: 24px;
+    /* কার্ডটা viewport edge-এ গিয়ে ঠেকে যাচ্ছিল - .projects-inner-এর নিজস্ব
+       24px gutter থাকা সত্ত্বেও বাড়তি margin যোগ করা হলো আরেকটু breathing
+       room-এর জন্য। */
+    margin: 0 8px;
   }
   .home-root .project-card-pill,
   .home-root .project-row.reversed .project-card-pill {
@@ -4157,6 +4243,9 @@ html:has(.home-root) {
   gap: 24px;
   flex-wrap: wrap;
 }
+.home-root .cta-final-btn:hover .slide-swap-track {
+  transform: translateY(-50%);
+}
 .home-root .cta-final-btn {
   position: relative;
   display: inline-flex;
@@ -4603,6 +4692,9 @@ html:has(.home-root) {
 .home-root .footer-subscribe-btn:hover {
   filter: drop-shadow(0 14px 26px rgba(129, 51, 241, 0.3));
   transform: translateY(-1px);
+}
+.home-root .footer-subscribe-btn:hover .slide-swap-track {
+  transform: translateY(-50%);
 }
 .home-root .footer-subscribe-label {
   display: flex;

@@ -134,7 +134,14 @@ export default function LandingNav() {
         <div className="nav-right">
           <div className="nav-pill nav-cta-pill">
             <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="nav-cta">
-              <span className="nav-cta-label">Book A Call</span>
+              <span className="nav-cta-label">
+                <span className="nav-cta-label-clip">
+                  <span className="nav-cta-label-track">
+                    <span className="nav-cta-label-line">Book A Call</span>
+                    <span className="nav-cta-label-line">Book A Call</span>
+                  </span>
+                </span>
+              </span>
               <PhoneIcon />
             </a>
           </div>

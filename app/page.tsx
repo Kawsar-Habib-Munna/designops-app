@@ -18,6 +18,7 @@ import WhyCardsGrid from "@/app/components/WhyCardsGrid";
 import HeroIntro from "@/app/components/HeroIntro";
 import ScrollRevealText from "@/app/components/ScrollRevealText";
 import MouseTrail from "@/app/components/MouseTrail";
+import SlideSwapLabel from "@/app/components/SlideSwapLabel";
 
 // পাবলিক ল্যান্ডিং পেজ — লগইন ছাড়াই সবাই দেখে, তাই profiles টেবিলের RLS
 // (শুধু authenticated ইউজার read করতে পারে) এই পেজের জন্য প্রযোজ্য না। এটা
@@ -249,7 +250,7 @@ export default async function Home() {
 
               <div className="hero-actions">
                 <a href="#contact" className="hero-start">
-                  <span className="hero-start-label">Start A Project</span>
+                  <span className="hero-start-label"><SlideSwapLabel text="Start A Project" /></span>
                   <img
                     src="/hero/cta-arrows.svg"
                     alt=""
@@ -268,7 +269,7 @@ export default async function Home() {
                     />
                   </span>
                   <span className="hero-view-label">
-                    View Work
+                    <SlideSwapLabel text="View Work" />
                     <img src="/hero/arrow-ne.svg" alt="" />
                   </span>
                 </a>
@@ -363,7 +364,7 @@ export default async function Home() {
                 </p>
                 <span className="projects-view-all">
                   <span className="projects-view-all-label">
-                    View All Projects
+                    <SlideSwapLabel text="View All Projects" />
                   </span>
                   <img src="/projects/icon-view-arrow.svg" alt="" />
                 </span>
@@ -742,7 +743,7 @@ export default async function Home() {
 
               <div className="cta-final-buttons">
                 <a href="/client/register" className="cta-final-btn primary">
-                  <span className="cta-final-btn-inner">Start A Project</span>
+                  <span className="cta-final-btn-inner"><SlideSwapLabel text="Start A Project" /></span>
                   <img
                     src="/cta/icon-arrow.svg"
                     alt=""
@@ -755,7 +756,7 @@ export default async function Home() {
                   rel="noopener noreferrer"
                   className="cta-final-btn secondary"
                 >
-                  <span className="cta-final-btn-inner">Book A Call</span>
+                  <span className="cta-final-btn-inner"><SlideSwapLabel text="Book A Call" /></span>
                   <svg
                     width="24"
                     height="24"

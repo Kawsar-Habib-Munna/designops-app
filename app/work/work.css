@@ -36,4 +36,7 @@
 @media (max-width:640px){
   .home-root .work-hero{padding-top:24px;}
   .home-root .work-body{padding:0 0 20px 0;}
+  /* .container-এর নিজস্ব 20px gutter থাকা সত্ত্বেও cover image viewport edge-এ
+     গিয়ে ঠেকছিল দেখাচ্ছিল বলে .work-cover-এ সরাসরি একটা নিশ্চিত gap বসানো হলো। */
+  .home-root .work-cover{margin:0 4px;}
 }
