@@ -115,6 +115,30 @@
 html:has(.home-root) {
   scroll-behavior: smooth;
   overflow-x: hidden;
+  /* overflow-x:hidden শুধু আসল scrollable overflow আটকায় - মোবাইল ব্রাউজারের
+     edge-swipe elastic/rubber-band bounce (সাময়িক পাশে সরে snap back করা)
+     এটা আটকায় না, তার জন্য আলাদা এই প্রপার্টি লাগে। */
+  overscroll-behavior-x: none;
+}
+.home-root .home-body {
+  overscroll-behavior-x: none;
+}
+/* শুধু html-এ overflow-x:hidden দিলেও body-র নিজের overflow আলাদা (visible) থেকে
+   যায় - কিছু মোবাইল ব্রাউজারে position:fixed descendant (যেমন mouse-trail
+   canvas) html-এর clip দিয়ে পুরোপুরি আটকায় না যদি না body-তেও একই রুল থাকে। কিন্তু
+   body-তে non-visible overflow-x দিলে CSS স্পেক অনুযায়ী body-র overflow-y-ও
+   নিঃশব্দে 'auto' হয়ে যায় (এই ফাইলের 97-108 লাইনের কমেন্টেই আগে থেকে ডকুমেন্টেড
+   এই ফাঁদ) - body তখন position:sticky descendant-দের জন্য নতুন containing
+   block হয়ে যায়, আর ProcessStory-এর pinned scroll-stage (desktop-এ
+   position:sticky) ঠিক এই কারণেই pin না হয়ে কনটেন্টের সাথে সরে যাচ্ছিল। desktop-এ
+   ProcessStory sticky ব্যবহার করে, মোবাইলে (≤900px) করে না (প্লেইন লিস্ট) - তাই
+   এই body-level fix শুধু মোবাইল breakpoint-এই স্কোপ করা হলো, যেখানে sticky-pin
+   আদৌ নেই বলে এই ফাঁদে পড়ার কিছু নেই। */
+@media (max-width: 900px) {
+  html:has(.home-root) body {
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
 }
 
 /* ---------- nav (Figma: Flow 53 Web · 364:9422) ---------- */
@@ -934,13 +958,45 @@ html:has(.home-root) {
   .home-root .hero-fig-inner {
     padding: 0 16px;
   }
+  /* আগে flex-wrap:wrap দিয়ে সরু মোবাইলে "Trusted By"+avatars এক লাইনে আর
+     "★ 4.5 Rating" আরেক লাইনে ভেঙে যেত (দুটো মিলিয়ে viewport-এর চেয়ে চওড়া বলে)।
+     nowrap রেখে প্রতিটা অংশ (লেবেল/অ্যাভাটার/রেটিং) ছোট করে, আর "Rating" শব্দটা
+     বাদ দিয়ে, সবকিছু এক লাইনে রাখা হলো। */
   .home-root .hero-trust {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 12px 16px;
-    padding: 4px 16px 4px 4px;
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding: 4px 14px 4px 4px;
   }
   .home-root .hero-trust-divider {
+    display: none;
+  }
+  .home-root .hero-trust-label {
+    height: 36px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .home-root .hero-trust-avatars > img {
+    width: 24px;
+    height: 24px;
+  }
+  .home-root .hero-trust-plus {
+    width: 20px;
+    height: 20px;
+    padding: 3px;
+  }
+  .home-root .hero-trust-rating {
+    width: auto;
+    gap: 4px;
+  }
+  .home-root .hero-trust-star {
+    width: 18px;
+    height: 18px;
+  }
+  .home-root .hero-trust-score {
+    font-size: 15px;
+    margin-left: 4px;
+  }
+  .home-root .hero-trust-word {
     display: none;
   }
   .home-root .hero-title {
@@ -1731,10 +1787,10 @@ html:has(.home-root) {
   .home-root .project-card-pill,
   .home-root .project-row.reversed .project-card-pill {
     flex-direction: column;
-    /* ডান পাশের padding gap-এর (image ও content-এর মাঝের, 40px) সমান রাখা হলো -
-       আগে এখানে uniform 24px ছিল, ফলে ডান দিকের gap বাঁ দিকেরটার চেয়ে ছোট
-       দেখাচ্ছিল। */
-    padding: 24px 40px 24px 24px;
+    /* বাঁ-ডান দুই পাশের gap সমান রাখা হলো (আগে ডান পাশে 40px বাড়তি ছিল,
+       image/content এর মাঝের desktop gap-এর সাথে মেলাতে গিয়ে - মোবাইলে
+       stacked লেআউটে সেটা অর্থহীন, বরং asymmetric দেখাচ্ছিল)। */
+    padding: 24px;
     border-radius: 32px;
   }
   .home-root .project-image {
@@ -1746,6 +1802,19 @@ html:has(.home-root) {
   .home-root .project-details-btn {
     align-self: stretch;
     justify-content: center;
+  }
+  /* desktop-এ টাইটেল/সামারি এক লাইনে ellipsis দিয়ে কাটা হয় (কার্ড পাশাপাশি
+     সরু হওয়ায়) - মোবাইলে কার্ড ফুল-উইথ স্ট্যাকড হওয়ায় যথেষ্ট জায়গা থাকে, তাই
+     পুরো টেক্সট wrap করে স্বাভাবিকভাবে দেখানো হচ্ছে, কেটে না ফেলে। */
+  .home-root .project-title {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  .home-root .project-summary {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
   }
 }
 @media (max-width: 640px) {
@@ -2063,10 +2132,16 @@ html:has(.home-root) {
   }
   .home-root .about-lead,
   .home-root .about-mission,
-  .home-root .about-vision,
-  .home-root .about-know-more {
+  .home-root .about-vision {
     position: static;
     width: 100%;
+  }
+  .home-root .about-know-more {
+    /* এটা শুধু width:100% পেলে pill-শেপ বাটনটা পুরো কলাম চওড়া হয়ে stretched
+       দেখাচ্ছিল - কনটেন্ট (লেবেল + অ্যারো) বাঁ দিকে জড়ো হয়ে ডান দিকে অনেকটা
+       ফাঁকা থেকে যাচ্ছিল। content-এর সমান চওড়ায় রাখা হলো, desktop-এর মতোই। */
+    position: static;
+    width: fit-content;
   }
 }
 @media (max-width: 640px) {
@@ -3127,24 +3202,6 @@ html:has(.home-root) {
 .home-root .process-mobile-item {
   position: relative;
 }
-.home-root .process-mobile-connector {
-  display: block;
-  width: 2px;
-  height: 16px;
-  margin: 0 auto;
-  background: rgba(254, 255, 255, 0.16);
-  transform: scaleY(0);
-  transform-origin: top;
-  transition:
-    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-    background-color 0.5s ease;
-}
-.home-root .process-mobile-connector.visible {
-  transform: scaleY(1);
-}
-.home-root .process-mobile-connector.active {
-  background: #8133f1;
-}
 @media (max-width: 900px) {
   .home-root .process-diagram-desktop-only {
     display: none;
@@ -3152,6 +3209,10 @@ html:has(.home-root) {
   .home-root .process-mobile-steps {
     display: flex;
     flex-direction: column;
+    /* connector line বাদ দেওয়ার পর কার্ডগুলো একদম touching ছিল - আলাদা gap
+       যোগ করা হলো (বাকি সেকশনের heading gap কনভেনশনের সাথে মিলিয়ে, 24px)।
+       এটা শুধু মোবাইল breakpoint-এ স্কোপড, desktop pinned-diagram অপরিবর্তিত। */
+    gap: 24px;
   }
   .home-root .process-mobile-steps .process-step {
     position: static;
@@ -4341,14 +4402,21 @@ html:has(.home-root) {
   .home-root .cta-final-title {
     font-size: 28px;
   }
+  /* আগে flex-direction:column দিয়ে প্রতিটা বাটন নিজের টেক্সটের সমান চওড়ায়
+     থাকত - "Start A Project" আর "Book A Call" দৈর্ঘ্যে আলাদা হওয়ায় দুটো
+     বাটনের width-ও আলাদা দেখাত। grid + একটা max-content কলাম ব্যবহার করে
+     কলামের width স্বয়ংক্রিয়ভাবে দুটোর মধ্যে চওড়াটার সমান হয়ে যায়, আর
+     default grid stretch-এ দুটো বাটনই সেই একই width নেয় - কোনো হার্ডকোড
+     বা JS measurement ছাড়াই। */
   .home-root .cta-final-buttons {
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: max-content;
+    justify-content: center;
     width: 100%;
   }
   .home-root .cta-final-btn {
-    justify-content: space-between;
-    width: 100%;
+    width: auto;
+    max-width: 100%;
   }
 }
 
@@ -4498,6 +4566,21 @@ html:has(.home-root) {
   object-position: bottom;
   padding: 0 24px;
   /* margin-bottom: 120px; */
+}
+/* .brand-band-এর height সব breakpoint-এই fixed 610px, আর object-fit:fill ছবিটাকে
+   বক্সের সাথে non-uniformly (aspect ratio উপেক্ষা করে) স্ট্রেচ করে - সরু মোবাইল
+   ভিউপোর্টে width কমলেও height একই fixed 610px থেকে যাওয়ায় এই ওয়াইড banner
+   ছবিটা (2880x1220) উল্লম্বভাবে প্রচণ্ড স্ট্রেচড/বিকৃত দেখাচ্ছিল। শুধু মোবাইলে
+   height-কে ছবির আসল aspect ratio অনুযায়ী auto করা হলো, আর object-fit:cover দিয়ে
+   (fill এর বদলে) আর কোনো বিকৃতি ছাড়াই ঠিকভাবে crop হবে। */
+@media (max-width: 640px) {
+  .home-root .brand-band {
+    height: auto;
+    aspect-ratio: 2880 / 1220;
+  }
+  .home-root .brand-band-img {
+    object-fit: cover;
+  }
 }
 
 /* ---------- footer (Figma 1037:4585 / 1037:4587) ---------- */
@@ -4925,9 +5008,29 @@ a.footer-contact-row:hover .footer-contact-text {
   .home-root .footer-subscribe {
     max-width: 100%;
     flex-wrap: wrap;
+    /* desktop-এ padding বাঁ পাশে 20px, বাকি পাশে 8px (asymmetric - ডিজাইনটা
+       single-line pill-এর জন্য, যেখানে ডান পাশে বাটনের নিজস্ব padding আগে
+       থেকেই বাড়তি জায়গা যোগ করত)। মোবাইলে flex-wrap করে input উপরে নিজের
+       লাইনে চলে যাওয়ায় এই 20px বাড়তি বাঁ-padding input-এর নিজের padding-এর
+       (16px) সাথে যোগ হয়ে বাঁ দিকে বেশি ফাঁকা জায়গা তৈরি করছিল। সব পাশ সমান
+       করা হলো। */
+    padding: 8px;
+  }
+  /* input-এর নিজের কোনো background/border নেই (parent .footer-subscribe-এর
+     ভাগাভাগি করা pill border নির্ভর করে, যেটা মাত্র 8% opacity - প্রায় অদৃশ্য)।
+     flex-wrap করে input উপরে, বাটন নিচে আলাদা লাইনে চলে গেলে তাই input-টাকে
+     placeholder টেক্সট শুধু ভাসমান দেখাচ্ছিল, কোনো box ছাড়াই। input-কে নিজস্ব
+     দৃশ্যমান bordered box দেওয়া হলো, আর বাটনকে full-width stretch না করে
+     content-এর সমান (বাকি সেকশনের বাটনগুলোর মতোই) রাখা হলো। */
+  .home-root .footer-subscribe-input {
+    width: 100%;
+    padding: 8px 16px;
+    border: 1px solid rgba(254, 255, 255, 0.1);
+    border-radius: 12px;
+    background: rgba(103, 107, 106, 0.06);
   }
   .home-root .footer-subscribe-btn {
-    width: 100%;
+    width: fit-content;
     justify-content: center;
   }
   .home-root .footer-links {

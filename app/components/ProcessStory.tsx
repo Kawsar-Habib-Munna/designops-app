@@ -347,12 +347,6 @@ function MobileStepList() {
         const isActive = i === visibleCount - 1;
         return (
           <div key={step.name} ref={setItemRef(i)} className="process-mobile-item">
-            {i > 0 && (
-              <span
-                className={`process-mobile-connector${isVisible ? ' visible' : ''}${isActive ? ' active' : ''}`}
-                aria-hidden="true"
-              />
-            )}
             <motion.div
               className={`process-step${isVisible ? ' revealed' : ''}${isActive ? ' active' : ''}`}
               initial={false}

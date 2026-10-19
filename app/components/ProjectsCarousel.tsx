@@ -28,13 +28,17 @@ function ProjectMiniCard({ project, reversed, number }: { project: ProjectCard; 
   // capped here - .project-title/.project-summary (home.css) truncate to a single
   // line with CSS text-overflow:ellipsis instead.
   const summary = project.summary && project.summary.trim() !== project.slug ? project.summary : null;
+  // Drive ফাইলের শেয়ারিং পারমিশন ঠিক না থাকলে বা ID বদলে গেলে lh3.googleusercontent.com
+  // 404/403 দেয় - তখন ব্রাউজারের ডিফল্ট ভাঙা-ছবি আইকন না দেখিয়ে placeholder gradient-এ
+  // গ্রেসফুলি ফলব্যাক করা হয়।
+  const [imgBroken, setImgBroken] = useState(false);
 
   return (
     <div className={`project-row${reversed ? ' reversed' : ''}`}>
       <div className="project-card-pill">
         <div className="project-image">
-          {project.cover ? (
-            <img src={project.cover} alt={project.title} />
+          {project.cover && !imgBroken ? (
+            <img src={project.cover} alt={project.title} onError={() => setImgBroken(true)} />
           ) : (
             <div className="project-image-placeholder" aria-hidden="true" />
           )}
