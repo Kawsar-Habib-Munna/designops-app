@@ -125,18 +125,18 @@ html:has(.home-root) {
 }
 /* শুধু html-এ overflow-x:hidden দিলেও body-র নিজের overflow আলাদা (visible) থেকে
    যায় - কিছু মোবাইল ব্রাউজারে position:fixed descendant (যেমন mouse-trail
-   canvas) html-এর clip দিয়ে পুরোপুরি আটকায় না যদি না body-তেও একই রুল থাকে। কিন্তু
-   body-তে non-visible overflow-x দিলে CSS স্পেক অনুযায়ী body-র overflow-y-ও
-   নিঃশব্দে 'auto' হয়ে যায় (এই ফাইলের 97-108 লাইনের কমেন্টেই আগে থেকে ডকুমেন্টেড
-   এই ফাঁদ) - body তখন position:sticky descendant-দের জন্য নতুন containing
-   block হয়ে যায়, আর ProcessStory-এর pinned scroll-stage (desktop-এ
-   position:sticky) ঠিক এই কারণেই pin না হয়ে কনটেন্টের সাথে সরে যাচ্ছিল। desktop-এ
-   ProcessStory sticky ব্যবহার করে, মোবাইলে (≤900px) করে না (প্লেইন লিস্ট) - তাই
-   এই body-level fix শুধু মোবাইল breakpoint-এই স্কোপ করা হলো, যেখানে sticky-pin
-   আদৌ নেই বলে এই ফাঁদে পড়ার কিছু নেই। */
+   canvas) html-এর clip দিয়ে পুরোপুরি আটকায় না যদি না body-তেও একই রুল থাকে।
+   body-তে overflow-x:hidden দিলে CSS স্পেক অনুযায়ী body-র overflow-y-ও নিঃশব্দে
+   'auto' হয়ে যায় (97-108 লাইনের কমেন্টে ডকুমেন্টেড ফাঁদ) - body তখন
+   position:sticky descendant-দের নতুন containing block হয়ে যায়, আর .nav (সব
+   breakpoint-এ sticky) মোবাইলে pin না হয়ে স্ক্রলের সাথে সরে যাচ্ছিল। hidden-এর
+   বদলে clip ব্যবহার করায় এই ফাঁদ এড়ানো গেছে - clip ও hidden-এর মতোই clip করে
+   (CDP দিয়ে verified: scrollWidth এখনো innerWidth-এর সমান), কিন্তু হুবহু এই
+   coercion ট্রিগার করে না, তাই body-র overflow-y visible-ই থাকে আর .nav ঠিকভাবে
+   pin থাকে (CDP দিয়ে verified)। */
 @media (max-width: 900px) {
   html:has(.home-root) body {
-    overflow-x: hidden;
+    overflow-x: clip;
     overscroll-behavior-x: none;
   }
 }
