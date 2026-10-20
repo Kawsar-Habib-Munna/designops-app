@@ -13,6 +13,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Manrope } from 'next/font/google';
 import './tasks.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
@@ -23,6 +24,11 @@ import { sendNotifications } from '@/lib/notify';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
 import Avatar from '@/app/components/Avatar';
+
+// PDF এক্সপোর্টের হিডেন ডকুমেন্টে (teamExportRef) ব্যবহারের জন্য — Arial-এর বদলে
+// Manrope, Bengali টেক্সট এমনিতেই ব্রাউজারের সিস্টেম ফলব্যাকে রেন্ডার হবে কারণ
+// Manrope-এ Bengali গ্লিফ নেই।
+const manrope = Manrope({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap' });
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -245,6 +251,8 @@ function TasksPageInner() {
   const [expandData, setExpandData] = useState<Record<string, ExpandData>>({});
   const [newComment, setNewComment] = useState<Record<string, string>>({});
   const [newChecklistItem, setNewChecklistItem] = useState<Record<string, string>>({});
+  const [editingChecklistItem, setEditingChecklistItem] = useState<string | null>(null);
+  const [editChecklistValue, setEditChecklistValue] = useState('');
 
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -538,6 +546,7 @@ function TasksPageInner() {
     const node = teamExportRef.current;
     if (!node) throw new Error('Export content not ready');
     const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
+    await document.fonts.ready;
     const canvas = await html2canvas(node, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -579,6 +588,20 @@ function TasksPageInner() {
     return { blob: pdf.output('blob'), filename: `team-tasks-${todayISO()}.pdf` };
   }
 
+  // WhatsApp-এ PDF-এর বদলে PNG শেয়ার করা হয় — WhatsApp-এ ছবি সরাসরি চ্যাটে
+  // থাম্বনেইল-প্রিভিউ সহ দেখায়, PDF-এর মতো আলাদা করে খুলে দেখতে হয় না।
+  async function generateTeamTasksPngBlob(): Promise<{ blob: Blob; filename: string }> {
+    const node = teamExportRef.current;
+    if (!node) throw new Error('Export content not ready');
+    const [{ default: html2canvas }] = await Promise.all([import('html2canvas')]);
+    await document.fonts.ready;
+    const canvas = await html2canvas(node, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+    const blob: Blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
+    });
+    return { blob, filename: `team-tasks-${todayISO()}.png` };
+  }
+
   async function handleExportTeamTasksPdf() {
     if (exportingPdf) return;
     setExportingPdf(true);
@@ -613,13 +636,13 @@ function TasksPageInner() {
   async function handleShareTeamTasksWhatsApp() {
     if (sharingPdf) return;
     setSharingPdf(true);
-    const dummyFile = new File([''], 'team-tasks.pdf', { type: 'application/pdf' });
+    const dummyFile = new File([''], 'team-tasks.png', { type: 'image/png' });
     const canShareFile = typeof navigator !== 'undefined' && !!navigator.canShare && !!navigator.share && navigator.canShare({ files: [dummyFile] });
     const fallbackTab = canShareFile ? null : window.open('about:blank', '_blank', 'noopener');
     try {
-      const { blob, filename } = await generateTeamTasksPdfBlob();
+      const { blob, filename } = await generateTeamTasksPngBlob();
       if (canShareFile) {
-        const file = new File([blob], filename, { type: 'application/pdf' });
+        const file = new File([blob], filename, { type: 'image/png' });
         await navigator.share({ files: [file], title: 'Team Tasks', text: 'Team tasks summary' });
         return;
       }
@@ -629,7 +652,7 @@ function TasksPageInner() {
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
-      const waUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent('Team tasks summary PDF ডাউনলোড হয়ে গেছে — এটা চ্যাটে অ্যাটাচ করে পাঠান।')}`;
+      const waUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent('Team tasks summary ছবি ডাউনলোড হয়ে গেছে — এটা চ্যাটে অ্যাটাচ করে পাঠান।')}`;
       if (fallbackTab) fallbackTab.location.href = waUrl;
       else window.open(waUrl, '_blank', 'noopener');
     } catch (err) {
@@ -837,6 +860,19 @@ function TasksPageInner() {
       return { ...prev, [taskId]: { ...cur, checklist: [...cur.checklist, data as ChecklistItem] } };
     });
     setNewChecklistItem((prev) => ({ ...prev, [taskId]: '' }));
+  }
+
+  async function updateChecklistItemLabel(taskId: string, item: ChecklistItem, newLabel: string) {
+    const label = newLabel.trim();
+    setEditingChecklistItem(null);
+    if (!label || label === item.label) return;
+
+    setExpandData((prev) => {
+      const cur = prev[taskId];
+      if (!cur) return prev;
+      return { ...prev, [taskId]: { ...cur, checklist: cur.checklist.map((c) => (c.id === item.id ? { ...c, label } : c)) } };
+    });
+    await supabase.from('checklist_items').update({ label }).eq('id', item.id);
   }
 
   async function submitComment(taskId: string) {
@@ -1340,10 +1376,10 @@ function TasksPageInner() {
                 থিম (dark mode) নির্বিশেষে সবসময় লাইট/হার্ডকোডেড রঙে রেন্ডার হয়। */}
             <div
               ref={teamExportRef}
-              style={{ position: 'fixed', top: 0, left: -99999, width: 760, background: '#ffffff', padding: 32, fontFamily: 'Arial, Helvetica, sans-serif', color: '#14141A' }}
+              style={{ position: 'fixed', top: 0, left: -99999, width: 760, background: '#ffffff', padding: 32, fontFamily: manrope.style.fontFamily, color: '#14141A' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '2px solid #14141A' }}>
-                <div style={{ fontSize: 20, fontWeight: 700 }}>Team Tasks</div>
+                <div style={{ fontSize: 20, fontWeight: 700 }}>Flow 53 - Daily Task</div>
                 <div style={{ fontSize: 12, color: '#6E6E7A' }}>
                   {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </div>
@@ -1373,12 +1409,12 @@ function TasksPageInner() {
                               • {task.title}
                             </div>
                             <div style={{ display: 'table-cell', textAlign: 'right', whiteSpace: 'nowrap', color: '#6E6E7A', paddingLeft: 8 }}>
-                              {task.progress ?? 0}% · {status.label}
-                              {task.due_date ? ` · Due ${task.due_date.slice(8, 10)}/${task.due_date.slice(5, 7)}/${task.due_date.slice(0, 4)}` : ''}
+                              {task.status !== 'todo' && status.label}
+                              {task.due_date ? `${task.status !== 'todo' ? ' · ' : ''}Due ${task.due_date.slice(8, 10)}/${task.due_date.slice(5, 7)}/${task.due_date.slice(0, 4)}` : ''}
                             </div>
                           </div>
                           {task.description && (
-                            <div style={{ fontSize: 11, color: '#6E6E7A', marginTop: 2, whiteSpace: 'pre-wrap' }}>{task.description}</div>
+                            <div style={{ fontSize: 11, color: task.status === 'done' ? '#A3A3AE' : '#14141A', marginTop: 2, whiteSpace: 'pre-wrap' }}>{task.description}</div>
                           )}
                           {checklist.length > 0 && (
                             <div style={{ marginLeft: 14, marginTop: 3 }}>
@@ -1388,7 +1424,7 @@ function TasksPageInner() {
                                   style={{
                                     fontSize: 11,
                                     padding: '2px 0',
-                                    color: item.is_done ? '#A3A3AE' : '#6E6E7A',
+                                    color: item.is_done ? '#A3A3AE' : '#14141A',
                                     textDecoration: item.is_done ? 'line-through' : 'none',
                                   }}
                                 >
@@ -1797,10 +1833,36 @@ function TasksPageInner() {
                             <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>কোনো চেকলিস্ট আইটেম নেই।</p>
                           ) : (
                             detail.checklist.map((item) => (
-                              <button type="button" key={item.id} className={`checklist-item${item.is_done ? ' done' : ''}`} onClick={() => toggleChecklistItem(editingTask.id, item)}>
-                                <span className="icb">{item.is_done && <Icon name="tick" size={8} color="#fff" />}</span>
-                                {item.label}
-                              </button>
+                              editingChecklistItem === item.id ? (
+                                <div className="comment-form" key={item.id} style={{ marginTop: 0, marginBottom: 4 }}>
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    value={editChecklistValue}
+                                    onChange={(e) => setEditChecklistValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') { e.preventDefault(); updateChecklistItemLabel(editingTask.id, item, editChecklistValue); }
+                                      if (e.key === 'Escape') { e.preventDefault(); setEditingChecklistItem(null); }
+                                    }}
+                                  />
+                                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => updateChecklistItemLabel(editingTask.id, item, editChecklistValue)}>সেভ</button>
+                                </div>
+                              ) : (
+                                <div className="checklist-item-row" key={item.id}>
+                                  <button type="button" className={`checklist-item${item.is_done ? ' done' : ''}`} onClick={() => toggleChecklistItem(editingTask.id, item)}>
+                                    <span className="icb">{item.is_done && <Icon name="tick" size={8} color="#fff" />}</span>
+                                    {item.label}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="checklist-item-edit-btn"
+                                    aria-label="এডিট করুন"
+                                    onClick={() => { setEditingChecklistItem(item.id); setEditChecklistValue(item.label); }}
+                                  >
+                                    <Icon name="edit" size={11} />
+                                  </button>
+                                </div>
+                              )
                             ))
                           )}
                           <div className="comment-form">
