@@ -190,7 +190,9 @@ export default async function ServicesPage() {
                   </span>
                 </div>
                 <div className="svc-detail-image">
-                  <img src={s.image} alt={s.imageAlt} />
+                  <div className="svc-detail-image-inner">
+                    <img src={s.image} alt={s.imageAlt} />
+                  </div>
                 </div>
               </div>
 

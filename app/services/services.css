@@ -6,7 +6,12 @@
 
 .home-root .svc-hero {
   background: #010003;
-  padding: 160px 0 0 0;
+  /* .nav-এর ঠিক পরেই .home-body-এ -100px margin-top থাকে (nav-এর নিচে hero
+     bg bleed করার জন্য, homepage-এর hero-র মতোই) - তাই এখানে padding-top
+     সরাসরি 120px দিলে আসল visible gap হবে মাত্র 20px। CDP দিয়ে মেপে 200px
+     বসানো হলো, যাতে navbar-এর নিচ থেকে কার্ডের উপর পর্যন্ত আসল gap ঠিক 120px
+     হয় (200 - 80 = 120 visible)। */
+  padding: 200px 0 120px 0;
 }
 .home-root .svc-hero-inner {
   width: min(1280px, calc(100% - 48px));
@@ -150,17 +155,29 @@
 .home-root .svc-trusted-mini-avatars img:first-child {
   margin-left: 0;
 }
+/* সব কয়টা সার্ভিস সেকশনের ছবির জন্যই এখন একই "matted frame" ট্রিটমেন্ট -
+   বাইরের ফ্রেম (subtle fill + border) আর ভেতরের ছবি ৮px ভেতরে বসানো (inset),
+   বাইরের 36px radius-এর সাথে মিলিয়ে ভেতরেরটা 28px। Figma-তে আপডেট করা
+   ডিজাইন অনুযায়ী। */
 .home-root .svc-detail-image {
+  position: relative;
   flex-shrink: 0;
   width: 640px;
   max-width: 100%;
   height: 420px;
   border-radius: 36px;
   border: 1px solid #19181c;
+  background: rgba(103, 107, 106, 0.04);
   overflow: hidden;
   box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
 }
-.home-root .svc-detail-image img {
+.home-root .svc-detail-image-inner {
+  position: absolute;
+  inset: 8px;
+  border-radius: 28px;
+  overflow: hidden;
+}
+.home-root .svc-detail-image-inner img {
   display: block;
   width: 100%;
   height: 100%;
@@ -193,6 +210,9 @@
   line-height: 1.5;
   font-weight: 500;
   color: #ada8b4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .home-root .svc-buttons {
   display: flex;
