@@ -639,11 +639,13 @@ function TasksPageInner() {
     const dummyFile = new File([''], 'team-tasks.png', { type: 'image/png' });
     const canShareFile = typeof navigator !== 'undefined' && !!navigator.canShare && !!navigator.share && navigator.canShare({ files: [dummyFile] });
     const fallbackTab = canShareFile ? null : window.open('about:blank', '_blank', 'noopener');
+    const todayLabel = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+    const shareText = `Today's (${todayLabel}) team tasks`;
     try {
       const { blob, filename } = await generateTeamTasksPngBlob();
       if (canShareFile) {
         const file = new File([blob], filename, { type: 'image/png' });
-        await navigator.share({ files: [file], title: 'Team Tasks', text: 'Team tasks summary' });
+        await navigator.share({ files: [file], title: 'Team Tasks', text: shareText });
         return;
       }
       const url = URL.createObjectURL(blob);
@@ -652,7 +654,7 @@ function TasksPageInner() {
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
-      const waUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent('Team tasks summary ছবি ডাউনলোড হয়ে গেছে — এটা চ্যাটে অ্যাটাচ করে পাঠান।')}`;
+      const waUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(`${shareText} — ছবি ডাউনলোড হয়ে গেছে, এটা চ্যাটে অ্যাটাচ করে পাঠান।`)}`;
       if (fallbackTab) fallbackTab.location.href = waUrl;
       else window.open(waUrl, '_blank', 'noopener');
     } catch (err) {
@@ -1376,7 +1378,7 @@ function TasksPageInner() {
                 থিম (dark mode) নির্বিশেষে সবসময় লাইট/হার্ডকোডেড রঙে রেন্ডার হয়। */}
             <div
               ref={teamExportRef}
-              style={{ position: 'fixed', top: 0, left: -99999, width: 760, background: '#ffffff', padding: 32, fontFamily: manrope.style.fontFamily, color: '#14141A' }}
+              style={{ position: 'fixed', top: 0, left: -99999, width: 600, background: '#ffffff', padding: 32, fontFamily: manrope.style.fontFamily, color: '#14141A' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '2px solid #14141A' }}>
                 <div style={{ fontSize: 20, fontWeight: 700 }}>Flow 53 - Daily Task</div>
@@ -1414,7 +1416,7 @@ function TasksPageInner() {
                             </div>
                           </div>
                           {task.description && (
-                            <div style={{ fontSize: 11, color: task.status === 'done' ? '#A3A3AE' : '#14141A', marginTop: 2, whiteSpace: 'pre-wrap' }}>{task.description}</div>
+                            <div style={{ fontSize: 11, color: task.status === 'done' ? '#A3A3AE' : '#14141A', marginTop: 2, marginLeft: 14, whiteSpace: 'pre-wrap' }}>{task.description}</div>
                           )}
                           {checklist.length > 0 && (
                             <div style={{ marginLeft: 14, marginTop: 3 }}>
