@@ -12,18 +12,21 @@ import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { WHATSAPP_URL as DEFAULT_BOOK_CALL_URL } from './BookCallButton';
 
-type NavItem = { label: string; target: string | null };
+// target: ইন-পেজ #id-তে scrollIntoView করার জন্য। href: আলাদা রিয়েল পেজে পূর্ণ
+// নেভিগেট করার জন্য (Service এখন হোমপেজের #services সেকশনের বদলে ডেডিকেটেড
+// /services পেজে নিয়ে যায়)।
+type NavItem = { label: string; target: string | null; href?: string };
 
 const LINKS: NavItem[] = [
   { label: 'Home', target: '#top' },
-  { label: 'Service', target: '#services' },
+  { label: 'Service', target: null, href: '/services' },
   { label: 'Project', target: '#work' },
   { label: 'About', target: '#about' },
   { label: 'Process', target: '#process' },
   { label: 'Contact', target: '#contact' },
 ];
 
-const SPY_IDS = ['services', 'work', 'about', 'process', 'team', 'contact'];
+const SPY_IDS = ['work', 'about', 'process', 'team', 'contact'];
 
 // Figma node I309:2741;304:2069 ("hugeicons:call-ringing-04") — real asset
 // path, downloaded and inlined exactly (fill #EFE6FD, no stroke/gradient).
@@ -50,7 +53,10 @@ export default function LandingNav({ bookCallUrl = DEFAULT_BOOK_CALL_URL }: { bo
   const pathname = usePathname();
   const isHome = pathname === '/';
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState('Home');
+  // /services-এ href দিয়ে ফুল নেভিগেট করার পর নেভবার নতুন করে মাউন্ট হয় - তখন
+  // "Service" বাটনটা active দেখানোর জন্য pathname থেকেই initial active state
+  // ঠিক করা হলো (আগে সবসময় 'Home' দিয়ে শুরু হতো, পেজ যাই হোক না কেন)।
+  const [active, setActive] = useState(() => (pathname?.startsWith('/services') ? 'Service' : 'Home'));
   const [scrolled, setScrolled] = useState(false);
   const lockRef = useRef(false);
   const lockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -79,6 +85,11 @@ export default function LandingNav({ bookCallUrl = DEFAULT_BOOK_CALL_URL }: { bo
   }, [isHome]);
 
   function goTo(item: NavItem) {
+    if (item.href) {
+      setOpen(false);
+      window.location.href = item.href;
+      return;
+    }
     if (!item.target) return;
     setOpen(false);
     if (!isHome) {

@@ -8,6 +8,7 @@ import LandingFooter from '@/app/components/LandingFooter';
 import LandingNav from '@/app/components/LandingNav';
 import RevealOnScroll from '@/app/components/RevealOnScroll';
 import { fetchSiteSettings, buildWhatsappUrl, BOOK_CALL_MESSAGE } from '@/lib/siteSettings';
+import { interStats, nunito, playfair } from '@/app/fonts';
 
 // পাবলিক কেস স্টাডি পেজ — /portfolio (app-এর ভেতরের admin পেজ) থেকে টিম যেই
 // কেস স্টাডি publish করে, সেটাই এখানে Overview থেকে Team পর্যন্ত ১৬টা সেকশন
@@ -119,7 +120,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
   });
 
   return (
-    <div className="home-root">
+    <div className={`home-root ${nunito.variable} ${playfair.variable} ${interStats.variable}`}>
       <LandingNav bookCallUrl={bookCallUrl} />
 
       <div className="home-body">

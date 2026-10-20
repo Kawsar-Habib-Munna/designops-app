@@ -1,5 +1,5 @@
-import { Inter, Nunito_Sans, Playfair_Display } from "next/font/google";
 import "./home.css";
+import { interStats, nunito, playfair } from "./fonts";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { driveThumbnailUrl, driveFullImageUrl } from "@/lib/driveUpload";
 import LandingNav from "@/app/components/LandingNav";
@@ -28,26 +28,6 @@ import SlideSwapLabel from "@/app/components/SlideSwapLabel";
 // প্রোফাইল পাল্টালে সাথে সাথে পরের ভিজিটেই দেখা যায়) ক্যাশ/ISR ছাড়াই প্রতিটা
 // রিকোয়েস্টে fresh ডেটা আনা হয়।
 export const dynamic = "force-dynamic";
-
-const interStats = Inter({
-  subsets: ["latin"],
-  weight: ["500"],
-  variable: "--font-inter-stats",
-  display: "swap",
-});
-const nunito = Nunito_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-nunito",
-  display: "swap",
-});
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-playfair",
-  display: "swap",
-});
 
 const STATS_TOP = [
   { label: "Experience", value: "02+" },
