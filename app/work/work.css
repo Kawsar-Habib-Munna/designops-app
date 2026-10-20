@@ -34,7 +34,10 @@
 .home-root .work-empty{font-size:13px;color:var(--ink-faint);}
 
 @media (max-width:640px){
-  .home-root .work-hero{padding-top:24px;}
+  /* আগে 24px ছিল, যেটা sticky navbar-এর নিচেই title/content-কে প্রায় চেপে
+     বসিয়ে দিচ্ছিল। হোমপেজের hero-এর মোবাইল টপ-প্যাডিং (140px, navbar ক্লিয়ার
+     করতে) এর সাথে মিলিয়ে বাড়ানো হলো। */
+  .home-root .work-hero{padding-top:64px;}
   .home-root .work-body{padding:0 0 20px 0;}
   /* .container-এর নিজস্ব 20px gutter থাকা সত্ত্বেও cover image viewport edge-এ
      গিয়ে ঠেকছিল দেখাচ্ছিল বলে .work-cover-এ সরাসরি একটা নিশ্চিত gap বসানো হলো। */

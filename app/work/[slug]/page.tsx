@@ -6,7 +6,7 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 import { driveFullImageUrl, driveEmbedUrl } from '@/lib/driveUpload';
 import LandingFooter from '@/app/components/LandingFooter';
 import LandingNav from '@/app/components/LandingNav';
-import BookCallButton from '@/app/components/BookCallButton';
+import RevealOnScroll from '@/app/components/RevealOnScroll';
 
 // পাবলিক কেস স্টাডি পেজ — /portfolio (app-এর ভেতরের admin পেজ) থেকে টিম যেই
 // কেস স্টাডি publish করে, সেটাই এখানে Overview থেকে Team পর্যন্ত ১৬টা সেকশন
@@ -184,15 +184,9 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
         </div>
       </main>
 
-      <section className="cta-band" id="contact">
-        <div className="container">
-          <h2 className="cta-band-title">Got a product that deserves better design?</h2>
-          <BookCallButton />
-        </div>
-      </section>
-
       <LandingFooter />
       </div>
+      <RevealOnScroll />
     </div>
   );
 }
