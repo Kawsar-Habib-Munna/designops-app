@@ -155,6 +155,9 @@
   border-radius: 12px;
   border: 1px solid rgba(200, 197, 205, 0.4);
   background: rgba(103, 107, 106, 0.1);
+  /* .svc-detail-text-এর নিজস্ব 24px gap সব children-এর মাঝে uniform - এখানে
+     শুধু badge-টার উপরে বাড়তি জায়গা দিতে margin-top যোগ করা হলো। */
+  margin-top: 24px;
 }
 .home-root .svc-trusted-mini-label {
   font-size: 16px;
@@ -176,6 +179,34 @@
 }
 .home-root .svc-trusted-mini-avatars img:first-child {
   margin-left: 0;
+}
+/* home.css-এর .hero-trust-plus-এর ঠিক একই radial-gradient ট্রিটমেন্ট - Figma-র
+   avatar-stack-এর শেষে এই "+" সার্কেলটাও থাকে, আগে বাদ পড়ে গিয়েছিল। */
+.home-root .svc-trusted-mini-plus {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+  border-radius: 14px;
+  border: 1px solid #010003;
+  margin-left: -4px;
+  background: radial-gradient(
+    circle 14px at 50% 50%,
+    #290064 0%,
+    #1f004c 25%,
+    #150034 50%,
+    #0b001b 75%,
+    #06000f 87.5%,
+    #010003 100%
+  );
+}
+.home-root .svc-trusted-mini-plus img {
+  display: block;
+  width: 20px;
+  height: 20px;
 }
 .home-root .svc-detail-image {
   position: relative;
@@ -217,7 +248,7 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
-  margin-bottom: 48px;
+  margin-bottom: 24px;
 }
 .home-root .svc-feature-card {
   display: flex;
@@ -327,7 +358,13 @@
 }
 @media (max-width: 640px) {
   .home-root .svc-hero {
-    padding-top: 64px;
+    /* আগে padding-top:64px দিয়ে কার্ড আসলে navbar-এর সাথে ওভারল্যাপ করছিল
+       (CDP দিয়ে মেপে -12px gap পাওয়া গেছে - .nav + .home-body-এর -100px
+       margin-এর কারণে, desktop-এর মতোই)। top বাড়ানো হলো আসল gap তৈরি করতে,
+       bottom কমানো হলো (আগে 120px desktop-এর থেকেই inherit হচ্ছিল, মোট
+       gap হয়ে যাচ্ছিল 184px)। */
+    padding-top: 120px;
+    padding-bottom: 48px;
   }
   .home-root .svc-hero-card {
     padding: 40px 20px;

@@ -201,6 +201,9 @@ export default async function ServicesPage() {
                       <img src="/hero/avatar-2.png" alt="" />
                       <img src="/hero/avatar-3.png" alt="" />
                       <img src="/hero/avatar-4.png" alt="" />
+                      <span className="svc-trusted-mini-plus">
+                        <img src="/hero/plus.svg" alt="" />
+                      </span>
                     </span>
                   </span>
                 </div>
