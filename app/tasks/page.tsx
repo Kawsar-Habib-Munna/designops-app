@@ -1267,7 +1267,7 @@ function TasksPageInner() {
             </div>
 
             {/* per-person card list */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <div className="scope-row">
               <div className="scope-toggle">
                 <button className={`scope-btn${listScope === 'mine' ? ' active' : ''}`} onClick={() => setListScope('mine')}>
                   <Icon name="user" size={13} /> My tasks
@@ -1277,7 +1277,7 @@ function TasksPageInner() {
                 </button>
               </div>
               {listScope === 'team' && (
-                <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+                <div className="scope-actions">
                   <button className="btn btn-ghost btn-sm" onClick={handleExportTeamTasksPdf} disabled={exportingPdf || memberTaskCards.length === 0}>
                     <Icon name="export" size={13} /> {exportingPdf ? 'এক্সপোর্ট হচ্ছে…' : 'Export PDF'}
                   </button>

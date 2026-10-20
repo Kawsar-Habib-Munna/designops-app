@@ -322,6 +322,8 @@
 .tasklist-root .week-nav-btn{width:32px;height:32px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);}
 .tasklist-root .week-nav-btn:hover{background:var(--surface-muted);color:var(--ink);}
 .tasklist-root .week-range{font-size:13px;font-weight:700;color:var(--ink);}
+.tasklist-root .scope-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.tasklist-root .scope-actions{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;}
 .tasklist-root .scope-toggle{display:flex;gap:4px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px;}
 .tasklist-root .scope-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;color:var(--ink-soft);background:transparent;border:none;}
 .tasklist-root .scope-btn.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow-sm);}
@@ -382,4 +384,6 @@
 @media (max-width:600px){
   .tasklist-root .kpi-grid{grid-template-columns:1fr 1fr;}
   .tasklist-root .modal-box{max-width:100%;}
+  .tasklist-root .scope-actions{width:100%;margin-left:0;}
+  .tasklist-root .scope-actions .btn{flex:1;justify-content:center;}
 }
