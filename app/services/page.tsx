@@ -33,6 +33,17 @@ type ServiceDetail = {
   desc: string;
   image: string;
   imageAlt: string;
+  // Figma-তে এই সেকশনের ছবিটা এখনো plain single rectangle (নতুন ৮px-inset
+  // frame structure এখনো বসানো হয়নি, শুধু Web Development/Branding/Digital
+  // Marketing-এ বসানো হয়েছে) - তাই এখানে CSS matted-frame না বসিয়ে ছবিটা
+  // সরাসরি পুরো বক্স জুড়ে (full-bleed) রেন্ডার করা হয়, Figma-র সাথে হুবহু
+  // মিলিয়ে। Figma-তে এই সেকশনগুলোও আপডেট হলে এই flag সরিয়ে দিলেই বাকি
+  // সেকশনগুলোর মতো matted-frame পাবে।
+  imageHasOwnFrame?: boolean;
+  // true হলে ছবি বাঁ দিকে, লেখা ডান দিকে - Figma-র আসল লেআউট zigzag/alternate
+  // করে (Web And App Design, Logo And Branding-এ ছবি বাঁ দিকে; বাকি তিনটায়
+  // ডান দিকে), মেটাডেটা দিয়ে পজিশন চেক করে কনফার্ম করা হয়েছে।
+  reverse?: boolean;
   features: Feature[];
 };
 
@@ -43,6 +54,7 @@ const SERVICES: ServiceDetail[] = [
     desc: "From mobile apps to web platforms, we create thoughtful UI/UX designs that simplify complexity and make every interaction feel effortless.",
     image: '/services/figma-01-ui-ux-design.png',
     imageAlt: 'UI/UX design work shown across laptop and mobile screens',
+    imageHasOwnFrame: true,
     features: [
       { title: 'User Research', desc: 'We analyze user needs to create meaningful experiences.' },
       { title: 'Wireframing', desc: 'We create clear wireframes and navigation.' },
@@ -58,6 +70,8 @@ const SERVICES: ServiceDetail[] = [
     desc: 'We craft responsive websites and apps that balance striking visuals with smooth, intuitive navigation.',
     image: '/services/figma-02-web-app-design.png',
     imageAlt: 'Web and app design mockups on a desktop screen',
+    imageHasOwnFrame: true,
+    reverse: true,
     features: [
       { title: 'Website Design', desc: 'We create modern websites with clean designs.' },
       { title: 'Mobile App Design', desc: 'We create mobile apps for seamless use.' },
@@ -73,6 +87,7 @@ const SERVICES: ServiceDetail[] = [
     desc: 'We build fast, secure, and scalable web solutions engineered to grow with your business.',
     image: '/services/figma-03-web-development.png',
     imageAlt: 'Web development work shown on a laptop screen',
+    imageHasOwnFrame: true,
     features: [
       { title: 'Frontend Development', desc: 'We design clean, responsive interfaces.' },
       { title: 'Backend Development', desc: 'We build secure backends for website reliability.' },
@@ -88,6 +103,8 @@ const SERVICES: ServiceDetail[] = [
     desc: 'We build cohesive brand identities that help your business stand out and stay memorable.',
     image: '/services/figma-04-brand-identity.png',
     imageAlt: 'Brand identity design work including logo and color palette',
+    imageHasOwnFrame: true,
+    reverse: true,
     features: [
       { title: 'Logo Design', desc: "We design logos that reflect your brand's values." },
       { title: 'Brand Color Palette', desc: 'We select colors that enhance brand recognition.' },
@@ -103,6 +120,7 @@ const SERVICES: ServiceDetail[] = [
     desc: 'We run data-driven marketing campaigns that grow your traffic and boost online visibility.',
     image: '/services/figma-05-digital-marketing.png',
     imageAlt: 'Digital marketing analytics shown on a tablet screen',
+    imageHasOwnFrame: true,
     features: [
       { title: 'SEO Optimization', desc: 'We optimize sites to boost rankings.' },
       { title: 'Keyword Research', desc: 'We find keywords to reach your audience.' },
@@ -169,12 +187,9 @@ export default async function ServicesPage() {
         {SERVICES.map((s) => (
           <section className="svc-detail-section" key={s.eyebrow}>
             <div className="svc-detail-inner">
-              <div className="svc-detail-row reveal">
+              <div className={`svc-detail-row${s.reverse ? ' reverse' : ''} reveal`}>
                 <div className="svc-detail-text">
-                  <span className="cta-final-eyebrow">
-                    <img src="/stats/line.svg" alt="" />
-                    <span>{s.eyebrow}</span>
-                  </span>
+                  <span className="svc-eyebrow">{s.eyebrow}</span>
                   <div className="svc-detail-heading">
                     <h2 className="svc-detail-title">{s.title}</h2>
                     <p className="svc-detail-desc">{s.desc}</p>
@@ -189,7 +204,7 @@ export default async function ServicesPage() {
                     </span>
                   </span>
                 </div>
-                <div className="svc-detail-image">
+                <div className={`svc-detail-image${s.imageHasOwnFrame ? ' framed' : ''}`}>
                   <div className="svc-detail-image-inner">
                     <img src={s.image} alt={s.imageAlt} />
                   </div>
@@ -205,7 +220,12 @@ export default async function ServicesPage() {
                 ))}
               </div>
 
-              <ServiceButtons bookCallUrl={bookCallUrl} />
+              <div className="svc-bottom-row">
+                <ServiceButtons bookCallUrl={bookCallUrl} />
+                <div className="svc-arrow-card" aria-hidden="true">
+                  <img src="/services/icon-arrow-corner.svg" alt="" />
+                </div>
+              </div>
             </div>
           </section>
         ))}
