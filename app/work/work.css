@@ -1,6 +1,20 @@
 /* Scoped to .home-root — this file only adds case-study-detail-page classes
    on top of app/home.css's shared design tokens/nav/footer/button styles. */
 
+/* এই পেজের কনটেন্ট আগে সাধারণ .container ক্লাস ব্যবহার করত (max-width:1180px,
+   padding:0 32px/20px) - navbar (.nav-inner, max-width:1280px) আর footer
+   (.footer-inner, width:min(1280px, calc(100% - 48px))) এর সাথে না মিলিয়ে।
+   footer-এর width:min() প্যাটার্নটাই এখানে প্রয়োগ করা হলো - এটা সব breakpoint-এ
+   একটাই রুলে কাজ করে (আলাদা মোবাইল override লাগে না), 1280px পর্যন্ত চওড়া আর
+   তার নিচে সবসময় 24px gutter। */
+.home-root .work-hero .container,
+.home-root .work-body .container {
+  max-width: none;
+  width: min(1280px, calc(100% - 48px));
+  padding: 0;
+  margin: 0 auto;
+}
+
 .home-root .work-hero{background:var(--bg);padding:120px 0 0 0;}
 .home-root .work-back{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:28px;}
 .home-root .work-back:hover{color:var(--ink);}

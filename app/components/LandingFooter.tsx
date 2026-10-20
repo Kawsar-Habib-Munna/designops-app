@@ -4,18 +4,16 @@
 // শেয়ার করা হয়। Figma "Flow 53 Web" (node 1037:4585 / 1037:4587) অনুযায়ী রিবিল্ড:
 // Newsletter + সোশ্যাল আইকন, Quick Links/Services/Contact তিন কলাম, তারপর
 // কপিরাইট + পেমেন্ট কার্ড বার। ফোন/ইমেইল/ঠিকানা FAQ সেকশনের (app/page.tsx) সাথে
-// মেলানো real তথ্য। সোশ্যাল আইকনগুলো এখনো non-clickable — company-র real
-// Behance/Dribbble/LinkedIn/Facebook/Instagram/X প্রোফাইল লিংক না থাকা পর্যন্ত
-// ভুয়া "#" href বসানো হয়নি (আগের ফুটারেও এই একই নীতি মানা হয়েছিল)। Newsletter
-// সাবস্ক্রাইব ফর্মেরও এখনো কোনো ব্যাকএন্ড নেই (কোনো /api/newsletter route এই
-// রিপোতে নেই) — তাই সাবমিটে শুধু রিলোড আটকানো হয়, fake success দেখানো হয় না।
+// মেলানো real তথ্য, /portfolio-এর "যোগাযোগের তথ্য" ফর্ম থেকে এডিটযোগ্য। সোশ্যাল
+// আইকনগুলোও সেই একই ফর্মের URL ফিল্ড থেকে আসে - কোনো URL না দেওয়া থাকলে ওই
+// প্ল্যাটফর্মের আইকনটা non-clickable (<span>) থেকে যায়, URL দেওয়া থাকলে <a>
+// হয়ে যায়। Newsletter সাবস্ক্রাইব ফর্মেরও এখনো কোনো ব্যাকএন্ড নেই (কোনো
+// /api/newsletter route এই রিপোতে নেই) — তাই সাবমিটে শুধু রিলোড আটকানো হয়,
+// fake success দেখানো হয় না।
 import Link from 'next/link';
 import { useState } from 'react';
 import SlideSwapLabel from './SlideSwapLabel';
-
-const WHATSAPP_CALL_URL = 'https://wa.me/8801996925819';
-const CONTACT_EMAIL = 'info@flow53design.com';
-const CONTACT_ADDRESS = 'Dhaka, Bangladesh';
+import { DEFAULT_SITE_SETTINGS, type SiteSettings, formatPhoneDisplay, buildWhatsappUrl } from '@/lib/siteSettings';
 
 const QUICK_LINKS = [
   { label: 'Project', href: '/#work' },
@@ -61,16 +59,18 @@ function InstagramIcon() {
 }
 
 const SOCIALS = [
-  { name: 'Behance', Icon: BehanceIcon },
-  { name: 'Dribbble', Icon: DribbbleIcon },
-  { name: 'LinkedIn', Icon: LinkedinIcon },
-  { name: 'Facebook', Icon: FacebookIcon },
-  { name: 'Instagram', Icon: InstagramIcon },
-  { name: 'X (Twitter)', Icon: TwitterIcon },
+  { name: 'Behance', Icon: BehanceIcon, key: 'socialBehance' as const },
+  { name: 'Dribbble', Icon: DribbbleIcon, key: 'socialDribbble' as const },
+  { name: 'LinkedIn', Icon: LinkedinIcon, key: 'socialLinkedin' as const },
+  { name: 'Facebook', Icon: FacebookIcon, key: 'socialFacebook' as const },
+  { name: 'Instagram', Icon: InstagramIcon, key: 'socialInstagram' as const },
+  { name: 'X (Twitter)', Icon: TwitterIcon, key: 'socialX' as const },
 ];
 
-export default function LandingFooter() {
+export default function LandingFooter({ settings = DEFAULT_SITE_SETTINGS }: { settings?: SiteSettings }) {
   const [email, setEmail] = useState('');
+  const whatsappUrl = buildWhatsappUrl(settings.contactPhone);
+  const phoneDisplay = formatPhoneDisplay(settings.contactPhone);
 
   function handleSubscribe(e: React.FormEvent) {
     e.preventDefault();
@@ -118,11 +118,18 @@ export default function LandingFooter() {
             </div>
 
             <div className="footer-socials">
-              {SOCIALS.map(({ name, Icon }) => (
-                <span key={name} className="footer-social-btn" role="img" aria-label={name}>
-                  <Icon />
-                </span>
-              ))}
+              {SOCIALS.map(({ name, Icon, key }) => {
+                const url = settings[key];
+                return url ? (
+                  <a key={name} href={url} target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label={name}>
+                    <Icon />
+                  </a>
+                ) : (
+                  <span key={name} className="footer-social-btn" role="img" aria-label={name}>
+                    <Icon />
+                  </span>
+                );
+              })}
             </div>
           </div>
 
@@ -152,23 +159,23 @@ export default function LandingFooter() {
             <div className="footer-link-col footer-contact-col">
               <p className="footer-col-heading">Contact and Notice</p>
               <div className="footer-contact-rows">
-                <a href={WHATSAPP_CALL_URL} target="_blank" rel="noopener noreferrer" className="footer-contact-row">
+                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="footer-contact-row">
                   <span className="footer-contact-icon">
                     <img src="/footer/icon-call.svg" alt="" />
                   </span>
-                  <span className="footer-contact-text">+88 01996925819</span>
+                  <span className="footer-contact-text">{phoneDisplay}</span>
                 </a>
-                <a href={`mailto:${CONTACT_EMAIL}`} className="footer-contact-row">
+                <a href={`mailto:${settings.contactEmail}`} className="footer-contact-row">
                   <span className="footer-contact-icon">
                     <img src="/footer/icon-mail.svg" alt="" />
                   </span>
-                  <span className="footer-contact-text">{CONTACT_EMAIL}</span>
+                  <span className="footer-contact-text">{settings.contactEmail}</span>
                 </a>
                 <div className="footer-contact-row">
                   <span className="footer-contact-icon">
                     <img src="/footer/icon-pin.svg" alt="" />
                   </span>
-                  <span className="footer-contact-text">{CONTACT_ADDRESS}</span>
+                  <span className="footer-contact-text">{settings.addressLine1}, {settings.addressLine2}</span>
                 </div>
                 <div className="footer-notice-links">
                   <span className="footer-notice-text">Privacy Policy</span>

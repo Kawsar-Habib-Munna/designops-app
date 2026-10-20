@@ -141,6 +141,11 @@
 .portfolio-root .empty-title{font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;}
 .portfolio-root .empty-sub{font-size:12px;max-width:280px;line-height:1.5;}
 .portfolio-root .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);overflow:hidden;}
+/* .panel আগে শুধু empty-state মেসেজের জন্য ব্যবহৃত হতো (যেটার নিজস্ব padding
+   আছে, .empty-state-এ) - সরাসরি ফর্ম বসালে কোনো padding ছাড়াই ইনপুটগুলো
+   প্যানেলের কিনারায় গিয়ে ঠেকছিল, flat/unstyled দেখাচ্ছিল। .modal-box-এর মতোই
+   20px padding দেওয়া হলো যোগাযোগের তথ্য ফর্মের জন্য। */
+.portfolio-root .panel-padded{padding:20px;}
 
 /* ---- case study grid ---- */
 .portfolio-root .cs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}

@@ -141,6 +141,24 @@ type Testimonial = {
   published: boolean;
 };
 
+// পাবলিক সাইটের ফুটার/FAQ-তে দেখানো যোগাযোগের তথ্য + "Book A Call" বাটনগুলোর
+// WhatsApp নাম্বার - একটামাত্র রো (id=1), case_studies/testimonials-এর মতো
+// তালিকা না। lib/siteSettings.ts-এর SiteSettings টাইপের সাথে ফিল্ড মিলিয়ে।
+type SiteSettingsRow = {
+  contact_phone: string | null;
+  book_call_phone: string | null;
+  contact_email: string | null;
+  contact_email_secondary: string | null;
+  contact_address_line1: string | null;
+  contact_address_line2: string | null;
+  social_behance: string | null;
+  social_dribbble: string | null;
+  social_linkedin: string | null;
+  social_facebook: string | null;
+  social_instagram: string | null;
+  social_x: string | null;
+};
+
 function slugify(text: string) {
   return text
     .toLowerCase()
@@ -158,11 +176,12 @@ function linkLabel(url: string) {
 }
 
 async function fetchAll() {
-  const [csRes, secRes, medRes, testRes] = await Promise.all([
+  const [csRes, secRes, medRes, testRes, settingsRes] = await Promise.all([
     supabase.from('case_studies').select('id, slug, title, client_name, category, summary, tags, cover_image, figma_prototype_url, order_index, published').order('order_index'),
     supabase.from('case_study_sections').select('id, case_study_id, section_key, content'),
     supabase.from('case_study_media').select('id, case_study_id, section_key, media_type, url, caption, order_index').order('order_index'),
     supabase.from('testimonials').select('id, name, role, quote, rating, avatar_url, order_index, published').order('order_index'),
+    supabase.from('site_settings').select('contact_phone, book_call_phone, contact_email, contact_email_secondary, contact_address_line1, contact_address_line2, social_behance, social_dribbble, social_linkedin, social_facebook, social_instagram, social_x').eq('id', 1).maybeSingle(),
   ]);
   return {
     errorMessage: csRes.error?.message ?? secRes.error?.message ?? medRes.error?.message ?? testRes.error?.message ?? null,
@@ -170,6 +189,7 @@ async function fetchAll() {
     sections: (secRes.data as CSSection[]) ?? [],
     media: (medRes.data as CSMedia[]) ?? [],
     testimonials: (testRes.data as Testimonial[]) ?? [],
+    siteSettings: (settingsRes.data as SiteSettingsRow | null) ?? null,
   };
 }
 
@@ -229,6 +249,38 @@ export default function PortfolioPage() {
   const [avatarProgress, setAvatarProgress] = useState(0);
   const [deletingTestimonial, setDeletingTestimonial] = useState(false);
 
+  const [ssPhone, setSsPhone] = useState('');
+  const [ssBookCallPhone, setSsBookCallPhone] = useState('');
+  const [ssEmail, setSsEmail] = useState('');
+  const [ssEmailSecondary, setSsEmailSecondary] = useState('');
+  const [ssAddress1, setSsAddress1] = useState('');
+  const [ssAddress2, setSsAddress2] = useState('');
+  const [ssBehance, setSsBehance] = useState('');
+  const [ssDribbble, setSsDribbble] = useState('');
+  const [ssLinkedin, setSsLinkedin] = useState('');
+  const [ssFacebook, setSsFacebook] = useState('');
+  const [ssInstagram, setSsInstagram] = useState('');
+  const [ssX, setSsX] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+
+  function applySiteSettings(row: SiteSettingsRow | null) {
+    if (!row) return;
+    setSsPhone(row.contact_phone ?? '');
+    setSsBookCallPhone(row.book_call_phone ?? '');
+    setSsEmail(row.contact_email ?? '');
+    setSsEmailSecondary(row.contact_email_secondary ?? '');
+    setSsAddress1(row.contact_address_line1 ?? '');
+    setSsAddress2(row.contact_address_line2 ?? '');
+    setSsBehance(row.social_behance ?? '');
+    setSsDribbble(row.social_dribbble ?? '');
+    setSsLinkedin(row.social_linkedin ?? '');
+    setSsFacebook(row.social_facebook ?? '');
+    setSsInstagram(row.social_instagram ?? '');
+    setSsX(row.social_x ?? '');
+  }
+
   async function reload() {
     const result = await fetchAll();
     setError(result.errorMessage);
@@ -236,6 +288,7 @@ export default function PortfolioPage() {
     setSections(result.sections);
     setMedia(result.media);
     setTestimonials(result.testimonials);
+    applySiteSettings(result.siteSettings);
   }
 
   useEffect(() => {
@@ -250,6 +303,7 @@ export default function PortfolioPage() {
       setSections(result.sections);
       setMedia(result.media);
       setTestimonials(result.testimonials);
+      applySiteSettings(result.siteSettings);
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);
       setLoading(false);
     }
@@ -679,6 +733,36 @@ export default function PortfolioPage() {
     if (editingTestimonialId === id) setShowTestimonialModal(false);
   }
 
+  async function handleSaveSettings(e: FormEvent) {
+    e.preventDefault();
+    setSavingSettings(true);
+    setSettingsError(null);
+    setSettingsSaved(false);
+    const { error: err } = await supabase
+      .from('site_settings')
+      .update({
+        contact_phone: ssPhone.trim(),
+        book_call_phone: ssBookCallPhone.trim(),
+        contact_email: ssEmail.trim(),
+        contact_email_secondary: ssEmailSecondary.trim(),
+        contact_address_line1: ssAddress1.trim(),
+        contact_address_line2: ssAddress2.trim(),
+        social_behance: ssBehance.trim(),
+        social_dribbble: ssDribbble.trim(),
+        social_linkedin: ssLinkedin.trim(),
+        social_facebook: ssFacebook.trim(),
+        social_instagram: ssInstagram.trim(),
+        social_x: ssX.trim(),
+      })
+      .eq('id', 1);
+    setSavingSettings(false);
+    if (err) {
+      setSettingsError(err.message);
+      return;
+    }
+    setSettingsSaved(true);
+  }
+
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
 
@@ -837,6 +921,89 @@ export default function PortfolioPage() {
                   })}
                 </div>
               )}
+            </section>
+
+            <section className="block">
+              <div className="section-title-row">
+                <span className="section-title">যোগাযোগের তথ্য</span>
+              </div>
+              <div className="panel panel-padded" style={{ maxWidth: 640 }}>
+                <form onSubmit={handleSaveSettings}>
+                  <p className="field-hint" style={{ marginTop: 0 }}>পাবলিক সাইটের ফুটার, FAQ সেকশন আর &ldquo;Book A Call&rdquo;/&ldquo;Start A Project&rdquo; বাটনগুলোতে এই তথ্যই দেখা যায়।</p>
+
+                  <div className="field-row-2" style={{ marginBottom: 12 }}>
+                    <div>
+                      <label className="field-label">প্রধান ফোন নাম্বার (WhatsApp, country code সহ)</label>
+                      <input className="field-input" style={{ marginBottom: 0 }} type="text" value={ssPhone} onChange={(e) => setSsPhone(e.target.value)} placeholder="8801996925819" required />
+                    </div>
+                    <div>
+                      <label className="field-label">&ldquo;Book A Call&rdquo; বাটনের নাম্বার</label>
+                      <input className="field-input" style={{ marginBottom: 0 }} type="text" value={ssBookCallPhone} onChange={(e) => setSsBookCallPhone(e.target.value)} placeholder="8801804409235" required />
+                    </div>
+                  </div>
+                  <p className="field-hint">শুধু ডিজিট, কোনো +/স্পেস/ড্যাশ ছাড়া - দেশের কোড দিয়ে শুরু (যেমন বাংলাদেশ হলে 88 দিয়ে)।</p>
+
+                  <div className="field-row-2" style={{ marginBottom: 12 }}>
+                    <div>
+                      <label className="field-label">প্রধান ইমেইল</label>
+                      <input className="field-input" style={{ marginBottom: 0 }} type="email" value={ssEmail} onChange={(e) => setSsEmail(e.target.value)} placeholder="info@flow53design.com" required />
+                    </div>
+                    <div>
+                      <label className="field-label">দ্বিতীয় ইমেইল</label>
+                      <input className="field-input" style={{ marginBottom: 0 }} type="email" value={ssEmailSecondary} onChange={(e) => setSsEmailSecondary(e.target.value)} placeholder="flow53design@gmail.com" />
+                    </div>
+                  </div>
+
+                  <div className="field-row-2" style={{ marginBottom: 12 }}>
+                    <div>
+                      <label className="field-label">ঠিকানা (লাইন ১)</label>
+                      <input className="field-input" style={{ marginBottom: 0 }} type="text" value={ssAddress1} onChange={(e) => setSsAddress1(e.target.value)} placeholder="Dhaka" required />
+                    </div>
+                    <div>
+                      <label className="field-label">ঠিকানা (লাইন ২)</label>
+                      <input className="field-input" style={{ marginBottom: 0 }} type="text" value={ssAddress2} onChange={(e) => setSsAddress2(e.target.value)} placeholder="Bangladesh" />
+                    </div>
+                  </div>
+
+                  <label className="field-label" style={{ marginTop: 4 }}>সোশ্যাল মিডিয়া প্রোফাইল লিংক</label>
+                  <p className="field-hint">খালি রাখলে ফুটারে ওই আইকনটা non-clickable থেকে যাবে।</p>
+                  <div className="field-row-2" style={{ marginBottom: 12 }}>
+                    <div>
+                      <label className="field-label">Behance</label>
+                      <input className="field-input" style={{ marginBottom: 0 }} type="url" value={ssBehance} onChange={(e) => setSsBehance(e.target.value)} placeholder="https://www.behance.net/..." />
+                    </div>
+                    <div>
+                      <label className="field-label">Dribbble</label>
+                      <input className="field-input" style={{ marginBottom: 0 }} type="url" value={ssDribbble} onChange={(e) => setSsDribbble(e.target.value)} placeholder="https://dribbble.com/..." />
+                    </div>
+                  </div>
+                  <div className="field-row-2" style={{ marginBottom: 12 }}>
+                    <div>
+                      <label className="field-label">LinkedIn</label>
+                      <input className="field-input" style={{ marginBottom: 0 }} type="url" value={ssLinkedin} onChange={(e) => setSsLinkedin(e.target.value)} placeholder="https://www.linkedin.com/company/..." />
+                    </div>
+                    <div>
+                      <label className="field-label">Facebook</label>
+                      <input className="field-input" style={{ marginBottom: 0 }} type="url" value={ssFacebook} onChange={(e) => setSsFacebook(e.target.value)} placeholder="https://www.facebook.com/..." />
+                    </div>
+                  </div>
+                  <div className="field-row-2" style={{ marginBottom: 12 }}>
+                    <div>
+                      <label className="field-label">Instagram</label>
+                      <input className="field-input" style={{ marginBottom: 0 }} type="url" value={ssInstagram} onChange={(e) => setSsInstagram(e.target.value)} placeholder="https://www.instagram.com/..." />
+                    </div>
+                    <div>
+                      <label className="field-label">X (Twitter)</label>
+                      <input className="field-input" style={{ marginBottom: 0 }} type="url" value={ssX} onChange={(e) => setSsX(e.target.value)} placeholder="https://x.com/..." />
+                    </div>
+                  </div>
+
+                  {settingsError && <p style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 10 }}>{settingsError}</p>}
+                  {settingsSaved && !settingsError && <p style={{ color: 'var(--success, #1a7f37)', fontSize: 12, marginBottom: 10 }}>সেভ হয়েছে।</p>}
+
+                  <button type="submit" className="btn btn-accent btn-sm" disabled={savingSettings}>{savingSettings ? 'সেভ হচ্ছে…' : 'সেভ করুন'}</button>
+                </form>
+              </div>
             </section>
           </main>
         </div>

@@ -4,7 +4,7 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { driveThumbnailUrl, driveFullImageUrl } from "@/lib/driveUpload";
 import LandingNav from "@/app/components/LandingNav";
 import LandingFooter from "@/app/components/LandingFooter";
-import { WHATSAPP_URL } from "@/app/components/BookCallButton";
+import { fetchSiteSettings, formatPhoneDisplay, buildWhatsappUrl, BOOK_CALL_MESSAGE } from "@/lib/siteSettings";
 import RevealOnScroll from "@/app/components/RevealOnScroll";
 import ServicesShowcase from "@/app/components/ServicesShowcase";
 import ProjectsCarousel from "@/app/components/ProjectsCarousel";
@@ -192,18 +192,20 @@ async function fetchTeam(): Promise<TeamMember[]> {
 }
 
 export default async function Home() {
-  const [team, caseStudies, testimonials] = await Promise.all([
+  const [team, caseStudies, testimonials, settings] = await Promise.all([
     fetchTeam(),
     fetchCaseStudies(),
     fetchTestimonials(),
+    fetchSiteSettings(),
   ]);
+  const bookCallUrl = buildWhatsappUrl(settings.bookCallPhone, BOOK_CALL_MESSAGE);
 
   return (
     <div
       className={`home-root ${nunito.variable} ${playfair.variable} ${interStats.variable}`}
     >
       <MouseTrail />
-      <LandingNav />
+      <LandingNav bookCallUrl={bookCallUrl} />
 
       <div className="home-body">
         <header className="hero">
@@ -470,7 +472,7 @@ export default async function Home() {
                   </p>
                 </div>
                 <a href="#team" className="about-know-more">
-                  <span className="about-know-more-label">Know More</span>
+                  <span className="about-know-more-label"><SlideSwapLabel text="Know More" /></span>
                   <img src="/about/arrow-know-more.svg" alt="" />
                 </a>
               </div>
@@ -604,7 +606,7 @@ export default async function Home() {
                   Let&rsquo;s Work Together
                 </div>
                 <div className="contact-card">
-                  <ContactForm />
+                  <ContactForm whatsappNumber={settings.bookCallPhone} />
                 </div>
               </div>
             </div>
@@ -619,7 +621,7 @@ export default async function Home() {
               <div className="faq-contact-cards">
                 <a
                   className="faq-contact-card"
-                  href="https://wa.me/8801996925819"
+                  href={buildWhatsappUrl(settings.contactPhone)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -645,17 +647,17 @@ export default async function Home() {
                     </svg>
                   </span>
                   <span className="faq-contact-lines">
-                    <span>+88 01996925819</span>
-                    <span>+88 01804409235</span>
+                    <span>{formatPhoneDisplay(settings.contactPhone)}</span>
+                    <span>{formatPhoneDisplay(settings.bookCallPhone)}</span>
                   </span>
                 </a>
-                <a className="faq-contact-card" href="mailto:info@flow53design.com">
+                <a className="faq-contact-card" href={`mailto:${settings.contactEmail}`}>
                   <span className="faq-contact-icon">
                     <img src="/faq/icon-email.svg" alt="" />
                   </span>
                   <span className="faq-contact-lines">
-                    <span>info@flow53design.com</span>
-                    <span>flow53design@gmail.com</span>
+                    <span>{settings.contactEmail}</span>
+                    <span>{settings.contactEmailSecondary}</span>
                   </span>
                 </a>
                 <div className="faq-contact-card faq-contact-card-wide">
@@ -684,8 +686,8 @@ export default async function Home() {
                     </svg>
                   </span>
                   <span className="faq-contact-lines">
-                    <span>Dhaka</span>
-                    <span>Bangladesh</span>
+                    <span>{settings.addressLine1}</span>
+                    <span>{settings.addressLine2}</span>
                   </span>
                 </div>
               </div>
@@ -751,7 +753,7 @@ export default async function Home() {
                   />
                 </a>
                 <a
-                  href={WHATSAPP_URL}
+                  href={bookCallUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="cta-final-btn secondary"
@@ -870,7 +872,7 @@ export default async function Home() {
           <img src="/brand/logo-band.webp" alt="" className="brand-band-img" />
         </section>
 
-        <LandingFooter />
+        <LandingFooter settings={settings} />
       </div>
 
       <RevealOnScroll />

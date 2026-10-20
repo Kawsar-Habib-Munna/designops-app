@@ -2244,3 +2244,46 @@ drop policy if exists "team can delete testimonials" on testimonials;
 create policy "team can delete testimonials" on testimonials for delete using (public.is_team_member());
 drop trigger if exists set_testimonials_updated_at on testimonials;
 create trigger set_testimonials_updated_at before update on testimonials for each row execute procedure public.set_updated_at();
+
+-- পাবলিক সাইটের ফুটার/FAQ-তে দেখানো যোগাযোগের তথ্য (ফোন/ইমেইল/ঠিকানা) আর
+-- "Book A Call"/"Start A Project" বাটনগুলোর WhatsApp নাম্বার আগে
+-- LandingFooter.tsx/app/page.tsx/LandingNav.tsx-এ আলাদা আলাদা হার্ডকোড করা
+-- ছিল - এখন /portfolio থেকে এডিটযোগ্য। case_studies/testimonials-এর মতো
+-- তালিকা না, একটামাত্র রো (id সবসময় 1) - lib/siteSettings.ts এটাই পড়ে।
+create table if not exists site_settings (
+  id int primary key default 1,
+  contact_phone text,
+  book_call_phone text,
+  contact_email text,
+  contact_email_secondary text,
+  contact_address_line1 text,
+  contact_address_line2 text,
+  social_behance text,
+  social_dribbble text,
+  social_linkedin text,
+  social_facebook text,
+  social_instagram text,
+  social_x text,
+  updated_by uuid references profiles(id),
+  updated_at timestamptz default now(),
+  constraint site_settings_singleton check (id = 1)
+);
+-- site_settings টেবিলটা আগে (সোশ্যাল কলামগুলো ছাড়া) একবার তৈরি হয়ে থাকলে উপরের
+-- create table if not exists কোনো নতুন কলাম যোগ করবে না - তাই এই add column
+-- if not exists গুলো আলাদা করে, নতুন/পুরোনো দুই অবস্থাতেই নিরাপদে চলার জন্য।
+alter table site_settings add column if not exists social_behance text;
+alter table site_settings add column if not exists social_dribbble text;
+alter table site_settings add column if not exists social_linkedin text;
+alter table site_settings add column if not exists social_facebook text;
+alter table site_settings add column if not exists social_instagram text;
+alter table site_settings add column if not exists social_x text;
+insert into site_settings (id, contact_phone, book_call_phone, contact_email, contact_email_secondary, contact_address_line1, contact_address_line2)
+values (1, '8801996925819', '8801804409235', 'info@flow53design.com', 'flow53design@gmail.com', 'Dhaka', 'Bangladesh')
+on conflict (id) do nothing;
+alter table site_settings enable row level security;
+drop policy if exists "team can read site settings" on site_settings;
+create policy "team can read site settings" on site_settings for select using (public.is_team_member());
+drop policy if exists "team can update site settings" on site_settings;
+create policy "team can update site settings" on site_settings for update using (public.is_team_member());
+drop trigger if exists set_site_settings_updated_at on site_settings;
+create trigger set_site_settings_updated_at before update on site_settings for each row execute procedure public.set_updated_at();

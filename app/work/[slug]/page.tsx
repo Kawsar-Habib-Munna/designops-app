@@ -7,6 +7,7 @@ import { driveFullImageUrl, driveEmbedUrl } from '@/lib/driveUpload';
 import LandingFooter from '@/app/components/LandingFooter';
 import LandingNav from '@/app/components/LandingNav';
 import RevealOnScroll from '@/app/components/RevealOnScroll';
+import { fetchSiteSettings, buildWhatsappUrl, BOOK_CALL_MESSAGE } from '@/lib/siteSettings';
 
 // পাবলিক কেস স্টাডি পেজ — /portfolio (app-এর ভেতরের admin পেজ) থেকে টিম যেই
 // কেস স্টাডি publish করে, সেটাই এখানে Overview থেকে Team পর্যন্ত ১৬টা সেকশন
@@ -95,9 +96,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function WorkDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const result = await fetchCaseStudy(slug);
+  const [result, settings] = await Promise.all([fetchCaseStudy(slug), fetchSiteSettings()]);
   if (!result) notFound();
   const { caseStudy, sections, media } = result;
+  const bookCallUrl = buildWhatsappUrl(settings.bookCallPhone, BOOK_CALL_MESSAGE);
 
   const cover = caseStudy.cover_image ? driveFullImageUrl(caseStudy.cover_image) : null;
   const embedUrl = caseStudy.figma_prototype_url ? `https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(caseStudy.figma_prototype_url)}` : null;
@@ -118,7 +120,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
 
   return (
     <div className="home-root">
-      <LandingNav />
+      <LandingNav bookCallUrl={bookCallUrl} />
 
       <div className="home-body">
       <header className="work-hero">
@@ -184,7 +186,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
         </div>
       </main>
 
-      <LandingFooter />
+      <LandingFooter settings={settings} />
       </div>
       <RevealOnScroll />
     </div>
