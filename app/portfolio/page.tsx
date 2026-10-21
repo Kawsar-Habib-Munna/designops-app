@@ -141,6 +141,18 @@ type Testimonial = {
   published: boolean;
 };
 
+// /about পেজের Team গ্রিডে কে কততম স্লটে দেখাবে - শুধু reorder, create/edit/
+// delete এখানে না (নাম/রোল/ছবি/বায়ো/সোশ্যাল লিংক প্রতিটা মেম্বার নিজে
+// ProfileMenu থেকে এডিট করে)।
+type TeamOrderMember = {
+  id: string;
+  full_name: string;
+  role: string | null;
+  avatar_color: string | null;
+  avatar_url: string | null;
+  order_index: number;
+};
+
 // পাবলিক সাইটের ফুটার/FAQ-তে দেখানো যোগাযোগের তথ্য + "Book A Call" বাটনগুলোর
 // WhatsApp নাম্বার - একটামাত্র রো (id=1), case_studies/testimonials-এর মতো
 // তালিকা না। lib/siteSettings.ts-এর SiteSettings টাইপের সাথে ফিল্ড মিলিয়ে।
@@ -176,12 +188,13 @@ function linkLabel(url: string) {
 }
 
 async function fetchAll() {
-  const [csRes, secRes, medRes, testRes, settingsRes] = await Promise.all([
+  const [csRes, secRes, medRes, testRes, settingsRes, teamRes] = await Promise.all([
     supabase.from('case_studies').select('id, slug, title, client_name, category, summary, tags, cover_image, figma_prototype_url, order_index, published').order('order_index'),
     supabase.from('case_study_sections').select('id, case_study_id, section_key, content'),
     supabase.from('case_study_media').select('id, case_study_id, section_key, media_type, url, caption, order_index').order('order_index'),
     supabase.from('testimonials').select('id, name, role, quote, rating, avatar_url, order_index, published').order('order_index'),
     supabase.from('site_settings').select('contact_phone, book_call_phone, contact_email, contact_email_secondary, contact_address_line1, contact_address_line2, social_behance, social_dribbble, social_linkedin, social_facebook, social_instagram, social_x').eq('id', 1).maybeSingle(),
+    supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, order_index').order('order_index'),
   ]);
   return {
     errorMessage: csRes.error?.message ?? secRes.error?.message ?? medRes.error?.message ?? testRes.error?.message ?? null,
@@ -190,6 +203,7 @@ async function fetchAll() {
     media: (medRes.data as CSMedia[]) ?? [],
     testimonials: (testRes.data as Testimonial[]) ?? [],
     siteSettings: (settingsRes.data as SiteSettingsRow | null) ?? null,
+    teamMembers: (teamRes.data as TeamOrderMember[]) ?? [],
   };
 }
 
@@ -234,6 +248,7 @@ export default function PortfolioPage() {
   const [uploadInfo, setUploadInfo] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
 
+  const [teamMembers, setTeamMembers] = useState<TeamOrderMember[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [showTestimonialModal, setShowTestimonialModal] = useState(false);
   const [editingTestimonialId, setEditingTestimonialId] = useState<string | null>(null);
@@ -288,6 +303,7 @@ export default function PortfolioPage() {
     setSections(result.sections);
     setMedia(result.media);
     setTestimonials(result.testimonials);
+    setTeamMembers(result.teamMembers);
     applySiteSettings(result.siteSettings);
   }
 
@@ -303,6 +319,7 @@ export default function PortfolioPage() {
       setSections(result.sections);
       setMedia(result.media);
       setTestimonials(result.testimonials);
+      setTeamMembers(result.teamMembers);
       applySiteSettings(result.siteSettings);
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);
       setLoading(false);
@@ -720,6 +737,20 @@ export default function PortfolioPage() {
     ]);
   }
 
+  async function handleMoveTeamMember(id: string, dir: -1 | 1) {
+    const sorted = [...teamMembers].sort((a, b) => a.order_index - b.order_index);
+    const idx = sorted.findIndex((m) => m.id === id);
+    const swapIdx = idx + dir;
+    if (idx < 0 || swapIdx < 0 || swapIdx >= sorted.length) return;
+    const a = sorted[idx];
+    const b = sorted[swapIdx];
+    setTeamMembers((prev) => prev.map((m) => (m.id === a.id ? { ...m, order_index: b.order_index } : m.id === b.id ? { ...m, order_index: a.order_index } : m)));
+    await Promise.all([
+      supabase.from('profiles').update({ order_index: b.order_index }).eq('id', a.id),
+      supabase.from('profiles').update({ order_index: a.order_index }).eq('id', b.id),
+    ]);
+  }
+
   async function handleDeleteTestimonial(id: string, name: string) {
     if (!window.confirm(`"${name}"-এর টেস্টিমোনিয়ালটা মুছে ফেলতে চান? এই অ্যাকশন ফেরানো যাবে না।`)) return;
     setDeletingTestimonial(true);
@@ -769,6 +800,7 @@ export default function PortfolioPage() {
   const sortedCaseStudies = [...caseStudies].sort((a, b) => a.order_index - b.order_index);
   const editing = caseStudies.find((c) => c.id === editingId) ?? null;
   const sortedTestimonials = [...testimonials].sort((a, b) => a.order_index - b.order_index);
+  const sortedTeamMembers = [...teamMembers].sort((a, b) => a.order_index - b.order_index);
 
   return (
     <div className={`portfolio-root${dark ? ' dark' : ''}`}>
@@ -915,6 +947,48 @@ export default function PortfolioPage() {
                             <button className="btn btn-ghost btn-sm" onClick={() => openTestimonialEditor(t)}><Icon name="edit" size={13} /> এডিট</button>
                             <button className="btn btn-danger btn-sm" onClick={() => handleDeleteTestimonial(t.id, t.name)}><Icon name="trash" size={13} /></button>
                           </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            <section className="block">
+              <div className="section-title-row">
+                <span className="section-title">টিম কার্ডের অর্ডার</span>
+              </div>
+              <p className="field-hint" style={{ marginTop: -4, marginBottom: 12 }}>
+                About পেজের &ldquo;Our Team&rdquo; সেকশনে কে কততম কার্ডে দেখাবে এখান থেকে ঠিক করুন। নাম/রোল/ছবি/বায়ো/সোশ্যাল লিংক প্রতিটা মেম্বার নিজে নিজের প্রোফাইল থেকে এডিট করে।
+              </p>
+              {loading ? (
+                <p style={{ fontSize: 13, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
+              ) : sortedTeamMembers.length === 0 ? (
+                <div className="panel"><div className="empty-state"><div className="empty-icon"><Icon name="users" /></div><div className="empty-title">কোনো টিম মেম্বার পাওয়া যায়নি</div></div></div>
+              ) : (
+                <div className="panel" style={{ maxWidth: 640 }}>
+                  {sortedTeamMembers.map((m, i) => {
+                    return (
+                      <div
+                        key={m.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '10px 4px',
+                          borderBottom: i === sortedTeamMembers.length - 1 ? 'none' : '1px solid var(--border)',
+                        }}
+                      >
+                        <span style={{ fontSize: 12, color: 'var(--ink-faint)', width: 18, textAlign: 'right' }}>{i + 1}</span>
+                        <Avatar person={{ full_name: m.full_name, avatar_color: m.avatar_color, avatar_url: m.avatar_url }} size={32} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="cs-title" style={{ fontSize: 14 }}>{m.full_name}</div>
+                          {m.role && <span className="cs-tag">{m.role}</span>}
+                        </div>
+                        <div className="cs-order-btns" style={{ position: 'static' }}>
+                          <button onClick={() => handleMoveTeamMember(m.id, -1)} disabled={i === 0} aria-label="উপরে সরান"><Icon name="up" size={12} /></button>
+                          <button onClick={() => handleMoveTeamMember(m.id, 1)} disabled={i === sortedTeamMembers.length - 1} aria-label="নিচে সরান"><Icon name="down" size={12} /></button>
                         </div>
                       </div>
                     );

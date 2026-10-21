@@ -1,0 +1,568 @@
+/* Scoped to .home-root — Figma "Flow 53 Web" node 2497:2041 ("About").
+   Hero/breadcrumb/eyebrow treatment mirrors app/services/services.css
+   (identical design spec, duplicated here to keep each route's CSS
+   self-contained like /services already does). Stats section reuses
+   home.css's existing .stats-* classes verbatim (same copy/numbers as
+   the homepage), CTA band/brand-band/footer reuse home.css's existing
+   cta-final and brand-band classes verbatim. */
+
+.home-root .abt-hero {
+  background: #010003 url("/about/hero-bg-pattern.png") top center / cover no-repeat;
+  padding: 200px 0 120px 0;
+}
+.home-root .abt-hero-inner {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto;
+}
+.home-root .abt-hero-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 100px 40px;
+  border-radius: 40px;
+  border: 1px solid rgba(200, 197, 205, 0.4);
+  background: rgba(103, 107, 106, 0.04);
+}
+.home-root .abt-breadcrumb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 24px 4px 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(200, 197, 205, 0.4);
+  box-shadow: 0 8px 40px rgba(41, 0, 100, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.home-root .abt-breadcrumb-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #19181c;
+  background: linear-gradient(90deg, rgba(239, 230, 253, 0.1), rgba(206, 176, 250, 0.1));
+  box-shadow:
+    0 8px 40px rgba(41, 0, 100, 0.12),
+    inset 0 4px 12px rgba(254, 255, 255, 0.04);
+}
+.home-root .abt-breadcrumb-icon img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+.home-root .abt-breadcrumb-label {
+  font-family: var(--font-inter-stats), "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.home-root .abt-breadcrumb-label .dim {
+  color: #9d99a4;
+}
+.home-root .abt-breadcrumb-label .bright {
+  color: #ceb0fa;
+}
+.home-root .abt-hero-title {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 700;
+  line-height: 1.3;
+  color: #e6e4e8;
+  text-align: center;
+  max-width: 920px;
+}
+.home-root .abt-hero-desc {
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #ada8b4;
+  text-align: center;
+  max-width: 648px;
+}
+
+/* ---------- shared section/eyebrow patterns ---------- */
+.home-root .abt-section {
+  background: #010003;
+  padding: 120px 0;
+}
+.home-root .abt-inner {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto;
+}
+.home-root .abt-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 12px 20px;
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
+  background-image: linear-gradient(151deg, rgba(254, 255, 255, 0.08) 0%, rgba(239, 230, 253, 0.08) 100%);
+  font-family: var(--font-inter-stats), "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #ceb0fa;
+  white-space: nowrap;
+}
+.home-root .abt-eyebrow.solid {
+  background-image: none;
+  background: #19181c;
+  box-shadow: 0 8px 10px rgba(129, 51, 241, 0.04);
+}
+
+/* ---------- Numbers That Speak (Figma's own 3-then-2 row layout, not the
+   homepage's circular-badge .stat-circle treatment) ---------- */
+.home-root .abt-stats {
+  padding-top: 64px;
+}
+.home-root .abt-stats-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  text-align: center;
+  margin-bottom: 80px;
+}
+.home-root .abt-stats-title {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 700;
+  color: #e6e4e8;
+}
+.home-root .abt-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.home-root .abt-stats-row-2 {
+  justify-content: center;
+  gap: 116px;
+  margin-top: 60px;
+}
+.home-root .abt-stats-divider {
+  flex: 1;
+  max-width: 140px;
+  height: 1px;
+  align-self: center;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+}
+.home-root .abt-stats-row-2 .abt-stats-divider {
+  flex: none;
+  width: 140px;
+}
+.home-root .stat-plain {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+}
+.home-root .stat-plain-label {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  color: #7b7780;
+}
+.home-root .stat-plain-value {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: clamp(40px, 6vw, 72px);
+  font-weight: 700;
+  line-height: 1.1;
+  color: #ada8b4;
+  margin-top: -8px;
+}
+.home-root .stat-plain-arrow {
+  width: 24px;
+  height: 24px;
+}
+
+/* ---------- About Us At A Glance (+ Mission/Vision stacked under each column) ----------
+   Grid, not two independent flex columns — the photo (fixed 455px) and the
+   text block (variable height depending on real line-wrapping) will rarely
+   render exactly the same height, so two separate flex columns can't
+   guarantee Mission and Vision land in the same row. Explicit grid-row
+   placement does. */
+.home-root .abt-about-row {
+  display: grid;
+  grid-template-columns: 572px 1fr;
+  column-gap: 80px;
+  row-gap: 100px;
+  align-items: start;
+}
+.home-root .abt-about-image {
+  grid-column: 1;
+  grid-row: 1;
+}
+.home-root .abt-about-text {
+  grid-column: 2;
+  grid-row: 1;
+}
+.home-root .abt-mv-card.mission {
+  grid-column: 1;
+  grid-row: 2;
+}
+.home-root .abt-mv-card.vision {
+  grid-column: 2;
+  grid-row: 2;
+}
+.home-root .abt-about-image {
+  position: relative;
+  width: 100%;
+  height: 455px;
+  border-radius: 40px;
+  border: 1px solid #19181c;
+  background: rgba(103, 107, 106, 0.1);
+  box-shadow: 0 8px 40px rgba(41, 0, 100, 0.12);
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.home-root .abt-about-image-inner {
+  position: absolute;
+  inset: 8px;
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
+}
+.home-root .abt-about-image-inner img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: bottom;
+}
+.home-root .abt-about-logo {
+  position: absolute;
+  left: 44px;
+  bottom: 23px;
+  width: 484px;
+  max-width: calc(100% - 88px);
+  opacity: 0.6;
+  pointer-events: none;
+}
+.home-root .abt-about-text {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  min-width: 0;
+}
+.home-root .abt-about-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.home-root .abt-about-title {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 700;
+  line-height: 1.25;
+  color: #e6e4e8;
+}
+.home-root .abt-about-copy {
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #ada8b4;
+}
+.home-root .abt-about-copy p {
+  margin: 0 0 16px 0;
+}
+.home-root .abt-about-copy p:last-child {
+  margin-bottom: 0;
+}
+.home-root .abt-about-brand {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: #c8c5cd;
+}
+
+/* ---------- Mission / Vision (one stacked under the image col, one under the text col) ---------- */
+.home-root .abt-mv-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 80px;
+}
+.home-root .abt-mv-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.home-root .abt-mv-title {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: #d9d7dd;
+}
+.home-root .abt-mv-desc {
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #ada8b4;
+}
+.home-root .abt-mv-image {
+  position: relative;
+  flex-shrink: 0;
+  width: 190px;
+  height: 216px;
+  border-radius: 20px;
+  border: 1px solid #19181c;
+  overflow: hidden;
+}
+.home-root .abt-mv-card.vision .abt-mv-image {
+  width: 246px;
+  height: 280px;
+}
+/* Figma: Mission's image top sits at 64px within the card (title height +
+   title/desc gap), i.e. level with the description's top, not the title's —
+   Vision's image instead aligns with its title (no offset). */
+.home-root .abt-mv-card.mission .abt-mv-image {
+  margin-top: 64px;
+}
+.home-root .abt-mv-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---------- Our Team ---------- */
+.home-root .abt-team-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 556px;
+}
+.home-root .abt-team-title {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 700;
+  line-height: 1.25;
+  color: #e6e4e8;
+}
+.home-root .abt-team-desc {
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #ada8b4;
+}
+.home-root .abt-team-empty {
+  font-size: 14px;
+  color: var(--ink-faint, #6e6e7a);
+}
+.home-root .abt-team-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px 32px;
+  align-items: start;
+}
+.home-root .abt-team-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  padding: 8px 40px 8px 8px;
+  border-radius: 40px;
+  border: 1px solid #19181c;
+  background: rgba(103, 107, 106, 0.04);
+  box-shadow: 0 8px 40px rgba(41, 0, 100, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.home-root .abt-team-photo-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 304px;
+  height: 352px;
+  max-width: 40%;
+  border-radius: 32px;
+  overflow: hidden;
+  border: 1px solid #19181c;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+/* ছবিটা Figma-তে পুরো 304x352 কার্ডের full-bleed ব্যাকগ্রাউন্ড - সোশ্যাল আইকন
+   বার এর উপর ভাসমান (overlaid) থাকে, আলাদা ছোট থাম্বনেইল + নিচে আলাদা ডার্ক
+   বার না। */
+.home-root .abt-team-photo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  font-weight: 700;
+  color: #fff;
+}
+.home-root .abt-team-socials {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 28px;
+  background: #19181c;
+}
+.home-root .abt-team-social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(200, 197, 205, 0.4);
+  box-shadow: 0 8px 40px rgba(41, 0, 100, 0.04);
+  background: rgba(103, 107, 106, 0.08);
+}
+.home-root .abt-team-social-btn img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+.home-root .abt-team-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.home-root .abt-team-namerole {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.home-root .abt-team-name {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+  background: linear-gradient(90deg, #fff, #ceb0fa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-transform: uppercase;
+}
+.home-root .abt-team-role {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ada8b4;
+}
+.home-root .abt-team-bio {
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #ada8b4;
+}
+
+@media (max-width: 1100px) {
+  .home-root .abt-about-row {
+    grid-template-columns: 420px 1fr;
+    column-gap: 48px;
+    row-gap: 48px;
+  }
+  .home-root .abt-mv-card {
+    gap: 32px;
+  }
+  .home-root .abt-team-card {
+    gap: 24px;
+    padding: 8px 24px 8px 8px;
+  }
+  .home-root .abt-team-photo-wrap {
+    width: 220px;
+    height: auto;
+    aspect-ratio: 304 / 352;
+  }
+}
+@media (max-width: 900px) {
+  .home-root .abt-hero-card {
+    padding: 56px 24px;
+  }
+  .home-root .abt-stats-row,
+  .home-root .abt-stats-row-2 {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 40px;
+  }
+  .home-root .abt-stats-divider {
+    display: none;
+  }
+  .home-root .abt-about-row {
+    grid-template-columns: 1fr;
+    row-gap: 40px;
+  }
+  .home-root .abt-about-image,
+  .home-root .abt-about-text,
+  .home-root .abt-mv-card.mission,
+  .home-root .abt-mv-card.vision {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .home-root .abt-about-image {
+    height: auto;
+    aspect-ratio: 572 / 455;
+  }
+  .home-root .abt-mv-card {
+    flex-direction: column;
+    gap: 24px;
+  }
+  .home-root .abt-mv-image {
+    width: 160px !important;
+    height: 182px !important;
+  }
+  .home-root .abt-team-grid {
+    grid-template-columns: 1fr;
+  }
+  .home-root .abt-team-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 8px;
+  }
+  .home-root .abt-team-photo-wrap {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 304 / 352;
+  }
+  .home-root .abt-team-info {
+    padding: 8px 24px 24px;
+  }
+}
+@media (max-width: 640px) {
+  .home-root .abt-stats-heading {
+    margin-bottom: 48px;
+  }
+  .home-root .stat-plain {
+    align-items: center;
+    text-align: center;
+  }
+  .home-root .abt-hero {
+    padding-top: 120px;
+    padding-bottom: 48px;
+  }
+  .home-root .abt-hero-card {
+    padding: 40px 20px;
+    border-radius: 28px;
+  }
+  .home-root .abt-section {
+    padding: 64px 0;
+  }
+  .home-root .abt-team-card {
+    border-radius: 28px;
+  }
+  .home-root .abt-team-photo-wrap {
+    border-radius: 20px;
+  }
+}

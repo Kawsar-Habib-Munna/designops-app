@@ -26,14 +26,17 @@ import { createPortal } from 'react-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { uploadFileToDrive, driveThumbnailUrl } from '@/lib/driveUpload';
 
-type Profile = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null; behance_url?: string | null; linkedin_url?: string | null };
+type Profile = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null; bio?: string | null; behance_url?: string | null; linkedin_url?: string | null; facebook_url?: string | null; instagram_url?: string | null };
 
 export default function ProfileMenu({ profile, email, onUpdated, dark = false }: { profile: Profile | null; email: string; onUpdated: (p: Profile) => void; dark?: boolean }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(profile?.full_name ?? '');
   const [role, setRole] = useState(profile?.role ?? '');
+  const [bio, setBio] = useState(profile?.bio ?? '');
   const [behanceUrl, setBehanceUrl] = useState(profile?.behance_url ?? '');
   const [linkedinUrl, setLinkedinUrl] = useState(profile?.linkedin_url ?? '');
+  const [facebookUrl, setFacebookUrl] = useState(profile?.facebook_url ?? '');
+  const [instagramUrl, setInstagramUrl] = useState(profile?.instagram_url ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,8 +56,11 @@ export default function ProfileMenu({ profile, email, onUpdated, dark = false }:
   function handleOpen() {
     setName(profile?.full_name ?? '');
     setRole(profile?.role ?? '');
+    setBio(profile?.bio ?? '');
     setBehanceUrl(profile?.behance_url ?? '');
     setLinkedinUrl(profile?.linkedin_url ?? '');
+    setFacebookUrl(profile?.facebook_url ?? '');
+    setInstagramUrl(profile?.instagram_url ?? '');
     setError(null);
     setNewPassword('');
     setPasswordMsg(null);
@@ -72,11 +78,14 @@ export default function ProfileMenu({ profile, email, onUpdated, dark = false }:
       .update({
         full_name: name.trim(),
         role: role.trim() || null,
+        bio: bio.trim() || null,
         behance_url: behanceUrl.trim() || null,
         linkedin_url: linkedinUrl.trim() || null,
+        facebook_url: facebookUrl.trim() || null,
+        instagram_url: instagramUrl.trim() || null,
       })
       .eq('id', profile.id)
-      .select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url')
+      .select('id, full_name, role, avatar_color, avatar_url, bio, behance_url, linkedin_url, facebook_url, instagram_url')
       .single();
     setSaving(false);
 
@@ -214,13 +223,22 @@ export default function ProfileMenu({ profile, email, onUpdated, dark = false }:
             <label className={labelCls}>রোল</label>
             <input className={`${inputCls} mb-3`} type="text" value={role} onChange={(e) => setRole(e.target.value)} placeholder="যেমন: UX Designer" />
 
+            <label className={labelCls}>বায়ো (ঐচ্ছিক)</label>
+            <textarea className={`${inputCls} mb-3`} style={{ minHeight: 64, resize: 'vertical' }} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="এক-দুই লাইনে নিজের সম্পর্কে লিখুন" />
+
+            <label className={labelCls}>Facebook প্রোফাইল লিংক (ঐচ্ছিক)</label>
+            <input className={`${inputCls} mb-3`} type="url" value={facebookUrl} onChange={(e) => setFacebookUrl(e.target.value)} placeholder="https://facebook.com/yourname" />
+
+            <label className={labelCls}>Instagram প্রোফাইল লিংক (ঐচ্ছিক)</label>
+            <input className={`${inputCls} mb-3`} type="url" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} placeholder="https://instagram.com/yourname" />
+
             <label className={labelCls}>Behance প্রোফাইল লিংক (ঐচ্ছিক)</label>
             <input className={`${inputCls} mb-3`} type="url" value={behanceUrl} onChange={(e) => setBehanceUrl(e.target.value)} placeholder="https://behance.net/yourname" />
 
             <label className={labelCls}>LinkedIn প্রোফাইল লিংক (ঐচ্ছিক)</label>
             <input className={`${inputCls} mb-3`} type="url" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/yourname" />
             <p className="mb-3 text-[11px]" style={{ color: dark ? '#71717a' : '#9C9C98' }}>
-              এই লিংক দুটো FLOW 53-এর পাবলিক ওয়েবসাইটের Team সেকশনে দেখানো হয়।
+              বায়ো আর এই লিংকগুলো FLOW 53-এর পাবলিক ওয়েবসাইটের About পেজের Team সেকশনে দেখানো হয়।
             </p>
 
             {error && <p className="mb-2.5 text-xs text-red-500">{error}</p>}

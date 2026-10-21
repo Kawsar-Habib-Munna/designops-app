@@ -32,10 +32,30 @@ function parseValue(value: string) {
   return { target: parseInt(match[1], 10), digits: match[1].length, suffix: match[2] };
 }
 
-export default function BouncyStat({ label, value, index }: { label: string; value: string; index: number }) {
+// variant="plain" — About পেজের "Numbers That Speak!" সেকশন হোমপেজের circular
+// badge-এর বদলে Figma-তে প্লেইন label+বড় number+arrow-corner আইকন (কোনো সার্কেল
+// না) - কাউন্ট-আপ/এন্ট্রান্স অ্যানিমেশন লজিক একই রাখা হয়েছে, শুধু রুট/চাইল্ড
+// ক্লাসনেম আর arrow আইকন বদলে যায় যাতে home.css-এর .stat-circle সিস্টেমের সাথে
+// কনফ্লিক্ট না করে।
+export default function BouncyStat({
+  label,
+  value,
+  index,
+  variant = 'circle',
+}: {
+  label: string;
+  value: string;
+  index: number;
+  variant?: 'circle' | 'plain';
+}) {
   const reduceMotion = useReducedMotion();
   const offset = ENTRY_OFFSETS[index % ENTRY_OFFSETS.length];
   const { target, digits, suffix } = parseValue(value);
+  const rootClass = variant === 'plain' ? 'stat-plain' : 'stat-circle';
+  const labelClass = variant === 'plain' ? 'stat-plain-label' : 'stat-label';
+  const valueClass = variant === 'plain' ? 'stat-plain-value' : 'stat-value';
+  const arrowClass = variant === 'plain' ? 'stat-plain-arrow' : 'stat-arrow';
+  const arrowSrc = variant === 'plain' ? '/about/icon-arrow-corner.svg' : '/stats/arrow.svg';
   const [display, setDisplay] = useState(() => (reduceMotion ? target : 0));
   const frameRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -72,10 +92,10 @@ export default function BouncyStat({ label, value, index }: { label: string; val
 
   if (reduceMotion) {
     return (
-      <div className="stat-circle">
-        <span className="stat-label">{label}</span>
-        <span className="stat-value">{value}</span>
-        <img src="/stats/arrow.svg" alt="" className="stat-arrow" />
+      <div className={rootClass}>
+        <span className={labelClass}>{label}</span>
+        <span className={valueClass}>{value}</span>
+        <img src={arrowSrc} alt="" className={arrowClass} />
       </div>
     );
   }
@@ -84,7 +104,7 @@ export default function BouncyStat({ label, value, index }: { label: string; val
 
   return (
     <motion.div
-      className="stat-circle"
+      className={rootClass}
       initial={{ opacity: 0, x: offset.x, y: offset.y, scale: 0.3 }}
       whileInView={{ opacity: 1, x: 0, y: 0, scale: 1 }}
       viewport={{ once: false, amount: 0.5 }}
@@ -92,9 +112,9 @@ export default function BouncyStat({ label, value, index }: { label: string; val
       onViewportLeave={resetCount}
       transition={{ duration: 0.5, delay: index * 0.04, ease: [0.22, 1, 0.36, 1] }}
     >
-      <span className="stat-label">{label}</span>
-      <span className="stat-value">{shownValue}</span>
-      <img src="/stats/arrow.svg" alt="" className="stat-arrow" />
+      <span className={labelClass}>{label}</span>
+      <span className={valueClass}>{shownValue}</span>
+      <img src={arrowSrc} alt="" className={arrowClass} />
     </motion.div>
   );
 }

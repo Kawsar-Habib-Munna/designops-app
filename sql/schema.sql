@@ -2207,6 +2207,13 @@ alter table case_studies add column if not exists category text;
 drop policy if exists "admin can delete clients" on clients;
 create policy "admin can delete clients" on clients for delete using (public.is_admin());
 
+-- পাবলিক ল্যান্ডিং পেজের নতুন /about পেজের Team সেকশনে প্রতিটা কো-ফাউন্ডার/
+-- টিম মেম্বারের ছোট বায়ো আর Facebook/Instagram লিংক দরকার (Behance/LinkedIn
+-- আগে থেকেই আছে) — ProfileMenu থেকে প্রতিটা মেম্বার নিজে নিজের তথ্য আপডেট করে।
+alter table profiles add column if not exists bio text;
+alter table profiles add column if not exists facebook_url text;
+alter table profiles add column if not exists instagram_url text;
+
 -- Tasks পেজে "assigned date" যোগ — due_date (ডেডলাইন, ঐচ্ছিক, টাস্ক ভেদে ভিন্ন
 -- হতে পারে) থেকে আলাদা একটা কলাম, যেটা দিয়ে বোঝা যায় টাস্কটা কোন দিনের
 -- কাজ-তালিকায় দেখানো হবে ("আজকের টাস্ক" পিল, টুলবারের Assigned-date ফিল্টার,
@@ -2287,3 +2294,16 @@ drop policy if exists "team can update site settings" on site_settings;
 create policy "team can update site settings" on site_settings for update using (public.is_team_member());
 drop trigger if exists set_site_settings_updated_at on site_settings;
 create trigger set_site_settings_updated_at before update on site_settings for each row execute procedure public.set_updated_at();
+
+-- /about পেজের Team গ্রিডে কে কততম স্লটে দেখাবে সেটা এখন /portfolio-এর "Team
+-- Order" সেকশন থেকে অ্যাডমিন ঠিক করতে পারবে (case_studies/testimonials-এর
+-- order_index-এর মতোই up/down সোয়াপ)। আগে fetchTeam() শুধু created_at দিয়ে
+-- সাজাত, কোনো ম্যানুয়াল কন্ট্রোল ছিল না। নতুন কলামে ডিফল্ট 0 হলে প্রথমবার
+-- created_at অনুযায়ী ক্রমিক নম্বর বসানো হয় যাতে শুরুর অবস্থাটাই একটা sensible
+-- (বিদ্যমান আচরণের সাথে মেলা) অর্ডার হয় - যে রো-গুলোর order_index ইতিমধ্যে
+-- অ্যাডমিন বদলে ফেলেছে (আর তাই আর 0 না) সেগুলো এই আপডেট ছুঁয়ে দেখে না, তাই এই
+-- স্ক্রিপ্ট বারবার চালানো নিরাপদ।
+alter table profiles add column if not exists order_index int default 0;
+update profiles set order_index = sub.rn - 1
+from (select id, row_number() over (order by created_at) as rn from profiles) sub
+where profiles.id = sub.id and profiles.order_index = 0;
