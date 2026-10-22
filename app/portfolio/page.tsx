@@ -738,17 +738,42 @@ export default function PortfolioPage() {
   }
 
   async function handleMoveTeamMember(id: string, dir: -1 | 1) {
-    const sorted = [...teamMembers].sort((a, b) => a.order_index - b.order_index);
+    // শুধু দুইজনের order_index সোয়াপ করলে সমস্যা হয় যদি একাধিক মেম্বারের
+    // order_index একই থাকে (যেমন migration backfill-এর আগে/পরে যোগ হওয়া
+    // মেম্বার সবাই ডিফল্ট 0) - 0↔0 সোয়াপ আসলে কিছুই বদলায় না, তাই উপরের দিকের
+    // কার্ডগুলো নড়ছিল না মনে হচ্ছিল। এখন পুরো তালিকাটাই বর্তমান রেন্ডার-অর্ডার
+    // থেকে নতুন ক্রমিক (0,1,2,...) order_index দিয়ে পুনরায় সাজানো হয় - এটা
+    // self-healing, ডাটাবেসে আগে থেকে কী মান আছে তার উপর নির্ভর করে না।
+    const sorted = [...teamMembers].sort((a, b) => a.order_index - b.order_index || a.full_name.localeCompare(b.full_name));
     const idx = sorted.findIndex((m) => m.id === id);
     const swapIdx = idx + dir;
     if (idx < 0 || swapIdx < 0 || swapIdx >= sorted.length) return;
-    const a = sorted[idx];
-    const b = sorted[swapIdx];
-    setTeamMembers((prev) => prev.map((m) => (m.id === a.id ? { ...m, order_index: b.order_index } : m.id === b.id ? { ...m, order_index: a.order_index } : m)));
-    await Promise.all([
-      supabase.from('profiles').update({ order_index: b.order_index }).eq('id', a.id),
-      supabase.from('profiles').update({ order_index: a.order_index }).eq('id', b.id),
-    ]);
+
+    const reordered = [...sorted];
+    [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
+    const updates = reordered.map((m, i) => ({ id: m.id, order_index: i }));
+    const prevOrder = new Map(teamMembers.map((m) => [m.id, m.order_index]));
+
+    setTeamMembers((prev) => prev.map((m) => {
+      const u = updates.find((x) => x.id === m.id);
+      return u ? { ...m, order_index: u.order_index } : m;
+    }));
+
+    // profiles-এর RLS update policy শুধু auth.uid() = id মানে - অন্য মেম্বারের
+    // order_index সরাসরি ক্লায়েন্ট থেকে আপডেট করা RLS-এ চুপচাপ ব্লক হয়ে যায়
+    // (set-admin/remove-member/update-profile-এর মতোই service-role রুট লাগে)।
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/api/team/reorder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
+      body: JSON.stringify({ updates }),
+    });
+    if (!res.ok) {
+      // সেভ ব্যর্থ হলে optimistic আপডেট ফিরিয়ে নেওয়া হলো, নাহলে UI মিথ্যা বলবে
+      setTeamMembers((prev) => prev.map((m) => (prevOrder.has(m.id) ? { ...m, order_index: prevOrder.get(m.id)! } : m)));
+      const result = await res.json().catch(() => null);
+      setError(result?.error ?? 'টিম অর্ডার সেভ করা যায়নি।');
+    }
   }
 
   async function handleDeleteTestimonial(id: string, name: string) {
@@ -976,7 +1001,7 @@ export default function PortfolioPage() {
                           display: 'flex',
                           alignItems: 'center',
                           gap: 12,
-                          padding: '10px 4px',
+                          padding: '10px 14px',
                           borderBottom: i === sortedTeamMembers.length - 1 ? 'none' : '1px solid var(--border)',
                         }}
                       >
@@ -986,7 +1011,7 @@ export default function PortfolioPage() {
                           <div className="cs-title" style={{ fontSize: 14 }}>{m.full_name}</div>
                           {m.role && <span className="cs-tag">{m.role}</span>}
                         </div>
-                        <div className="cs-order-btns" style={{ position: 'static' }}>
+                        <div className="team-order-btns">
                           <button onClick={() => handleMoveTeamMember(m.id, -1)} disabled={i === 0} aria-label="উপরে সরান"><Icon name="up" size={12} /></button>
                           <button onClick={() => handleMoveTeamMember(m.id, 1)} disabled={i === sortedTeamMembers.length - 1} aria-label="নিচে সরান"><Icon name="down" size={12} /></button>
                         </div>

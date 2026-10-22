@@ -383,7 +383,6 @@
   flex-shrink: 0;
   width: 304px;
   height: 352px;
-  max-width: 40%;
   border-radius: 32px;
   overflow: hidden;
   border: 1px solid #19181c;
@@ -437,7 +436,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 48px;
 }
 .home-root .abt-team-namerole {
   display: flex;
@@ -454,6 +453,9 @@
   background-clip: text;
   color: transparent;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .home-root .abt-team-role {
   font-size: 16px;
@@ -465,6 +467,32 @@
   line-height: 1.5;
   font-weight: 500;
   color: #ada8b4;
+}
+.home-root .abt-team-card-deco {
+  /* গ্রিডের align-items:start-ই থাকুক (আসল প্রোফাইল কার্ডগুলো তাদের নিজের
+     কনটেন্ট অনুযায়ী স্বাভাবিক উচ্চতায় থাকবে, একে অপরের সাথে stretch হবে না) -
+     শুধু এই একটা (সাজসজ্জামূলক, কোনো আসল কনটেন্ট নেই) কার্ডকেই align-self দিয়ে
+     তার পাশের আসল কার্ডের উচ্চতার সাথে মেলানো হলো। min-height রাখা হয়নি -
+     থাকলে পাশের কার্ড তার চেয়ে খাটো হলেও এই কার্ড/ছবিটা সেই মিনিমামেই আটকে
+     থেকে পাশের কার্ডের চেয়ে লম্বা দেখাত, উদ্দেশ্য ছিল ঠিক উল্টো। */
+  align-self: stretch;
+  position: relative;
+  border-radius: 40px;
+  border: 1px solid #19181c;
+  overflow: hidden;
+}
+.home-root .abt-team-card-deco img {
+  /* absolute - এটা না থাকলে ছবির নিজস্ব 1024x647 aspect-ratio (width:100% এ
+     স্কেল হয়ে) কার্ডের উচ্চতা ঠিক করে দিচ্ছিল, ফলে গ্রিড-রো পাশের প্রোফাইল
+     কার্ডের বদলে এই লম্বা ছবির উচ্চতায় বড় হয়ে যাচ্ছিল। absolute করলে কার্ডের
+     নিজের কোনো intrinsic height থাকে না, align-self:stretch তখন বিশুদ্ধভাবে
+     পাশের আসল কার্ডের উচ্চতা অনুসরণ করে। */
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 @media (max-width: 1100px) {
@@ -484,6 +512,21 @@
     width: 220px;
     height: auto;
     aspect-ratio: 304 / 352;
+  }
+  /* 220px চওড়া ফটোতে পূর্ণ-সাইজ (44px বাটন + 24px gap) ৪টা আইকন ধরে না -
+     চেপে/ওভারল্যাপ হয়ে যায়, তাই এই ব্রেকপয়েন্টে ছোট সাইজে নামানো হলো। */
+  .home-root .abt-team-socials {
+    gap: 8px;
+    padding: 14px 10px;
+  }
+  .home-root .abt-team-social-btn {
+    width: 32px;
+    height: 32px;
+    padding: 7px;
+  }
+  .home-root .abt-team-social-btn img {
+    width: 18px;
+    height: 18px;
   }
 }
 @media (max-width: 900px) {
@@ -524,6 +567,11 @@
   }
   .home-root .abt-team-grid {
     grid-template-columns: 1fr;
+  }
+  /* সাজসজ্জামূলক (কোনো তথ্য/লিংক নেই) কার্ড - ছোট স্ক্রিনে জায়গা বাঁচাতে বাদ,
+     /services পেজের .svc-arrow-card-এর মতোই একই প্যাটার্ন। */
+  .home-root .abt-team-card-deco {
+    display: none;
   }
   .home-root .abt-team-card {
     flex-direction: column;

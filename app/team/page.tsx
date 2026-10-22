@@ -19,6 +19,7 @@ import { useSession } from '@/lib/useSession';
 import { useUnreadCount } from '@/lib/useUnreadCount';
 import { formatBnDate, relativeTimeBn, todayISO } from '@/lib/format';
 import { STAGE_LABEL, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
+import { uploadFileToDrive } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import ProfileMenu from '@/app/components/ProfileMenu';
 import Avatar from '@/app/components/Avatar';
@@ -108,6 +109,19 @@ function isThisWeek(dateStr: string) {
 const WEEKLY_CAPACITY_HOURS = 40;
 
 type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null; is_admin?: boolean };
+type FullProfileRow = {
+  id: string;
+  full_name: string;
+  role: string | null;
+  avatar_color: string | null;
+  avatar_url: string | null;
+  is_admin?: boolean;
+  bio: string | null;
+  behance_url: string | null;
+  linkedin_url: string | null;
+  facebook_url: string | null;
+  instagram_url: string | null;
+};
 
 type TeamTaskRow = {
   id: string;
@@ -130,6 +144,11 @@ type MemberStat = {
   avatar_color: string | null;
   avatar_url: string | null;
   is_admin: boolean;
+  bio: string | null;
+  behance_url: string | null;
+  linkedin_url: string | null;
+  facebook_url: string | null;
+  instagram_url: string | null;
   activeTasks: number;
   projectIds: string[];
   estHours: number;
@@ -156,14 +175,14 @@ const TEAM_SELECT =
 
 async function fetchTeamData() {
   const [profilesRes, tasksRes, activityRes] = await Promise.all([
-    supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, is_admin').order('full_name'),
+    supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, is_admin, bio, behance_url, linkedin_url, facebook_url, instagram_url').order('full_name'),
     supabase.from('tasks').select(TEAM_SELECT),
     supabase.from('activity_log').select('id, detail, created_at, profiles(full_name)').order('created_at', { ascending: false }).limit(8),
   ]);
 
   const firstErrored = [profilesRes, tasksRes, activityRes].find((r) => r.error);
 
-  const profiles = (profilesRes.data as ProfileRow[]) ?? [];
+  const profiles = (profilesRes.data as FullProfileRow[]) ?? [];
   const tasks = (tasksRes.data as unknown as TeamTaskRow[]) ?? [];
   const profileById = new Map(profiles.map((p) => [p.id, p]));
 
@@ -229,6 +248,11 @@ async function fetchTeamData() {
       avatar_color: p.avatar_color,
       avatar_url: p.avatar_url ?? null,
       is_admin: !!p.is_admin,
+      bio: p.bio ?? null,
+      behance_url: p.behance_url ?? null,
+      linkedin_url: p.linkedin_url ?? null,
+      facebook_url: p.facebook_url ?? null,
+      instagram_url: p.instagram_url ?? null,
       activeTasks,
       projectIds,
       estHours,
@@ -307,6 +331,23 @@ export default function TeamWorkloadPage() {
   const [resetError, setResetError] = useState<string | null>(null);
 
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
+
+  // অ্যাডমিন যেকোনো মেম্বারের প্রোফাইল কার্ড (নাম/রোল/বায়ো/সোশ্যাল লিংক/ছবি)
+  // সরাসরি এখান থেকে এডিট করতে পারে - আগে শুধু প্রত্যেকে নিজেরটাই ProfileMenu
+  // থেকে এডিট করতে পারত।
+  const [editMember, setEditMember] = useState<MemberStat | null>(null);
+  const [emName, setEmName] = useState('');
+  const [emRole, setEmRole] = useState('');
+  const [emBio, setEmBio] = useState('');
+  const [emBehance, setEmBehance] = useState('');
+  const [emLinkedin, setEmLinkedin] = useState('');
+  const [emFacebook, setEmFacebook] = useState('');
+  const [emInstagram, setEmInstagram] = useState('');
+  const [emSaving, setEmSaving] = useState(false);
+  const [emError, setEmError] = useState<string | null>(null);
+  const [emAvatarUploading, setEmAvatarUploading] = useState(false);
+  const [emAvatarProgress, setEmAvatarProgress] = useState(0);
+  const [emAvatarUrl, setEmAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -405,6 +446,74 @@ export default function TeamWorkloadPage() {
       setError(result.error ?? 'এডমিন স্ট্যাটাস পরিবর্তন করা যায়নি।');
       return;
     }
+    handleReload();
+  }
+
+  function openEditMember(m: MemberStat) {
+    setEditMember(m);
+    setEmName(m.name);
+    setEmRole(m.role ?? '');
+    setEmBio(m.bio ?? '');
+    setEmBehance(m.behance_url ?? '');
+    setEmLinkedin(m.linkedin_url ?? '');
+    setEmFacebook(m.facebook_url ?? '');
+    setEmInstagram(m.instagram_url ?? '');
+    setEmAvatarUrl(m.avatar_url);
+    setEmError(null);
+  }
+
+  async function handleEditMemberAvatarFile(file: File) {
+    if (!editMember) return;
+    if (!file.type.startsWith('image/')) {
+      setEmError('শুধু ছবি ফাইল আপলোড করা যাবে।');
+      return;
+    }
+    setEmAvatarUploading(true);
+    setEmAvatarProgress(0);
+    setEmError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('সেশন পাওয়া যায়নি — আবার লগইন করুন।');
+      const result = await uploadFileToDrive(file, session.access_token, setEmAvatarProgress);
+      setEmAvatarUrl(result.webViewLink);
+    } catch (err) {
+      setEmError(err instanceof Error ? err.message : 'ছবি আপলোড ব্যর্থ হয়েছে।');
+    } finally {
+      setEmAvatarUploading(false);
+      setEmAvatarProgress(0);
+    }
+  }
+
+  async function handleSaveEditMember(e: FormEvent) {
+    e.preventDefault();
+    if (!editMember || !emName.trim()) return;
+    setEmSaving(true);
+    setEmError(null);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/api/team/update-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
+      body: JSON.stringify({
+        userId: editMember.id,
+        full_name: emName,
+        role: emRole,
+        bio: emBio,
+        behance_url: emBehance,
+        linkedin_url: emLinkedin,
+        facebook_url: emFacebook,
+        instagram_url: emInstagram,
+        avatar_url: emAvatarUrl,
+      }),
+    });
+    const result = await res.json();
+    setEmSaving(false);
+
+    if (!res.ok) {
+      setEmError(result.error ?? 'প্রোফাইল সেভ করা যায়নি।');
+      return;
+    }
+    setEditMember(null);
     handleReload();
   }
 
@@ -589,10 +698,18 @@ export default function TeamWorkloadPage() {
                           </div>
                         </div>
                         {profile?.is_admin && (
-                          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 12 }}>
                             <button
                               className="btn btn-ghost btn-sm"
-                              style={{ flex: 1 }}
+                              style={{ whiteSpace: 'normal', justifyContent: 'center', textAlign: 'center' }}
+                              title="প্রোফাইল এডিট করুন (নাম/রোল/বায়ো/সোশ্যাল লিংক/ছবি)"
+                              onClick={() => openEditMember(m)}
+                            >
+                              প্রোফাইল এডিট
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              style={{ whiteSpace: 'normal', justifyContent: 'center', textAlign: 'center' }}
                               disabled={busyMemberId === m.id}
                               title="পাসওয়ার্ড রিসেট করুন"
                               onClick={() => { setResetTarget({ id: m.id, name: m.name }); setResetPassword(''); setResetError(null); }}
@@ -601,7 +718,7 @@ export default function TeamWorkloadPage() {
                             </button>
                             <button
                               className="btn btn-ghost btn-sm"
-                              style={{ flex: 1 }}
+                              style={{ whiteSpace: 'normal', justifyContent: 'center', textAlign: 'center' }}
                               disabled={busyMemberId === m.id || m.id === profile.id}
                               title={m.id === profile.id ? 'নিজের এডমিন স্ট্যাটাস এখান থেকে বদলানো যাবে না' : ''}
                               onClick={() => handleToggleAdmin(m.id, !m.is_admin)}
@@ -610,7 +727,7 @@ export default function TeamWorkloadPage() {
                             </button>
                             <button
                               className="btn btn-ghost btn-sm"
-                              style={{ flex: 1, color: 'var(--danger)' }}
+                              style={{ whiteSpace: 'normal', justifyContent: 'center', textAlign: 'center', color: 'var(--danger)' }}
                               disabled={busyMemberId === m.id || m.id === profile.id}
                               title={m.id === profile.id ? 'নিজেকে রিমুভ করা যাবে না' : 'রিমুভ করুন'}
                               onClick={() => handleRemoveMember(m.id, m.name)}
@@ -841,6 +958,66 @@ export default function TeamWorkloadPage() {
               <div className="modal-foot">
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setResetTarget(null)}>বাতিল</button>
                 <button type="submit" className="btn btn-accent btn-sm" disabled={resettingPassword || resetPassword.length < 8}>{resettingPassword ? 'সেভ হচ্ছে…' : 'রিসেট করুন'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editMember && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setEditMember(null); }}>
+          <div className="modal-box">
+            <div className="modal-title">{editMember.name}-এর প্রোফাইল এডিট করুন</div>
+            <form onSubmit={handleSaveEditMember}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                <div style={{ position: 'relative' }}>
+                  <Avatar person={{ full_name: emName, avatar_color: editMember.avatar_color, avatar_url: emAvatarUrl }} size={72} fontSize={26} />
+                  <label
+                    style={{
+                      position: 'absolute', bottom: -2, right: -2, width: 26, height: 26, borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent)', color: '#fff',
+                      fontSize: 12, cursor: 'pointer', border: '2px solid var(--surface)',
+                    }}
+                  >
+                    ✎
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      disabled={emAvatarUploading}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleEditMemberAvatarFile(f); e.target.value = ''; }}
+                    />
+                  </label>
+                </div>
+              </div>
+              {emAvatarUploading && <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--ink-faint)', marginBottom: 10 }}>আপলোড হচ্ছে… {emAvatarProgress}%</p>}
+
+              <label className="field-label">নাম</label>
+              <input className="field-input" type="text" value={emName} onChange={(e) => setEmName(e.target.value)} placeholder="পুরো নাম" required />
+
+              <label className="field-label">রোল</label>
+              <input className="field-input" type="text" value={emRole} onChange={(e) => setEmRole(e.target.value)} placeholder="যেমন: UX Designer" />
+
+              <label className="field-label">বায়ো</label>
+              <textarea className="field-input" style={{ minHeight: 64, resize: 'vertical' }} value={emBio} onChange={(e) => setEmBio(e.target.value)} placeholder="এক-দুই লাইনে পরিচিতি" />
+
+              <label className="field-label">Facebook লিংক</label>
+              <input className="field-input" type="url" value={emFacebook} onChange={(e) => setEmFacebook(e.target.value)} placeholder="https://facebook.com/..." />
+
+              <label className="field-label">Instagram লিংক</label>
+              <input className="field-input" type="url" value={emInstagram} onChange={(e) => setEmInstagram(e.target.value)} placeholder="https://instagram.com/..." />
+
+              <label className="field-label">Behance লিংক</label>
+              <input className="field-input" type="url" value={emBehance} onChange={(e) => setEmBehance(e.target.value)} placeholder="https://behance.net/..." />
+
+              <label className="field-label">LinkedIn লিংক</label>
+              <input className="field-input" type="url" value={emLinkedin} onChange={(e) => setEmLinkedin(e.target.value)} placeholder="https://linkedin.com/in/..." />
+              <p className="field-hint">এই তথ্যগুলো FLOW 53-এর পাবলিক About পেজের Team সেকশনে দেখানো হয়।</p>
+
+              {emError && <p style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 10 }}>{emError}</p>}
+              <div className="modal-foot">
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditMember(null)}>বাতিল</button>
+                <button type="submit" className="btn btn-accent btn-sm" disabled={emSaving || !emName.trim()}>{emSaving ? 'সেভ হচ্ছে…' : 'সেভ করুন'}</button>
               </div>
             </form>
           </div>

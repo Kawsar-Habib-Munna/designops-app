@@ -210,7 +210,8 @@ export default async function AboutPage() {
               {team.length === 0 ? (
                 <p className="abt-team-empty">Team information isn&rsquo;t available right now.</p>
               ) : (
-                team.map((m) => {
+                <>
+                {team.map((m) => {
                   const img = m.avatar_url ? driveThumbnailUrl(m.avatar_url) : null;
                   const initial = Array.from(m.full_name.trim())[0]?.toUpperCase() ?? "?";
                   const socials = [
@@ -248,7 +249,16 @@ export default async function AboutPage() {
                       </div>
                     </div>
                   );
-                })
+                })}
+                {/* Figma: শেষ মেম্বার (বিজোড় স্লটে একা) পাশে একটা সাজসজ্জামূলক
+                    ছবি (ফুলের তোড়া + ডিজাইন টুল আইকন) - হেডিং (১টা) + মেম্বার
+                    সংখ্যা জোড় হলেই গ্রিডে এই শেষ সেলটা খালি থাকে। */}
+                {team.length % 2 === 0 && (
+                  <div className="abt-team-card-deco" aria-hidden="true">
+                    <img src="/about/team-deco-bouquet.png" alt="" />
+                  </div>
+                )}
+                </>
               )}
             </div>
           </div>
