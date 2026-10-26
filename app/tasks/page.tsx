@@ -1396,8 +1396,10 @@ function TasksPageInner() {
                   </div>
                   {m.personTasks.length === 0 ? (
                     <div style={{ fontSize: 12, color: '#A3A3AE' }}>All clear</div>
+                  ) : m.shown.length === 0 ? (
+                    <div style={{ fontSize: 12, color: '#A3A3AE' }}>No tasks match the current filter</div>
                   ) : (
-                    m.personTasks.map((task) => {
+                    m.shown.map((task) => {
                       const status = STATUS_META[task.status];
                       const checklist = checklistByTask.get(task.id) ?? [];
                       return (
