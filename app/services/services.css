@@ -75,6 +75,7 @@
   max-width: 920px;
 }
 .home-root .svc-hero-desc {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
   font-size: 16px;
   line-height: 1.5;
   font-weight: 500;
@@ -141,6 +142,7 @@
   color: #e6e4e8;
 }
 .home-root .svc-detail-desc {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
   font-size: 16px;
   line-height: 1.5;
   font-weight: 500;
@@ -160,6 +162,7 @@
   margin-top: 24px;
 }
 .home-root .svc-trusted-mini-label {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
   font-size: 16px;
   font-weight: 500;
   color: #efe6fd;
@@ -302,6 +305,7 @@
   color: #d9d7dd;
 }
 .home-root .svc-feature-desc {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
   font-size: 16px;
   line-height: 1.5;
   font-weight: 500;

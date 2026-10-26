@@ -332,12 +332,8 @@ html:has(.home-root) {
     background 0.2s ease,
     color 0.2s ease;
 }
-/* hover-এ .hero-start-label-এর ঠিক একই হালকা গ্র্যাডিয়েন্ট background নেয়,
-   টেক্সট কালার বাটনের stroke-এর রঙে (#8133f1) বদলে যায়। */
-.home-root .nav-cta:hover .nav-cta-label {
-  background: linear-gradient(90deg, #ffffff, #ceb0fa);
-  color: #8133f1;
-}
+/* hover-এ background বা টেক্সট কালার কোনোটাই বদলায় না (ইউজারের অনুরোধে) -
+   শুধু .nav-cta:hover-এর glow/lift effect-ই থাকে। */
 /* "Book A Call"-এর hover-এ text slide-swap: দুটো একই লেখার লাইন খাড়াভাবে
    stacked, একটা 24px (font-size 16px * line-height 1.5) clip window-এর
    ভেতরে - hover-এ পুরো track 50% (মানে ঠিক এক লাইন) ওপরে সরে প্রথম লাইনটা

@@ -77,6 +77,7 @@
   max-width: 920px;
 }
 .home-root .abt-hero-desc {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
   font-size: 16px;
   line-height: 1.5;
   font-weight: 500;
@@ -266,6 +267,7 @@
   color: #e6e4e8;
 }
 .home-root .abt-about-copy {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
   font-size: 16px;
   line-height: 1.5;
   font-weight: 500;
@@ -304,6 +306,7 @@
   color: #d9d7dd;
 }
 .home-root .abt-mv-desc {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
   font-size: 16px;
   line-height: 1.5;
   font-weight: 500;
@@ -350,6 +353,7 @@
   color: #e6e4e8;
 }
 .home-root .abt-team-desc {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
   font-size: 16px;
   line-height: 1.5;
   font-weight: 500;
@@ -361,7 +365,13 @@
 }
 .home-root .abt-team-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0,1fr), শুধু 1fr না - 1fr ট্র্যাকের ডিফল্ট মিনিমাম আসলে auto (মানে
+     কনটেন্টের min-content width-এর নিচে কখনো শ্রিঙ্ক করে না)। .abt-team-name-এ
+     white-space:nowrap থাকায় লম্বা নামের min-content width গ্রিড কলামকে
+     কন্টেইনারের চেয়েও চওড়া করে দিচ্ছিল (মোবাইলে কার্ড ভিউপোর্টের বাইরে
+     উপচে পড়ছিল) - minmax(0,1fr) ট্র্যাককে কন্টেইনারের নিচে শ্রিঙ্ক করার
+     অনুমতি দেয়, কনটেন্ট তখন নিজের ellipsis/overflow দিয়ে সামলায়। */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 32px 32px;
   align-items: start;
 }
@@ -370,7 +380,7 @@
   display: flex;
   align-items: center;
   gap: 40px;
-  padding: 8px 40px 8px 8px;
+  padding: 8px 28px 8px 8px;
   border-radius: 40px;
   border: 1px solid #19181c;
   background: rgba(103, 107, 106, 0.04);
@@ -422,7 +432,7 @@
   height: 44px;
   padding: 10px;
   border-radius: 10px;
-  border: 1px solid rgba(200, 197, 205, 0.4);
+  border: 1px solid rgba(200, 197, 205, 0.8);
   box-shadow: 0 8px 40px rgba(41, 0, 100, 0.04);
   background: rgba(103, 107, 106, 0.08);
 }
@@ -431,12 +441,19 @@
   width: 24px;
   height: 24px;
 }
+/* স্ট্রোক-স্টাইল আইকন (পাতলা outline) একই পিক্সেল সাইজে পাশের সলিড-ফিল
+   আইকনগুলোর (facebook/instagram/behance) চেয়ে ছোট/হালকা দেখায় - তাই একটু
+   বড় করে দেওয়া হলো, যাতে একই রকম visual ওজন থাকে। */
+.home-root .abt-team-social-btn img[src*="icon-linkedin"] {
+  width: 36px;
+  height: 36px;
+}
 .home-root .abt-team-info {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 48px;
+  gap: 120px;
 }
 .home-root .abt-team-namerole {
   display: flex;
@@ -454,15 +471,15 @@
   color: transparent;
   text-transform: uppercase;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .home-root .abt-team-role {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
   font-size: 16px;
   font-weight: 600;
   color: #ada8b4;
 }
 .home-root .abt-team-bio {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
   font-size: 16px;
   line-height: 1.5;
   font-weight: 500;
@@ -528,6 +545,10 @@
     width: 18px;
     height: 18px;
   }
+  .home-root .abt-team-social-btn img[src*="icon-linkedin"] {
+    width: 26px;
+    height: 26px;
+  }
 }
 @media (max-width: 900px) {
   .home-root .abt-hero-card {
@@ -566,7 +587,7 @@
     height: 182px !important;
   }
   .home-root .abt-team-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   /* সাজসজ্জামূলক (কোনো তথ্য/লিংক নেই) কার্ড - ছোট স্ক্রিনে জায়গা বাঁচাতে বাদ,
      /services পেজের .svc-arrow-card-এর মতোই একই প্যাটার্ন। */
