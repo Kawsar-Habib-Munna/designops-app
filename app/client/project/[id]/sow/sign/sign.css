@@ -70,16 +70,32 @@
 .client-sign-root .sg-progress-step.sg-done { color: var(--positive); }
 .client-sign-root .sg-progress-line { flex: 1; height: 1px; background: var(--border); }
 
+/* two-column layout: review content (left) + sticky signature panel (right) */
+.client-sign-root .sg-layout { display: grid; grid-template-columns: 1fr 380px; align-items: start; gap: 20px; }
+.client-sign-root .sg-layout-right { position: sticky; top: 72px; }
+@media (max-width: 900px) {
+  .client-sign-root .sg-layout { grid-template-columns: 1fr; }
+  .client-sign-root .sg-layout-right { position: static; }
+}
+
+/* bordered label/value table — reused for the agreement summary, signature
+   preview, confirm-modal and success-screen data (matches the project-header
+   table style used elsewhere in the client portal). */
+.client-sign-root .sg-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-md); overflow: hidden; font-size: 13px; margin-bottom: 4px; }
+.client-sign-root .sg-table th,
+.client-sign-root .sg-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); text-align: left; background: var(--surface); }
+.client-sign-root .sg-table th:not(:last-child),
+.client-sign-root .sg-table td:not(:last-child) { border-right: 1px solid var(--border); }
+.client-sign-root .sg-table tr:last-child th,
+.client-sign-root .sg-table tr:last-child td { border-bottom: none; }
+.client-sign-root .sg-table th { background: var(--accent-soft); width: 42%; font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.03em; }
+.client-sign-root .sg-table td { font-weight: 600; color: var(--ink); }
+
 /* agreement summary card */
 .client-sign-root .sg-summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 22px; margin-bottom: 18px; }
 .client-sign-root .sg-summary-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .client-sign-root .sg-summary-project { font-size: 15px; font-weight: 700; color: var(--ink); }
 .client-sign-root .sg-summary-client { font-size: 12.5px; color: var(--ink-faint); margin-top: 2px; }
-.client-sign-root .sg-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
-.client-sign-root .sg-summary-label,
-.client-sign-root .sg-success-label { display: block; font-size: 10px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
-.client-sign-root .sg-summary-grid p,
-.client-sign-root .sg-modal-grid p { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--ink); }
 .client-sign-root .sg-view-full-link { display: inline-block; margin-top: 16px; font-size: 12.5px; font-weight: 600; color: var(--accent); }
 .client-sign-root .sg-view-full-link:hover { text-decoration: underline; }
 
@@ -88,12 +104,10 @@
 .client-sign-root .sg-panel-title { font-size: 14px; font-weight: 800; color: var(--ink); margin-bottom: 14px; }
 .client-sign-root .sg-panel-title-sm { display: block; font-size: 11px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
 
-.client-sign-root .sg-before-block { margin-bottom: 14px; }
-.client-sign-root .sg-before-label { display: block; font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px; }
 .client-sign-root .sg-before-list { margin: 0; padding-left: 18px; }
-.client-sign-root .sg-before-list li { font-size: 13px; line-height: 1.8; color: var(--ink-soft); }
-.client-sign-root .sg-before-text { margin: 0; font-size: 13px; line-height: 1.7; color: var(--ink-soft); white-space: pre-wrap; }
-.client-sign-root .sg-before-note { font-size: 12.5px; color: var(--ink-faint); font-style: italic; margin: 4px 0 14px; }
+.client-sign-root .sg-before-list li { font-size: 13px; font-weight: 500; line-height: 1.8; color: var(--ink-soft); }
+.client-sign-root .sg-before-text { margin: 0; font-size: 13px; font-weight: 500; line-height: 1.7; color: var(--ink-soft); white-space: pre-wrap; }
+.client-sign-root .sg-before-note { font-size: 12.5px; color: var(--ink-faint); font-style: italic; margin: 10px 0 14px; }
 
 /* confirmation checklist */
 .client-sign-root .sg-check-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; cursor: pointer; }
@@ -119,11 +133,6 @@
 .client-sign-root .sg-file-input { display: none; }
 .client-sign-root .sg-upload-preview img { max-width: 100%; max-height: 140px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; padding: 8px; display: block; }
 
-.client-sign-root .sg-preview-card { background: var(--bg); border-radius: var(--radius-sm); padding: 16px; margin-top: 4px; }
-.client-sign-root .sg-preview-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; }
-.client-sign-root .sg-preview-row span { font-size: 12px; color: var(--ink-faint); }
-.client-sign-root .sg-preview-row p { margin: 0; font-size: 12.5px; font-weight: 600; color: var(--ink); }
-
 .client-sign-root .sg-trust-note { font-size: 12px; line-height: 1.6; color: var(--ink-faint); text-align: center; padding: 0 8px; margin-bottom: 18px; }
 .client-sign-root .sg-trust-note strong { color: var(--ink-soft); }
 
@@ -137,7 +146,6 @@
 .client-sign-root .sg-modal-box { width: 100%; max-width: 420px; background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 26px; }
 .client-sign-root .sg-modal-title { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: var(--ink); }
 .client-sign-root .sg-modal-desc { margin: 0 0 16px; font-size: 13px; line-height: 1.6; color: var(--ink-soft); }
-.client-sign-root .sg-modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; background: var(--bg); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 14px; }
 .client-sign-root .sg-modal-note { font-size: 12px; color: var(--ink-faint); margin: 0 0 18px; }
 .client-sign-root .sg-modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
@@ -152,9 +160,7 @@
 .client-sign-root .sg-success-icon { width: 56px; height: 56px; border-radius: 50%; background: var(--positive-soft); color: var(--positive); font-size: 26px; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; }
 .client-sign-root .sg-success-title { margin: 0 0 8px; font-size: 19px; font-weight: 700; color: var(--ink); }
 .client-sign-root .sg-success-sub { margin: 0 0 24px; font-size: 13.5px; color: var(--ink-soft); line-height: 1.6; }
-.client-sign-root .sg-success-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; text-align: left; background: var(--bg); border-radius: var(--radius-sm); padding: 18px 20px; margin-bottom: 18px; }
-.client-sign-root .sg-success-grid p { margin: 2px 0 0; font-size: 13.5px; font-weight: 600; color: var(--ink); }
-.client-sign-root .sg-success-full { grid-column: 1 / -1; }
+.client-sign-root .sg-success-card .sg-table { margin-bottom: 18px; text-align: left; }
 .client-sign-root .sg-success-sig-preview img { max-height: 90px; max-width: 220px; margin: 0 auto 16px; display: block; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px; }
 .client-sign-root .sg-success-badge { margin-bottom: 24px; }
 .client-sign-root .sg-success-next { background: var(--accent-soft); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 22px; text-align: left; }
@@ -162,11 +168,9 @@
 .client-sign-root .sg-success-next p { margin: 0; font-size: 12.5px; color: var(--ink-soft); }
 
 @media (max-width: 640px) {
-  .client-sign-root .sg-summary-grid,
-  .client-sign-root .sg-success-grid,
-  .client-sign-root .sg-modal-grid { grid-template-columns: 1fr 1fr; }
   .client-sign-root .sg-panel,
   .client-sign-root .sg-summary-card { padding: 18px; }
   .client-sign-root .sg-state-card,
   .client-sign-root .sg-success-card { padding: 36px 20px; }
+  .client-sign-root .sg-table th { width: 48%; }
 }

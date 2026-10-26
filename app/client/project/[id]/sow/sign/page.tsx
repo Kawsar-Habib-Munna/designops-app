@@ -132,9 +132,7 @@ function SignShell({
         <div>
           <div className="cp-brand cp-brand-sidebar">
             <span className="cp-brand-art">
-              <img src="/flow53-logo.svg" alt="" className="cp-brand-mark" />
-              <span className="cp-brand-text">FLOW <i>53</i></span>
-              <span className="cp-brand-tagline">Innovate-Design-Elevate</span>
+              <img src="/sidebar-logo.webp" alt="FLOW 53 - Innovate-Design-Elevate" className="cp-brand-logo-combined" />
             </span>
             <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
               <Icon name="close" size={16} />
@@ -600,13 +598,30 @@ export default function SowSignPage() {
                   : `This Statement of Work for ${project.name} was already signed.`}
               </p>
 
-              <div className="sg-success-grid">
-                <div><span className="sg-success-label">Project</span><p>{project.name}</p></div>
-                <div><span className="sg-success-label">SOW</span><p>{sow.sow_number ?? `v${sow.version}`}</p></div>
-                <div><span className="sg-success-label">Version</span><p>v{sow.version}.0</p></div>
-                <div><span className="sg-success-label">Signed By</span><p>{sow.signed_by_name}</p></div>
-                <div className="sg-success-full"><span className="sg-success-label">Signed On</span><p>{sow.signed_at ? formatDateTime(sow.signed_at) : ''}</p></div>
-              </div>
+              <table className="sg-table">
+                <tbody>
+                  <tr>
+                    <th>Project</th>
+                    <td>{project.name}</td>
+                  </tr>
+                  <tr>
+                    <th>SOW</th>
+                    <td>{sow.sow_number ?? `v${sow.version}`}</td>
+                  </tr>
+                  <tr>
+                    <th>Version</th>
+                    <td>v{sow.version}.0</td>
+                  </tr>
+                  <tr>
+                    <th>Signed By</th>
+                    <td>{sow.signed_by_name}</td>
+                  </tr>
+                  <tr>
+                    <th>Signed On</th>
+                    <td>{sow.signed_at ? formatDateTime(sow.signed_at) : ''}</td>
+                  </tr>
+                </tbody>
+              </table>
 
               {sow.signature_image_url && (
                 <div className="sg-success-sig-preview">
@@ -654,156 +669,193 @@ export default function SowSignPage() {
           <span className="sg-progress-step">3. Sign ○</span>
         </div>
 
-        <div className="sg-summary-card">
-          <div className="sg-summary-top">
-            <div>
-              <div className="sg-summary-project">{project.name}</div>
-              <div className="sg-summary-client">{client.primary_contact} · {client.company_name}</div>
+        <div className="sg-layout">
+          <div className="sg-layout-left">
+            <div className="sg-summary-card">
+              <div className="sg-summary-top">
+                <div>
+                  <div className="sg-summary-project">{project.name}</div>
+                  <div className="sg-summary-client">{client.primary_contact} · {client.company_name}</div>
+                </div>
+                <span className="cp-badge cp-badge-pending">Awaiting Signature</span>
+              </div>
+              <table className="sg-table">
+                <tbody>
+                  <tr>
+                    <th>SOW</th>
+                    <td>{sow.sow_number ?? `v${sow.version}`}</td>
+                  </tr>
+                  <tr>
+                    <th>Version</th>
+                    <td>v{sow.version}.0</td>
+                  </tr>
+                  {sow.project_value != null && (
+                    <tr>
+                      <th>Project Value</th>
+                      <td>{sym}{sow.project_value.toLocaleString('en-US')}</td>
+                    </tr>
+                  )}
+                  {(sow.start_date || sow.delivery_date) && (
+                    <tr>
+                      <th>Timeline</th>
+                      <td>{sow.start_date ? formatDateLong(sow.start_date) : '—'} – {sow.delivery_date ? formatDateLong(sow.delivery_date) : '—'}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              <Link href={`/client/project/${project.id}/sow`} className="sg-view-full-link">View Full SOW →</Link>
             </div>
-            <span className="cp-badge cp-badge-pending">Awaiting Signature</span>
-          </div>
-          <div className="sg-summary-grid">
-            <div><span className="sg-summary-label">SOW</span><p>{sow.sow_number ?? `v${sow.version}`}</p></div>
-            <div><span className="sg-summary-label">Version</span><p>v{sow.version}.0</p></div>
-            {sow.project_value != null && <div><span className="sg-summary-label">Project Value</span><p>{sym}{sow.project_value.toLocaleString('en-US')}</p></div>}
-            {(sow.start_date || sow.delivery_date) && (
-              <div>
-                <span className="sg-summary-label">Timeline</span>
-                <p>{sow.start_date ? formatDateLong(sow.start_date) : '—'} – {sow.delivery_date ? formatDateLong(sow.delivery_date) : '—'}</p>
+
+            <div className="sg-panel">
+              <div className="sg-panel-title">Before You Sign</div>
+              <table className="sg-table">
+                <tbody>
+                  {services.length > 0 && (
+                    <tr>
+                      <th>Deliverables</th>
+                      <td><ul className="sg-before-list">{services.map((s) => <li key={s}>{s}</li>)}</ul></td>
+                    </tr>
+                  )}
+                  {paymentDescriptions.length > 0 && (
+                    <tr>
+                      <th>Payment</th>
+                      <td><ul className="sg-before-list">{paymentDescriptions.map((p, i) => <li key={i}>{p}</li>)}</ul></td>
+                    </tr>
+                  )}
+                  {sow.revision_policy && (
+                    <tr>
+                      <th>Revisions</th>
+                      <td><p className="sg-before-text">{sow.revision_policy}</p></td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              <p className="sg-before-note">Please review the full Statement of Work before signing.</p>
+              <Link href={`/client/project/${project.id}/sow`} className="cp-btn cp-btn-secondary cp-btn-sm">View Full SOW</Link>
+            </div>
+
+            <div className="sg-panel">
+              <div className="sg-panel-title">Confirm Your Agreement</div>
+              {CHECKLIST_ITEMS.map((label, i) => (
+                <label className="sg-check-row" key={label}>
+                  <span
+                    className={`sg-check${checks[i] ? ' checked' : ''}`}
+                    role="checkbox"
+                    aria-checked={checks[i]}
+                    tabIndex={0}
+                    onClick={() => setChecks((prev) => prev.map((c, idx) => (idx === i ? !c : c)))}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChecks((prev) => prev.map((c, idx) => (idx === i ? !c : c))); } }}
+                  >
+                    {checks[i] ? '✓' : ''}
+                  </span>
+                  <span className="sg-check-label">{label}</span>
+                </label>
+              ))}
+              <p className="sg-legal-text">
+                By signing this Statement of Work, you confirm that you have reviewed and agree to the scope, deliverables, timeline, payment terms, responsibilities and other terms described in {sow.sow_number ?? `SOW v${sow.version}`}, version v{sow.version}.0.
+              </p>
+            </div>
+
+            {signError && (
+              <div className="sg-panel">
+                <div className="cp-alert cp-alert-error">Your signature was not submitted. Please try again.</div>
+                <div className="sg-canvas-actions">
+                  <button type="button" className="cp-btn cp-btn-primary cp-btn-sm" onClick={() => { setSignError(null); openConfirm(); }}>Try Again</button>
+                  <Link href={`/client/project/${project.id}/sow`} className="cp-btn cp-btn-secondary cp-btn-sm">Back to SOW</Link>
+                </div>
               </div>
             )}
           </div>
-          <Link href={`/client/project/${project.id}/sow`} className="sg-view-full-link">View Full SOW →</Link>
-        </div>
 
-        <div className="sg-panel">
-          <div className="sg-panel-title">Before You Sign</div>
-          {services.length > 0 && (
-            <div className="sg-before-block">
-              <span className="sg-before-label">Deliverables</span>
-              <ul className="sg-before-list">{services.map((s) => <li key={s}>{s}</li>)}</ul>
-            </div>
-          )}
-          {paymentDescriptions.length > 0 && (
-            <div className="sg-before-block">
-              <span className="sg-before-label">Payment</span>
-              <ul className="sg-before-list">{paymentDescriptions.map((p, i) => <li key={i}>{p}</li>)}</ul>
-            </div>
-          )}
-          {sow.revision_policy && (
-            <div className="sg-before-block">
-              <span className="sg-before-label">Revisions</span>
-              <p className="sg-before-text">{sow.revision_policy}</p>
-            </div>
-          )}
-          <p className="sg-before-note">Please review the full Statement of Work before signing.</p>
-          <Link href={`/client/project/${project.id}/sow`} className="cp-btn cp-btn-secondary cp-btn-sm">View Full SOW</Link>
-        </div>
+          <div className="sg-layout-right">
+            <div className="sg-panel">
+              <div className="sg-panel-title">Your Signature</div>
 
-        <div className="sg-panel">
-          <div className="sg-panel-title">Confirm Your Agreement</div>
-          {CHECKLIST_ITEMS.map((label, i) => (
-            <label className="sg-check-row" key={label}>
-              <span
-                className={`sg-check${checks[i] ? ' checked' : ''}`}
-                role="checkbox"
-                aria-checked={checks[i]}
-                tabIndex={0}
-                onClick={() => setChecks((prev) => prev.map((c, idx) => (idx === i ? !c : c)))}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChecks((prev) => prev.map((c, idx) => (idx === i ? !c : c))); } }}
-              >
-                {checks[i] ? '✓' : ''}
-              </span>
-              <span className="sg-check-label">{label}</span>
-            </label>
-          ))}
-          <p className="sg-legal-text">
-            By signing this Statement of Work, you confirm that you have reviewed and agree to the scope, deliverables, timeline, payment terms, responsibilities and other terms described in {sow.sow_number ?? `SOW v${sow.version}`}, version v{sow.version}.0.
-          </p>
-        </div>
-
-        <div className="sg-panel">
-          <div className="sg-panel-title">Your Signature</div>
-
-          <div className="cp-field">
-            <label className="cp-label">Full Legal Name</label>
-            <input className={`cp-input${nameError ? ' cp-input-error' : ''}`} type="text" value={fullName} onChange={(e) => { setFullName(e.target.value); setNameError(null); }} placeholder="Your full legal name" />
-            {nameError && <div className="cp-error-text">{nameError}</div>}
-          </div>
-
-          <div className="sg-tabs" role="tablist">
-            <button type="button" role="tab" aria-selected={sigMethod === 'typed'} className={`sg-tab${sigMethod === 'typed' ? ' active' : ''}`} onClick={() => setSigMethod('typed')}>Type</button>
-            <button type="button" role="tab" aria-selected={sigMethod === 'drawn'} className={`sg-tab${sigMethod === 'drawn' ? ' active' : ''}`} onClick={() => setSigMethod('drawn')}>Draw</button>
-            <button type="button" role="tab" aria-selected={sigMethod === 'uploaded'} className={`sg-tab${sigMethod === 'uploaded' ? ' active' : ''}`} onClick={() => setSigMethod('uploaded')}>Upload</button>
-          </div>
-
-          {sigMethod === 'typed' && (
-            <div className="sg-sig-interface">
-              <div className="sg-typed-preview">{fullName.trim() || 'Your Signature'}</div>
-              <div className="sg-sig-caption">Typed Signature — a visual representation only, not a cryptographic signature.</div>
-            </div>
-          )}
-
-          {sigMethod === 'drawn' && (
-            <div className="sg-sig-interface">
-              <p className="sg-canvas-instruction">Draw your signature using your mouse, trackpad, finger or stylus.</p>
-              <canvas
-                ref={canvasRef}
-                className="sg-canvas"
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerLeave={handlePointerUp}
-                aria-label="Signature drawing area"
-              />
-              <div className="sg-canvas-actions">
-                <button type="button" className="cp-btn cp-btn-secondary cp-btn-sm" onClick={undoStroke} disabled={strokeCount === 0}>Undo</button>
-                <button type="button" className="cp-btn cp-btn-secondary cp-btn-sm" onClick={clearCanvas} disabled={strokeCount === 0}>Clear</button>
+              <div className="cp-field">
+                <label className="cp-label">Full Legal Name</label>
+                <input className={`cp-input${nameError ? ' cp-input-error' : ''}`} type="text" value={fullName} onChange={(e) => { setFullName(e.target.value); setNameError(null); }} placeholder="Your full legal name" />
+                {nameError && <div className="cp-error-text">{nameError}</div>}
               </div>
-            </div>
-          )}
 
-          {sigMethod === 'uploaded' && (
-            <div className="sg-sig-interface">
-              {uploadError && <div className="cp-alert cp-alert-error">{uploadError}</div>}
-              {uploadedUrl ? (
-                <div className="sg-upload-preview">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={driveThumbnailUrl(uploadedUrl)} alt="Uploaded signature" />
+              <div className="sg-tabs" role="tablist">
+                <button type="button" role="tab" aria-selected={sigMethod === 'typed'} className={`sg-tab${sigMethod === 'typed' ? ' active' : ''}`} onClick={() => setSigMethod('typed')}>Type</button>
+                <button type="button" role="tab" aria-selected={sigMethod === 'drawn'} className={`sg-tab${sigMethod === 'drawn' ? ' active' : ''}`} onClick={() => setSigMethod('drawn')}>Draw</button>
+                <button type="button" role="tab" aria-selected={sigMethod === 'uploaded'} className={`sg-tab${sigMethod === 'uploaded' ? ' active' : ''}`} onClick={() => setSigMethod('uploaded')}>Upload</button>
+              </div>
+
+              {sigMethod === 'typed' && (
+                <div className="sg-sig-interface">
+                  <div className="sg-typed-preview">{fullName.trim() || 'Your Signature'}</div>
+                  <div className="sg-sig-caption">Typed Signature — a visual representation only, not a cryptographic signature.</div>
+                </div>
+              )}
+
+              {sigMethod === 'drawn' && (
+                <div className="sg-sig-interface">
+                  <p className="sg-canvas-instruction">Draw your signature using your mouse, trackpad, finger or stylus.</p>
+                  <canvas
+                    ref={canvasRef}
+                    className="sg-canvas"
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerLeave={handlePointerUp}
+                    aria-label="Signature drawing area"
+                  />
                   <div className="sg-canvas-actions">
-                    <button type="button" className="cp-btn cp-btn-secondary cp-btn-sm" onClick={() => fileInputRef.current?.click()}>Replace</button>
-                    <button type="button" className="cp-btn cp-btn-secondary cp-btn-sm" onClick={() => setUploadedUrl(null)}>Remove</button>
+                    <button type="button" className="cp-btn cp-btn-secondary cp-btn-sm" onClick={undoStroke} disabled={strokeCount === 0}>Undo</button>
+                    <button type="button" className="cp-btn cp-btn-secondary cp-btn-sm" onClick={clearCanvas} disabled={strokeCount === 0}>Clear</button>
                   </div>
                 </div>
-              ) : (
-                <button type="button" className="cp-btn cp-btn-secondary cp-btn-block" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                  {uploading && <span className="cp-spinner" />}
-                  {uploading ? 'Uploading…' : 'Upload Signature'}
-                </button>
               )}
-              <input ref={fileInputRef} type="file" accept="image/png,image/jpeg" className="sg-file-input" onChange={handleUploadFile} />
-              <div className="sg-sig-caption">PNG or JPG, up to 5MB.</div>
-            </div>
-          )}
 
-          <div className="sg-preview-card">
-            <span className="sg-panel-title-sm">Signature Preview</span>
-            <div className="sg-preview-row"><span>Signed by</span><p>{fullName.trim() || '—'}</p></div>
-            <div className="sg-preview-row"><span>Company</span><p>{client.company_name}</p></div>
-            <div className="sg-preview-row"><span>Method</span><p>{sigMethod === 'typed' ? 'Typed Signature' : sigMethod === 'drawn' ? 'Drawn Signature' : 'Uploaded Signature'}</p></div>
-            <div className="sg-preview-row"><span>Signing Date</span><p>Will be recorded when submitted</p></div>
+              {sigMethod === 'uploaded' && (
+                <div className="sg-sig-interface">
+                  {uploadError && <div className="cp-alert cp-alert-error">{uploadError}</div>}
+                  {uploadedUrl ? (
+                    <div className="sg-upload-preview">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={driveThumbnailUrl(uploadedUrl)} alt="Uploaded signature" />
+                      <div className="sg-canvas-actions">
+                        <button type="button" className="cp-btn cp-btn-secondary cp-btn-sm" onClick={() => fileInputRef.current?.click()}>Replace</button>
+                        <button type="button" className="cp-btn cp-btn-secondary cp-btn-sm" onClick={() => setUploadedUrl(null)}>Remove</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button type="button" className="cp-btn cp-btn-secondary cp-btn-block" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                      {uploading && <span className="cp-spinner" />}
+                      {uploading ? 'Uploading…' : 'Upload Signature'}
+                    </button>
+                  )}
+                  <input ref={fileInputRef} type="file" accept="image/png,image/jpeg" className="sg-file-input" onChange={handleUploadFile} />
+                  <div className="sg-sig-caption">PNG or JPG, up to 5MB.</div>
+                </div>
+              )}
+
+              <span className="sg-panel-title-sm">Signature Preview</span>
+              <table className="sg-table">
+                <tbody>
+                  <tr>
+                    <th>Signed by</th>
+                    <td>{fullName.trim() || '—'}</td>
+                  </tr>
+                  <tr>
+                    <th>Company</th>
+                    <td>{client.company_name}</td>
+                  </tr>
+                  <tr>
+                    <th>Method</th>
+                    <td>{sigMethod === 'typed' ? 'Typed Signature' : sigMethod === 'drawn' ? 'Drawn Signature' : 'Uploaded Signature'}</td>
+                  </tr>
+                  <tr>
+                    <th>Signing Date</th>
+                    <td>Will be recorded when submitted</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-
-        {signError && (
-          <div className="sg-panel">
-            <div className="cp-alert cp-alert-error">Your signature was not submitted. Please try again.</div>
-            <div className="sg-canvas-actions">
-              <button type="button" className="cp-btn cp-btn-primary cp-btn-sm" onClick={() => { setSignError(null); openConfirm(); }}>Try Again</button>
-              <Link href={`/client/project/${project.id}/sow`} className="cp-btn cp-btn-secondary cp-btn-sm">Back to SOW</Link>
-            </div>
-          </div>
-        )}
 
         <div className="sg-trust-note">
           <strong>Secure electronic signing.</strong> Your signature and signing information will be recorded with this SOW.
@@ -832,12 +884,28 @@ export default function SowSignPage() {
             <p className="sg-modal-desc">
               You&apos;re about to electronically sign {sow.sow_number ?? `SOW v${sow.version}`} (v{sow.version}.0) for the {project.name} project.
             </p>
-            <div className="sg-modal-grid">
-              <div><span className="sg-summary-label">Client</span><p>{fullName.trim()}</p></div>
-              {sow.project_value != null && <div><span className="sg-summary-label">Project Value</span><p>{sym}{sow.project_value.toLocaleString('en-US')}</p></div>}
-              <div><span className="sg-summary-label">Version</span><p>v{sow.version}.0</p></div>
-              <div><span className="sg-summary-label">Manager</span><p>{manager?.full_name ?? 'FLOW 53'}</p></div>
-            </div>
+            <table className="sg-table">
+              <tbody>
+                <tr>
+                  <th>Client</th>
+                  <td>{fullName.trim()}</td>
+                </tr>
+                {sow.project_value != null && (
+                  <tr>
+                    <th>Project Value</th>
+                    <td>{sym}{sow.project_value.toLocaleString('en-US')}</td>
+                  </tr>
+                )}
+                <tr>
+                  <th>Version</th>
+                  <td>v{sow.version}.0</td>
+                </tr>
+                <tr>
+                  <th>Manager</th>
+                  <td>{manager?.full_name ?? 'FLOW 53'}</td>
+                </tr>
+              </tbody>
+            </table>
             <p className="sg-modal-note">By continuing, you confirm that you have reviewed and agree to this Statement of Work.</p>
             <div className="sg-modal-actions">
               <button type="button" className="cp-btn cp-btn-secondary" disabled={signing} onClick={() => setShowConfirmModal(false)}>Cancel</button>
