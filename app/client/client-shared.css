@@ -136,6 +136,45 @@
   padding: 10px 0;
   margin-bottom: 12px;
 }
+/* এখন নেভবার/auth পাতার ছোট absolute-positioned image lockup (124x27 বক্স)
+   রিইউজ না করে, SOW ডকুমেন্টের letterhead-এর মতোই সরাসরি text দিয়ে বানানো
+   (mark + plain "FLOW 53" লেখা, accent রঙে) - হালকা ব্যাকগ্রাউন্ডের সাথে বেশি
+   স্বাভাবিকভাবে মেশে, nav-logo-text.svg-এর হালকা গ্রেডিয়েন্টের মতো কনট্রাস্ট সমস্যা
+   হয় না। mark-এর জন্য flow53-logo.svg (dark gradient, হালকা ব্যাকগ্রাউন্ডের জন্য
+   বানানো - SOW letterhead-এও এই একই ফাইল ব্যবহার হয়)। */
+.client-portal .cp-brand-sidebar .cp-brand-art {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 10px;
+  width: auto;
+  height: auto;
+}
+.client-portal .cp-brand-sidebar .cp-brand-mark {
+  position: static;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+.client-portal .cp-brand-sidebar .cp-brand-text {
+  position: static;
+  width: auto;
+  height: auto;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1.2;
+}
+.client-portal .cp-brand-sidebar .cp-brand-text i {
+  font-style: italic;
+}
+.client-portal .cp-brand-sidebar .cp-brand-tagline {
+  position: static;
+  flex-basis: 100%;
+  margin-left: 40px;
+  margin-top: 2px;
+}
 
 /* ---- centered auth shell ---- */
 .client-portal .cp-auth-shell {

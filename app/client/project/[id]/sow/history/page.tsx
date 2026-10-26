@@ -79,8 +79,8 @@ function HistoryShell({
         <div>
           <div className="cp-brand cp-brand-sidebar">
             <span className="cp-brand-art">
-              <img src="/nav-logo-mark.svg" alt="" className="cp-brand-mark" />
-              <img src="/nav-logo-text.svg" alt="FLOW 53" className="cp-brand-text" />
+              <img src="/flow53-logo.svg" alt="" className="cp-brand-mark" />
+              <span className="cp-brand-text">FLOW <i>53</i></span>
               <span className="cp-brand-tagline">Innovate-Design-Elevate</span>
             </span>
             <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
