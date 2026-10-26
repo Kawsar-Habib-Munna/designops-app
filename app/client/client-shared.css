@@ -125,55 +125,37 @@
 }
 
 /* ---- sidebar brand lockup ----
-   আগে sign-in/register-এর dark .brand-panel-এর মতো একটা dark বক্স ব্যাকগ্রাউন্ড
-   ছিল (mark/text-এর হালকা বেগুনি গ্রেডিয়েন্ট মূলত dark ব্যাকগ্রাউন্ডের জন্যই আঁকা) -
-   এখন transparent, সাইডবারের হালকা ব্যাকগ্রাউন্ডের সাথে মিশে যায়। ট্যাগলাইন তাই
-   বেস .cp-brand-tagline-এর ".on-light" রং (#7b7780)-ই ব্যবহার করে, আলাদা dark-
-   panel ওভাররাইড লাগে না। */
+   সাইডবারের নিজস্ব একটা "topbar" - কন্টেন্ট এরিয়ার .page-topbar-এর সাথে উচ্চতা
+   (52px) ও বর্ডার মিলিয়ে, যাতে দুটো মিলে পুরো পেজ জুড়ে একটানা একটা হরাইজন্টাল
+   লাইন তৈরি হয়। প্যারেন্ট .sidebar-এর নিজস্ব প্যাডিং (18px 14px, প্রতিটা পেজের
+   নিজস্ব CSS-এ ডুপ্লিকেট করা থাকে) negative margin দিয়ে কাটিয়ে একদম উপরে/পাশে
+   ফ্লাশ করে বসানো হলো। */
 .client-portal .cp-brand-sidebar {
   position: relative;
-  justify-content: flex-start;
-  padding: 10px 0;
-  margin-bottom: 12px;
-}
-/* এখন নেভবার/auth পাতার ছোট absolute-positioned image lockup (124x27 বক্স)
-   রিইউজ না করে, SOW ডকুমেন্টের letterhead-এর মতোই সরাসরি text দিয়ে বানানো
-   (mark + plain "FLOW 53" লেখা, accent রঙে) - হালকা ব্যাকগ্রাউন্ডের সাথে বেশি
-   স্বাভাবিকভাবে মেশে, nav-logo-text.svg-এর হালকা গ্রেডিয়েন্টের মতো কনট্রাস্ট সমস্যা
-   হয় না। mark-এর জন্য flow53-logo.svg (dark gradient, হালকা ব্যাকগ্রাউন্ডের জন্য
-   বানানো - SOW letterhead-এও এই একই ফাইল ব্যবহার হয়)। */
-.client-portal .cp-brand-sidebar .cp-brand-art {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  column-gap: 10px;
+  justify-content: flex-start;
+  height: 52px;
+  margin: -18px -14px 12px;
+  padding: 10px 14px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+}
+/* ইউজারের দেওয়া একটা একক PNG (mark+wordmark+tagline একসাথে বেক করা, dark
+   #6200EE→#290064 গ্রেডিয়েন্ট - হালকা ব্যাকগ্রাউন্ডের জন্য বানানো) WebP-তে
+   কনভার্ট করা (801x186 PNG, ~65KB -> ~21KB) - আগের আলাদা mark/wordmark/tagline
+   তিন-এলিমেন্ট লেআউটের বদলে এখন একটামাত্র <img>। */
+.client-portal .cp-brand-sidebar .cp-brand-art {
+  display: block;
   width: auto;
   height: auto;
 }
-.client-portal .cp-brand-sidebar .cp-brand-mark {
-  position: static;
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  object-fit: contain;
-}
-.client-portal .cp-brand-sidebar .cp-brand-text {
-  position: static;
-  width: auto;
+.client-portal .cp-brand-sidebar .cp-brand-logo-combined {
+  display: block;
+  width: 105px;
   height: auto;
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--accent);
-  line-height: 1.2;
-}
-.client-portal .cp-brand-sidebar .cp-brand-text i {
-  font-style: italic;
-}
-.client-portal .cp-brand-sidebar .cp-brand-tagline {
-  position: static;
-  flex-basis: 100%;
-  margin-left: 40px;
-  margin-top: 2px;
 }
 
 /* ---- centered auth shell ---- */
