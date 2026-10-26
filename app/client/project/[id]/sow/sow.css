@@ -132,7 +132,7 @@
 .client-sow-root .doc-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 40px 38px 36px; margin-bottom: 20px; overflow: hidden; }
 .client-sow-root .doc-letterhead-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
 .client-sow-root .doc-letterhead-left { display: flex; align-items: center; gap: 12px; }
-.client-sow-root .doc-brand-mark { width: 34px; height: 34px; flex-shrink: 0; background-image: url("/flow53-logo.svg"); background-size: contain; background-position: center; background-repeat: no-repeat; }
+.client-sow-root .doc-brand-mark { width: 34px; height: 34px; flex-shrink: 0; object-fit: contain; display: block; }
 .client-sow-root .doc-letterhead { font-size: 17px; font-weight: 800; color: var(--accent); line-height: 1.2; }
 .client-sow-root .doc-letterhead-sub { font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
 .client-sow-root .doc-letterhead-right { text-align: right; flex-shrink: 0; }
@@ -246,7 +246,8 @@
   .client-sow-root .topbar,
   .client-sow-root .page-topbar,
   .client-sow-root .breadcrumb,
-  .client-sow-root .ph-row .btn,
+  .client-sow-root .ph-row,
+  .client-sow-root .welcome-sub,
   .client-sow-root .sw-just-signed-banner,
   .client-sow-root .sw-sidebar,
   .client-sow-root .sw-doc-attachments-card {
