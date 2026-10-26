@@ -607,12 +607,13 @@ export default function ClientSowPage() {
                 <span className="doc-section-title">Payment Terms</span>
               </div>
               {sow.project_value != null && (
-                <p className="doc-p">
-                  <b>
-                    Project fee: {sym}
+                <div className="doc-value-card">
+                  <span className="doc-value-label">Project Fee</span>
+                  <span className="doc-value-amount">
+                    {sym}
                     {sow.project_value.toLocaleString('en-US')}
-                  </b>
-                </p>
+                  </span>
+                </div>
               )}
               {paymentRows.length > 0 && (
                 <>
