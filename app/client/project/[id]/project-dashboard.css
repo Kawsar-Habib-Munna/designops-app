@@ -207,9 +207,20 @@
   margin-bottom: 18px;
 }
 .client-projectdash-root .section-title {
-  font-size: 13px;
+  font-size: 18px;
   font-weight: 700;
   margin-bottom: 12px;
+}
+.client-projectdash-root .ph-section-head {
+  margin-bottom: 14px;
+}
+.client-projectdash-root .ph-section-head .section-title {
+  margin-bottom: 4px;
+}
+.client-projectdash-root .ph-section-desc {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-soft);
 }
 
 /* ---------- buttons ---------- */
@@ -259,37 +270,38 @@
   gap: 16px;
   flex-wrap: wrap;
 }
-.client-projectdash-root .ph-title-row {
+.client-projectdash-root .ph-table-grid {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  gap: 16px;
   flex-wrap: wrap;
+  width: 100%;
 }
-.client-projectdash-root .ph-title {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin: 0;
+.client-projectdash-root .ph-table {
+  flex: 1 1 320px;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  font-size: 13.5px;
 }
-.client-projectdash-root .ph-company {
-  font-size: 13px;
-  color: var(--ink-soft);
-  margin-top: 4px;
+.client-projectdash-root .ph-table th,
+.client-projectdash-root .ph-table td {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  text-align: left;
+  background: var(--surface);
 }
-.client-projectdash-root .ph-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  flex-wrap: wrap;
+.client-projectdash-root .ph-table th {
+  background: var(--accent-soft);
+  width: 160px;
   font-size: 12px;
-  color: var(--ink-faint);
+  font-weight: 700;
+  color: var(--accent);
 }
-.client-projectdash-root .ph-dot {
-  width: 3px;
-  height: 3px;
-  border-radius: 999px;
-  background: var(--ink-faint);
+.client-projectdash-root .ph-table td {
+  color: var(--ink);
+  font-weight: 600;
 }
 .client-projectdash-root .status-badge {
   display: inline-flex;
@@ -437,7 +449,9 @@
    কনটেন্ট উচ্চতা আলাদা হলেও একই রো-তে সমান উচ্চতায় দেখায়। Milestones-এর মতো
    একা দাঁড়ানো (standalone, 2-col গ্রিডের বাইরে) .dcard-এ এটা থাকলে পেজের বাকি
    খালি উচ্চতা পর্যন্ত কার্ডটা অস্বাভাবিকভাবে স্ট্রেচ হয়ে যায়। */
-.client-projectdash-root .content-2col .dcard {
+.client-projectdash-root .content-2col .dcard,
+.client-projectdash-root .content-2col .progress-card,
+.client-projectdash-root .content-2col .action-card {
   height: 100%;
 }
 .client-projectdash-root .dcard-head {
@@ -563,7 +577,21 @@
   background: var(--positive);
 }
 .client-projectdash-root .ms-step:last-child .ms-line {
-  display: none;
+  position: relative;
+}
+.client-projectdash-root .ms-step:last-child .ms-line::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translate(50%, -50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border);
+}
+.client-projectdash-root .ms-step.done:last-child .ms-line::after {
+  background: var(--positive);
 }
 .client-projectdash-root .ms-info {
   margin-top: 8px;
@@ -920,6 +948,12 @@
     height: 100%;
     min-height: 22px;
     flex: 1;
+  }
+  .client-projectdash-root .ms-step:last-child .ms-line::after {
+    top: auto;
+    left: 50%;
+    bottom: 0;
+    transform: translate(-50%, 50%);
   }
   .client-projectdash-root .ms-info {
     margin-top: 0;

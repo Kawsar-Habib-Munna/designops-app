@@ -311,9 +311,7 @@ export default function ClientProjectDashboard() {
           <div>
             <div className="cp-brand cp-brand-sidebar">
               <span className="cp-brand-art">
-                <img src="/flow53-logo.svg" alt="" className="cp-brand-mark" />
-                <span className="cp-brand-text">FLOW <i>53</i></span>
-                <span className="cp-brand-tagline">Innovate-Design-Elevate</span>
+                <img src="/sidebar-logo.webp" alt="FLOW 53 - Innovate-Design-Elevate" className="cp-brand-logo-combined" />
               </span>
               <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
                 <Icon name="close" size={16} />
@@ -376,30 +374,54 @@ export default function ClientProjectDashboard() {
 
           <main className="content">
             <div className="ph-row block">
-              <div>
-                <div className="ph-title-row">
-                  <h1 className="ph-title">{project.name}</h1>
-                  <span className={`status-badge ${statusMeta.cls}`}>
-                    <span className="dot"></span>
-                    {statusMeta.label}
-                  </span>
-                </div>
-                <div className="ph-company">{client.company_name}</div>
-                <div className="ph-meta-row">
-                  {project.category && (
-                    <>
-                      <span>{project.category}</span>
-                      <span className="ph-dot"></span>
-                    </>
-                  )}
-                  {manager && (
-                    <>
-                      <span>Project Manager: {manager.full_name}</span>
-                      <span className="ph-dot"></span>
-                    </>
-                  )}
-                  {project.due_date && <span>Expected Delivery: {formatDate(project.due_date)}</span>}
-                </div>
+              <div className="ph-section-head">
+                <h2 className="section-title">Project Overview</h2>
+                <p className="ph-section-desc">Key details about this project, at a glance.</p>
+              </div>
+              <div className="ph-table-grid">
+                <table className="ph-table">
+                  <tbody>
+                    <tr>
+                      <th>Project</th>
+                      <td>{project.name}</td>
+                    </tr>
+                    <tr>
+                      <th>Status</th>
+                      <td>
+                        <span className={`status-badge ${statusMeta.cls}`}>
+                          <span className="dot"></span>
+                          {statusMeta.label}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Client</th>
+                      <td>{client.company_name}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <table className="ph-table">
+                  <tbody>
+                    {project.category && (
+                      <tr>
+                        <th>Type</th>
+                        <td>{project.category}</td>
+                      </tr>
+                    )}
+                    {manager && (
+                      <tr>
+                        <th>Project Manager</th>
+                        <td>{manager.full_name}</td>
+                      </tr>
+                    )}
+                    {project.due_date && (
+                      <tr>
+                        <th>Expected Delivery</th>
+                        <td>{formatDate(project.due_date)}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -489,26 +511,6 @@ export default function ClientProjectDashboard() {
               </>
             ) : (
               <>
-                {/* ---- Progress ---- */}
-                <section className="block progress-card">
-                  <div className="progress-top-row">
-                    <span className="progress-pct">{progressPct}% Complete</span>
-                  </div>
-                  <div className="progress-track">
-                    <div className="progress-fill" style={{ width: `${progressPct}%` }}></div>
-                  </div>
-                  <div className="progress-meta-grid">
-                    <div>
-                      <div className="pm-label">Current Phase</div>
-                      <div className="pm-value">{currentMilestone?.title ?? (isCompleted ? 'Completed' : '—')}</div>
-                    </div>
-                    <div>
-                      <div className="pm-label">Expected Delivery</div>
-                      <div className="pm-value">{formatDate(project.due_date) || '—'}</div>
-                    </div>
-                  </div>
-                </section>
-
                 {/* ---- On Hold banner ---- */}
                 {project.status === 'on_hold' && (
                   <section className="block action-card calm">
@@ -525,35 +527,55 @@ export default function ClientProjectDashboard() {
                   </section>
                 )}
 
-                {/* ---- Pending Action ---- */}
-                <section className="block action-card">
-                  {pendingAction ? (
-                    <>
-                      <div>
-                        <div className="action-label">{pendingAction.label}</div>
-                        <div className="action-title">{pendingAction.title}</div>
-                        <div className="action-desc">{pendingAction.desc}</div>
-                        {pendingAction.moreCount && <div className="action-more">+{pendingAction.moreCount} more action{pendingAction.moreCount > 1 ? 's' : ''}</div>}
-                      </div>
-                      {pendingAction.key === 'approval' ? (
-                        <button type="button" className="btn btn-accent" onClick={() => setApprovalsModalOpen(true)}>
-                          {pendingAction.ctaLabel}
-                        </button>
-                      ) : (
-                        <Link href={pendingAction.href} className="btn btn-accent">
-                          {pendingAction.ctaLabel}
-                        </Link>
-                      )}
-                    </>
-                  ) : (
-                    <div>
-                      <div className="action-label" style={{ color: 'var(--positive)' }}>
-                        Nothing needed from you
-                      </div>
-                      <div className="action-title">Your project is progressing normally</div>
-                      <div className="action-desc">We&apos;ll let you know when your input is required.</div>
+                {/* ---- Progress / Pending Action ---- */}
+                <section className="block content-2col">
+                  <div className="progress-card">
+                    <div className="progress-top-row">
+                      <span className="progress-pct">{progressPct}% Complete</span>
                     </div>
-                  )}
+                    <div className="progress-track">
+                      <div className="progress-fill" style={{ width: `${progressPct}%` }}></div>
+                    </div>
+                    <div className="progress-meta-grid">
+                      <div>
+                        <div className="pm-label">Current Phase</div>
+                        <div className="pm-value">{currentMilestone?.title ?? (isCompleted ? 'Completed' : '—')}</div>
+                      </div>
+                      <div>
+                        <div className="pm-label">Expected Delivery</div>
+                        <div className="pm-value">{formatDate(project.due_date) || '—'}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="action-card">
+                    {pendingAction ? (
+                      <>
+                        <div>
+                          <div className="action-label">{pendingAction.label}</div>
+                          <div className="action-title">{pendingAction.title}</div>
+                          <div className="action-desc">{pendingAction.desc}</div>
+                          {pendingAction.moreCount && <div className="action-more">+{pendingAction.moreCount} more action{pendingAction.moreCount > 1 ? 's' : ''}</div>}
+                        </div>
+                        {pendingAction.key === 'approval' ? (
+                          <button type="button" className="btn btn-accent" onClick={() => setApprovalsModalOpen(true)}>
+                            {pendingAction.ctaLabel}
+                          </button>
+                        ) : (
+                          <Link href={pendingAction.href} className="btn btn-accent">
+                            {pendingAction.ctaLabel}
+                          </Link>
+                        )}
+                      </>
+                    ) : (
+                      <div>
+                        <div className="action-label" style={{ color: 'var(--positive)' }}>
+                          Nothing needed from you
+                        </div>
+                        <div className="action-title">Your project is progressing normally</div>
+                        <div className="action-desc">We&apos;ll let you know when your input is required.</div>
+                      </div>
+                    )}
+                  </div>
                 </section>
 
                 {/* ---- Current Phase / Project Details ---- */}
