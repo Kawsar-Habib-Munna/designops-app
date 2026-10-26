@@ -337,7 +337,7 @@ export default async function Home() {
                 </span>
                 <div className="projects-heading-copy">
                   <h2 className="projects-title">
-                    Let&rsquo;s Look At What We&rsquo;ve built!
+                    Let&rsquo;s Look At What We&rsquo;ve Built!
                   </h2>
                 </div>
               </div>
