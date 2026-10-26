@@ -117,6 +117,7 @@ const WHATSAPP_URL_BASE = 'https://wa.me/8801804409235';
 // পুরোটা service-এ বসে, deliverable/quantity খালি দেখায়।
 type ServiceRow = { service: string; deliverable: string; quantity: string };
 type MilestoneRow = { label: string; week: string };
+type PaymentRow = { description: string; amount: string; dueDate: string };
 
 function parseServiceRows(scope: string | null): ServiceRow[] {
   if (!scope) return [];
@@ -138,6 +139,17 @@ function parseMilestoneRows(timeline: string | null): MilestoneRow[] {
       const clean = l.replace(/^•\s*/, '').trim();
       const [label, week] = clean.split(' — ');
       return { label: (label ?? '').trim(), week: (week ?? '').trim() };
+    });
+}
+function parsePaymentRows(paymentTerms: string | null): PaymentRow[] {
+  if (!paymentTerms) return [];
+  return paymentTerms
+    .split('\n')
+    .map((l) => l.replace(/^[•\-]\s*/, '').trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [description, amount, dueDate] = line.split(' || ');
+      return { description: (description ?? '').trim(), amount: (amount ?? '').trim(), dueDate: (dueDate ?? '').trim() };
     });
 }
 
@@ -437,6 +449,7 @@ export default function ClientSowPage() {
 
   const deliverableRows = parseServiceRows(sow.scope);
   const milestoneRows = parseMilestoneRows(sow.timeline);
+  const paymentRows = parsePaymentRows(sow.payment_terms);
   const isSigned = sow.status === 'signed';
   const sym = CURRENCY_SYMBOL[sow.currency ?? 'BDT'] ?? sow.currency ?? '';
 
@@ -601,7 +614,29 @@ export default function ClientSowPage() {
                   </b>
                 </p>
               )}
-              {sow.payment_terms && <p className="doc-p">{sow.payment_terms.replace(/^Total project value:.*?\.\s*/, '')}</p>}
+              {paymentRows.length > 0 && (
+                <>
+                  <div className="doc-subhead">Payment schedule</div>
+                  <table className="sw-table">
+                    <thead>
+                      <tr>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Due date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paymentRows.map((r, i) => (
+                        <tr key={i}>
+                          <td>{r.description}</td>
+                          <td>{r.amount || '—'}</td>
+                          <td>{r.dueDate || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
               {sow.revision_policy && <p className="doc-p">{sow.revision_policy}</p>}
             </div>
 

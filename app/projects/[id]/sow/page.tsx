@@ -218,6 +218,28 @@ function serializeTimeline(milestones: MilestoneRow[]): string {
     .map((m) => `• ${m.label.trim()}${m.week.trim() ? ` — ${m.week.trim()}` : ''}`)
     .join('\n');
 }
+type PaymentRow = { id: string; description: string; amount: string; dueDate: string };
+// Deliverables/Milestones-এর একই কনভেনশন - payment_terms কলামে "• description ||
+// amount || dueDate" ফরম্যাটে structured রো সেভ হয় (নতুন jsonb কলাম ছাড়াই)।
+// আগে এখানে "Total project value: X. schedule" টেক্সট থাকত - project value এর
+// নিজস্ব real কলাম (project_value/currency) থাকায় সেটা এখন আর ডুপ্লিকেট করা হয় না।
+function parsePaymentRows(paymentTerms: string | null): PaymentRow[] {
+  if (!paymentTerms) return [];
+  return paymentTerms
+    .split('\n')
+    .map((l) => l.replace(/^[•\-]\s*/, '').trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [description, amount, dueDate] = line.split(' || ');
+      return { id: newRowId(), description: (description ?? '').trim(), amount: (amount ?? '').trim(), dueDate: (dueDate ?? '').trim() };
+    });
+}
+function serializePaymentRows(rows: PaymentRow[]): string {
+  return rows
+    .filter((r) => r.description.trim())
+    .map((r) => `• ${r.description.trim()} || ${r.amount.trim()} || ${r.dueDate.trim()}`)
+    .join('\n');
+}
 function formatDateLong(iso: string): string {
   if (!iso) return '';
   return new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -254,7 +276,7 @@ export default function AdminSowPage() {
   const [milestones, setMilestones] = useState<MilestoneRow[]>([]);
   const [projectValue, setProjectValue] = useState('');
   const [currency, setCurrency] = useState('BDT');
-  const [paymentSchedule, setPaymentSchedule] = useState('');
+  const [paymentRows, setPaymentRows] = useState<PaymentRow[]>([]);
   const [revisionPolicy, setRevisionPolicy] = useState(DEFAULT_REVISION);
   const [terms, setTerms] = useState(DEFAULT_TERMS);
   const [attachMSA, setAttachMSA] = useState(false);
@@ -301,7 +323,7 @@ export default function AdminSowPage() {
     setMilestones(parseMilestones(sow.timeline));
     setProjectValue(sow.project_value != null ? String(sow.project_value) : '');
     setCurrency(sow.currency ?? 'BDT');
-    setPaymentSchedule(sow.payment_terms?.replace(/^Total project value:.*?\.\s*/, '') ?? '');
+    setPaymentRows(parsePaymentRows(sow.payment_terms));
     setRevisionPolicy(sow.revision_policy ?? DEFAULT_REVISION);
     setTerms(sow.terms ?? DEFAULT_TERMS);
     setDocumentUrl(sow.document_url);
@@ -392,10 +414,14 @@ export default function AdminSowPage() {
     setMilestones((prev) => prev.filter((m) => m.id !== id));
   }
 
-  function buildPaymentTerms(): string {
-    const sym = CURRENCY_SYMBOL[currency] ?? currency;
-    const value = projectValue ? Number(projectValue).toLocaleString('en-US') : '0';
-    return `Total project value: ${sym}${value}. ${paymentSchedule.trim()}`.trim();
+  function addPaymentRow() {
+    setPaymentRows((prev) => [...prev, { id: newRowId(), description: '', amount: '', dueDate: '' }]);
+  }
+  function updatePaymentRow(id: string, patch: Partial<PaymentRow>) {
+    setPaymentRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  }
+  function removePaymentRow(id: string) {
+    setPaymentRows((prev) => prev.filter((r) => r.id !== id));
   }
 
   async function handleCreateFirst() {
@@ -478,7 +504,7 @@ export default function AdminSowPage() {
         timeline: serializeTimeline(milestones),
         project_value: projectValue ? Number(projectValue) : null,
         currency,
-        payment_terms: buildPaymentTerms(),
+        payment_terms: serializePaymentRows(paymentRows),
         revision_policy: revisionPolicy,
         terms,
         document_url: attachMSA ? documentUrl : null,
@@ -1011,7 +1037,19 @@ export default function AdminSowPage() {
                           </div>
                           <div className="field">
                             <label className="field-label">Payment Schedule</label>
-                            <textarea className="field-textarea" style={{ minHeight: 70 }} value={paymentSchedule} onChange={(e) => setPaymentSchedule(e.target.value)} placeholder="e.g. 50% due upon signing. Remaining 50% due upon final delivery." />
+                            {paymentRows.map((r) => (
+                              <div className="payment-row-3" key={r.id}>
+                                <input className="field-input" value={r.description} onChange={(e) => updatePaymentRow(r.id, { description: e.target.value })} placeholder="e.g. Due upon signing" />
+                                <input className="field-input" value={r.amount} onChange={(e) => updatePaymentRow(r.id, { amount: e.target.value })} placeholder="e.g. 50% or $2,500" />
+                                <input className="field-input" value={r.dueDate} onChange={(e) => updatePaymentRow(r.id, { dueDate: e.target.value })} placeholder="Due date" />
+                                <button type="button" className="deliverable-remove" onClick={() => removePaymentRow(r.id)} aria-label="বাদ দিন">
+                                  <Icon name="close" size={12} />
+                                </button>
+                              </div>
+                            ))}
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={addPaymentRow}>
+                              <Icon name="plus" size={12} /> Add Installment
+                            </button>
                           </div>
                           <div className="field">
                             <label className="field-label">Revision Policy</label>
@@ -1153,7 +1191,27 @@ export default function AdminSowPage() {
                             )}
 
                             <div className="preview-h2">4. Payment Terms</div>
-                            <p className="preview-p">{buildPaymentTerms()}</p>
+                            {projectValue && (
+                              <p className="preview-p">
+                                <b>
+                                  Project fee: {CURRENCY_SYMBOL[currency] ?? currency}
+                                  {Number(projectValue).toLocaleString('en-US')}
+                                </b>
+                              </p>
+                            )}
+                            <ul className="preview-list">
+                              {paymentRows.filter((r) => r.description.trim()).length > 0 ? (
+                                paymentRows.filter((r) => r.description.trim()).map((r) => (
+                                  <li key={r.id}>
+                                    {r.description}
+                                    {r.amount ? ` — ${r.amount}` : ''}
+                                    {r.dueDate ? ` (${r.dueDate})` : ''}
+                                  </li>
+                                ))
+                              ) : (
+                                <li style={{ color: 'var(--ink-faint)' }}>No payment schedule added yet.</li>
+                              )}
+                            </ul>
                             <p className="preview-p">{revisionPolicy}</p>
 
                             <div className="preview-h2">5. Terms &amp; Conditions</div>
@@ -1332,7 +1390,23 @@ export default function AdminSowPage() {
 
                           <div className={`sow-tab-panel${showFullDoc || activeTab === 'payment' ? '' : ' sow-tab-hidden'}`}>
                             <div className="doc-h2">4. Payment Terms</div>
-                            <p className="doc-p">{buildPaymentTerms()}</p>
+                            {projectValue && (
+                              <p className="doc-p">
+                                <b>
+                                  Project fee: {CURRENCY_SYMBOL[currency] ?? currency}
+                                  {Number(projectValue).toLocaleString('en-US')}
+                                </b>
+                              </p>
+                            )}
+                            <ul className="doc-list">
+                              {paymentRows.filter((r) => r.description.trim()).map((r) => (
+                                <li key={r.id}>
+                                  {r.description}
+                                  {r.amount ? ` — ${r.amount}` : ''}
+                                  {r.dueDate ? ` (${r.dueDate})` : ''}
+                                </li>
+                              ))}
+                            </ul>
                             <p className="doc-p">{revisionPolicy}</p>
                           </div>
 

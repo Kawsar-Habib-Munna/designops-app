@@ -66,9 +66,26 @@ const CHECKLIST_ITEMS = [
   'I confirm that the information in this agreement is correct.',
 ];
 
+// app/client/project/[id]/sow/page.tsx (full document)-এর parseServiceRows/
+// parsePaymentRows-এর সাথে হুবহু মেলানো ফরম্যাট ("• service || deliverable ||
+// quantity" ইত্যাদি) - এই কমপ্যাক্ট "Before You Sign" সামারিতে পুরো টেবিলের বদলে
+// শুধু এক-লাইন সামারি স্ট্রিং দেখানো হয়।
 function parseBulletList(text: string | null): string[] {
   if (!text) return [];
-  return text.split('\n').filter((l) => l.trim().startsWith('•')).map((l) => l.replace(/^•\s*/, '').trim());
+  return text
+    .split('\n')
+    .filter((l) => l.trim().startsWith('•'))
+    .map((l) => l.replace(/^•\s*/, '').trim().split(' || ')[0]);
+}
+function parsePaymentSummaries(paymentTerms: string | null): string[] {
+  if (!paymentTerms) return [];
+  return paymentTerms
+    .split('\n')
+    .filter((l) => l.trim().startsWith('•'))
+    .map((l) => {
+      const [description, amount, dueDate] = l.replace(/^•\s*/, '').trim().split(' || ');
+      return `${description ?? ''}${amount ? ` — ${amount}` : ''}${dueDate ? ` (${dueDate})` : ''}`;
+    });
 }
 
 type SigMethod = 'typed' | 'drawn' | 'uploaded';
@@ -566,6 +583,7 @@ export default function SowSignPage() {
   const manager = toOne(project.project_manager);
   const sym = CURRENCY_SYMBOL[sow.currency ?? 'BDT'] ?? sow.currency ?? '';
   const services = parseBulletList(sow.scope);
+  const paymentDescriptions = parsePaymentSummaries(sow.payment_terms);
 
   // ---- already signed / just signed ----
   if (sow.status === 'signed') {
@@ -666,10 +684,10 @@ export default function SowSignPage() {
               <ul className="sg-before-list">{services.map((s) => <li key={s}>{s}</li>)}</ul>
             </div>
           )}
-          {sow.payment_terms && (
+          {paymentDescriptions.length > 0 && (
             <div className="sg-before-block">
               <span className="sg-before-label">Payment</span>
-              <p className="sg-before-text">{sow.payment_terms.replace(/^Total project value:.*?\.\s*/, '')}</p>
+              <ul className="sg-before-list">{paymentDescriptions.map((p, i) => <li key={i}>{p}</li>)}</ul>
             </div>
           )}
           {sow.revision_policy && (
