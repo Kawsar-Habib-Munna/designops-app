@@ -111,7 +111,7 @@ export default async function ContactPage() {
                   </a>
                   <a className="cp-info-row" href={`mailto:${settings.contactEmail}`}>
                     <span className="faq-contact-icon">
-                      <img src="/faq/icon-email.svg" alt="" />
+                      <img loading="lazy" src="/faq/icon-email.svg" alt="" />
                     </span>
                     <span className="cp-info-lines">
                       <span>{settings.contactEmail}</span>
@@ -170,7 +170,7 @@ export default async function ContactPage() {
               ].map((col, i) => (
                 <div key={i} className="cp-collage-col" style={{ marginTop: col.offset }}>
                   {col.imgs.map((src, j) => (
-                    <img
+                    <img loading="lazy"
                       key={j}
                       src={src}
                       alt=""
@@ -184,7 +184,7 @@ export default async function ContactPage() {
             <div className="testimonials-inner reveal">
               <div className="testimonials-heading">
                 <span className="testimonials-eyebrow">
-                  <img src="/stats/line.svg" alt="" />
+                  <img loading="lazy" src="/stats/line.svg" alt="" />
                   <span>TESTIMONIALS</span>
                 </span>
                 <div className="testimonials-heading-copy">
@@ -214,19 +214,19 @@ export default async function ContactPage() {
             <div className="cta-final-card">
               <div className="cta-final-deco" aria-hidden="true">
                 <span className="cta-deco-badge cta-deco-figma">
-                  <img src="/cta/icon-figma.svg" alt="" />
+                  <img loading="lazy" src="/cta/icon-figma.svg" alt="" />
                 </span>
-                <img src="/cta/icon-xd-a.svg" alt="" className="cta-deco-plain cta-deco-xd" />
-                <img src="/cta/icon-spiral.svg" alt="" className="cta-deco-plain cta-deco-spiral" />
-                <img src="/cta/icon-sunburst.svg" alt="" className="cta-deco-plain cta-deco-sunburst" />
-                <img src="/cta/icon-framer.svg" alt="" className="cta-deco-plain cta-deco-framer" />
+                <img loading="lazy" src="/cta/icon-xd-a.svg" alt="" className="cta-deco-plain cta-deco-xd" />
+                <img loading="lazy" src="/cta/icon-spiral.svg" alt="" className="cta-deco-plain cta-deco-spiral" />
+                <img loading="lazy" src="/cta/icon-sunburst.svg" alt="" className="cta-deco-plain cta-deco-sunburst" />
+                <img loading="lazy" src="/cta/icon-framer.svg" alt="" className="cta-deco-plain cta-deco-framer" />
                 <span className="cta-deco-badge cta-deco-illustrator">
-                  <img src="/cta/icon-illustrator.svg" alt="" />
+                  <img loading="lazy" src="/cta/icon-illustrator.svg" alt="" />
                 </span>
               </div>
               <div className="cta-final-heading">
                 <span className="cta-final-eyebrow">
-                  <img src="/stats/line.svg" alt="" />
+                  <img loading="lazy" src="/stats/line.svg" alt="" />
                   <span>CALL TO ACTION</span>
                 </span>
                 <div className="cta-final-heading-copy">
@@ -243,7 +243,7 @@ export default async function ContactPage() {
                   <span className="cta-final-btn-inner">
                     <SlideSwapLabel text="Start A Project" />
                   </span>
-                  <img src="/cta/icon-arrow.svg" alt="" className="cta-final-btn-icon" />
+                  <img loading="lazy" src="/cta/icon-arrow.svg" alt="" className="cta-final-btn-icon" />
                 </a>
                 <a href={bookCallUrl} target="_blank" rel="noopener noreferrer" className="cta-final-btn secondary">
                   <span className="cta-final-btn-inner">
@@ -270,7 +270,7 @@ export default async function ContactPage() {
         </section>
 
         <section className="brand-band" aria-hidden="true">
-          <img src="/brand/logo-band.webp" alt="" className="brand-band-img" />
+          <img loading="lazy" src="/brand/logo-band.webp" alt="" className="brand-band-img" />
         </section>
 
         <LandingFooter settings={settings} />

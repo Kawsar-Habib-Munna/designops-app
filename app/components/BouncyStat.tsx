@@ -95,7 +95,7 @@ export default function BouncyStat({
       <div className={rootClass}>
         <span className={labelClass}>{label}</span>
         <span className={valueClass}>{value}</span>
-        <img src={arrowSrc} alt="" className={arrowClass} />
+        <img loading="lazy" src={arrowSrc} alt="" className={arrowClass} />
       </div>
     );
   }
@@ -114,7 +114,7 @@ export default function BouncyStat({
     >
       <span className={labelClass}>{label}</span>
       <span className={valueClass}>{shownValue}</span>
-      <img src={arrowSrc} alt="" className={arrowClass} />
+      <img loading="lazy" src={arrowSrc} alt="" className={arrowClass} />
     </motion.div>
   );
 }

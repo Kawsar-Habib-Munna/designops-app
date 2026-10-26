@@ -102,7 +102,7 @@ export default function ServicesShowcase() {
             </div>
             <div className="services-card-illustration">
               <div className="services-card-illustration-inner">
-                <img src={service.image} alt={service.name} />
+                <img loading="lazy" src={service.image} alt={service.name} />
               </div>
             </div>
           </motion.div>
@@ -123,10 +123,10 @@ export default function ServicesShowcase() {
               <span className="services-list-row">
                 <span className="services-list-name">{s.name}</span>
                 <span className="services-list-icon">
-                  <img src={isActive ? '/services/arrow-corner-active.svg' : '/services/arrow-corner.svg'} alt="" />
+                  <img loading="lazy" src={isActive ? '/services/arrow-corner-active.svg' : '/services/arrow-corner.svg'} alt="" />
                 </span>
               </span>
-              <img
+              <img loading="lazy"
                 className="services-list-divider"
                 src={isActive ? '/services/divider-active.svg' : '/services/divider.svg'}
                 alt=""

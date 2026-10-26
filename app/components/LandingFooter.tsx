@@ -26,16 +26,16 @@ const QUICK_LINKS = [
 const SERVICES = ['UI UX Design', 'Web & App Design', 'Web Development', 'Logo & Branding', 'Digital Marketing'];
 
 function BehanceIcon() {
-  return <img src="/footer/social-be.svg" alt="" className="footer-social-icon" />;
+  return <img loading="lazy" src="/footer/social-be.svg" alt="" className="footer-social-icon" />;
 }
 function DribbbleIcon() {
-  return <img src="/footer/social-dribbble.svg" alt="" className="footer-social-icon" />;
+  return <img loading="lazy" src="/footer/social-dribbble.svg" alt="" className="footer-social-icon" />;
 }
 function FacebookIcon() {
-  return <img src="/footer/social-facebook.svg" alt="" className="footer-social-icon" />;
+  return <img loading="lazy" src="/footer/social-facebook.svg" alt="" className="footer-social-icon" />;
 }
 function TwitterIcon() {
-  return <img src="/footer/social-twitter.svg" alt="" className="footer-social-icon" />;
+  return <img loading="lazy" src="/footer/social-twitter.svg" alt="" className="footer-social-icon" />;
 }
 function LinkedinIcon() {
   return (
@@ -88,7 +88,7 @@ export default function LandingFooter({ settings = DEFAULT_SITE_SETTINGS }: { se
         <div className="footer-main-wrap">
           <div className="footer-gutter-line" aria-hidden="true" />
           <button type="button" className="footer-scroll-top" onClick={scrollToTop} aria-label="উপরে যান">
-            <img src="/footer/icon-scroll-top.svg" alt="" />
+            <img loading="lazy" src="/footer/icon-scroll-top.svg" alt="" />
           </button>
 
           <div className="footer-main reveal">
@@ -112,7 +112,7 @@ export default function LandingFooter({ settings = DEFAULT_SITE_SETTINGS }: { se
                 />
                 <button type="submit" className="footer-subscribe-btn">
                   <span className="footer-subscribe-label"><SlideSwapLabel text="Subscribe" /></span>
-                  <img src="/footer/icon-subscribe-arrow.svg" alt="" width={24} height={24} className="footer-subscribe-icon" />
+                  <img loading="lazy" src="/footer/icon-subscribe-arrow.svg" alt="" width={24} height={24} className="footer-subscribe-icon" />
                 </button>
               </form>
             </div>
@@ -161,19 +161,19 @@ export default function LandingFooter({ settings = DEFAULT_SITE_SETTINGS }: { se
               <div className="footer-contact-rows">
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="footer-contact-row">
                   <span className="footer-contact-icon">
-                    <img src="/footer/icon-call.svg" alt="" />
+                    <img loading="lazy" src="/footer/icon-call.svg" alt="" />
                   </span>
                   <span className="footer-contact-text">{phoneDisplay}</span>
                 </a>
                 <a href={`mailto:${settings.contactEmail}`} className="footer-contact-row">
                   <span className="footer-contact-icon">
-                    <img src="/footer/icon-mail.svg" alt="" />
+                    <img loading="lazy" src="/footer/icon-mail.svg" alt="" />
                   </span>
                   <span className="footer-contact-text">{settings.contactEmail}</span>
                 </a>
                 <div className="footer-contact-row">
                   <span className="footer-contact-icon">
-                    <img src="/footer/icon-pin.svg" alt="" />
+                    <img loading="lazy" src="/footer/icon-pin.svg" alt="" />
                   </span>
                   <span className="footer-contact-text">{settings.addressLine1}, {settings.addressLine2}</span>
                 </div>
@@ -192,14 +192,14 @@ export default function LandingFooter({ settings = DEFAULT_SITE_SETTINGS }: { se
 
           <div className="footer-bottom">
             <span className="footer-copyright">
-              <img src="/footer/copyright-dot.svg" alt="©" /> {new Date().getFullYear()} Flow 53. All Rights Reserved.
+              <img loading="lazy" src="/footer/copyright-dot.svg" alt="©" /> {new Date().getFullYear()} Flow 53. All Rights Reserved.
             </span>
             <div className="footer-payment-cards" role="img" aria-label="আমরা bKash, PayPal, Visa, MasterCard এবং American Express গ্রহণ করি">
-              <img src="/footer/payment/bkash.svg" alt="" className="footer-payment-icon footer-payment-bkash" />
-              <img src="/footer/payment/paypal.svg" alt="" className="footer-payment-icon" />
-              <img src="/footer/payment/visa.svg" alt="" className="footer-payment-icon" />
-              <img src="/footer/payment/mastercard.svg" alt="" className="footer-payment-icon" />
-              <img src="/footer/payment/amex.svg" alt="" className="footer-payment-icon" />
+              <img loading="lazy" src="/footer/payment/bkash.svg" alt="" className="footer-payment-icon footer-payment-bkash" />
+              <img loading="lazy" src="/footer/payment/paypal.svg" alt="" className="footer-payment-icon" />
+              <img loading="lazy" src="/footer/payment/visa.svg" alt="" className="footer-payment-icon" />
+              <img loading="lazy" src="/footer/payment/mastercard.svg" alt="" className="footer-payment-icon" />
+              <img loading="lazy" src="/footer/payment/amex.svg" alt="" className="footer-payment-icon" />
             </div>
           </div>
 

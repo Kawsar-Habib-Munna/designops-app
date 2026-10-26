@@ -34,10 +34,10 @@ export default function WhyCardsGrid({ cards }: { cards: WhyCard[] }) {
           >
             <div className="why-card-top">
               <span className="why-card-icon">
-                <img src={c.icon} alt="" />
+                <img loading="lazy" src={c.icon} alt="" />
               </span>
               <span className="why-card-line">
-                <img src="/why/card-line.svg" alt="" />
+                <img loading="lazy" src="/why/card-line.svg" alt="" />
               </span>
             </div>
             <div className="why-card-copy">

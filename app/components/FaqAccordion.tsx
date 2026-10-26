@@ -47,7 +47,7 @@ export default function FaqAccordion() {
               <button type="button" className="faq-item-head" onClick={() => setOpen(isOpen ? -1 : i)} aria-expanded={isOpen}>
                 <span className="faq-item-q">{item.q}</span>
                 <span className="faq-item-icon">
-                  <img src={isOpen ? '/faq/chevron-up.svg' : '/faq/chevron-down.svg'} alt="" />
+                  <img loading="lazy" src={isOpen ? '/faq/chevron-up.svg' : '/faq/chevron-down.svg'} alt="" />
                 </span>
               </button>
               {isOpen && item.a && <p className="faq-item-a">{item.a}</p>}

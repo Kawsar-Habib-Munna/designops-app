@@ -41,7 +41,7 @@ export default function TestimonialsGrid({ testimonials }: { testimonials: Testi
   return (
     <>
       <div className="testimonials-grid">
-        <img
+        <img loading="lazy"
           src="/testimonials/grid-lines.svg"
           alt=""
           className="testimonials-grid-lines"
@@ -63,7 +63,7 @@ export default function TestimonialsGrid({ testimonials }: { testimonials: Testi
           >
             <div className="testimonial-top">
               {t.avatar ? (
-                <img src={t.avatar} alt="" className="testimonial-avatar" />
+                <img loading="lazy" src={t.avatar} alt="" className="testimonial-avatar" />
               ) : (
                 <span className="testimonial-avatar" aria-hidden="true" />
               )}
@@ -76,9 +76,9 @@ export default function TestimonialsGrid({ testimonials }: { testimonials: Testi
             <div className="testimonial-foot">
               <span className="testimonial-rating">
                 {t.rating}
-                <img src="/testimonials/star-icon.svg" alt="" />
+                <img loading="lazy" src="/testimonials/star-icon.svg" alt="" />
               </span>
-              <img
+              <img loading="lazy"
                 src="/testimonials/quote-icon.svg"
                 alt=""
                 className="testimonial-quote-mark"
@@ -92,7 +92,7 @@ export default function TestimonialsGrid({ testimonials }: { testimonials: Testi
       {totalPages > 1 && (
         <div className="testimonials-pager">
           <button type="button" className="testimonials-pager-btn" onClick={() => go(-1)} aria-label="Previous testimonials">
-            <img src="/testimonials/arrow-left.svg" alt="" />
+            <img loading="lazy" src="/testimonials/arrow-left.svg" alt="" />
           </button>
           <span className="testimonials-dots">
             {Array.from({ length: totalPages }, (_, i) => (
@@ -107,7 +107,7 @@ export default function TestimonialsGrid({ testimonials }: { testimonials: Testi
             ))}
           </span>
           <button type="button" className="testimonials-pager-btn" onClick={() => go(1)} aria-label="Next testimonials">
-            <img src="/testimonials/arrow-right.svg" alt="" />
+            <img loading="lazy" src="/testimonials/arrow-right.svg" alt="" />
           </button>
         </div>
       )}

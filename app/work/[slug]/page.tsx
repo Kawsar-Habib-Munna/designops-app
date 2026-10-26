@@ -161,7 +161,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
                   <div className="work-gallery">
                     {items.map((m) => {
                       if (m.media_type === 'image') {
-                        return <img className="work-gallery-img" key={m.id} src={driveFullImageUrl(m.url)} alt={m.caption ?? sec.label} />;
+                        return <img loading="lazy" className="work-gallery-img" key={m.id} src={driveFullImageUrl(m.url)} alt={m.caption ?? sec.label} />;
                       }
                       if (m.media_type === 'video') {
                         const embed = driveEmbedUrl(m.url);

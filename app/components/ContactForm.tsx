@@ -60,7 +60,7 @@ export default function ContactForm({ whatsappNumber = DEFAULT_SITE_SETTINGS.boo
       </label>
       <button type="submit" className="contact-submit">
         <span>Send Inquiry</span>
-        <img src="/faq/arrow-send.svg" alt="" />
+        <img loading="lazy" src="/faq/arrow-send.svg" alt="" />
       </button>
     </form>
   );

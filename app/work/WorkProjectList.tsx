@@ -68,7 +68,7 @@ export default function WorkProjectList({ projects }: { projects: ProjectCard[] 
       {totalPages > 1 && (
         <div className="wp-pagination">
           <button type="button" className="wp-page-arrow" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={safePage === 0} aria-label="Previous page">
-            <img src="/projects/arrow-prev.svg" alt="" />
+            <img loading="lazy" src="/projects/arrow-prev.svg" alt="" />
           </button>
           <div className="wp-page-numbers">
             {Array.from({ length: totalPages }, (_, i) => (
@@ -90,7 +90,7 @@ export default function WorkProjectList({ projects }: { projects: ProjectCard[] 
             disabled={safePage === totalPages - 1}
             aria-label="Next page"
           >
-            <img src="/projects/arrow-next.svg" alt="" />
+            <img loading="lazy" src="/projects/arrow-next.svg" alt="" />
           </button>
         </div>
       )}

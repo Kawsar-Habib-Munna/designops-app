@@ -52,7 +52,7 @@ const SERVICES: ServiceDetail[] = [
     eyebrow: 'UI/UX DESIGN',
     title: 'Turning Ideas Into Seamless Digital Experiences.',
     desc: "From mobile apps to web platforms, we create thoughtful UI/UX designs that simplify complexity and make every interaction feel effortless.",
-    image: '/services/figma-01-ui-ux-design.png',
+    image: '/services/figma-01-ui-ux-design.webp',
     imageAlt: 'UI/UX design work shown across laptop and mobile screens',
     imageHasOwnFrame: true,
     features: [
@@ -68,7 +68,7 @@ const SERVICES: ServiceDetail[] = [
     eyebrow: 'WEB AND APP DESIGN',
     title: 'Turning Ideas Into Stunning Websites.',
     desc: 'We craft responsive websites and apps that balance striking visuals with smooth, intuitive navigation.',
-    image: '/services/figma-02-web-app-design.png',
+    image: '/services/figma-02-web-app-design.webp',
     imageAlt: 'Web and app design mockups on a desktop screen',
     imageHasOwnFrame: true,
     reverse: true,
@@ -85,7 +85,7 @@ const SERVICES: ServiceDetail[] = [
     eyebrow: 'WEB DEVELOPMENT',
     title: 'Turning Ideas Into Seamless Mobile Experiences.',
     desc: 'We build fast, secure, and scalable web solutions engineered to grow with your business.',
-    image: '/services/figma-03-web-development.png',
+    image: '/services/figma-03-web-development.webp',
     imageAlt: 'Web development work shown on a laptop screen',
     imageHasOwnFrame: true,
     features: [
@@ -101,7 +101,7 @@ const SERVICES: ServiceDetail[] = [
     eyebrow: 'LOGO AND BRANDING',
     title: 'Turning Ideas Into Memorable Brand Identities.',
     desc: 'We build cohesive brand identities that help your business stand out and stay memorable.',
-    image: '/services/figma-04-brand-identity.png',
+    image: '/services/figma-04-brand-identity.webp',
     imageAlt: 'Brand identity design work including logo and color palette',
     imageHasOwnFrame: true,
     reverse: true,
@@ -118,7 +118,7 @@ const SERVICES: ServiceDetail[] = [
     eyebrow: 'DIGITAL MARKETING',
     title: 'Turning Ideas Into Powerful Digital Marketing.',
     desc: 'We run data-driven marketing campaigns that grow your traffic and boost online visibility.',
-    image: '/services/figma-05-digital-marketing.png',
+    image: '/services/figma-05-digital-marketing.webp',
     imageAlt: 'Digital marketing analytics shown on a tablet screen',
     imageHasOwnFrame: true,
     features: [
@@ -197,19 +197,19 @@ export default async function ServicesPage() {
                   <span className="svc-trusted-mini">
                     <span className="svc-trusted-mini-label">Trusted By:</span>
                     <span className="svc-trusted-mini-avatars">
-                      <img src="/hero/avatar-1.png" alt="" />
-                      <img src="/hero/avatar-2.png" alt="" />
-                      <img src="/hero/avatar-3.png" alt="" />
-                      <img src="/hero/avatar-4.png" alt="" />
+                      <img loading="lazy" src="/hero/avatar-1.png" alt="" />
+                      <img loading="lazy" src="/hero/avatar-2.png" alt="" />
+                      <img loading="lazy" src="/hero/avatar-3.png" alt="" />
+                      <img loading="lazy" src="/hero/avatar-4.png" alt="" />
                       <span className="svc-trusted-mini-plus">
-                        <img src="/hero/plus.svg" alt="" />
+                        <img loading="lazy" src="/hero/plus.svg" alt="" />
                       </span>
                     </span>
                   </span>
                 </div>
                 <div className={`svc-detail-image${s.imageHasOwnFrame ? ' framed' : ''}`}>
                   <div className="svc-detail-image-inner">
-                    <img src={s.image} alt={s.imageAlt} />
+                    <img loading="lazy" src={s.image} alt={s.imageAlt} />
                   </div>
                 </div>
               </div>
@@ -226,7 +226,7 @@ export default async function ServicesPage() {
               <div className="svc-bottom-row">
                 <ServiceButtons bookCallUrl={bookCallUrl} />
                 <div className="svc-arrow-card" aria-hidden="true">
-                  <img src="/services/icon-arrow-corner.svg" alt="" />
+                  <img loading="lazy" src="/services/icon-arrow-corner.svg" alt="" />
                 </div>
               </div>
             </div>
@@ -238,19 +238,19 @@ export default async function ServicesPage() {
             <div className="cta-final-card">
               <div className="cta-final-deco" aria-hidden="true">
                 <span className="cta-deco-badge cta-deco-figma">
-                  <img src="/cta/icon-figma.svg" alt="" />
+                  <img loading="lazy" src="/cta/icon-figma.svg" alt="" />
                 </span>
-                <img src="/cta/icon-xd-a.svg" alt="" className="cta-deco-plain cta-deco-xd" />
-                <img src="/cta/icon-spiral.svg" alt="" className="cta-deco-plain cta-deco-spiral" />
-                <img src="/cta/icon-sunburst.svg" alt="" className="cta-deco-plain cta-deco-sunburst" />
-                <img src="/cta/icon-framer.svg" alt="" className="cta-deco-plain cta-deco-framer" />
+                <img loading="lazy" src="/cta/icon-xd-a.svg" alt="" className="cta-deco-plain cta-deco-xd" />
+                <img loading="lazy" src="/cta/icon-spiral.svg" alt="" className="cta-deco-plain cta-deco-spiral" />
+                <img loading="lazy" src="/cta/icon-sunburst.svg" alt="" className="cta-deco-plain cta-deco-sunburst" />
+                <img loading="lazy" src="/cta/icon-framer.svg" alt="" className="cta-deco-plain cta-deco-framer" />
                 <span className="cta-deco-badge cta-deco-illustrator">
-                  <img src="/cta/icon-illustrator.svg" alt="" />
+                  <img loading="lazy" src="/cta/icon-illustrator.svg" alt="" />
                 </span>
               </div>
               <div className="cta-final-heading">
                 <span className="cta-final-eyebrow">
-                  <img src="/stats/line.svg" alt="" />
+                  <img loading="lazy" src="/stats/line.svg" alt="" />
                   <span>CALL TO ACTION</span>
                 </span>
                 <div className="cta-final-heading-copy">
@@ -265,7 +265,7 @@ export default async function ServicesPage() {
               <div className="cta-final-buttons">
                 <a href="/client/register" className="cta-final-btn primary">
                   <span className="cta-final-btn-inner"><SlideSwapLabel text="Start A Project" /></span>
-                  <img src="/cta/icon-arrow.svg" alt="" className="cta-final-btn-icon" />
+                  <img loading="lazy" src="/cta/icon-arrow.svg" alt="" className="cta-final-btn-icon" />
                 </a>
                 <a href={bookCallUrl} target="_blank" rel="noopener noreferrer" className="cta-final-btn secondary">
                   <span className="cta-final-btn-inner"><SlideSwapLabel text="Book A Call" /></span>
@@ -290,7 +290,7 @@ export default async function ServicesPage() {
         </section>
 
         <section className="brand-band" aria-hidden="true">
-          <img src="/brand/logo-band.webp" alt="" className="brand-band-img" />
+          <img loading="lazy" src="/brand/logo-band.webp" alt="" className="brand-band-img" />
         </section>
 
         <LandingFooter settings={settings} />

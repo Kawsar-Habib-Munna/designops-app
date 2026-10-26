@@ -250,7 +250,7 @@ function DesktopDiagram() {
     >
       <div className="process-scroll-stage" style={{ top: navOffset, height: `calc(100vh - ${navOffset}px)` }}>
         <motion.div className="process-diagram" ref={diagramRef} style={{ y: panY }}>
-          <img src="/process/timeline-graph.svg" alt="" className="process-diagram-graph" aria-hidden="true" />
+          <img loading="lazy" src="/process/timeline-graph.svg" alt="" className="process-diagram-graph" aria-hidden="true" />
           <span className="process-axis-y" aria-hidden="true">PROGRESS &amp; TIMELINE</span>
           <span className="process-axis-x" aria-hidden="true">DESIGN THINKING PROCESS</span>
 
@@ -368,7 +368,7 @@ function MobileStepList() {
 function StaticDiagram() {
   return (
     <div className="process-diagram">
-      <img src="/process/timeline-graph.svg" alt="" className="process-diagram-graph" aria-hidden="true" />
+      <img loading="lazy" src="/process/timeline-graph.svg" alt="" className="process-diagram-graph" aria-hidden="true" />
       <span className="process-axis-y" aria-hidden="true">PROGRESS &amp; TIMELINE</span>
       <span className="process-axis-x" aria-hidden="true">DESIGN THINKING PROCESS</span>
       {PROCESS_STEPS.map((step, i) => (

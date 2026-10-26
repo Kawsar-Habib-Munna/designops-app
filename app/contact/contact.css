@@ -7,7 +7,7 @@
    CTA band/brand-band/footer reuse home.css's cta-final and brand-band classes verbatim. */
 
 .home-root .cp-hero {
-  background: #010003 url("/contact/hero-bg-pattern.png") top center / cover no-repeat;
+  background: #010003 url("/contact/hero-bg-pattern.webp") top center / cover no-repeat;
   padding: 200px 0 120px 0;
 }
 .home-root .cp-hero-inner {

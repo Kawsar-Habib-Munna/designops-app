@@ -135,9 +135,9 @@ export default async function AboutPage() {
             <div className="abt-about-row reveal">
               <div className="abt-about-image">
                 <div className="abt-about-image-inner">
-                  <img src="/about/about-office-photo.jpg" alt="The Flow 53 team collaborating around a whiteboard session" />
+                  <img loading="lazy" src="/about/about-office-photo.jpg" alt="The Flow 53 team collaborating around a whiteboard session" />
                 </div>
-                <img src="/about/about-logo-overlay.png" alt="" className="abt-about-logo" aria-hidden="true" />
+                <img loading="lazy" src="/about/about-logo-overlay.png" alt="" className="abt-about-logo" aria-hidden="true" />
               </div>
 
               <div className="abt-about-text">
@@ -169,7 +169,7 @@ export default async function AboutPage() {
                   </p>
                 </div>
                 <div className="abt-mv-image">
-                  <img src="/about/mission-compass.png" alt="" />
+                  <img loading="lazy" src="/about/mission-compass.png" alt="" />
                 </div>
               </div>
 
@@ -183,7 +183,7 @@ export default async function AboutPage() {
                   </p>
                 </div>
                 <div className="abt-mv-image">
-                  <img src="/about/vision-ladder.png" alt="" />
+                  <img loading="lazy" src="/about/vision-ladder.png" alt="" />
                 </div>
               </div>
             </div>
@@ -234,7 +234,7 @@ export default async function AboutPage() {
                           <div className="abt-team-socials">
                             {socials.map((s) => (
                               <a key={s.label} className="abt-team-social-btn" href={s.url ?? "#"} target="_blank" rel="noopener noreferrer" aria-label={`${m.full_name}-এর ${s.label}`}>
-                                <img src={s.icon} alt="" />
+                                <img loading="lazy" src={s.icon} alt="" />
                               </a>
                             ))}
                           </div>
@@ -255,7 +255,7 @@ export default async function AboutPage() {
                     সংখ্যা জোড় হলেই গ্রিডে এই শেষ সেলটা খালি থাকে। */}
                 {team.length % 2 === 0 && (
                   <div className="abt-team-card-deco" aria-hidden="true">
-                    <img src="/about/team-deco-bouquet.png" alt="" />
+                    <img loading="lazy" src="/about/team-deco-bouquet.png" alt="" />
                   </div>
                 )}
                 </>
@@ -269,19 +269,19 @@ export default async function AboutPage() {
             <div className="cta-final-card">
               <div className="cta-final-deco" aria-hidden="true">
                 <span className="cta-deco-badge cta-deco-figma">
-                  <img src="/cta/icon-figma.svg" alt="" />
+                  <img loading="lazy" src="/cta/icon-figma.svg" alt="" />
                 </span>
-                <img src="/cta/icon-xd-a.svg" alt="" className="cta-deco-plain cta-deco-xd" />
-                <img src="/cta/icon-spiral.svg" alt="" className="cta-deco-plain cta-deco-spiral" />
-                <img src="/cta/icon-sunburst.svg" alt="" className="cta-deco-plain cta-deco-sunburst" />
-                <img src="/cta/icon-framer.svg" alt="" className="cta-deco-plain cta-deco-framer" />
+                <img loading="lazy" src="/cta/icon-xd-a.svg" alt="" className="cta-deco-plain cta-deco-xd" />
+                <img loading="lazy" src="/cta/icon-spiral.svg" alt="" className="cta-deco-plain cta-deco-spiral" />
+                <img loading="lazy" src="/cta/icon-sunburst.svg" alt="" className="cta-deco-plain cta-deco-sunburst" />
+                <img loading="lazy" src="/cta/icon-framer.svg" alt="" className="cta-deco-plain cta-deco-framer" />
                 <span className="cta-deco-badge cta-deco-illustrator">
-                  <img src="/cta/icon-illustrator.svg" alt="" />
+                  <img loading="lazy" src="/cta/icon-illustrator.svg" alt="" />
                 </span>
               </div>
               <div className="cta-final-heading">
                 <span className="cta-final-eyebrow">
-                  <img src="/stats/line.svg" alt="" />
+                  <img loading="lazy" src="/stats/line.svg" alt="" />
                   <span>CALL TO ACTION</span>
                 </span>
                 <div className="cta-final-heading-copy">
@@ -298,7 +298,7 @@ export default async function AboutPage() {
                   <span className="cta-final-btn-inner">
                     <SlideSwapLabel text="Start A Project" />
                   </span>
-                  <img src="/cta/icon-arrow.svg" alt="" className="cta-final-btn-icon" />
+                  <img loading="lazy" src="/cta/icon-arrow.svg" alt="" className="cta-final-btn-icon" />
                 </a>
                 <a href={bookCallUrl} target="_blank" rel="noopener noreferrer" className="cta-final-btn secondary">
                   <span className="cta-final-btn-inner">
@@ -325,7 +325,7 @@ export default async function AboutPage() {
         </section>
 
         <section className="brand-band" aria-hidden="true">
-          <img src="/brand/logo-band.webp" alt="" className="brand-band-img" />
+          <img loading="lazy" src="/brand/logo-band.webp" alt="" className="brand-band-img" />
         </section>
 
         <LandingFooter settings={settings} />

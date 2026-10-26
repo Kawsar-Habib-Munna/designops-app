@@ -5,7 +5,7 @@
    The eyebrow pill reuses .cta-final-eyebrow for the same reason. */
 
 .home-root .svc-hero {
-  background: #010003 url("/services/hero-bg-pattern.png") top center / cover no-repeat;
+  background: #010003 url("/services/hero-bg-pattern.webp") top center / cover no-repeat;
   /* .nav-এর ঠিক পরেই .home-body-এ -100px margin-top থাকে (nav-এর নিচে hero
      bg bleed করার জন্য, homepage-এর hero-র মতোই) - তাই এখানে padding-top
      সরাসরি 120px দিলে আসল visible gap হবে মাত্র 20px। CDP দিয়ে মেপে 200px

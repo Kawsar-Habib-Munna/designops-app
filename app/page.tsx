@@ -278,7 +278,7 @@ export default async function Home() {
         <section className="stats" id="numbers">
           <div className="stats-inner">
             <span className="stats-eyebrow">
-              <img src="/stats/line.svg" alt="" />
+              <img loading="lazy" src="/stats/line.svg" alt="" />
               <span>TRUSTED GLOBALLY</span>
             </span>
 
@@ -308,7 +308,7 @@ export default async function Home() {
           <div className="services-inner reveal">
             <div className="services-heading">
               <span className="services-eyebrow">
-                <img src="/stats/line.svg" alt="" />
+                <img loading="lazy" src="/stats/line.svg" alt="" />
                 <span>SERVICES</span>
               </span>
               <div className="services-heading-copy">
@@ -331,7 +331,7 @@ export default async function Home() {
             <div className="projects-heading-row">
               <div className="projects-heading">
                 <span className="projects-eyebrow">
-                  <img src="/stats/line.svg" alt="" />
+                  <img loading="lazy" src="/stats/line.svg" alt="" />
                   <span>PROJECTS</span>
                 </span>
                 <div className="projects-heading-copy">
@@ -349,7 +349,7 @@ export default async function Home() {
                   <span className="projects-view-all-label">
                     <SlideSwapLabel text="View All Projects" />
                   </span>
-                  <img src="/projects/icon-view-arrow.svg" alt="" />
+                  <img loading="lazy" src="/projects/icon-view-arrow.svg" alt="" />
                 </Link>
               </div>
             </div>
@@ -373,20 +373,20 @@ export default async function Home() {
         <section className="section about-section" id="about">
           <div className="about-inner reveal">
             <div className="about-heading">
-              <img
+              <img loading="lazy"
                 className="about-deco about-deco-1"
                 src="/about/deco2.svg"
                 alt=""
                 aria-hidden="true"
               />
-              <img
+              <img loading="lazy"
                 className="about-deco about-deco-3"
                 src="/about/deco4.svg"
                 alt=""
                 aria-hidden="true"
               />
               <span className="about-eyebrow">
-                <img src="/stats/line.svg" alt="" />
+                <img loading="lazy" src="/stats/line.svg" alt="" />
                 <span>ABOUT US</span>
               </span>
               <div className="about-heading-copy">
@@ -402,12 +402,12 @@ export default async function Home() {
             <div className="about-body">
               <div className="about-photo-card">
                 <div className="about-photo">
-                  <img
+                  <img loading="lazy"
                     src="/about/photo.webp"
                     alt="The Flow 53 team collaborating around a whiteboard session"
                   />
                 </div>
-                <img
+                <img loading="lazy"
                   src="/about/flow-wordmark.png"
                   alt=""
                   className="about-watermark"
@@ -426,13 +426,13 @@ export default async function Home() {
                   solutions. Our goal is to create digital experiences that are
                   thoughtful, seamless, and help businesses progress.
                 </p>
-                <img
+                <img loading="lazy"
                   className="about-deco about-deco-2"
                   src="/about/deco1.svg"
                   alt=""
                   aria-hidden="true"
                 />
-                <img
+                <img loading="lazy"
                   className="about-deco about-deco-4"
                   src="/about/deco3.svg"
                   alt=""
@@ -454,7 +454,7 @@ export default async function Home() {
                 </div>
                 <a href="#team" className="about-know-more">
                   <span className="about-know-more-label"><SlideSwapLabel text="Know More" /></span>
-                  <img src="/about/arrow-know-more.svg" alt="" />
+                  <img loading="lazy" src="/about/arrow-know-more.svg" alt="" />
                 </a>
               </div>
             </div>
@@ -465,7 +465,7 @@ export default async function Home() {
           <div className="why-inner reveal">
             <div className="why-heading">
               <span className="why-eyebrow">
-                <img src="/stats/line.svg" alt="" />
+                <img loading="lazy" src="/stats/line.svg" alt="" />
                 <span>WHY FLOW 53</span>
               </span>
               <div className="why-heading-copy">
@@ -486,7 +486,7 @@ export default async function Home() {
                   Tailored For Various Industries
                 </h3>
                 <span className="why-tailored-line">
-                  <img src="/why/tailored-line.svg" alt="" />
+                  <img loading="lazy" src="/why/tailored-line.svg" alt="" />
                 </span>
               </div>
               <div className="why-tags" aria-hidden="true">
@@ -506,7 +506,7 @@ export default async function Home() {
           <div className="process-inner reveal">
             <div className="process-heading">
               <span className="process-eyebrow">
-                <img src="/stats/line.svg" alt="" />
+                <img loading="lazy" src="/stats/line.svg" alt="" />
                 <span>PROCESS</span>
               </span>
               <div className="process-heading-copy">
@@ -529,7 +529,7 @@ export default async function Home() {
             <div className="testimonials-inner reveal">
               <div className="testimonials-heading">
                 <span className="testimonials-eyebrow">
-                  <img src="/stats/line.svg" alt="" />
+                  <img loading="lazy" src="/stats/line.svg" alt="" />
                   <span>TESTIMONIALS</span>
                 </span>
                 <div className="testimonials-heading-copy">
@@ -561,7 +561,7 @@ export default async function Home() {
           <div className="faq-inner reveal">
             <div className="faq-heading">
               <span className="faq-eyebrow">
-                <img src="/stats/line.svg" alt="" />
+                <img loading="lazy" src="/stats/line.svg" alt="" />
                 <span>FAQ &amp; CONTACT</span>
               </span>
               <div className="faq-heading-copy">
@@ -596,7 +596,7 @@ export default async function Home() {
               <div className="faq-contact-info-head">
                 <h3 className="faq-contact-info-title">Feel Free Contact Us</h3>
                 <span className="faq-contact-info-line">
-                  <img src="/faq/divider-line.svg" alt="" />
+                  <img loading="lazy" src="/faq/divider-line.svg" alt="" />
                 </span>
               </div>
               <div className="faq-contact-cards">
@@ -634,7 +634,7 @@ export default async function Home() {
                 </a>
                 <a className="faq-contact-card" href={`mailto:${settings.contactEmail}`}>
                   <span className="faq-contact-icon">
-                    <img src="/faq/icon-email.svg" alt="" />
+                    <img loading="lazy" src="/faq/icon-email.svg" alt="" />
                   </span>
                   <span className="faq-contact-lines">
                     <span>{settings.contactEmail}</span>
@@ -681,35 +681,35 @@ export default async function Home() {
             <div className="cta-final-card">
               <div className="cta-final-deco" aria-hidden="true">
                 <span className="cta-deco-badge cta-deco-figma">
-                  <img src="/cta/icon-figma.svg" alt="" />
+                  <img loading="lazy" src="/cta/icon-figma.svg" alt="" />
                 </span>
-                <img
+                <img loading="lazy"
                   src="/cta/icon-xd-a.svg"
                   alt=""
                   className="cta-deco-plain cta-deco-xd"
                 />
-                <img
+                <img loading="lazy"
                   src="/cta/icon-spiral.svg"
                   alt=""
                   className="cta-deco-plain cta-deco-spiral"
                 />
-                <img
+                <img loading="lazy"
                   src="/cta/icon-sunburst.svg"
                   alt=""
                   className="cta-deco-plain cta-deco-sunburst"
                 />
-                <img
+                <img loading="lazy"
                   src="/cta/icon-framer.svg"
                   alt=""
                   className="cta-deco-plain cta-deco-framer"
                 />
                 <span className="cta-deco-badge cta-deco-illustrator">
-                  <img src="/cta/icon-illustrator.svg" alt="" />
+                  <img loading="lazy" src="/cta/icon-illustrator.svg" alt="" />
                 </span>
               </div>
               <div className="cta-final-heading">
                 <span className="cta-final-eyebrow">
-                  <img src="/stats/line.svg" alt="" />
+                  <img loading="lazy" src="/stats/line.svg" alt="" />
                   <span>CALL TO ACTION</span>
                 </span>
                 <div className="cta-final-heading-copy">
@@ -727,7 +727,7 @@ export default async function Home() {
               <div className="cta-final-buttons">
                 <a href="/client/register" className="cta-final-btn primary">
                   <span className="cta-final-btn-inner"><SlideSwapLabel text="Start A Project" /></span>
-                  <img
+                  <img loading="lazy"
                     src="/cta/icon-arrow.svg"
                     alt=""
                     className="cta-final-btn-icon"
@@ -850,7 +850,7 @@ export default async function Home() {
         )}
 
         <section className="brand-band" aria-hidden="true">
-          <img src="/brand/logo-band.webp" alt="" className="brand-band-img" />
+          <img loading="lazy" src="/brand/logo-band.webp" alt="" className="brand-band-img" />
         </section>
 
         <LandingFooter settings={settings} />

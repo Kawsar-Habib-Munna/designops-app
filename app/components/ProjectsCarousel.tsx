@@ -41,7 +41,7 @@ export function ProjectMiniCard({ project, reversed, number }: { project: Projec
       <div className="project-card-pill">
         <div className="project-image">
           {project.cover && !imgBroken ? (
-            <img src={project.cover} alt={project.title} onError={() => setImgBroken(true)} />
+            <img loading="lazy" src={project.cover} alt={project.title} onError={() => setImgBroken(true)} />
           ) : (
             <div className="project-image-placeholder" aria-hidden="true" />
           )}
@@ -63,7 +63,7 @@ export function ProjectMiniCard({ project, reversed, number }: { project: Projec
           </div>
           <Link href={`/work/${project.slug}`} className="project-details-btn">
             <SlideSwapLabel text="See More Details" />
-            <img src="/projects/arrow-details.svg" alt="" />
+            <img loading="lazy" src="/projects/arrow-details.svg" alt="" />
           </Link>
         </div>
       </div>
@@ -131,7 +131,7 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
         {total > 1 && (
           <div className="project-nav">
             <button type="button" className="project-nav-arrow" onClick={() => goMobile(-1)} aria-label="Previous project">
-              <img src="/projects/arrow-prev.svg" alt="" />
+              <img loading="lazy" src="/projects/arrow-prev.svg" alt="" />
             </button>
             <div className="project-dots">
               {Array.from({ length: total }, (_, i) => (
@@ -148,7 +148,7 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
               ))}
             </div>
             <button type="button" className="project-nav-arrow" onClick={() => goMobile(1)} aria-label="Next project">
-              <img src="/projects/arrow-next.svg" alt="" />
+              <img loading="lazy" src="/projects/arrow-next.svg" alt="" />
             </button>
           </div>
         )}
@@ -210,7 +210,7 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
       {totalPages > 1 && (
         <div className="project-nav desktop-only">
           <button type="button" className="project-nav-arrow" onClick={() => go(-1)} aria-label="Previous projects">
-            <img src="/projects/arrow-prev.svg" alt="" />
+            <img loading="lazy" src="/projects/arrow-prev.svg" alt="" />
           </button>
           <div className="project-dots">
             {Array.from({ length: totalPages }, (_, i) => (
@@ -227,7 +227,7 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
             ))}
           </div>
           <button type="button" className="project-nav-arrow" onClick={() => go(1)} aria-label="Next projects">
-            <img src="/projects/arrow-next.svg" alt="" />
+            <img loading="lazy" src="/projects/arrow-next.svg" alt="" />
           </button>
         </div>
       )}
