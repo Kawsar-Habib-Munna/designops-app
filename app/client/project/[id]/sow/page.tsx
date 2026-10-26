@@ -498,7 +498,7 @@ export default function ClientSowPage() {
                 <img src="/flow53-logo.svg" alt="" className="doc-brand-mark" />
                 <div>
                   <div className="doc-letterhead">FLOW 53</div>
-                  <div className="doc-letterhead-sub">Product Design Studio · Dhaka, Bangladesh</div>
+                  <div className="doc-letterhead-sub">Innovate-Design-Elevate</div>
                 </div>
               </div>
               <div className="doc-letterhead-right">
