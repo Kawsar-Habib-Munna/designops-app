@@ -1,0 +1,322 @@
+/* Scoped to .home-root — Figma "Flow 53 Web" node 2718:4745 ("Contact Section").
+   Hero/eyebrow treatment mirrors app/about/about.css and app/services/services.css
+   (duplicated here to keep each route's CSS self-contained, same convention).
+   Contact form reuses home.css's existing .contact-card/.contact-form/.contact-field*
+   classes verbatim (pixel-matched already). FAQ accordion reuses .faq-card/.faq-item*.
+   Testimonials section reuses .testimonials-* verbatim (already light-themed).
+   CTA band/brand-band/footer reuse home.css's cta-final and brand-band classes verbatim. */
+
+.home-root .cp-hero {
+  background: #010003 url("/contact/hero-bg-pattern.png") top center / cover no-repeat;
+  padding: 200px 0 120px 0;
+}
+.home-root .cp-hero-inner {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto;
+}
+.home-root .cp-hero-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 100px 40px;
+  border-radius: 40px;
+  border: 1px solid rgba(200, 197, 205, 0.4);
+  background: rgba(103, 107, 106, 0.04);
+}
+.home-root .cp-breadcrumb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 24px 4px 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(200, 197, 205, 0.4);
+  box-shadow: 0 8px 40px rgba(41, 0, 100, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.home-root .cp-breadcrumb-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #19181c;
+  background: linear-gradient(90deg, rgba(239, 230, 253, 0.1), rgba(206, 176, 250, 0.1));
+  box-shadow:
+    0 8px 40px rgba(41, 0, 100, 0.12),
+    inset 0 4px 12px rgba(254, 255, 255, 0.04);
+}
+.home-root .cp-breadcrumb-icon img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+.home-root .cp-breadcrumb-label {
+  font-family: var(--font-inter-stats), "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.home-root .cp-breadcrumb-label .dim {
+  color: #9d99a4;
+}
+.home-root .cp-breadcrumb-label .bright {
+  color: #ceb0fa;
+}
+.home-root .cp-hero-title {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 700;
+  line-height: 1.3;
+  color: #e6e4e8;
+  text-align: center;
+  max-width: 920px;
+}
+.home-root .cp-hero-desc {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #ada8b4;
+  text-align: center;
+  max-width: 648px;
+}
+
+/* ---------- shared section/eyebrow patterns ---------- */
+.home-root .cp-section {
+  background: #010003;
+  padding: 120px 0;
+}
+.home-root .cp-inner {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto;
+}
+.home-root .cp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 20px;
+  border-radius: 10px;
+  background: #19181c;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 10px rgba(129, 51, 241, 0.04);
+  font-family: var(--font-inter-stats), "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #ceb0fa;
+  white-space: nowrap;
+}
+
+/* ---------- Let's Work Together! (contact form + info) ---------- */
+.home-root .cp-work-row {
+  display: flex;
+  align-items: stretch;
+  gap: 80px;
+}
+.home-root .cp-work-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+}
+.home-root .cp-work-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.home-root .cp-work-heading .cp-eyebrow {
+  align-self: flex-start;
+}
+.home-root .cp-work-title {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 700;
+  line-height: 1.25;
+  color: #e6e4e8;
+}
+.home-root .cp-work-desc {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #ada8b4;
+  margin-top: 32px;
+}
+.home-root .cp-work-form-col {
+  flex-shrink: 0;
+  width: 628px;
+  max-width: 100%;
+}
+.home-root .cp-work-form-col .contact-card {
+  padding: 40px;
+}
+
+/* ---------- unified contact-info card (phone/email/address stacked) ---------- */
+.home-root .cp-info-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 32px;
+  border-radius: 28px;
+  border: 1px solid #19181c;
+  background: rgba(103, 107, 106, 0.04);
+  box-shadow: 0 8px 40px rgba(41, 0, 100, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.home-root .cp-info-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+.home-root .cp-info-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #a9adb4;
+}
+
+/* ---------- decorative photo collage, right above the testimonials heading ----------
+   Figma-র exact absolute coordinates একাধিকবার ফেচ করার পরও একেকবার একেক
+   নেস্টিং/বেজ দিচ্ছিল (সরাসরি পিক্সেল-পজিশন করলে কলামগুলো একে অপরের উপর
+   overlap করছিল) - তাই এখন flexbox কলাম লেআউট: প্রতিটা কলাম 140px চওড়া,
+   margin-top দিয়ে উঁচু-নিচু স্ট্যাগার তৈরি হয়, gap দিয়ে কলামগুলো কখনো
+   overlap করতে পারে না viewport যাই হোক না কেন। */
+.home-root .cp-collage {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 1440px;
+  padding: 0 24px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+.home-root .cp-collage::before,
+.home-root .cp-collage::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 15%;
+  z-index: 1;
+  pointer-events: none;
+}
+.home-root .cp-collage::before {
+  left: 0;
+  background: linear-gradient(90deg, #ffffff, rgba(255, 255, 255, 0));
+}
+.home-root .cp-collage::after {
+  right: 0;
+  background: linear-gradient(270deg, #ffffff, rgba(255, 255, 255, 0));
+}
+.home-root .cp-collage-col {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 22px;
+  width: 140px;
+}
+.home-root .cp-collage-photo {
+  display: block;
+  width: 140px;
+  height: 160px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.home-root .cp-collage-photo.tall {
+  height: 240px;
+}
+
+/* ---------- FAQ ---------- */
+.home-root .cp-faq-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  text-align: center;
+  max-width: 715px;
+  margin: 0 auto 80px;
+}
+.home-root .cp-faq-title {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 700;
+  color: #e6e4e8;
+}
+.home-root .cp-faq-desc {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #ada8b4;
+}
+.home-root .cp-faq-wrap {
+  width: min(1032px, 100%);
+  margin: 0 auto;
+}
+
+@media (max-width: 1100px) {
+  .home-root .cp-work-row {
+    gap: 48px;
+  }
+  .home-root .cp-work-col {
+    gap: 80px;
+  }
+  .home-root .cp-work-form-col {
+    width: 480px;
+  }
+}
+@media (max-width: 900px) {
+  .home-root .cp-hero-card {
+    padding: 56px 24px;
+  }
+  /* সাজসজ্জামূলক (কোনো তথ্য নেই) ফটো-কোলাজ - ছোট স্ক্রিনে ১২টা absolutely-
+     positioned ছবি জায়গা বাঁচাতে বাদ, এই সেশনের অন্যান্য decoration-এর মতোই। */
+  .home-root .cp-collage {
+    display: none;
+  }
+  .home-root .cp-work-row {
+    flex-direction: column;
+    gap: 40px;
+  }
+  .home-root .cp-work-col {
+    gap: 40px;
+    width: 100%;
+  }
+  .home-root .cp-work-form-col {
+    width: 100%;
+  }
+  .home-root .cp-work-form-col .contact-card {
+    padding: 28px;
+  }
+}
+@media (max-width: 640px) {
+  .home-root .cp-hero {
+    padding-top: 120px;
+    padding-bottom: 48px;
+  }
+  .home-root .cp-hero-card {
+    padding: 40px 20px;
+    border-radius: 28px;
+  }
+  .home-root .cp-section {
+    padding: 64px 0;
+  }
+  .home-root .cp-info-card {
+    padding: 24px;
+  }
+}
