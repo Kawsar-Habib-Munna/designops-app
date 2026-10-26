@@ -1,4 +1,5 @@
 import "./home.css";
+import Link from "next/link";
 import { interStats, nunito, playfair } from "./fonts";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { driveThumbnailUrl, driveFullImageUrl } from "@/lib/driveUpload";
@@ -344,12 +345,12 @@ export default async function Home() {
                   Discover digital products that transform challenges into
                   engaging solutions.
                 </p>
-                <span className="projects-view-all">
+                <Link href="/work" className="projects-view-all">
                   <span className="projects-view-all-label">
                     <SlideSwapLabel text="View All Projects" />
                   </span>
                   <img src="/projects/icon-view-arrow.svg" alt="" />
-                </span>
+                </Link>
               </div>
             </div>
             <ProjectsCarousel

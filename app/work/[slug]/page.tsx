@@ -126,7 +126,7 @@ export default async function WorkDetailPage({ params }: { params: Promise<{ slu
       <div className="home-body">
       <header className="work-hero">
         <div className="container">
-          <Link href="/#work" className="work-back">← All projects</Link>
+          <Link href="/work" className="work-back">← All projects</Link>
           <h1 className="work-title">{caseStudy.title}</h1>
           <div className="work-meta-row">
             {caseStudy.category && <span className="work-client">{caseStudy.category}</span>}

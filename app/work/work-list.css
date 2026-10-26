@@ -1,0 +1,271 @@
+/* Scoped to .home-root — Figma "Flow 53 Web" node 2718:5073 ("Project Section").
+   Hero mirrors app/about/about.css, app/services/services.css, app/contact/contact.css
+   (duplicated per-route convention). Project cards reuse home.css's existing
+   .project-row/.project-card-pill/.project-image/.project-content/.project-title/
+   .project-summary/.project-tags-row/.project-details-btn/.project-number classes
+   verbatim (ProjectMiniCard from ProjectsCarousel.tsx) - already light-themed,
+   pixel-matches this page's spec. CTA band/brand-band/footer reuse home.css's
+   cta-final and brand-band classes verbatim. */
+
+.home-root .wp-hero {
+  background: #010003 url("/work/hero-bg-pattern.png") top center / cover no-repeat;
+  padding: 200px 0 120px 0;
+}
+.home-root .wp-hero-inner {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto;
+}
+.home-root .wp-hero-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 100px 40px;
+  border-radius: 40px;
+  border: 1px solid rgba(200, 197, 205, 0.4);
+  background: rgba(103, 107, 106, 0.04);
+}
+.home-root .wp-breadcrumb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 24px 4px 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(200, 197, 205, 0.4);
+  box-shadow: 0 8px 40px rgba(41, 0, 100, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.home-root .wp-breadcrumb-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #19181c;
+  background: linear-gradient(90deg, rgba(239, 230, 253, 0.1), rgba(206, 176, 250, 0.1));
+  box-shadow:
+    0 8px 40px rgba(41, 0, 100, 0.12),
+    inset 0 4px 12px rgba(254, 255, 255, 0.04);
+}
+.home-root .wp-breadcrumb-icon img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+.home-root .wp-breadcrumb-label {
+  font-family: var(--font-inter-stats), "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.home-root .wp-breadcrumb-label .dim {
+  color: #9d99a4;
+}
+.home-root .wp-breadcrumb-label .bright {
+  color: #ceb0fa;
+}
+.home-root .wp-hero-title {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 700;
+  line-height: 1.3;
+  color: #e6e4e8;
+  text-align: center;
+  max-width: 920px;
+}
+.home-root .wp-hero-desc {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #ada8b4;
+  text-align: center;
+  max-width: 648px;
+}
+
+/* ---------- listing section (light) ---------- */
+.home-root .wp-inner {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 120px 0;
+}
+.home-root .wp-heading-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+  margin-bottom: 64px;
+}
+.home-root .wp-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+}
+.home-root .wp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 12px 20px;
+  border-radius: 10px;
+  background: #f7f6f8;
+  box-shadow: 0 8px 10px rgba(129, 51, 241, 0.04);
+  font-family: var(--font-inter-stats), "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #9654f4;
+  white-space: nowrap;
+}
+.home-root .wp-title {
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 700;
+  color: #0b001c;
+}
+.home-root .wp-heading-desc {
+  flex-shrink: 0;
+  width: 300px;
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #5f5c63;
+  text-align: right;
+}
+
+/* ---------- category tabs ---------- */
+.home-root .wp-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 48px;
+}
+.home-root .wp-tab {
+  padding: 8px 16px;
+  border: none;
+  border-bottom: 1px solid #e6e4e8;
+  background: none;
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #7b7780;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.home-root .wp-tab:hover {
+  color: #49474c;
+}
+.home-root .wp-tab.active {
+  border-bottom-color: #8133f1;
+  color: #6200ee;
+}
+
+/* ---------- card list (.project-row etc. reused from home.css) ---------- */
+.home-root .wp-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+.home-root .wp-cards .project-row {
+  position: static;
+}
+.home-root .wp-empty {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
+  font-size: 16px;
+  color: #5f5c63;
+  padding: 40px 0;
+}
+
+/* ---------- pagination ---------- */
+.home-root .wp-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 64px;
+}
+.home-root .wp-page-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e6e4e8;
+  background: rgba(103, 107, 106, 0.04);
+  box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+}
+.home-root .wp-page-arrow:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.home-root .wp-page-arrow img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+.home-root .wp-page-numbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.home-root .wp-page-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  color: #9498a1;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.home-root .wp-page-num:hover {
+  color: #5f5c63;
+}
+.home-root .wp-page-num.active {
+  color: #6200ee;
+}
+
+@media (max-width: 900px) {
+  .home-root .wp-hero-card {
+    padding: 56px 24px;
+  }
+  .home-root .wp-heading-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .home-root .wp-heading-desc {
+    width: 100%;
+    text-align: left;
+  }
+}
+@media (max-width: 640px) {
+  .home-root .wp-hero {
+    padding-top: 120px;
+    padding-bottom: 48px;
+  }
+  .home-root .wp-hero-card {
+    padding: 40px 20px;
+    border-radius: 28px;
+  }
+  .home-root .wp-inner {
+    padding: 64px 0;
+  }
+  .home-root .wp-page-numbers {
+    display: none;
+  }
+}

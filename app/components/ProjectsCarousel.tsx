@@ -21,7 +21,10 @@ export type ProjectCard = {
   cover: string | null;
 };
 
-function ProjectMiniCard({ project, reversed, number }: { project: ProjectCard; reversed: boolean; number: string }) {
+// /work (প্রজেক্ট লিস্টিং পেজ)-এও এই একই কার্ড রিইউজ হয় - সেখানে carousel-এর
+// stacking/motion দরকার নেই, শুধু plain filtered+paginated লিস্টে একটার পর
+// একটা কার্ড দেখানো হয়, তাই এখানে export করা হলো।
+export function ProjectMiniCard({ project, reversed, number }: { project: ProjectCard; reversed: boolean; number: string }) {
   // Guards a real data-entry slip (a project's Summary field got set to its own slug,
   // e.g. "crypto-trading-web-app-ui-ux-design-case-study-concept") rather than a real
   // description - render nothing instead of that raw slug text. Length is no longer

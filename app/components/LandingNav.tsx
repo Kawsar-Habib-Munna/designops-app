@@ -14,20 +14,20 @@ import { WHATSAPP_URL as DEFAULT_BOOK_CALL_URL } from './BookCallButton';
 
 // target: ইন-পেজ #id-তে scrollIntoView করার জন্য। href: আলাদা রিয়েল পেজে পূর্ণ
 // নেভিগেট করার জন্য (Service /services পেজে, About /about পেজে, Contact
-// একইভাবে এখন ডেডিকেটেড /contact পেজে নিয়ে যায় - আগে হোমপেজের #contact
-// (ফাইনাল CTA ব্যান্ড) সেকশনে স্ক্রল করত)।
+// একইভাবে এখন ডেডিকেটেড /contact পেজে নিয়ে যায়, Project এখন ডেডিকেটেড /work
+// পেজে - আগে হোমপেজের #work সেকশনে স্ক্রল করত)।
 type NavItem = { label: string; target: string | null; href?: string };
 
 const LINKS: NavItem[] = [
   { label: 'Home', target: '#top' },
   { label: 'Service', target: null, href: '/services' },
-  { label: 'Project', target: '#work' },
+  { label: 'Project', target: null, href: '/work' },
   { label: 'About', target: null, href: '/about' },
   { label: 'Process', target: '#process' },
   { label: 'Contact', target: null, href: '/contact' },
 ];
 
-const SPY_IDS = ['work', 'process', 'team'];
+const SPY_IDS = ['process', 'team'];
 
 // Figma node I309:2741;304:2069 ("hugeicons:call-ringing-04") — real asset
 // path, downloaded and inlined exactly (fill #EFE6FD, no stroke/gradient).
@@ -60,6 +60,7 @@ export default function LandingNav({ bookCallUrl = DEFAULT_BOOK_CALL_URL }: { bo
   // হোক না কেন)।
   const [active, setActive] = useState(() => {
     if (pathname?.startsWith('/services')) return 'Service';
+    if (pathname?.startsWith('/work')) return 'Project';
     if (pathname?.startsWith('/about')) return 'About';
     if (pathname?.startsWith('/contact')) return 'Contact';
     return 'Home';
