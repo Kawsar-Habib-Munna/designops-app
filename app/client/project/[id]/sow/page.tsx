@@ -110,12 +110,35 @@ function fileExtension(name: string): string {
 const CURRENCY_SYMBOL: Record<string, string> = { BDT: '৳', USD: '$', GBP: '£' };
 const WHATSAPP_URL_BASE = 'https://wa.me/8801804409235';
 
-function parseBulletList(text: string | null): string[] {
-  if (!text) return [];
-  return text
+// অ্যাডমিন পেজের (app/projects/[id]/sow) parseServices/parseMilestones-এর সাথে
+// হুবহু মেলানো ফরম্যাট - একই "• service || deliverable || quantity" এবং
+// "• label — week" এনকোডিং, scope/timeline টেক্সট কলামেই (নতুন jsonb কলাম
+// ছাড়াই)। পুরনো সিঙ্গেল-লাইন স্ট্রিং ডেটা (কোনো "||" নেই) ব্যাকওয়ার্ড-কম্প্যাটিবল -
+// পুরোটা service-এ বসে, deliverable/quantity খালি দেখায়।
+type ServiceRow = { service: string; deliverable: string; quantity: string };
+type MilestoneRow = { label: string; week: string };
+
+function parseServiceRows(scope: string | null): ServiceRow[] {
+  if (!scope) return [];
+  return scope
+    .split('\n')
+    .map((l) => l.replace(/^[•\-]\s*/, '').trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [service, deliverable, quantity] = line.split(' || ');
+      return { service: (service ?? '').trim(), deliverable: (deliverable ?? '').trim(), quantity: (quantity ?? '').trim() };
+    });
+}
+function parseMilestoneRows(timeline: string | null): MilestoneRow[] {
+  if (!timeline) return [];
+  return timeline
     .split('\n')
     .filter((l) => l.trim().startsWith('•'))
-    .map((l) => l.replace(/^•\s*/, '').trim());
+    .map((l) => {
+      const clean = l.replace(/^•\s*/, '').trim();
+      const [label, week] = clean.split(' — ');
+      return { label: (label ?? '').trim(), week: (week ?? '').trim() };
+    });
 }
 
 // ---- shared sidebar/topbar shell (identical structure to Screen 9) ----
@@ -412,8 +435,8 @@ export default function ClientSowPage() {
     );
   }
 
-  const services = parseBulletList(sow.scope);
-  const milestones = parseBulletList(sow.timeline);
+  const deliverableRows = parseServiceRows(sow.scope);
+  const milestoneRows = parseMilestoneRows(sow.timeline);
   const isSigned = sow.status === 'signed';
   const sym = CURRENCY_SYMBOL[sow.currency ?? 'BDT'] ?? sow.currency ?? '';
 
@@ -439,6 +462,9 @@ export default function ClientSowPage() {
                 </Link>
               </div>
             </div>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => window.print()}>
+              <Icon name="download" size={13} /> {isSigned ? 'Download Signed PDF' : 'Download PDF'}
+            </button>
           </div>
           <p className="welcome-sub">{isSigned ? 'This agreement has been signed.' : 'Please review and sign to begin your project.'}</p>
 
@@ -451,75 +477,107 @@ export default function ClientSowPage() {
 
           {justSigned && <div className="sw-just-signed-banner">✓ SOW signed successfully — your signature now appears below.</div>}
 
-          <div className="sw-doc-toolbar">
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => window.print()}>
-              <Icon name="download" size={13} /> {isSigned ? 'Download Signed PDF' : 'Download PDF'}
-            </button>
-          </div>
-
+          <div className="sw-layout">
+          <div className="sw-main">
           <div className="doc-card">
             <div className="doc-letterhead-row">
-              <div className="doc-brand-mark" aria-hidden="true"></div>
-              <div>
-                <div className="doc-letterhead">FLOW 53</div>
-                <div className="doc-letterhead-sub">Product Design Studio · Dhaka, Bangladesh</div>
+              <div className="doc-letterhead-left">
+                <div className="doc-brand-mark" aria-hidden="true"></div>
+                <div>
+                  <div className="doc-letterhead">FLOW 53</div>
+                  <div className="doc-letterhead-sub">Product Design Studio · Dhaka, Bangladesh</div>
+                </div>
+              </div>
+              <div className="doc-letterhead-right">
+                <div className="doc-letterhead-doctype">STATEMENT OF WORK</div>
+                <div className="doc-letterhead-ref">
+                  {sow.sow_number ?? `v${sow.version}`} · v{sow.version}.0
+                </div>
               </div>
             </div>
-            <div className="doc-title">STATEMENT OF WORK</div>
-            <div className="doc-subtitle">
-              {project.name} — {client.company_name}
+            <hr className="doc-hr" />
+
+            <div className="sw-parties-row">
+              <div className="sw-parties-left">
+                <div className="doc-eyebrow">Service Provider</div>
+                <div className="doc-kv-value">FLOW 53 Design Studio</div>
+                <div className="doc-kv-sub">Dhaka, Bangladesh</div>
+              </div>
+              <table className="sw-table sw-parties-table">
+                <tbody>
+                  <tr>
+                    <th>Client</th>
+                    <td>{client.primary_contact}</td>
+                  </tr>
+                  <tr>
+                    <th>Project</th>
+                    <td>{project.name}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <div className="sw-doc-section">
-              <div className="doc-h2">
-                <span className="doc-h2-num">1</span>Parties
+            <div className="sw-doc-section" id="sec-scope">
+              <div className="doc-section-head">
+                <span className="doc-section-num">01</span>
+                <span className="doc-section-title">Scope of Work</span>
               </div>
-              <div className="doc-kv-grid">
-                <div className="doc-kv">
-                  <span className="doc-kv-label">Service Provider</span>
-                  <span className="doc-kv-value">FLOW 53 Design Studio</span>
-                </div>
-                <div className="doc-kv">
-                  <span className="doc-kv-label">Client</span>
-                  <span className="doc-kv-value">
-                    {client.primary_contact}, {client.company_name}
-                  </span>
-                </div>
-                {sow.sow_number && (
-                  <div className="doc-kv">
-                    <span className="doc-kv-label">SOW Reference</span>
-                    <span className="doc-kv-value">
-                      {sow.sow_number} · v{sow.version}.0
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="sw-doc-section">
-              <div className="doc-h2">
-                <span className="doc-h2-num">2</span>Scope of Work
-              </div>
-              {sow.objectives && <p className="doc-p">{sow.objectives}</p>}
-              {services.length > 0 && (
-                <ul className="doc-list">
-                  {services.map((s) => (
-                    <li key={s}>{s}</li>
-                  ))}
-                </ul>
+              {sow.objectives && (
+                <>
+                  <div className="doc-subhead">Project overview</div>
+                  <p className="doc-p">{sow.objectives}</p>
+                </>
+              )}
+              {deliverableRows.length > 0 && (
+                <>
+                  <div className="doc-subhead">Deliverables</div>
+                  <table className="sw-table">
+                    <thead>
+                      <tr>
+                        <th>Service</th>
+                        <th>Deliverable</th>
+                        <th>Quantity</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {deliverableRows.map((r, i) => (
+                        <tr key={i}>
+                          <td>{r.service}</td>
+                          <td>{r.deliverable || '—'}</td>
+                          <td>{r.quantity || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
               )}
             </div>
 
-            <div className="sw-doc-section">
-              <div className="doc-h2">
-                <span className="doc-h2-num">3</span>Timeline
+            <div className="sw-doc-section" id="sec-timeline">
+              <div className="doc-section-head">
+                <span className="doc-section-num">02</span>
+                <span className="doc-section-title">Timeline</span>
               </div>
-              {milestones.length > 0 && (
-                <ul className="doc-list">
-                  {milestones.map((m) => (
-                    <li key={m}>{m}</li>
-                  ))}
-                </ul>
+              {milestoneRows.length > 0 && (
+                <>
+                  <div className="doc-subhead">Project milestones</div>
+                  <table className="sw-table">
+                    <thead>
+                      <tr>
+                        <th>Milestone</th>
+                        <th>Target date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {milestoneRows.map((m, i) => (
+                        <tr key={i}>
+                          <td>{m.label}</td>
+                          <td>{m.week || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
               )}
               {(sow.start_date || sow.delivery_date) && (
                 <p className="doc-p">
@@ -530,26 +588,27 @@ export default function ClientSowPage() {
               )}
             </div>
 
-            <div className="sw-doc-section">
-              <div className="doc-h2">
-                <span className="doc-h2-num">4</span>Payment Terms
+            <div className="sw-doc-section" id="sec-payment">
+              <div className="doc-section-head">
+                <span className="doc-section-num">03</span>
+                <span className="doc-section-title">Payment Terms</span>
               </div>
               {sow.project_value != null && (
-                <div className="doc-value-card">
-                  <span className="doc-value-label">Total Project Value</span>
-                  <span className="doc-value-amount">
-                    {sym}
+                <p className="doc-p">
+                  <b>
+                    Project fee: {sym}
                     {sow.project_value.toLocaleString('en-US')}
-                  </span>
-                </div>
+                  </b>
+                </p>
               )}
               {sow.payment_terms && <p className="doc-p">{sow.payment_terms.replace(/^Total project value:.*?\.\s*/, '')}</p>}
               {sow.revision_policy && <p className="doc-p">{sow.revision_policy}</p>}
             </div>
 
-            <div className="sw-doc-section">
-              <div className="doc-h2">
-                <span className="doc-h2-num">5</span>Terms &amp; Conditions
+            <div className="sw-doc-section" id="sec-terms">
+              <div className="doc-section-head">
+                <span className="doc-section-num">04</span>
+                <span className="doc-section-title">Terms &amp; Conditions</span>
               </div>
               {sow.terms && (
                 <p className="doc-p" style={{ whiteSpace: 'pre-wrap' }}>
@@ -563,15 +622,17 @@ export default function ClientSowPage() {
               )}
             </div>
 
-            <div className="sw-doc-section">
-              <div className="doc-h2">
-                <span className="doc-h2-num">✓</span>Agreement &amp; Signatures
+            <div className="sw-doc-section" id="sec-signatures">
+              <div className="doc-section-head">
+                <span className="doc-section-num">05</span>
+                <span className="doc-section-title">Agreement &amp; Signatures</span>
               </div>
               <div className="sig-block-grid">
                 <div className="sig-block">
                   <div className="sig-block-label">Client</div>
                   <div className="sig-block-name">{client.primary_contact}</div>
                   <div className="sig-block-sub">{client.company_name}</div>
+                  <hr className="sig-block-line" />
                   {isSigned ? (
                     <>
                       {sow.signature_image_url ? (
@@ -591,6 +652,7 @@ export default function ClientSowPage() {
                   <div className="sig-block-label">Agency</div>
                   <div className="sig-block-name">{sow.agency_signer_name ?? manager?.full_name ?? 'FLOW 53'}</div>
                   <div className="sig-block-sub">{manager?.role ?? 'Project Manager'} · FLOW 53</div>
+                  <hr className="sig-block-line" />
                   {sow.agency_signed_at ? (
                     <>
                       {sow.agency_signature_image_url ? (
@@ -608,6 +670,13 @@ export default function ClientSowPage() {
                 </div>
               </div>
               {isSigned && <p className="sig-version-line">SOW Version: v{sow.version}.0 · Status: Signed ✓</p>}
+            </div>
+
+            <div className="doc-footer">
+              <span>
+                {sow.sow_number ?? `v${sow.version}`} · v{sow.version}.0
+              </span>
+              <span>Page 1</span>
             </div>
           </div>
 
@@ -630,39 +699,64 @@ export default function ClientSowPage() {
               </div>
             </div>
           )}
+          </div>
 
-          {!viewVersion && !isSigned && sow.status === 'sent' && (
-            <div className="sign-panel">
-              <div className="sign-panel-title">Ready to proceed?</div>
-              <p className="sw-sign-cta-text">Review the agreement above, then sign electronically to begin your project.</p>
+          <aside className="sw-sidebar">
+            <div className="sw-review-card">
+              <div className="sw-review-title">Review your agreement</div>
+              <span className={`status-badge ${isSigned ? 'b-done' : 'b-hold'}`}>
+                <span className="dot"></span>
+                {isSigned ? 'Signed ✓' : 'Awaiting your signature'}
+              </span>
+              <p className="sw-review-desc">
+                {isSigned ? 'This agreement has been signed. A copy is available below for your records.' : 'Review the scope, timeline and terms before signing.'}
+              </p>
 
-              {signError && <div className="cp-alert cp-alert-error">{signError}</div>}
-
-              <div className="sign-actions">
-                <Link href={`/client/project/${project.id}/sow/sign?from=sow`} className="btn btn-accent">
-                  Review &amp; Sign →
-                </Link>
-                <button type="button" className="btn btn-ghost" onClick={() => setShowRequestChanges((v) => !v)}>
-                  Request Changes
-                </button>
+              <div className="sw-review-meta">
+                <div className="sw-review-meta-row">
+                  <span>Reference</span>
+                  <span>{sow.sow_number ?? `v${sow.version}`}</span>
+                </div>
+                <div className="sw-review-meta-row">
+                  <span>Version</span>
+                  <span>{sow.version}.0</span>
+                </div>
               </div>
 
-              {showRequestChanges && (
-                <div className="request-changes-box">
-                  {changesSubmitted ? (
-                    <p className="sw-changes-sent">Thanks — your feedback has been sent to FLOW53.</p>
-                  ) : (
-                    <>
-                      <textarea className="cp-input" rows={3} value={changesText} onChange={(e) => setChangesText(e.target.value)} placeholder="Let FLOW53 know what you'd like changed..." style={{ resize: 'vertical' }} />
-                      <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} disabled={!changesText.trim() || submittingChanges} onClick={handleSubmitChanges}>
-                        {submittingChanges ? 'Sending…' : 'Submit Feedback'}
-                      </button>
-                    </>
+              {!viewVersion && !isSigned && sow.status === 'sent' && (
+                <>
+                  {signError && <div className="cp-alert cp-alert-error">{signError}</div>}
+                  <Link href={`/client/project/${project.id}/sow/sign?from=sow`} className="btn btn-accent sw-review-btn">
+                    Review &amp; Sign →
+                  </Link>
+                  <button type="button" className="btn btn-ghost sw-review-btn" onClick={() => setShowRequestChanges((v) => !v)}>
+                    Request Changes
+                  </button>
+
+                  {showRequestChanges && (
+                    <div className="request-changes-box">
+                      {changesSubmitted ? (
+                        <p className="sw-changes-sent">Thanks — your feedback has been sent to FLOW53.</p>
+                      ) : (
+                        <>
+                          <textarea className="cp-input" rows={3} value={changesText} onChange={(e) => setChangesText(e.target.value)} placeholder="Let FLOW53 know what you'd like changed..." style={{ resize: 'vertical' }} />
+                          <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} disabled={!changesText.trim() || submittingChanges} onClick={handleSubmitChanges}>
+                            {submittingChanges ? 'Sending…' : 'Submit Feedback'}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   )}
-                </div>
+                </>
               )}
+
+              <hr className="sw-review-hr" />
+              <button type="button" className="sw-review-download" onClick={() => window.print()}>
+                <Icon name="download" size={13} /> You can download a copy for your records.
+              </button>
             </div>
-          )}
+          </aside>
+          </div>
         </div>
       </SowShell>
     </div>

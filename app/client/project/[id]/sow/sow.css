@@ -102,8 +102,25 @@
 /* ---------- document ---------- */
 .client-sow-root .sw-doc-wrap { width: 100%; }
 
-.client-sow-root .sw-doc-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
 .client-sow-root .sw-doc-attachments-card { margin-bottom: 20px; }
+
+/* ---------- two-column layout: document + sticky "review your agreement" sidebar ---------- */
+.client-sow-root .sw-layout { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+.client-sow-root .sw-main { min-width: 0; }
+.client-sow-root .sw-sidebar { position: sticky; top: 72px; }
+
+.client-sow-root .sw-review-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 24px; }
+.client-sow-root .sw-review-title { font-size: 15px; font-weight: 800; color: var(--ink); margin-bottom: 10px; }
+.client-sow-root .sw-review-desc { font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; margin: 10px 0 18px; }
+.client-sow-root .sw-review-meta { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+.client-sow-root .sw-review-meta-row { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; }
+.client-sow-root .sw-review-meta-row span:first-child { color: var(--ink-faint); }
+.client-sow-root .sw-review-meta-row span:last-child { font-weight: 600; color: var(--ink); }
+.client-sow-root .sw-review-btn { width: 100%; margin-bottom: 10px; }
+.client-sow-root .sw-review-hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.client-sow-root .sw-review-download { display: flex; align-items: flex-start; gap: 8px; width: 100%; text-align: left; background: none; border: none; padding: 0; font-size: 12px; color: var(--ink-faint); line-height: 1.5; }
+.client-sow-root .sw-review-download:hover { color: var(--accent); }
+.client-sow-root .sw-review-download svg { flex-shrink: 0; margin-top: 1px; }
 
 .client-sow-root .sw-just-signed-banner { background: var(--positive-soft); color: var(--positive); font-size: 12.5px; font-weight: 600; padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 16px; }
 
@@ -113,29 +130,50 @@
 .client-sow-root .sw-history-banner a { color: inherit; text-decoration: underline; }
 
 .client-sow-root .doc-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 40px 38px 36px; margin-bottom: 20px; overflow: hidden; }
-.client-sow-root .doc-letterhead-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.client-sow-root .doc-letterhead-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.client-sow-root .doc-letterhead-left { display: flex; align-items: center; gap: 12px; }
 .client-sow-root .doc-brand-mark { width: 34px; height: 34px; flex-shrink: 0; background-image: url("/flow53-logo.svg"); background-size: contain; background-position: center; background-repeat: no-repeat; }
 .client-sow-root .doc-letterhead { font-size: 17px; font-weight: 800; color: var(--accent); line-height: 1.2; }
 .client-sow-root .doc-letterhead-sub { font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
-.client-sow-root .doc-title { font-size: 21px; font-weight: 800; text-align: center; letter-spacing: 0.02em; margin-bottom: 4px; color: var(--ink); }
-.client-sow-root .doc-subtitle { font-size: 12.5px; color: var(--ink-faint); text-align: center; font-style: italic; margin-bottom: 30px; }
+.client-sow-root .doc-letterhead-right { text-align: right; flex-shrink: 0; }
+.client-sow-root .doc-letterhead-doctype { font-size: 15px; font-weight: 800; letter-spacing: 0.02em; color: var(--ink); }
+.client-sow-root .doc-letterhead-ref { font-size: 11.5px; color: var(--ink-faint); margin-top: 3px; }
+.client-sow-root .doc-hr { border: none; border-top: 1px solid var(--border); margin: 0 0 26px; }
 
 .client-sow-root .doc-h2 { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: 0.03em; margin: 30px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); scroll-margin-top: 80px; }
 .client-sow-root .doc-h2-num { width: 20px; height: 20px; flex-shrink: 0; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 10.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; text-transform: none; letter-spacing: 0; }
+
+/* numbered section heads ("01  SCOPE OF WORK ———") for Scope/Timeline/Payment/Terms/
+   Signatures - distinct from the circular-badge .doc-h2 (still used by the
+   Documents & Attachments card). */
+.client-sow-root .doc-section-head { display: flex; align-items: center; gap: 14px; margin: 32px 0 16px; scroll-margin-top: 80px; }
+.client-sow-root .doc-section-head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.client-sow-root .doc-section-num { font-size: 13px; font-weight: 800; color: var(--ink-faint); flex-shrink: 0; }
+.client-sow-root .doc-section-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink); flex-shrink: 0; }
+.client-sow-root .doc-subhead { font-size: 13px; font-weight: 700; color: var(--ink); margin: 18px 0 8px; }
+
 .client-sow-root .doc-p { font-size: 13.5px; line-height: 1.8; color: var(--ink-soft); margin: 0 0 10px; }
 .client-sow-root .doc-list { margin: 0 0 10px 18px; padding: 0; }
 .client-sow-root .doc-list li { font-size: 13.5px; line-height: 1.9; color: var(--ink-soft); }
 .client-sow-root .sw-doc-link { display: inline-block; font-size: 12.5px; font-weight: 600; color: var(--accent); margin-top: 8px; }
 .client-sow-root .sw-doc-link:hover { text-decoration: underline; }
 
-.client-sow-root .doc-kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
-.client-sow-root .doc-kv { display: flex; flex-direction: column; gap: 3px; }
-.client-sow-root .doc-kv-label { font-size: 10.5px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; }
 .client-sow-root .doc-kv-value { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.client-sow-root .doc-kv-sub { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+.client-sow-root .doc-eyebrow { font-size: 10.5px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 5px; }
 
-.client-sow-root .doc-value-card { display: flex; align-items: center; justify-content: space-between; background: var(--accent-soft); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 14px; }
-.client-sow-root .doc-value-label { font-size: 12px; font-weight: 600; color: var(--accent); }
-.client-sow-root .doc-value-amount { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: -0.01em; }
+/* Parties: left plain-text Service Provider block + right bordered Client/Project table */
+.client-sow-root .sw-parties-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; margin-bottom: 8px; }
+
+/* generic bordered document table (Deliverables / Milestones / Parties) */
+.client-sow-root .sw-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 10px; font-size: 13px; }
+.client-sow-root .sw-table th, .client-sow-root .sw-table td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
+.client-sow-root .sw-table thead th { background: var(--bg); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-faint); }
+.client-sow-root .sw-table tbody td { color: var(--ink-soft); }
+.client-sow-root .sw-parties-table th { background: var(--bg); width: 90px; font-size: 12px; font-weight: 700; color: var(--ink-faint); }
+.client-sow-root .sw-parties-table td { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+
+.client-sow-root .doc-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--ink-faint); }
 
 /* ---- Documents & Attachments (SOW-11) ---- */
 .client-sow-root .sw-doc-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
@@ -153,7 +191,8 @@
 .client-sow-root .sig-block { padding-top: 8px; }
 .client-sow-root .sig-block-label { font-size: 10px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
 .client-sow-root .sig-block-name { font-size: 14px; font-weight: 700; color: var(--ink); }
-.client-sow-root .sig-block-sub { font-size: 12px; color: var(--ink-faint); margin-bottom: 10px; }
+.client-sow-root .sig-block-sub { font-size: 12px; color: var(--ink-faint); }
+.client-sow-root .sig-block-line { border: none; border-top: 1px solid var(--border); margin: 14px 0 10px; }
 .client-sow-root .sig-block-typed { font-family: 'Georgia', serif; font-style: italic; font-size: 24px; color: var(--ink); border-bottom: 1.5px solid var(--border); padding-bottom: 6px; margin-bottom: 4px; }
 .client-sow-root .sig-block-image { max-width: 200px; max-height: 80px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px; margin-bottom: 6px; display: block; }
 .client-sow-root .sig-block-caption { font-size: 10.5px; color: var(--ink-faint); margin-bottom: 6px; }
@@ -161,13 +200,6 @@
 .client-sow-root .sig-block-pending { font-size: 12px; font-weight: 600; color: var(--warning); background: var(--warning-soft); display: inline-block; padding: 4px 10px; border-radius: 999px; }
 .client-sow-root .sig-block-confirmed { font-size: 12px; font-weight: 600; color: var(--positive); background: var(--positive-soft); display: inline-block; padding: 4px 10px; border-radius: 999px; }
 .client-sow-root .sig-version-line { font-size: 11.5px; color: var(--ink-faint); margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--border); }
-
-.client-sow-root .sign-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 24px; }
-.client-sow-root .sign-panel-title { font-size: 14px; font-weight: 800; margin-bottom: 6px; color: var(--ink); }
-.client-sow-root .sw-sign-cta-text { font-size: 13px; color: var(--ink-soft); margin: 0 0 16px; }
-
-.client-sow-root .sign-actions { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
-.client-sow-root .sign-actions .btn { flex: 1; min-width: 160px; }
 
 .client-sow-root .request-changes-box { margin-top: 14px; }
 .client-sow-root .sw-changes-sent { font-size: 12.5px; color: var(--positive); font-weight: 600; margin: 0; }
@@ -188,12 +220,15 @@
   .client-sow-root .sidebar.open { transform: translateX(0); }
   .client-sow-root .mobile-backdrop { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); z-index: 190; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
   .client-sow-root .mobile-backdrop.open { opacity: 1; pointer-events: auto; }
+  .client-sow-root .sw-layout { grid-template-columns: 1fr; }
+  .client-sow-root .sw-sidebar { position: static; }
 }
 @media (max-width: 640px) {
   .client-sow-root .doc-card { padding: 26px 20px; }
-  .client-sow-root .doc-kv-grid { grid-template-columns: 1fr; }
-  .client-sow-root .sign-actions { flex-direction: column; }
+  .client-sow-root .sw-parties-row { grid-template-columns: 1fr; }
   .client-sow-root .sig-block-grid { grid-template-columns: 1fr; }
+  .client-sow-root .doc-letterhead-row { flex-direction: column; }
+  .client-sow-root .doc-letterhead-right { text-align: left; }
 }
 
 @media print {
@@ -204,12 +239,12 @@
   .client-sow-root .breadcrumb,
   .client-sow-root .ph-row .btn,
   .client-sow-root .sw-just-signed-banner,
-  .client-sow-root .sign-panel,
-  .client-sow-root .sw-doc-toolbar,
+  .client-sow-root .sw-sidebar,
   .client-sow-root .sw-doc-attachments-card {
     display: none !important;
   }
   .client-sow-root .content { max-width: 100%; padding: 0; }
   .client-sow-root .sw-doc-wrap { max-width: 100%; }
+  .client-sow-root .sw-layout { display: block; }
   .client-sow-root .doc-card { box-shadow: none; border: none; }
 }

@@ -46,6 +46,7 @@
 .sow-admin-root .field { margin-bottom: 16px; }
 
 .sow-admin-root .deliverable-row { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin-bottom: 8px; align-items: center; }
+.sow-admin-root .deliverable-row-3 { display: grid; grid-template-columns: 1.2fr 1.4fr 70px auto; gap: 8px; margin-bottom: 8px; align-items: center; }
 .sow-admin-root .deliverable-remove { width: 34px; height: 34px; border-radius: var(--radius-sm); border: 1px solid var(--border); color: var(--ink-faint); display: flex; align-items: center; justify-content: center; background: transparent; }
 .sow-admin-root .deliverable-remove:hover { background: var(--danger-soft); color: var(--danger); border-color: var(--danger-soft); }
 

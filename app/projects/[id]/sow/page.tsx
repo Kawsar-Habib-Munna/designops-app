@@ -179,17 +179,26 @@ function newRowId() {
   rowSeq += 1;
   return `r${rowSeq}`;
 }
-function parseServices(scope: string | null): string[] {
+type ServiceRow = { id: string; service: string; deliverable: string; quantity: string };
+// প্রতিটা লাইন "• service || deliverable || quantity" ফরম্যাটে scope কলামে সেভ
+// হয় (নতুন কোনো jsonb কলাম ছাড়াই, milestones/timeline-এর মতোই)। আগের সিঙ্গেল-
+// স্ট্রিং সার্ভিস ডেটা (কোনো "||" নেই) ব্যাকওয়ার্ড-কম্প্যাটিবল থাকে — পুরনো লাইন
+// পার্স করলে পুরোটাই service-এ বসে, deliverable/quantity খালি থাকে।
+function parseServices(scope: string | null): ServiceRow[] {
   if (!scope) return [];
   return scope
     .split('\n')
     .map((l) => l.replace(/^[•\-]\s*/, '').trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((line) => {
+      const [service, deliverable, quantity] = line.split(' || ');
+      return { id: newRowId(), service: (service ?? '').trim(), deliverable: (deliverable ?? '').trim(), quantity: (quantity ?? '').trim() };
+    });
 }
-function serializeServices(services: string[]): string {
+function serializeServices(services: ServiceRow[]): string {
   return services
-    .filter((s) => s.trim())
-    .map((s) => `• ${s.trim()}`)
+    .filter((s) => s.service.trim())
+    .map((s) => `• ${s.service.trim()} || ${s.deliverable.trim()} || ${s.quantity.trim()}`)
     .join('\n');
 }
 function parseMilestones(timeline: string | null): MilestoneRow[] {
@@ -239,7 +248,7 @@ export default function AdminSowPage() {
 
   // ---- editable form state ----
   const [summary, setSummary] = useState('');
-  const [services, setServices] = useState<string[]>([]);
+  const [services, setServices] = useState<ServiceRow[]>([]);
   const [startDate, setStartDate] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
   const [milestones, setMilestones] = useState<MilestoneRow[]>([]);
@@ -365,13 +374,13 @@ export default function AdminSowPage() {
   const manager = project ? toOne(project.project_manager) : null;
 
   function addService() {
-    setServices((prev) => [...prev, '']);
+    setServices((prev) => [...prev, { id: newRowId(), service: '', deliverable: '', quantity: '' }]);
   }
-  function updateService(i: number, value: string) {
-    setServices((prev) => prev.map((s, idx) => (idx === i ? value : s)));
+  function updateService(id: string, patch: Partial<ServiceRow>) {
+    setServices((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
   }
-  function removeService(i: number) {
-    setServices((prev) => prev.filter((_, idx) => idx !== i));
+  function removeService(id: string) {
+    setServices((prev) => prev.filter((s) => s.id !== id));
   }
   function addMilestone() {
     setMilestones((prev) => [...prev, { id: newRowId(), label: '', week: '' }]);
@@ -933,18 +942,19 @@ export default function AdminSowPage() {
                             <textarea className="field-textarea" value={summary} onChange={(e) => setSummary(e.target.value)} />
                           </div>
                           <div className="field">
-                            <label className="field-label">Services Included</label>
-                            {services.map((s, i) => (
-                              <div className="deliverable-row" key={i}>
-                                <input className="field-input" value={s} onChange={(e) => updateService(i, e.target.value)} placeholder="e.g. UX Research & Discovery" />
-                                <span></span>
-                                <button type="button" className="deliverable-remove" onClick={() => removeService(i)} aria-label="বাদ দিন">
+                            <label className="field-label">Deliverables</label>
+                            {services.map((s) => (
+                              <div className="deliverable-row-3" key={s.id}>
+                                <input className="field-input" value={s.service} onChange={(e) => updateService(s.id, { service: e.target.value })} placeholder="e.g. UX Research & Discovery" />
+                                <input className="field-input" value={s.deliverable} onChange={(e) => updateService(s.id, { deliverable: e.target.value })} placeholder="e.g. User interviews + findings report" />
+                                <input className="field-input" value={s.quantity} onChange={(e) => updateService(s.id, { quantity: e.target.value })} placeholder="Qty" />
+                                <button type="button" className="deliverable-remove" onClick={() => removeService(s.id)} aria-label="বাদ দিন">
                                   <Icon name="close" size={12} />
                                 </button>
                               </div>
                             ))}
                             <button type="button" className="btn btn-ghost btn-sm" onClick={addService}>
-                              <Icon name="plus" size={12} /> Add Service
+                              <Icon name="plus" size={12} /> Add Deliverable
                             </button>
                           </div>
                         </div>
@@ -967,7 +977,7 @@ export default function AdminSowPage() {
                           {milestones.map((m) => (
                             <div className="deliverable-row" key={m.id}>
                               <input className="field-input" value={m.label} onChange={(e) => updateMilestone(m.id, { label: e.target.value })} placeholder="e.g. Wireframes — all core screens" />
-                              <input className="field-input" style={{ maxWidth: 120 }} value={m.week} onChange={(e) => updateMilestone(m.id, { week: e.target.value })} placeholder="Week" />
+                              <input className="field-input" style={{ maxWidth: 120 }} value={m.week} onChange={(e) => updateMilestone(m.id, { week: e.target.value })} placeholder="Target date" />
                               <button type="button" className="deliverable-remove" onClick={() => removeMilestone(m.id)} aria-label="বাদ দিন">
                                 <Icon name="close" size={12} />
                               </button>
@@ -1108,7 +1118,17 @@ export default function AdminSowPage() {
                             <div className="preview-h2">2. Scope of Work</div>
                             <p className="preview-p">{summary || '—'}</p>
                             <ul className="preview-list">
-                              {services.filter((s) => s.trim()).length > 0 ? services.filter((s) => s.trim()).map((s, i) => <li key={i}>{s}</li>) : <li style={{ color: 'var(--ink-faint)' }}>No services added yet.</li>}
+                              {services.filter((s) => s.service.trim()).length > 0 ? (
+                                services.filter((s) => s.service.trim()).map((s) => (
+                                  <li key={s.id}>
+                                    {s.service}
+                                    {s.deliverable ? ` — ${s.deliverable}` : ''}
+                                    {s.quantity ? ` (${s.quantity})` : ''}
+                                  </li>
+                                ))
+                              ) : (
+                                <li style={{ color: 'var(--ink-faint)' }}>No services added yet.</li>
+                              )}
                             </ul>
 
                             <div className="preview-h2">3. Timeline</div>
@@ -1279,8 +1299,12 @@ export default function AdminSowPage() {
                             <div className="doc-h2">2. Scope of Work</div>
                             <p className="doc-p">{summary || '—'}</p>
                             <ul className="doc-list">
-                              {services.filter((s) => s.trim()).map((s, i) => (
-                                <li key={i}>{s}</li>
+                              {services.filter((s) => s.service.trim()).map((s) => (
+                                <li key={s.id}>
+                                  {s.service}
+                                  {s.deliverable ? ` — ${s.deliverable}` : ''}
+                                  {s.quantity ? ` (${s.quantity})` : ''}
+                                </li>
                               ))}
                             </ul>
                           </div>
