@@ -20,7 +20,9 @@ import BouncyStat from "@/app/components/BouncyStat";
 // team-section থেকে আলাদা, নতুন কার্ড ডিজাইন (ছবি+৪টা সোশ্যাল আইকন+নাম/রোল/বায়ো)
 // — কিন্তু একই ডেটা সোর্স (profiles টেবিল, ProfileMenu থেকে প্রতিটা মেম্বার নিজের
 // bio/facebook_url/instagram_url/behance_url/linkedin_url বসায়)।
-export const dynamic = "force-dynamic";
+// force-dynamic-এর বদলে ISR (homepage-এর মতোই) - ৬০ সেকেন্ড ক্যাশড HTML সার্ভ
+// করে, Team প্রোফাইল এডিট সর্বোচ্চ ৬০ সেকেন্ড পরে লাইভ হয়।
+export const revalidate = 60;
 
 export const metadata = {
   title: "About — FLOW 53",

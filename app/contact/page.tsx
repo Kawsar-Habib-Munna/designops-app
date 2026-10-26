@@ -22,7 +22,9 @@ import ContactPageForm from "./ContactPageForm";
 // আইকন/ডেটা-বাইন্ডিং হোমপেজের faq-contact-card থেকে রিইউজ করে, কিন্তু Figma-তে
 // এগুলো একটামাত্র vertically-stacked কার্ড (৩টা আলাদা কার্ড পাশাপাশি না) - তাই
 // নতুন .cp-info-card র‍্যাপার।
-export const dynamic = "force-dynamic";
+// force-dynamic-এর বদলে ISR (homepage-এর মতোই) - ৬০ সেকেন্ড ক্যাশড HTML সার্ভ
+// করে, testimonial এডিট সর্বোচ্চ ৬০ সেকেন্ড পরে লাইভ হয়।
+export const revalidate = 60;
 
 export const metadata = {
   title: "Contact — FLOW 53",

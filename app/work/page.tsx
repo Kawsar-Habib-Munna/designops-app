@@ -17,7 +17,9 @@ import WorkProjectList from "./WorkProjectList";
 // পিক্সেল-ম্যাচ) - এখানে শুধু carousel-এর জোড়া-কার্ড স্ট্যাকিং-এর বদলে
 // category-ট্যাব + সাধারণ পেজিনেটেড লিস্ট (WorkProjectList.tsx)। একই
 // case_studies ডেটা, হোমপেজের fetchCaseStudies()-এর সাথে হুবহু মেলানো কুয়েরি।
-export const dynamic = "force-dynamic";
+// force-dynamic-এর বদলে ISR (homepage-এর মতোই) - ৬০ সেকেন্ড ক্যাশড HTML সার্ভ
+// করে, নতুন/এডিট করা case study সর্বোচ্চ ৬০ সেকেন্ড পরে লাইভ হয়।
+export const revalidate = 60;
 
 export const metadata = {
   title: "Projects — FLOW 53",

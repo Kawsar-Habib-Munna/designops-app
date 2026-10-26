@@ -14,7 +14,9 @@ import { interStats, nunito, playfair } from '@/app/fonts';
 // কেস স্টাডি publish করে, সেটাই এখানে Overview থেকে Team পর্যন্ত ১৬টা সেকশন
 // ক্রমে দেখানো হয় — প্রতিটা সেকশনে লেখা + ছবি/ভিডিও/লিংক মিডিয়া। published
 // না থাকলে বা slug না মিললে 404।
-export const dynamic = 'force-dynamic';
+// force-dynamic-এর বদলে ISR (homepage-এর মতোই) - ৬০ সেকেন্ড ক্যাশড HTML সার্ভ
+// করে, publish/unpublish/এডিট সর্বোচ্চ ৬০ সেকেন্ড পরে লাইভ হয়।
+export const revalidate = 60;
 
 type SectionKey =
   | 'overview' | 'problem_solution' | 'user_persona' | 'empathy_map' | 'competitive_analysis'

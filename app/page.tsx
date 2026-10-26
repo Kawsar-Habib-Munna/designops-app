@@ -25,10 +25,11 @@ import SlideSwapLabel from "@/app/components/SlideSwapLabel";
 // (শুধু authenticated ইউজার read করতে পারে) এই পেজের জন্য প্রযোজ্য না। এটা
 // একটা Server Component, তাই service-role client দিয়ে সরাসরি সার্ভারে
 // টিমের real ডেটা আনা হয় (Team পেজের মতোই আসল নাম/রোল/ছবি) — কোনো secret
-// ব্রাউজারে যায় না। Team সেকশন সম্পূর্ণ dynamic রাখতে (কেউ যোগ/বাদ হলে বা
-// প্রোফাইল পাল্টালে সাথে সাথে পরের ভিজিটেই দেখা যায়) ক্যাশ/ISR ছাড়াই প্রতিটা
-// রিকোয়েস্টে fresh ডেটা আনা হয়।
-export const dynamic = "force-dynamic";
+// ব্রাউজারে যায় না। আগে force-dynamic ছিল (প্রতিটা রিকোয়েস্টে fresh DB
+// ফেচ+SSR, TTFB ~300-600ms) - এখন ISR: প্রথম ভিজিটর DB ফেচ করে, তারপর
+// পরের ৬০ সেকেন্ড বাকি সব ভিজিটর cached HTML পায় (~50-80ms)। Team/
+// case-study/testimonial এডিট করলে নতুন ভার্সন সর্বোচ্চ ৬০ সেকেন্ড পরে লাইভ হয়।
+export const revalidate = 60;
 
 const STATS_TOP = [
   { label: "Experience", value: "02+" },

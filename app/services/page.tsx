@@ -19,7 +19,10 @@ import SlideSwapLabel from '@/app/components/SlideSwapLabel';
 // সাইটজুড়ে সামঞ্জস্যপূর্ণ থাকে। Figma-র কিছু বিবরণ টেক্সট আসল ফাইলেই অসম্পূর্ণ/মাঝ
 // বাক্যে কাটা ছিল (যেমন "...make every") - সেগুলো এখানে সম্পূর্ণ বাক্য হিসেবে
 // লেখা হয়েছে, একই টোন বজায় রেখে।
-export const dynamic = 'force-dynamic';
+// force-dynamic-এর বদলে ISR (homepage-এর মতোই) - ৬০ সেকেন্ড ক্যাশড HTML সার্ভ
+// করে, site settings (book-call নম্বর ইত্যাদি) এডিট সর্বোচ্চ ৬০ সেকেন্ড পরে
+// লাইভ হয়।
+export const revalidate = 60;
 
 export const metadata = {
   title: 'Services — FLOW 53',
