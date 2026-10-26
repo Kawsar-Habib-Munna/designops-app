@@ -175,9 +175,8 @@
 
 .client-sow-root .doc-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--ink-faint); }
 
-.client-sow-root .doc-value-card { display: flex; align-items: center; justify-content: space-between; background: var(--accent-soft); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 14px; }
-.client-sow-root .doc-value-label { font-size: 12px; font-weight: 600; color: var(--accent); }
-.client-sow-root .doc-value-amount { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: -0.01em; }
+.client-sow-root .sw-fee-table th { background: var(--bg); width: 140px; font-size: 12px; font-weight: 700; color: var(--ink-faint); }
+.client-sow-root .sw-fee-table td { font-size: 14px; font-weight: 700; color: var(--ink); }
 
 /* ---- Documents & Attachments (SOW-11) ---- */
 .client-sow-root .sw-doc-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
