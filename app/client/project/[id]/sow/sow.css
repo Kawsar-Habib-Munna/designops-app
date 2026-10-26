@@ -166,7 +166,13 @@
 .client-sow-root .sw-parties-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; margin-bottom: 8px; }
 
 /* generic bordered document table (Deliverables / Milestones / Parties) */
-.client-sow-root .sw-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 10px; font-size: 13px; }
+/* border-collapse:collapse + border-radius/overflow:hidden on a <table> is a
+   known cross-browser quirk - the collapsed border model paints cell borders
+   straddling the table's border-box edge, so overflow:hidden clips away the
+   outer half of that paint and the table appears to have no outer border.
+   Dropping border-radius/overflow:hidden (square corners instead) avoids the
+   clipping entirely and keeps crisp single-pixel collapsed grid lines. */
+.client-sow-root .sw-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); margin-bottom: 10px; font-size: 13px; }
 .client-sow-root .sw-table th, .client-sow-root .sw-table td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
 .client-sow-root .sw-table thead th { background: var(--bg); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-faint); }
 .client-sow-root .sw-table tbody td { color: var(--ink-soft); }
