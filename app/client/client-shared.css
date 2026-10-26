@@ -125,21 +125,16 @@
 }
 
 /* ---- sidebar brand lockup ----
-   sign-in/register-এর dark .brand-panel-এর মতোই একটা dark ব্যাকগ্রাউন্ড — mark/
-   text-এর হালকা বেগুনি গ্রেডিয়েন্ট মূলত এই রকম dark ব্যাকগ্রাউন্ডের জন্যই আঁকা।
-   ট্যাগলাইনের ".on-light" রং (#7b7780) এই dark বক্সে কনট্রাস্ট পাবে না, তাই এখানে
-   sign-in/register-এর dark-panel ভ্যারিয়েন্ট (#c8c5cd) দিয়ে ওভাররাইড করা হলো। */
+   আগে sign-in/register-এর dark .brand-panel-এর মতো একটা dark বক্স ব্যাকগ্রাউন্ড
+   ছিল (mark/text-এর হালকা বেগুনি গ্রেডিয়েন্ট মূলত dark ব্যাকগ্রাউন্ডের জন্যই আঁকা) -
+   এখন transparent, সাইডবারের হালকা ব্যাকগ্রাউন্ডের সাথে মিশে যায়। ট্যাগলাইন তাই
+   বেস .cp-brand-tagline-এর ".on-light" রং (#7b7780)-ই ব্যবহার করে, আলাদা dark-
+   panel ওভাররাইড লাগে না। */
 .client-portal .cp-brand-sidebar {
   position: relative;
   justify-content: flex-start;
-  border: 1px solid #2a2733;
-  border-radius: var(--radius-md);
-  padding: 10px;
+  padding: 10px 0;
   margin-bottom: 12px;
-  background: #0e0e12;
-}
-.client-portal .cp-brand-sidebar .cp-brand-tagline {
-  color: #c8c5cd;
 }
 
 /* ---- centered auth shell ---- */
