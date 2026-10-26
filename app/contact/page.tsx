@@ -9,7 +9,7 @@ import LandingFooter from "@/app/components/LandingFooter";
 import RevealOnScroll from "@/app/components/RevealOnScroll";
 import SlideSwapLabel from "@/app/components/SlideSwapLabel";
 import FaqAccordion from "@/app/components/FaqAccordion";
-import TestimonialsGrid, { type TestimonialCard } from "@/app/components/TestimonialsGrid";
+import TestimonialsGrid from "@/app/components/TestimonialsGrid";
 import ContactPageForm from "./ContactPageForm";
 
 // পাবলিক Contact পেজ — Figma "Flow 53 Web" (node 2718:4745, "Contact Section")
@@ -29,7 +29,15 @@ export const metadata = {
   description: "Have a project in mind? Let's discuss your ideas and create meaningful digital experiences together.",
 };
 
-async function fetchTestimonials(): Promise<TestimonialCard[]> {
+type TestimonialRow = {
+  name: string;
+  role: string;
+  quote: string;
+  rating: string;
+  avatar_url: string | null;
+};
+
+async function fetchTestimonials(): Promise<TestimonialRow[]> {
   try {
     const admin = getSupabaseAdmin();
     const { data } = await admin
@@ -37,7 +45,7 @@ async function fetchTestimonials(): Promise<TestimonialCard[]> {
       .select("name, role, quote, rating, avatar_url")
       .eq("published", true)
       .order("order_index");
-    return (data as TestimonialCard[]) ?? [];
+    return (data as TestimonialRow[]) ?? [];
   } catch {
     return [];
   }
