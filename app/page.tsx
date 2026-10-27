@@ -4,6 +4,7 @@ import { interStats, nunito, playfair } from "./fonts";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { driveThumbnailUrl, driveFullImageUrl } from "@/lib/driveUpload";
 import LandingNav from "@/app/components/LandingNav";
+import JsonLd from "@/app/components/JsonLd";
 import LandingFooter from "@/app/components/LandingFooter";
 import { fetchSiteSettings, formatPhoneDisplay, buildWhatsappUrl, BOOK_CALL_MESSAGE } from "@/lib/siteSettings";
 import RevealOnScroll from "@/app/components/RevealOnScroll";
@@ -192,6 +193,7 @@ export default async function Home() {
       className={`home-root ${nunito.variable} ${playfair.variable} ${interStats.variable}`}
     >
       <MouseTrail />
+      <JsonLd settings={settings} />
       <LandingNav bookCallUrl={bookCallUrl} />
 
       <div className="home-body">

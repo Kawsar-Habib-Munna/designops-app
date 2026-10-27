@@ -26,7 +26,7 @@ import SlideSwapLabel from '@/app/components/SlideSwapLabel';
 export const revalidate = 60;
 
 export const metadata = pageMeta(
-  "Services — FLOW 53",
+  "Services — Flow53",
   'How do we turn ideas into digital experiences? UI/UX design, web & app design, web development, brand identity, and digital marketing.',
   "/services",
 );

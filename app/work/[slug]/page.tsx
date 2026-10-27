@@ -91,8 +91,8 @@ async function fetchCaseStudy(slug: string) {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const result = await fetchCaseStudy(slug);
-  if (!result) return { title: 'FLOW 53' };
-  return pageMeta(`${result.caseStudy.title} — FLOW 53`, result.caseStudy.summary ?? undefined, `/work/${encodeURIComponent(slug)}`);
+  if (!result) return { title: 'Flow53' };
+  return pageMeta(`${result.caseStudy.title} — Flow53`, result.caseStudy.summary ?? undefined, `/work/${encodeURIComponent(slug)}`);
 }
 
 export default async function WorkDetailPage({ params }: { params: Promise<{ slug: string }> }) {

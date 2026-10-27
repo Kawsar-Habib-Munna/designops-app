@@ -28,7 +28,7 @@ import ContactPageForm from "./ContactPageForm";
 export const revalidate = 60;
 
 export const metadata = pageMeta(
-  "Contact — FLOW 53",
+  "Contact — Flow53",
   "Have a project in mind? Let's discuss your ideas and create meaningful digital experiences together.",
   "/contact",
 );

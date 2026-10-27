@@ -121,11 +121,11 @@ export default function LandingNav({ bookCallUrl = DEFAULT_BOOK_CALL_URL }: { bo
         <a
           href="#top"
           className="nav-pill nav-logo"
-          aria-label="FLOW 53"
+          aria-label="Flow53"
           onClick={(e) => { e.preventDefault(); goTo(LINKS[0]); }}
         >
           <span className="nav-logo-art">
-            <img src="/Flow53 logo.svg" alt="FLOW 53" className="nav-logo-img" />
+            <img src="/Flow53 logo.svg" alt="Flow53" className="nav-logo-img" />
           </span>
         </a>
 

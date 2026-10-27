@@ -2,8 +2,8 @@ import LegalPage from "@/app/components/LegalPage";
 import { pageMeta } from "@/lib/seo";
 
 export const metadata = pageMeta(
-  "Privacy Policy — FLOW 53",
-  "How FLOW 53 collects, uses and protects your information when you use our website and client portal.",
+  "Privacy Policy — Flow53",
+  "How Flow53 collects, uses and protects your information when you use our website and client portal.",
   "/privacy",
 );
 
@@ -12,7 +12,7 @@ export default function PrivacyPage() {
     <LegalPage
       title="Privacy Policy"
       updated="October 27, 2026"
-      intro="This policy explains what information FLOW 53 (the DesignOps client portal) collects, how we use it, and the choices you have."
+      intro="This policy explains what information Flow53 (the DesignOps client portal) collects, how we use it, and the choices you have."
       sections={[
         {
           heading: "Information we collect",

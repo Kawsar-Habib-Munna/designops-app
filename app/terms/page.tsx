@@ -2,8 +2,8 @@ import LegalPage from "@/app/components/LegalPage";
 import { pageMeta } from "@/lib/seo";
 
 export const metadata = pageMeta(
-  "Terms of Service — FLOW 53",
-  "The terms that apply when you use the FLOW 53 website and client portal.",
+  "Terms of Service — Flow53",
+  "The terms that apply when you use the Flow53 website and client portal.",
   "/terms",
 );
 
@@ -12,12 +12,12 @@ export default function TermsPage() {
     <LegalPage
       title="Terms of Service"
       updated="October 27, 2026"
-      intro="By using the FLOW 53 client portal you agree to these terms."
+      intro="By using the Flow53 client portal you agree to these terms."
       sections={[
         {
           heading: "Use of the portal",
           body: [
-            "The portal is provided for clients of FLOW 53 to review project progress, share files, give feedback, approve work and sign agreements. You are responsible for keeping your account secure and for the accuracy of the information you provide.",
+            "The portal is provided for clients of Flow53 to review project progress, share files, give feedback, approve work and sign agreements. You are responsible for keeping your account secure and for the accuracy of the information you provide.",
           ],
         },
         {

@@ -5,7 +5,7 @@ const SHARE_IMAGE = {
   url: '/opengraph-image',
   width: 1200,
   height: 630,
-  alt: 'FLOW 53 — UI/UX Design & Development Agency',
+  alt: 'Flow53 — UI/UX Design & Development Agency',
 };
 
 export function pageMeta(title: string, description: string | undefined, path: string) {
@@ -13,7 +13,7 @@ export function pageMeta(title: string, description: string | undefined, path: s
     title,
     description,
     alternates: { canonical: path },
-    openGraph: { type: 'website' as const, siteName: 'FLOW 53', locale: 'en_US', title, description, url: path, images: [SHARE_IMAGE] },
+    openGraph: { type: 'website' as const, siteName: 'Flow53', locale: 'en_US', title, description, url: path, images: [SHARE_IMAGE] },
     twitter: { card: 'summary_large_image' as const, title, description, images: [SHARE_IMAGE.url] },
   };
 }

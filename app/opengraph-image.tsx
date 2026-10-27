@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 // সোশ্যাল শেয়ার প্রিভিউ (WhatsApp/LinkedIn/Facebook/X) — সাদা ব্যাকগ্রাউন্ডে নতুন লোগো।
-export const alt = 'FLOW 53 — UI/UX Design & Development Agency';
+export const alt = 'Flow53 — UI/UX Design & Development Agency';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 

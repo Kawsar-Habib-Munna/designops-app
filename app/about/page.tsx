@@ -26,7 +26,7 @@ import BouncyStat from "@/app/components/BouncyStat";
 export const revalidate = 60;
 
 export const metadata = pageMeta(
-  "About — FLOW 53",
+  "About — Flow53",
   "We're a design and development team passionate about solving complex problems, creating better experiences, and turning ideas into digital products people enjoy using.",
   "/about",
 );

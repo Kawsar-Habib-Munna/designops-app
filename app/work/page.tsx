@@ -23,7 +23,7 @@ import WorkProjectList from "./WorkProjectList";
 export const revalidate = 60;
 
 export const metadata = pageMeta(
-  "Projects — FLOW 53",
+  "Projects — Flow53",
   "Explore our selected projects where strategy, creativity, and user-centered design come together to solve real-world problems.",
   "/work",
 );
