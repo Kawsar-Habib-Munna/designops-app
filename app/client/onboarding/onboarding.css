@@ -22,6 +22,18 @@
      so the fields still read as distinct boxes against it, not blend into it */
   --bg: #f4f6fd;
 }
+/* dark mode: client-shared.css switches --ink to near-white under prefers-color-scheme: dark, but the light
+   blue values above are fixed - without these overrides the field text is near-white on light blue (unreadable).
+   Same blue palette, dark tones; --border/--surface/--ink come from client-shared.css's dark tokens. */
+@media (prefers-color-scheme: dark) {
+  .client-onboarding-root {
+    --accent: #7b93f8;
+    --accent-hover: #93a7fa;
+    --accent-soft: #263170;
+    --surface-muted: #393b4a;
+    --bg: #2b2c36;
+  }
+}
 
 .client-onboarding-root .split-shell {
   display: flex;

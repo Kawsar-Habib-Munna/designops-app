@@ -60,7 +60,15 @@
     --positive: #40c79a;
     --positive-soft: #074e36;
     --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+    /* native controls (select dropdown popups, date pickers, scrollbars, autofill) follow the dark theme too —
+       otherwise a <select>'s option list opens white while its text colour is near-white (unreadable) */
+    color-scheme: dark;
   }
+}
+/* option lists: set explicitly as well, some browsers ignore color-scheme for <option> */
+.client-portal select option {
+  background: var(--surface);
+  color: var(--ink);
 }
 .client-portal,
 .client-portal * {
