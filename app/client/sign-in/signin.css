@@ -430,3 +430,8 @@
     gap: 6px;
   }
 }
+.client-signin-root .topbar-logo {
+  display: block;
+  width: 150px;
+  height: auto;
+}

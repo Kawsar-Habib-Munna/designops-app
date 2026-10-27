@@ -216,7 +216,8 @@ export default function ClientRegister() {
         {/* ============ FORM PANEL ============ */}
         <div className="form-panel">
           <header className="topbar">
-            <BrandMark />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/New Logo.png" alt="FLOW 53 - Innovate-Design-Elevate" className="topbar-logo" />
             <a href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noopener noreferrer" className="help-link">
               Need help? <span className="link">Contact Support</span>
             </a>

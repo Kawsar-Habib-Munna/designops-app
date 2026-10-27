@@ -368,3 +368,8 @@
     gap: 6px;
   }
 }
+.client-register-root .topbar-logo {
+  display: block;
+  width: 150px;
+  height: auto;
+}
