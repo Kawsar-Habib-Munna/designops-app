@@ -154,7 +154,7 @@ export default function ProfileMenu({ profile, email, onUpdated, dark = false }:
 
   const modal = open ? (
     <div
-      className="fixed inset-0 z-[1000] flex items-start justify-center overflow-y-auto bg-black/45 px-4 py-[8vh]"
+      className="fixed inset-0 z-[1000] flex items-start justify-center overflow-y-auto bg-black/45 px-4 py-[8vh] font-[Manrope,Google_Sans,sans-serif]"
       onClick={(e) => {
         if (e.target === e.currentTarget) setOpen(false);
       }}

@@ -47,7 +47,7 @@
 .payments-admin-root .invoice-submission { background: var(--surface-muted); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 12px; }
 .payments-admin-root .invoice-submission-title { font-size: 11px; font-weight: 700; color: var(--ink-soft); margin-bottom: 6px; }
 .payments-admin-root .invoice-submission-grid { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-soft); }
-.payments-admin-root .invoice-submission-notes { font-size: 12px; color: var(--ink-soft); margin: 6px 0 0; font-style: italic; }
+.payments-admin-root .invoice-submission-notes { font-size: 12px; color: var(--ink-soft); margin: 6px 0 0; }
 
 /* ---- editor two-column layout ---- */
 .payments-admin-root .pay-editor-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
@@ -117,7 +117,7 @@
 .payments-admin-root .receipt-doc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 20px; }
 .payments-admin-root .receipt-doc-field-label { font-size: 10px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 3px; }
 .payments-admin-root .receipt-doc-field-value { font-size: 13px; font-weight: 600; color: var(--ink); word-break: break-word; }
-.payments-admin-root .receipt-doc-notes { font-weight: 400; font-style: italic; color: var(--ink-soft); }
+.payments-admin-root .receipt-doc-notes { font-weight: 400; color: var(--ink-soft); }
 
 .payments-admin-root .receipt-doc-amount-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
 .payments-admin-root .receipt-doc-amount { font-size: 24px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em; white-space: nowrap; }

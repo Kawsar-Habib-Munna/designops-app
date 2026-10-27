@@ -81,7 +81,7 @@
 .create-project-root .ps-row:last-child{border-bottom:none;}
 .create-project-root .ps-row span:first-child{color:var(--ink-faint);flex-shrink:0;}
 .create-project-root .ps-row span:last-child{font-weight:600;color:var(--ink);text-align:right;}
-.create-project-root .ps-row span:last-child.muted{color:var(--ink-faint);font-weight:500;font-style:italic;}
+.create-project-root .ps-row span:last-child.muted{color:var(--ink-faint);font-weight:500;}
 .create-project-root .ps-actions{display:flex;flex-direction:column;gap:8px;margin-top:4px;}
 
 /* ---- header actions ---- */

@@ -834,9 +834,8 @@ export default function PortfolioPage() {
         {/* ============ SIDEBAR ============ */}
         <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`} aria-label="প্রধান নেভিগেশন">
           <div>
-            <div className="brand">
-              <div className="brand-mark"></div>
-              <div><div className="brand-name">FLOW 53</div><div className="brand-sub">Innovate · Design · Elevate</div></div>
+            <div className="brand brand-topbar">
+              <img src="/New Logo.png" alt="Flow53 — Innovate · Design · Elevate" className="brand-logo-new" />
               <button className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন"><Icon name="close" size={16} /></button>
             </div>
             <nav className="nav-group" aria-label="Sidebar" onClick={() => setMobileNavOpen(false)}>

@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Gugi&display=swap');
 
 /* All SOWs (SOW-01) — ops-wide list across every project/client। CSS ফ্রেমওয়ার্ক
@@ -38,7 +39,7 @@
   min-height: 100vh;
   background: var(--bg);
   color: var(--ink);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', 'Google Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 .sowslist-root.dark {
@@ -165,7 +166,7 @@
 .sowslist-root .cname{font-weight:600;font-size:12.5px;color:var(--ink);}
 .sowslist-root .ccompany{font-size:11px;color:var(--ink-faint);margin-top:1px;}
 .sowslist-root .value-cell{font-weight:600;color:var(--ink);}
-.sowslist-root .value-cell.notset{color:var(--ink-faint);font-weight:500;font-style:italic;}
+.sowslist-root .value-cell.notset{color:var(--ink-faint);font-weight:500;}
 .sowslist-root .time-cell{color:var(--ink-faint);white-space:nowrap;}
 .sowslist-root .proj-name{font-weight:600;font-size:12.5px;color:var(--ink);}
 .sowslist-root .sow-number{font-size:11px;color:var(--ink-faint);margin-top:1px;}

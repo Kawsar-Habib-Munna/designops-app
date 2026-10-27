@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Gugi&display=swap');
 
 /* Scoped to .notif-root so this stylesheet never leaks into other routes. */
@@ -33,7 +34,7 @@
   min-height: 100vh;
   background: var(--bg);
   color: var(--ink);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', 'Google Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 .notif-root.dark {
@@ -197,3 +198,5 @@
   .notif-root .header-actions{width:100%;}
   .notif-root .header-actions .btn{flex:1;justify-content:center;}
 }
+/* sidebar brand strip (see globals.css): this page's top bar is 60px tall */
+.notif-root div.brand.brand-topbar { height: 60px; }

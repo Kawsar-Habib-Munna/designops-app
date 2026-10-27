@@ -1,4 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;600&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Gugi&display=swap");
 
 /* Scoped to .discussions-root so this stylesheet never leaks into other routes. */
@@ -33,7 +34,7 @@
   min-height: 100vh;
   background: var(--bg);
   color: var(--ink);
-  font-family: "Inter", sans-serif;
+  font-family: "Manrope", "Google Sans", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 .discussions-root.dark {
@@ -1073,7 +1074,6 @@
   font-size: 10.5px;
   color: var(--ink-faint);
   margin-top: 8px;
-  font-style: italic;
 }
 .discussions-root .winner-banner {
   display: flex;
@@ -1591,3 +1591,5 @@
     flex-wrap: wrap;
   }
 }
+/* sidebar brand strip (see globals.css): this page's top bar is 60px tall */
+.discussions-root div.brand.brand-topbar { height: 60px; }

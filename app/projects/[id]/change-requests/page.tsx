@@ -159,12 +159,8 @@ export default function AdminChangeRequestsPage() {
         <div className={`mobile-backdrop${mobileNavOpen ? ' open' : ''}`} onClick={() => setMobileNavOpen(false)}></div>
         <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`} aria-label="প্রধান নেভিগেশন">
           <div>
-            <div className="brand">
-              <div className="brand-mark"></div>
-              <div>
-                <div className="brand-name">FLOW 53</div>
-                <div className="brand-sub">Innovate · Design · Elevate</div>
-              </div>
+            <div className="brand brand-topbar">
+              <img src="/New Logo.png" alt="Flow53 — Innovate · Design · Elevate" className="brand-logo-new" />
               <button className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন">
                 <Icon name="close" size={16} />
               </button>
@@ -237,7 +233,7 @@ export default function AdminChangeRequestsPage() {
                           </div>
                           {cr.description && <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', margin: '0 0 6px' }}>{cr.description}</p>}
                           {cr.reason && (
-                            <p style={{ fontSize: 12, color: 'var(--ink-faint)', margin: '0 0 10px', fontStyle: 'italic' }}>Reason: {cr.reason}</p>
+                            <p style={{ fontSize: 12, color: 'var(--ink-faint)', margin: '0 0 10px' }}>Reason: {cr.reason}</p>
                           )}
                           {cr.attachment_url && (
                             <a href={cr.attachment_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)', display: 'block', marginBottom: 10 }}>

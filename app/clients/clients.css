@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Gugi&display=swap');
 
 /* Scoped to .clientslist-root so this stylesheet never leaks into other routes. */
@@ -35,7 +36,7 @@
   min-height: 100vh;
   background: var(--bg);
   color: var(--ink);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', 'Google Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 .clientslist-root.dark {
@@ -180,11 +181,11 @@
 .clientslist-root .manager-cell{display:flex;align-items:center;gap:7px;color:var(--ink-soft);}
 .clientslist-root .manager-unassigned{font-size:12px;color:var(--warning);font-weight:600;}
 .clientslist-root .value-cell{font-weight:600;color:var(--ink);}
-.clientslist-root .value-cell.notset{color:var(--ink-faint);font-weight:500;font-style:italic;}
+.clientslist-root .value-cell.notset{color:var(--ink-faint);font-weight:500;}
 .clientslist-root .time-cell{color:var(--ink-faint);white-space:nowrap;}
 .clientslist-root .proj-name{font-weight:600;font-size:12.5px;color:var(--ink);}
 .clientslist-root .proj-sub{font-size:11px;color:var(--ink-faint);margin-top:1px;}
-.clientslist-root .proj-none{color:var(--ink-faint);font-weight:500;font-style:italic;}
+.clientslist-root .proj-none{color:var(--ink-faint);font-weight:500;}
 
 /* ---- row actions dropdown ---- */
 .clientslist-root .row-actions{position:relative;}

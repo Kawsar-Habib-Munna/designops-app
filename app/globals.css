@@ -24,3 +24,29 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Admin dashboard sidebar logo (every internal page's .brand card, see "New Logo.png").
+   Defined here because each admin page has its own scoped stylesheet. The artwork is dark purple on
+   transparent, so on the dark sidebar its lightness is inverted while the hue is kept (invert + hue-rotate 180deg). */
+/* The brand card becomes a "topbar" strip like the client dashboard's sidebar: flush to the top and sides of the
+   sidebar (cancels its 20px 14px padding), same height as the page top bar, bottom border lining up with the
+   top bar's border so one horizontal line runs across the page. Per-page exceptions live in each page's CSS. */
+div.brand.brand-topbar {
+  height: 64px;
+  margin: -20px -14px 12px;
+  /* left padding 24px = the sidebar's 14px + a nav item's 10px, so the logo lines up with the nav icons below */
+  padding: 0 14px 0 24px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+}
+.brand-logo-new {
+  display: block;
+  width: 130px;
+  max-width: 100%;
+  height: auto;
+}
+.dark .brand-logo-new {
+  filter: invert(1) hue-rotate(180deg);
+}

@@ -399,9 +399,8 @@ export default function ProjectDetailPage() {
         {/* ============ SIDEBAR ============ */}
         <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`} aria-label="প্রধান নেভিগেশন">
           <div>
-            <div className="brand">
-              <div className="brand-mark"></div>
-              <div><div className="brand-name">FLOW 53</div><div className="brand-sub">Innovate · Design · Elevate</div></div>
+            <div className="brand brand-topbar">
+              <img src="/New Logo.png" alt="Flow53 — Innovate · Design · Elevate" className="brand-logo-new" />
               <button className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="মেনু বন্ধ করুন"><Icon name="close" size={16} /></button>
             </div>
             <nav className="nav-group" aria-label="Sidebar" onClick={() => setMobileNavOpen(false)}>
@@ -502,7 +501,7 @@ export default function ProjectDetailPage() {
                       strokeDasharray="113" strokeDashoffset={113 - (113 * computedProgress) / 100}
                       transform="rotate(-90 22 22)"
                     />
-                    <text x="22" y="26" textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--ink)" fontFamily="Inter">{computedProgress}%</text>
+                    <text x="22" y="26" textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--ink)" fontFamily="Manrope">{computedProgress}%</text>
                   </svg>
                   <span className="ring-label">Overall Progress</span>
                 </div>
@@ -724,7 +723,7 @@ export default function ProjectDetailPage() {
                           Status: <strong>{project.final_delivery_status === 'ready' ? 'Ready for client review' : project.final_delivery_status === 'approved' ? 'Approved by client ✓' : project.final_delivery_status === 'changes_requested' ? 'Client requested changes' : 'Not started'}</strong>
                         </p>
                         {project.final_delivery_notes && project.final_delivery_status === 'changes_requested' && (
-                          <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 12, fontStyle: 'italic' }}>&quot;{project.final_delivery_notes}&quot;</p>
+                          <p style={{ fontSize: 12.5, color: 'var(--ink-soft)', marginBottom: 12 }}>&quot;{project.final_delivery_notes}&quot;</p>
                         )}
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           {!project.final_delivery_status || project.final_delivery_status === 'changes_requested' ? (
