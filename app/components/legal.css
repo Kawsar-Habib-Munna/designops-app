@@ -1,0 +1,8 @@
+.legal-main { max-width: 760px; margin: 0 auto; padding: 160px 24px 96px; }
+.legal-title { font-size: 40px; font-weight: 700; margin: 0 0 8px; }
+.legal-updated { opacity: 0.6; font-size: 14px; margin: 0 0 32px; }
+.legal-section { margin-top: 32px; }
+.legal-heading { font-size: 22px; font-weight: 600; margin: 0 0 12px; }
+.legal-text { font-size: 16px; line-height: 1.7; margin: 0 0 12px; opacity: 0.85; }
+.legal-text a { text-decoration: underline; }
+@media (max-width: 640px) { .legal-main { padding-top: 120px; } .legal-title { font-size: 30px; } }
