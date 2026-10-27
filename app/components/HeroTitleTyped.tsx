@@ -7,7 +7,7 @@
 // blur(8px), translateY(10px) - তারপর স্বাভাবিক অবস্থায় reveal হয়, stagger করে।
 // প্রতিটা শব্দ একটা white-space:nowrap wrapper-এ রাখা হয়েছে যাতে লাইন wrap
 // হলে কোনো শব্দ মাঝখান থেকে না ভাঙে। START_DELAY হিরো ব্যাকগ্রাউন্ড
-// reveal-এর (home.css: hero-fig-bg animation-delay 1.2s) কাছাকাছি, যাতে curtain
+// reveal-এর (home.css: hero-fig-bg animation-delay 3s) কাছাকাছি, যাতে curtain
 // wipe শুরু হওয়ার সাথে সাথেই টাইটেলও reveal হতে শুরু করে।
 import { motion, useReducedMotion } from 'framer-motion';
 
@@ -15,7 +15,7 @@ const PRE = 'We Design And Build Digital Products That ';
 const EM = 'Create';
 const POST = ' Impact!';
 
-const START_DELAY = 1.25;
+const START_DELAY = 3.05;
 const PER_LETTER = 0.018;
 
 function Word({ word, startIndex, italic }: { word: string; startIndex: number; italic?: boolean }) {

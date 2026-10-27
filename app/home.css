@@ -510,9 +510,12 @@ html:has(.home-root) {
 /* ekon.framer.ai hero loading-curtain port - see HeroIntro.tsx. ৪টা সমান-প্রস্থ
    কালো panel পাশাপাশি বসে পুরো .hero ঢেকে রাখে, মাঝে "FLOW 53" wordmark। */
 .home-root .hero-intro {
-  position: absolute;
+  /* full-screen overlay fixed to the viewport: centers the text in the window (the hero is taller
+     than the viewport) and covers the nav + hero top edge while loading */
+  position: fixed;
   inset: 0;
-  z-index: 60;
+  height: 100dvh;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -530,14 +533,58 @@ html:has(.home-root) {
 .home-root .hero-intro-word {
   position: relative;
   display: flex;
-  font-family: var(--font-playfair), "Playfair Display", serif;
-  font-weight: 700;
-  font-size: clamp(32px, 6vw, 64px);
-  letter-spacing: 0.02em;
-  color: #010003;
+  align-items: flex-start;
+  gap: 0.28em;
+  font-family: var(--font-nunito), "Nunito Sans", "Inter", sans-serif;
+  font-size: clamp(14px, 3.4vw, 32px);
+  line-height: 1.2;
+  color: #0a0a0a;
 }
-.home-root .hero-intro-word span {
-  display: inline-block;
+.home-root .hero-intro-brand {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.home-root .hero-intro-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* reserves the width of the longest word (Experienced) so "FLOW 53 @" does not shift when the word changes */
+  min-width: 6.6em;
+}
+/* one word at a time on the same line as "FLOW 53 @"; the next word replaces the previous one */
+.home-root .hero-intro-words {
+  display: block;
+  white-space: nowrap;
+  min-height: 1.2em;
+}
+.home-root .hero-intro-design {
+  display: block;
+  font-weight: 400;
+}
+.home-root .hero-intro-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: 14px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.home-root .hero-intro-bar {
+  position: relative;
+  display: block;
+  width: clamp(110px, 17vw, 170px);
+  height: 1px;
+  background: rgba(10, 10, 10, 0.2);
+}
+.home-root .hero-intro-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  background: #0a0a0a;
+}
+.home-root .hero-intro-pct {
+  min-width: 3ch;
 }
 .home-root .hero-fig {
   position: relative;
@@ -555,10 +602,10 @@ html:has(.home-root) {
   user-select: none;
   opacity: 0;
   transform: scale(1.2);
-  animation: hero-fig-bg-reveal 1.4s cubic-bezier(0.22, 1, 0.36, 1) 1.2s forwards;
+  animation: hero-fig-bg-reveal 1.4s cubic-bezier(0.22, 1, 0.36, 1) 3s forwards;
 }
 /* ekon.framer.ai hero-র background "Ken Burns" reveal (opacity 0 + scale 1.2 -> 1,
-   1, 0) - নিচের 1.2s delay HeroIntro.tsx-এর HOLD_MS (1300ms)-এর সাথে মেলানো,
+   1, 0) - নিচের 3s delay HeroIntro.tsx-এর HOLD_MS (3100ms)-এর সাথে মেলানো,
    যাতে curtain wipe শুরু হওয়ার প্রায় সাথে সাথেই background zoom-out+fade-in
    শুরু হয়। prefers-reduced-motion-এ animation বন্ধ করে সরাসরি চূড়ান্ত অবস্থা
    দেখানো হয়। */
