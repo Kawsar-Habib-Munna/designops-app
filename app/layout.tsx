@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FLOW 53",
-  description: "FLOW 53 — UI/UX ডিজাইন স্টুডিও ও এজেন্সি ম্যানেজমেন্ট টুল",
+  title: "FLOW 53 — UI/UX Design & Development Agency",
+  description: "FLOW 53 is a UI/UX design and development agency helping ambitious businesses turn ideas into intuitive, scalable digital products your customers will love.",
   manifest: "/manifest.json",
 };
 
