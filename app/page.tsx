@@ -357,7 +357,7 @@ export default async function Home() {
                   <span className="projects-view-all-label">
                     <SlideSwapLabel text="View All Projects" />
                   </span>
-                  <img loading="lazy" src="/projects/icon-view-arrow.svg" alt="" />
+                  <span className="projects-view-all-icon" aria-hidden="true" />
                 </Link>
               </div>
             </div>
@@ -462,7 +462,7 @@ export default async function Home() {
                 </div>
                 <a href="#team" className="about-know-more">
                   <span className="about-know-more-label"><SlideSwapLabel text="Know More" /></span>
-                  <img loading="lazy" src="/about/arrow-know-more.svg" alt="" />
+                  <span className="about-know-more-icon" aria-hidden="true" />
                 </a>
               </div>
             </div>

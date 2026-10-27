@@ -307,8 +307,11 @@ html:has(.home-root) {
 .home-root .nav-cta:hover {
   filter: drop-shadow(0 12px 24px rgba(129, 51, 241, 0.3));
   transform: translateY(-1px);
-  /* hover-এ টেক্সট আর আইকন দুটোই বাটনের stroke-এর রং (#8133f1) নেবে। */
-  color: #8133f1;
+  /* hover-এ টেক্সট আর আইকন দুটোই Primary/primary-100 (#CEB0FA) — আইকন currentColor থেকে, টেক্সট নিচের .nav-cta-label rule থেকে। */
+  color: #ceb0fa;
+}
+.home-root .nav-cta:hover .nav-cta-label {
+  color: #ceb0fa;
 }
 .home-root .nav-cta-label {
   display: flex;
@@ -332,8 +335,7 @@ html:has(.home-root) {
     background 0.2s ease,
     color 0.2s ease;
 }
-/* hover-এ background বা টেক্সট কালার কোনোটাই বদলায় না (ইউজারের অনুরোধে) -
-   শুধু .nav-cta:hover-এর glow/lift effect-ই থাকে। */
+/* hover-এ label-এর background বদলায় না; টেক্সট আর আইকনের রং Primary 100 (#CEB0FA) হয় (উপরের .nav-cta:hover rules), সাথে glow/lift effect। */
 /* "Book A Call"-এর hover-এ text slide-swap: দুটো একই লেখার লাইন খাড়াভাবে
    stacked, একটা 24px (font-size 16px * line-height 1.5) clip window-এর
    ভেতরে - hover-এ পুরো track 50% (মানে ঠিক এক লাইন) ওপরে সরে প্রথম লাইনটা
@@ -1309,7 +1311,8 @@ html:has(.home-root) {
   transition: color 0.3s ease;
 }
 .home-root .stat-circle:hover .stat-value {
-  color: #efe6fd;
+  /* Primary/primary-100 */
+  color: #ceb0fa;
 }
 .home-root .stat-arrow {
   display: block;
@@ -1419,6 +1422,13 @@ html:has(.home-root) {
   box-shadow: 0 12px 20px rgba(129, 51, 241, 0.12);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  /* text + arrow icon both follow this colour (the icon is a currentColor mask) */
+  color: #010003;
+  transition: color 0.3s ease;
+}
+.home-root .projects-view-all:hover {
+  /* Primary/primary-500 */
+  color: #6200ee;
 }
 .home-root .projects-view-all:hover .slide-swap-track {
   transform: translateY(-50%);
@@ -1434,13 +1444,16 @@ html:has(.home-root) {
   font-size: 16px;
   line-height: 1.5;
   font-weight: 500;
-  color: #010003;
+  color: inherit;
   white-space: nowrap;
 }
-.home-root .projects-view-all img {
+.home-root .projects-view-all-icon {
   display: block;
   width: 24px;
   height: 24px;
+  background-color: currentColor;
+  -webkit-mask: url("/projects/icon-view-arrow.svg") center / contain no-repeat;
+  mask: url("/projects/icon-view-arrow.svg") center / contain no-repeat;
 }
 @media (max-width: 700px) {
   .home-root .projects-desc-row {
@@ -1750,18 +1763,34 @@ html:has(.home-root) {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   cursor: pointer;
+  /* the arrow icon is a currentColor mask, so it follows this colour */
+  color: #7b7780;
   transition:
     background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
     transform 0.2s ease;
 }
 .home-root .project-nav-arrow:hover {
-  background: rgba(103, 107, 106, 0.1);
+  /* Primary/primary-300 background, white icon */
+  background: #9654f4;
+  border-color: #9654f4;
+  color: #ffffff;
   transform: translateY(-1px);
 }
-.home-root .project-nav-arrow img {
+.home-root .project-nav-icon {
   display: block;
   width: 24px;
   height: 24px;
+  background-color: currentColor;
+}
+.home-root .project-nav-icon.prev {
+  -webkit-mask: url("/projects/arrow-prev.svg") center / contain no-repeat;
+  mask: url("/projects/arrow-prev.svg") center / contain no-repeat;
+}
+.home-root .project-nav-icon.next {
+  -webkit-mask: url("/projects/arrow-next.svg") center / contain no-repeat;
+  mask: url("/projects/arrow-next.svg") center / contain no-repeat;
 }
 .home-root .project-dots {
   display: flex;
@@ -2104,13 +2133,18 @@ html:has(.home-root) {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   filter: drop-shadow(0 12px 20px rgba(129, 51, 241, 0.2));
+  /* text + arrow icon both follow this colour (the icon is a currentColor mask) */
+  color: #efe6fd;
   transition:
     transform 0.2s ease,
-    filter 0.2s ease;
+    filter 0.2s ease,
+    color 0.3s ease;
 }
 .home-root .about-know-more:hover {
   transform: translateY(-2px);
   filter: drop-shadow(0 14px 26px rgba(129, 51, 241, 0.38));
+  /* Primary/primary-100 */
+  color: #ceb0fa;
 }
 .home-root .about-know-more-label {
   display: flex;
@@ -2125,13 +2159,16 @@ html:has(.home-root) {
   );
   font-size: 16px;
   font-weight: 500;
-  color: #efe6fd;
+  color: inherit;
   white-space: nowrap;
 }
-.home-root .about-know-more img {
+.home-root .about-know-more-icon {
   display: block;
   width: 24px;
   height: 24px;
+  background-color: currentColor;
+  -webkit-mask: url("/about/arrow-know-more.svg") center / contain no-repeat;
+  mask: url("/about/arrow-know-more.svg") center / contain no-repeat;
 }
 
 .home-root .about-deco {
@@ -2445,6 +2482,11 @@ html:has(.home-root) {
   line-height: 1.5;
   font-weight: 600;
   color: #d9d7dd;
+  transition: color 0.3s ease;
+}
+.home-root .why-card:hover .why-card-title {
+  /* Primary/primary-100 */
+  color: #ceb0fa;
 }
 .home-root .why-card-desc {
   font-size: 16px;
@@ -2509,6 +2551,10 @@ html:has(.home-root) {
   width: max-content;
   animation: why-tags-scroll 32s linear infinite;
 }
+/* hovering the strip stops the scroll (the whole strip, not just a tag, so gaps between tags don't resume it) */
+.home-root .why-tags:hover .why-tags-track {
+  animation-play-state: paused;
+}
 .home-root .why-tag {
   position: relative;
   display: inline-flex;
@@ -2528,6 +2574,11 @@ html:has(.home-root) {
   color: #ada8b4;
   white-space: nowrap;
   flex-shrink: 0;
+  transition: color 0.3s ease;
+}
+.home-root .why-tag:hover {
+  /* Primary/primary-100 */
+  color: #ceb0fa;
 }
 .home-root .why-tag::before {
   content: "";
@@ -4070,7 +4121,13 @@ html:has(.home-root) {
     0 8px 40px rgba(41, 0, 100, 0.04),
     inset 0 4px 12px rgba(254, 255, 255, 0.04);
   text-decoration: none;
-  transition: transform 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.3s ease;
+}
+.home-root .faq-contact-card:hover {
+  /* stroke: Nutrral/nutrral-300 (#C8C5CD) at 40% opacity */
+  border-color: rgba(200, 197, 205, 0.4);
 }
 .home-root a.faq-contact-card:hover {
   transform: translateY(-2px);
@@ -4847,11 +4904,15 @@ html:has(.home-root) {
   cursor: pointer;
   transition:
     filter 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
+/* hover = same treatment as the "Start A Project" buttons (.hero-start / .cta-final-btn.primary):
+   outer stroke turns flat #EFE6FD, the label fills with the #6200EE -> #290064 gradient, 2px lift */
 .home-root .footer-subscribe-btn:hover {
-  filter: drop-shadow(0 14px 26px rgba(129, 51, 241, 0.3));
-  transform: translateY(-1px);
+  filter: drop-shadow(0 12px 20px rgba(129, 51, 241, 0.2));
+  transform: translateY(-2px);
+  border-color: #efe6fd;
 }
 .home-root .footer-subscribe-btn:hover .slide-swap-track {
   transform: translateY(-50%);
@@ -4872,6 +4933,13 @@ html:has(.home-root) {
   font-weight: 500;
   color: #efe6fd;
   white-space: nowrap;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+.home-root .footer-subscribe-btn:hover .footer-subscribe-label {
+  background: linear-gradient(90deg, #6200ee, #290064);
+  color: #efe6fd;
 }
 
 .home-root .footer-socials {
@@ -4894,11 +4962,23 @@ html:has(.home-root) {
   box-shadow:
     inset 0 4px 12px rgba(254, 255, 255, 0.04),
     0 8px 40px rgba(41, 0, 100, 0.04);
+  /* the icons are currentColor (SVG) or a currentColor mask, so they follow this colour */
+  color: #ada8b4;
+  transition: color 0.3s ease;
+}
+.home-root .footer-social-btn:hover {
+  /* Primary/primary-200 */
+  color: #b78af7;
 }
 .home-root .footer-social-icon {
   width: 24px;
   height: 24px;
   display: block;
+}
+.home-root .footer-social-mask {
+  background-color: currentColor;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
 }
 
 .home-root .footer-links {
@@ -4942,7 +5022,8 @@ html:has(.home-root) {
     background 0.15s ease;
 }
 .home-root .footer-col-link:hover {
-  color: #efe6fd;
+  /* Primary/primary-100 */
+  color: #ceb0fa;
   background: rgba(103, 107, 106, 0.08);
 }
 

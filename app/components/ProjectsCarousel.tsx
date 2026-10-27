@@ -131,7 +131,7 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
         {total > 1 && (
           <div className="project-nav">
             <button type="button" className="project-nav-arrow" onClick={() => goMobile(-1)} aria-label="Previous project">
-              <img loading="lazy" src="/projects/arrow-prev.svg" alt="" />
+              <span className="project-nav-icon prev" aria-hidden="true" />
             </button>
             <div className="project-dots">
               {Array.from({ length: total }, (_, i) => (
@@ -148,7 +148,7 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
               ))}
             </div>
             <button type="button" className="project-nav-arrow" onClick={() => goMobile(1)} aria-label="Next project">
-              <img loading="lazy" src="/projects/arrow-next.svg" alt="" />
+              <span className="project-nav-icon next" aria-hidden="true" />
             </button>
           </div>
         )}
@@ -210,7 +210,7 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
       {totalPages > 1 && (
         <div className="project-nav desktop-only">
           <button type="button" className="project-nav-arrow" onClick={() => go(-1)} aria-label="Previous projects">
-            <img loading="lazy" src="/projects/arrow-prev.svg" alt="" />
+            <span className="project-nav-icon prev" aria-hidden="true" />
           </button>
           <div className="project-dots">
             {Array.from({ length: totalPages }, (_, i) => (
@@ -227,7 +227,7 @@ export default function ProjectsCarousel({ projects }: { projects: ProjectCard[]
             ))}
           </div>
           <button type="button" className="project-nav-arrow" onClick={() => go(1)} aria-label="Next projects">
-            <img loading="lazy" src="/projects/arrow-next.svg" alt="" />
+            <span className="project-nav-icon next" aria-hidden="true" />
           </button>
         </div>
       )}

@@ -26,34 +26,34 @@ const QUICK_LINKS = [
 const SERVICES = ['UI UX Design', 'Web & App Design', 'Web Development', 'Logo & Branding', 'Digital Marketing'];
 
 function BehanceIcon() {
-  return <img loading="lazy" src="/footer/social-be.svg" alt="" className="footer-social-icon" />;
+  return <span className="footer-social-icon footer-social-mask" style={{ '--icon': 'url(/footer/social-be.svg)' } as React.CSSProperties} aria-hidden="true" />;
 }
 function DribbbleIcon() {
-  return <img loading="lazy" src="/footer/social-dribbble.svg" alt="" className="footer-social-icon" />;
+  return <span className="footer-social-icon footer-social-mask" style={{ '--icon': 'url(/footer/social-dribbble.svg)' } as React.CSSProperties} aria-hidden="true" />;
 }
 function FacebookIcon() {
-  return <img loading="lazy" src="/footer/social-facebook.svg" alt="" className="footer-social-icon" />;
+  return <span className="footer-social-icon footer-social-mask" style={{ '--icon': 'url(/footer/social-facebook.svg)' } as React.CSSProperties} aria-hidden="true" />;
 }
 function TwitterIcon() {
-  return <img loading="lazy" src="/footer/social-twitter.svg" alt="" className="footer-social-icon" />;
+  return <span className="footer-social-icon footer-social-mask" style={{ '--icon': 'url(/footer/social-twitter.svg)' } as React.CSSProperties} aria-hidden="true" />;
 }
 function LinkedinIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="footer-social-icon">
-      <rect x="3" y="3" width="18" height="18" rx="4" stroke="#ADA8B4" strokeWidth="1.5" />
-      <circle cx="8" cy="8.5" r="1.15" fill="#ADA8B4" />
-      <path d="M8 11v6" stroke="#ADA8B4" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M12 17v-3.6c0-1.32 1-2.4 2.25-2.4S16.5 12.08 16.5 13.4V17" stroke="#ADA8B4" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M12 17v-6" stroke="#ADA8B4" strokeWidth="1.6" strokeLinecap="round" />
+      <rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="8" cy="8.5" r="1.15" fill="currentColor" />
+      <path d="M8 11v6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M12 17v-3.6c0-1.32 1-2.4 2.25-2.4S16.5 12.08 16.5 13.4V17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 17v-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
 function InstagramIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="footer-social-icon">
-      <rect x="3" y="3" width="18" height="18" rx="5" stroke="#ADA8B4" strokeWidth="1.5" />
-      <circle cx="12" cy="12" r="4.2" stroke="#ADA8B4" strokeWidth="1.5" />
-      <circle cx="17.1" cy="6.9" r="1.05" fill="#ADA8B4" />
+      <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="12" cy="12" r="4.2" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="17.1" cy="6.9" r="1.05" fill="currentColor" />
     </svg>
   );
 }
