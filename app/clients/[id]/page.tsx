@@ -245,7 +245,7 @@ export default function ClientDetailPage() {
     if (!user || !clientId) return;
 
     async function loadAll() {
-      const [clientRes, requirementsRes, filesRes, projectsRes, activityRes, managersRes, notesRes] = await Promise.all([
+      const [clientRes, requirementsRes, filesRes, projectsRes, activityRes, managersRes, notesRes, profileRes] = await Promise.all([
         supabase
           .from('clients')
           .select(
@@ -263,7 +263,12 @@ export default function ClientDetailPage() {
         supabase.from('activity_log').select('id, action, detail, created_at, actor:profiles!actor_id(full_name)').eq('entity_type', 'client').eq('entity_id', clientId).order('created_at', { ascending: false }).limit(30),
         supabase.from('profiles').select('id, full_name, avatar_color, avatar_url').order('full_name'),
         supabase.from('client_notes').select('id, body, created_at, author_id, author:profiles!author_id(full_name)').eq('client_id', clientId).order('created_at', { ascending: false }),
+        // the signed-in user's own profile for the sidebar card — this page never loaded it, so the card
+        // fell back to showing the email address as both the name and the role
+        supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, bio, behance_url, linkedin_url, facebook_url, instagram_url').eq('id', user!.id).single(),
       ]);
+
+      if (profileRes.data) setProfile(profileRes.data as ProfileRow);
 
       if (clientRes.error) setError(clientRes.error.message);
 
