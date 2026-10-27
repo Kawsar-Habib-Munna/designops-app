@@ -92,7 +92,7 @@ export default function TestimonialsGrid({ testimonials }: { testimonials: Testi
       {totalPages > 1 && (
         <div className="testimonials-pager">
           <button type="button" className="testimonials-pager-btn" onClick={() => go(-1)} aria-label="Previous testimonials">
-            <img loading="lazy" src="/testimonials/arrow-left.svg" alt="" />
+            <span className="testimonials-pager-icon left" aria-hidden="true" />
           </button>
           <span className="testimonials-dots">
             {Array.from({ length: totalPages }, (_, i) => (
@@ -107,7 +107,7 @@ export default function TestimonialsGrid({ testimonials }: { testimonials: Testi
             ))}
           </span>
           <button type="button" className="testimonials-pager-btn" onClick={() => go(1)} aria-label="Next testimonials">
-            <img loading="lazy" src="/testimonials/arrow-right.svg" alt="" />
+            <span className="testimonials-pager-icon right" aria-hidden="true" />
           </button>
         </div>
       )}

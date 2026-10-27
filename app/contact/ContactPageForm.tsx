@@ -58,7 +58,7 @@ export default function ContactPageForm({ whatsappNumber = DEFAULT_SITE_SETTINGS
       </label>
       <button type="submit" className="contact-submit">
         <span>Send Inquiry</span>
-        <img loading="lazy" src="/faq/arrow-send.svg" alt="" />
+        <span className="contact-submit-icon" aria-hidden="true" />
       </button>
     </form>
   );

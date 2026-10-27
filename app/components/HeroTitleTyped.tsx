@@ -10,15 +10,19 @@
 // reveal-এর (home.css: hero-fig-bg animation-delay 3s) কাছাকাছি, যাতে curtain
 // wipe শুরু হওয়ার সাথে সাথেই টাইটেলও reveal হতে শুরু করে।
 import { motion, useReducedMotion } from 'framer-motion';
+import { readIntroSeen } from '@/lib/introSeen';
 
 const PRE = 'We Design And Build Digital Products That ';
 const EM = 'Create';
 const POST = ' Impact!';
 
 const START_DELAY = 3.05;
+// repeat visit: the loader is skipped, so the title types in almost immediately
+const SEEN_START_DELAY = 0.1;
 const PER_LETTER = 0.018;
 
 function Word({ word, startIndex, italic }: { word: string; startIndex: number; italic?: boolean }) {
+  const startDelay = readIntroSeen() ? SEEN_START_DELAY : START_DELAY;
   const content = (
     <span style={{ whiteSpace: 'nowrap', display: 'inline-block' }}>
       {word.split('').map((ch, i) => (
@@ -26,7 +30,7 @@ function Word({ word, startIndex, italic }: { word: string; startIndex: number; 
           key={i}
           initial={{ opacity: 0.001, filter: 'blur(8px)', y: 10 }}
           animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
-          transition={{ duration: 0.6, delay: START_DELAY + (startIndex + i) * PER_LETTER, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.6, delay: startDelay + (startIndex + i) * PER_LETTER, ease: [0.22, 1, 0.36, 1] }}
           style={{ display: 'inline-block' }}
         >
           {ch}

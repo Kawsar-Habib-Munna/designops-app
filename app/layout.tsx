@@ -4,6 +4,7 @@ import "./globals.css";
 import ServiceWorkerRegister from "./components/ServiceWorkerRegister";
 import AuthHashRedirect from "./components/AuthHashRedirect";
 import { SITE_URL } from "@/lib/siteUrl";
+import { INTRO_SEEN_KEY } from "@/lib/introSeen";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,8 +46,17 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* repeat visit: mark <html> before first paint so the hero loader never flashes (see HeroIntro.tsx) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(sessionStorage.getItem('${INTRO_SEEN_KEY}')==='1')document.documentElement.classList.add('intro-seen')}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <ServiceWorkerRegister />
         <AuthHashRedirect />

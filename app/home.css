@@ -523,6 +523,13 @@ html:has(.home-root) {
   justify-content: center;
   pointer-events: none;
 }
+/* repeat visit (set by the pre-paint script in HeroIntro.tsx): no loader, hero background starts at once */
+html.intro-seen .home-root .hero-intro {
+  display: none;
+}
+html.intro-seen .home-root .hero-fig-bg {
+  animation-delay: 0s;
+}
 .home-root .hero-intro-panels {
   position: absolute;
   inset: 0;
@@ -3617,12 +3624,19 @@ html:has(.home-root) {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   cursor: pointer;
+  /* the arrow icon is a currentColor mask, so it follows this colour */
+  color: #7b7780;
   transition:
     background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
     transform 0.2s ease;
 }
-.home-root .testimonials-pager-btn:hover {
-  background: rgba(103, 107, 106, 0.1);
+/* same hover as the project carousel arrows (.project-nav-arrow): Primary/primary-300 background, white icon */
+.home-root .testimonials-pager-btn:hover:not(:disabled) {
+  background: #9654f4;
+  border-color: #9654f4;
+  color: #ffffff;
   transform: translateY(-1px);
 }
 .home-root .testimonials-pager-btn:disabled {
@@ -3630,10 +3644,19 @@ html:has(.home-root) {
   cursor: default;
   transform: none;
 }
-.home-root .testimonials-pager-btn img {
+.home-root .testimonials-pager-icon {
   display: block;
   width: 24px;
   height: 24px;
+  background-color: currentColor;
+}
+.home-root .testimonials-pager-icon.left {
+  -webkit-mask: url("/testimonials/arrow-left.svg") center / contain no-repeat;
+  mask: url("/testimonials/arrow-left.svg") center / contain no-repeat;
+}
+.home-root .testimonials-pager-icon.right {
+  -webkit-mask: url("/testimonials/arrow-right.svg") center / contain no-repeat;
+  mask: url("/testimonials/arrow-right.svg") center / contain no-repeat;
 }
 .home-root .testimonials-dots {
   display: flex;
@@ -4052,15 +4075,27 @@ html:has(.home-root) {
   font-weight: 600;
   color: #0b001c;
   filter: drop-shadow(0 8px 10px rgba(129, 51, 241, 0.04));
-  transition: transform 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
+/* hover = same treatment as the "Start A Project" buttons (.hero-start / .cta-final-btn.primary):
+   stroke turns flat #EFE6FD, the fill becomes the #6200EE -> #290064 gradient with #EFE6FD text/icon, 2px lift.
+   (the gradient swap is instant: CSS can't transition between gradient backgrounds) */
 .home-root .contact-submit:hover {
   transform: translateY(-2px);
+  border-color: #efe6fd;
+  background: linear-gradient(90deg, #6200ee, #290064);
+  color: #efe6fd;
 }
-.home-root .contact-submit img {
+.home-root .contact-submit-icon {
   display: block;
   width: 20px;
   height: 20px;
+  background-color: currentColor;
+  -webkit-mask: url("/faq/arrow-send.svg") center / contain no-repeat;
+  mask: url("/faq/arrow-send.svg") center / contain no-repeat;
 }
 
 .home-root .faq-contact-info {
@@ -4106,6 +4141,7 @@ html:has(.home-root) {
   gap: 40px;
 }
 .home-root .faq-contact-card {
+  position: relative;
   flex: 394 1 0;
   min-width: 0;
   display: flex;
@@ -4125,9 +4161,33 @@ html:has(.home-root) {
     transform 0.2s ease,
     border-color 0.3s ease;
 }
+/* hover stroke = the call-to-action card's stroke (gradient #C8C5CD@80% -> #8133F1, see .cta-final-card::before)
+   shown at 40% opacity. Drawn as a masked ring on top of the 1px border; the pseudo's own opacity is used so
+   the card content isn't dimmed. */
+.home-root .faq-contact-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(90deg, rgba(200, 197, 205, 0.8), #8133f1);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
 .home-root .faq-contact-card:hover {
-  /* stroke: Nutrral/nutrral-300 (#C8C5CD) at 40% opacity */
-  border-color: rgba(200, 197, 205, 0.4);
+  border-color: transparent;
+}
+.home-root .faq-contact-card:hover::before {
+  opacity: 0.4;
 }
 .home-root a.faq-contact-card:hover {
   transform: translateY(-2px);
@@ -4475,6 +4535,20 @@ html:has(.home-root) {
 }
 .home-root .cta-final-btn.secondary {
   border: 1px solid #8133f1;
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
+}
+/* every "Book A Call" button on the site (home, services, process, about, contact, projects) —
+   hover matches the navbar "Book A Call" button: text + icon turn Primary/primary-100 (#CEB0FA),
+   stronger purple glow, 1px lift */
+.home-root .cta-final-btn.secondary:hover {
+  filter: drop-shadow(0 12px 24px rgba(129, 51, 241, 0.3));
+  transform: translateY(-1px);
+}
+.home-root .cta-final-btn.secondary:hover .cta-final-btn-inner,
+.home-root .cta-final-btn.secondary:hover .cta-final-btn-icon {
+  color: #ceb0fa;
 }
 .home-root .cta-final-btn-inner {
   display: flex;
@@ -4512,6 +4586,7 @@ html:has(.home-root) {
   height: 24px;
   flex-shrink: 0;
   color: #efe6fd;
+  transition: color 0.2s ease;
 }
 
 @media (max-width: 640px) {

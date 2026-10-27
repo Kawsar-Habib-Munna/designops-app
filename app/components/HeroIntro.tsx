@@ -7,8 +7,13 @@
 // বাকি কনটেন্ট দেখায় (ekon.framer.ai-এর curtain কৌশল)। HOLD_MS বদলালে home.css-এর
 // hero-fig-bg-reveal delay আর HeroTitleTyped.tsx-এর START_DELAY-ও একই সাথে বদলাতে
 // হবে। prefers-reduced-motion থাকলে পুরো ইন্ট্রো স্কিপ করে সরাসরি null রিটার্ন করে।
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { markIntroSeen, readIntroSeen } from '@/lib/introSeen';
+
+// on a repeat visit a tiny script in app/layout.tsx adds `intro-seen` to <html> before first paint,
+// and home.css hides the overlay and starts the hero animations right away
+const subscribeNoop = () => () => {};
 
 const COUNT_START_MS = 250;
 const COUNT_MS = 2600;
@@ -28,15 +33,17 @@ export default function HeroIntro() {
   const [wiping, setWiping] = useState(false);
   const [removed, setRemoved] = useState(false);
   const [percent, setPercent] = useState(0);
+  // false on the server and during hydration, the real value afterwards (and immediately on client navigations)
+  const seen = useSyncExternalStore(subscribeNoop, readIntroSeen, () => false);
 
   useEffect(() => {
-    if (reduceMotion) return;
+    if (reduceMotion || seen) return;
     const t = setTimeout(() => setWiping(true), HOLD_MS);
     return () => clearTimeout(t);
-  }, [reduceMotion]);
+  }, [reduceMotion, seen]);
 
   useEffect(() => {
-    if (reduceMotion) return;
+    if (reduceMotion || seen) return;
     let raf = 0;
     let startedAt = 0;
     const tick = (now: number) => {
@@ -47,10 +54,15 @@ export default function HeroIntro() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [reduceMotion]);
+  }, [reduceMotion, seen]);
 
   // while the overlay is up, keep the page from scrolling underneath it
-  const active = !reduceMotion && !removed;
+  const active = !reduceMotion && !removed && !seen;
+
+  // once the curtain has finished, remember it so later visits skip the intro
+  useEffect(() => {
+    if (removed) markIntroSeen();
+  }, [removed]);
   useEffect(() => {
     if (!active) return;
     const root = document.documentElement;
