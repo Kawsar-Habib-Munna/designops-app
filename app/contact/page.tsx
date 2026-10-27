@@ -1,4 +1,5 @@
 import "../home.css";
+import { pageMeta } from "@/lib/seo";
 import "./contact.css";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { driveThumbnailUrl } from "@/lib/driveUpload";
@@ -26,10 +27,11 @@ import ContactPageForm from "./ContactPageForm";
 // করে, testimonial এডিট সর্বোচ্চ ৬০ সেকেন্ড পরে লাইভ হয়।
 export const revalidate = 60;
 
-export const metadata = {
-  title: "Contact — FLOW 53",
-  description: "Have a project in mind? Let's discuss your ideas and create meaningful digital experiences together.",
-};
+export const metadata = pageMeta(
+  "Contact — FLOW 53",
+  "Have a project in mind? Let's discuss your ideas and create meaningful digital experiences together.",
+  "/contact",
+);
 
 type TestimonialRow = {
   name: string;

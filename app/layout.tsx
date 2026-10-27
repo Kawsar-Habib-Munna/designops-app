@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ServiceWorkerRegister from "./components/ServiceWorkerRegister";
 import AuthHashRedirect from "./components/AuthHashRedirect";
+import { SITE_URL } from "@/lib/siteUrl";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,9 +16,25 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "FLOW 53 — UI/UX Design & Development Agency",
-  description: "FLOW 53 is a UI/UX design and development agency helping ambitious businesses turn ideas into intuitive, scalable digital products your customers will love.",
+  description:
+    "FLOW 53 is a UI/UX design and development agency helping ambitious businesses turn ideas into intuitive, scalable digital products your customers will love.",
   manifest: "/manifest.json",
+  openGraph: {
+    type: "website",
+    siteName: "FLOW 53",
+    locale: "en_US",
+    title: "FLOW 53 — UI/UX Design & Development Agency",
+    description:
+      "FLOW 53 is a UI/UX design and development agency helping ambitious businesses turn ideas into intuitive, scalable digital products your customers will love.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FLOW 53 — UI/UX Design & Development Agency",
+    description:
+      "FLOW 53 is a UI/UX design and development agency helping ambitious businesses turn ideas into intuitive, scalable digital products your customers will love.",
+  },
 };
 
 export default function RootLayout({

@@ -1,6 +1,11 @@
 import LegalPage from "@/app/components/LegalPage";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = { title: "Terms of Service — FLOW 53" };
+export const metadata = pageMeta(
+  "Terms of Service — FLOW 53",
+  "The terms that apply when you use the FLOW 53 website and client portal.",
+  "/terms",
+);
 
 export default function TermsPage() {
   return (

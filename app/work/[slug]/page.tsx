@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { pageMeta } from "@/lib/seo";
 import { notFound } from 'next/navigation';
 import '../../home.css';
 import '../work.css';
@@ -91,10 +92,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const result = await fetchCaseStudy(slug);
   if (!result) return { title: 'FLOW 53' };
-  return {
-    title: `${result.caseStudy.title} — FLOW 53`,
-    description: result.caseStudy.summary ?? undefined,
-  };
+  return pageMeta(`${result.caseStudy.title} — FLOW 53`, result.caseStudy.summary ?? undefined, `/work/${encodeURIComponent(slug)}`);
 }
 
 export default async function WorkDetailPage({ params }: { params: Promise<{ slug: string }> }) {

@@ -1,4 +1,5 @@
 import '../home.css';
+import { pageMeta } from "@/lib/seo";
 import './services.css';
 import { fetchSiteSettings, buildWhatsappUrl, BOOK_CALL_MESSAGE } from '@/lib/siteSettings';
 import { interStats, nunito, playfair } from '@/app/fonts';
@@ -24,10 +25,11 @@ import SlideSwapLabel from '@/app/components/SlideSwapLabel';
 // লাইভ হয়।
 export const revalidate = 60;
 
-export const metadata = {
-  title: 'Services — FLOW 53',
-  description: 'How do we turn ideas into digital experiences? UI/UX design, web & app design, web development, brand identity, and digital marketing.',
-};
+export const metadata = pageMeta(
+  "Services — FLOW 53",
+  'How do we turn ideas into digital experiences? UI/UX design, web & app design, web development, brand identity, and digital marketing.',
+  "/services",
+);
 
 type Feature = { title: string; desc: string };
 type ServiceDetail = {

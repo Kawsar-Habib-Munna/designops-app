@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import { pageMeta } from "@/lib/seo";
 import "../home.css";
 import "./about.css";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
@@ -24,10 +25,11 @@ import BouncyStat from "@/app/components/BouncyStat";
 // করে, Team প্রোফাইল এডিট সর্বোচ্চ ৬০ সেকেন্ড পরে লাইভ হয়।
 export const revalidate = 60;
 
-export const metadata = {
-  title: "About — FLOW 53",
-  description: "We're a design and development team passionate about solving complex problems, creating better experiences, and turning ideas into digital products people enjoy using.",
-};
+export const metadata = pageMeta(
+  "About — FLOW 53",
+  "We're a design and development team passionate about solving complex problems, creating better experiences, and turning ideas into digital products people enjoy using.",
+  "/about",
+);
 
 // হোমপেজের 2-top/3-bottom circular-badge লেআউটের থেকে ভিন্ন — এই পেজের Figma
 // ডিজাইনে stats সাজানো 3-then-2 সারিতে, প্লেইন label+number+arrow (কোনো সার্কেল

@@ -1,6 +1,11 @@
 import LegalPage from "@/app/components/LegalPage";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = { title: "Privacy Policy — FLOW 53" };
+export const metadata = pageMeta(
+  "Privacy Policy — FLOW 53",
+  "How FLOW 53 collects, uses and protects your information when you use our website and client portal.",
+  "/privacy",
+);
 
 export default function PrivacyPage() {
   return (

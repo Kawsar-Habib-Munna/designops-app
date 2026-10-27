@@ -31,6 +31,11 @@ import SlideSwapLabel from "@/app/components/SlideSwapLabel";
 // case-study/testimonial এডিট করলে নতুন ভার্সন সর্বোচ্চ ৬০ সেকেন্ড পরে লাইভ হয়।
 export const revalidate = 60;
 
+export const metadata = {
+  alternates: { canonical: "/" },
+  openGraph: { url: "/" },
+};
+
 const STATS_TOP = [
   { label: "Experience", value: "02+" },
   { label: "Project Complete", value: "19+" },

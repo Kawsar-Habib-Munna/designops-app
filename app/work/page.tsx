@@ -1,4 +1,5 @@
 import "../home.css";
+import { pageMeta } from "@/lib/seo";
 import "./work-list.css";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { driveFullImageUrl } from "@/lib/driveUpload";
@@ -21,10 +22,11 @@ import WorkProjectList from "./WorkProjectList";
 // করে, নতুন/এডিট করা case study সর্বোচ্চ ৬০ সেকেন্ড পরে লাইভ হয়।
 export const revalidate = 60;
 
-export const metadata = {
-  title: "Projects — FLOW 53",
-  description: "Explore our selected projects where strategy, creativity, and user-centered design come together to solve real-world problems.",
-};
+export const metadata = pageMeta(
+  "Projects — FLOW 53",
+  "Explore our selected projects where strategy, creativity, and user-centered design come together to solve real-world problems.",
+  "/work",
+);
 
 type CaseStudyRow = {
   slug: string;
