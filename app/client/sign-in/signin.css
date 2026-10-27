@@ -435,3 +435,8 @@
   width: 150px;
   height: auto;
 }
+@media (max-width: 520px) {
+  .client-signin-root .topbar-logo {
+    width: 110px;
+  }
+}

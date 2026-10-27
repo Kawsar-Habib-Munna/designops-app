@@ -373,3 +373,8 @@
   width: 150px;
   height: auto;
 }
+@media (max-width: 520px) {
+  .client-register-root .topbar-logo {
+    width: 110px;
+  }
+}
