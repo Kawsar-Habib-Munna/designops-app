@@ -233,7 +233,7 @@ export default async function Home() {
               </p>
 
               <div className="hero-actions">
-                <a href="#contact" className="hero-start">
+                <a href="/client/register" className="hero-start">
                   <span className="hero-start-label"><SlideSwapLabel text="Start A Project" /></span>
                   <img
                     src="/hero/cta-arrows.svg"
