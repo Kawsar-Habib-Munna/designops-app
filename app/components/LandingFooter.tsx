@@ -18,7 +18,7 @@ import { DEFAULT_SITE_SETTINGS, type SiteSettings, formatPhoneDisplay, buildWhat
 const QUICK_LINKS = [
   { label: 'Project', href: '/#work' },
   { label: 'About', href: '/#about' },
-  { label: 'Process', href: '/#process' },
+  { label: 'Process', href: '/process' },
   { label: 'Review', href: '/#reviews' },
   { label: 'Contact', href: '/#contact' },
 ];

@@ -23,7 +23,7 @@ const LINKS: NavItem[] = [
   { label: 'Service', target: null, href: '/services' },
   { label: 'Project', target: null, href: '/work' },
   { label: 'About', target: null, href: '/about' },
-  { label: 'Process', target: '#process' },
+  { label: 'Process', target: null, href: '/process' },
   { label: 'Contact', target: null, href: '/contact' },
 ];
 
@@ -63,6 +63,7 @@ export default function LandingNav({ bookCallUrl = DEFAULT_BOOK_CALL_URL }: { bo
     if (pathname?.startsWith('/work')) return 'Project';
     if (pathname?.startsWith('/about')) return 'About';
     if (pathname?.startsWith('/contact')) return 'Contact';
+    if (pathname?.startsWith('/process')) return 'Process';
     return 'Home';
   });
   const [scrolled, setScrolled] = useState(false);

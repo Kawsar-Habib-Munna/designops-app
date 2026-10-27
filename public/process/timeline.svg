@@ -1,0 +1,38 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="15" height="1900" viewBox="0 0 15 1900" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Group 2085665348">
+<path id="Line 298" d="M7.5 4.5L7.49992 1899.5" stroke-linecap="round" stroke="white"/>
+<path id="Line 299" d="M7.5 4.5L7.49998 395.5" stroke-linecap="round" stroke="url(#paint0_linear_0_209)"/>
+<g id="Group 2085665347">
+<path id="Ellipse 2" d="M14 7.5C14 11.0899 11.0899 14 7.5 14C3.91015 14 1 11.0899 1 7.5C1 3.91015 3.91015 1 7.5 1C11.0899 1 14 3.91015 14 7.5Z" fill="url(#paint1_linear_0_209)" stroke-width="2" stroke="url(#paint2_linear_0_209)"/>
+</g>
+<g id="Group 2085665348_2">
+<path id="Ellipse 2_2" d="M14 403.5C14 407.09 11.0899 410 7.5 410C3.91015 410 1 407.09 1 403.5C1 399.91 3.91015 397 7.5 397C11.0899 397 14 399.91 14 403.5Z" fill="#ADA8B4" stroke-width="2" stroke="#676B6A"/>
+</g>
+<g id="Group 2085665349">
+<path id="Ellipse 2_3" d="M14 799.5C14 803.09 11.0899 806 7.5 806C3.91015 806 1 803.09 1 799.5C1 795.91 3.91015 793 7.5 793C11.0899 793 14 795.91 14 799.5Z" fill="#ADA8B4" stroke-width="2" stroke="#676B6A"/>
+</g>
+<g id="Group 2085665350">
+<path id="Ellipse 2_4" d="M14 1195.5C14 1199.09 11.0899 1202 7.5 1202C3.91015 1202 1 1199.09 1 1195.5C1 1191.91 3.91015 1189 7.5 1189C11.0899 1189 14 1191.91 14 1195.5Z" fill="#ADA8B4" stroke-width="2" stroke="#676B6A"/>
+</g>
+<g id="Group 2085665351">
+<path id="Ellipse 2_5" d="M14 1591.5C14 1595.09 11.0899 1598 7.5 1598C3.91015 1598 1 1595.09 1 1591.5C1 1587.91 3.91015 1585 7.5 1585C11.0899 1585 14 1587.91 14 1591.5Z" fill="#ADA8B4" stroke-width="2" stroke="#676B6A"/>
+</g>
+<g id="Group End">
+<path id="Ellipse End" d="M14 1892.5C14 1896.09 11.0899 1899 7.5 1899C3.91015 1899 1 1896.09 1 1892.5C1 1888.91 3.91015 1886 7.5 1886C11.0899 1886 14 1888.91 14 1892.5Z" fill="#ADA8B4" stroke-width="2" stroke="#676B6A"/>
+</g>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_209" x1="6.5" y1="4" x2="6.49998" y2="396" gradientUnits="userSpaceOnUse">
+<stop stop-color="#EFE6FD"/>
+<stop offset="1" stop-color="#6200EE"/>
+</linearGradient>
+<linearGradient id="paint1_linear_0_209" x1="0" y1="7.5" x2="15" y2="7.5" gradientUnits="userSpaceOnUse">
+<stop stop-color="#EFE6FD"/>
+<stop offset="1" stop-color="#6200EE"/>
+</linearGradient>
+<linearGradient id="paint2_linear_0_209" x1="0" y1="7.5" x2="15" y2="7.5" gradientUnits="userSpaceOnUse">
+<stop stop-color="white"/>
+<stop offset="1" stop-color="#CEB0FA"/>
+</linearGradient>
+</defs>
+</svg>

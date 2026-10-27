@@ -27,3 +27,13 @@ export const playfair = Playfair_Display({
   variable: "--font-playfair",
   display: "swap",
 });
+
+// Nunito Sans Bold (700) — শেয়ার্ড `nunito` শুধু 400/500/600 লোড করে, তাই 700 চাইলে
+// ব্রাউজার 600-এ নেমে আসে (500-এর সাথে প্রায় একই দেখায়)। সব পেজে 700 যোগ করলে অন্য
+// পেজের টেক্সটও বদলে যেত, তাই আলাদা ভ্যারিয়েবলে — এখন শুধু /process ব্যবহার করে।
+export const nunitoBold = Nunito_Sans({
+  subsets: ["latin"],
+  weight: ["700"],
+  variable: "--font-nunito-bold",
+  display: "swap",
+});

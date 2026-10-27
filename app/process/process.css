@@ -1,0 +1,185 @@
+/* Process পেজ — Figma node 2787:2536। হিরো/CTA/footer /services-এর ক্লাস রিইউজ করে,
+   এখানে শুধু "How we work" টাইমলাইন সেকশন। */
+.home-root .prc-section {
+  background: #010003;
+  padding: 120px 0;
+}
+.home-root .prc-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  width: min(715px, calc(100% - 48px));
+  margin: 0 auto 80px;
+}
+.home-root .prc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px 12px 0;
+  border-radius: 10px;
+  border: 1px solid rgba(200, 197, 205, 0.4);
+  background: rgba(103, 107, 106, 0.04);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 20px rgba(129, 51, 241, 0.04);
+  font-family: var(--font-inter-stats), "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #ceb0fa;
+  white-space: nowrap;
+}
+.home-root .prc-pill img {
+  display: block;
+  width: 40px;
+  height: 1px;
+}
+.home-root .prc-title {
+  margin: 0;
+  font-family: var(--font-nunito-bold), "Nunito Sans", sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+  color: transparent;
+  background: url("/process/headline-fill.webp") center / cover no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ৫টা স্টেপ: প্রতিটা 316px উঁচু, 80px গ্যাপ → মোট 1900px (টাইমলাইন SVG-র উচ্চতা) */
+.home-root .prc-steps {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+  width: 1040px;
+  margin: 0 auto;
+}
+.home-root .prc-timeline {
+  position: absolute;
+  top: 0;
+  left: -95px;
+  width: 15px;
+  height: 1900px;
+  pointer-events: none;
+}
+.home-root .prc-step {
+  display: flex;
+  align-items: flex-end;
+  gap: 100px;
+  height: 316px;
+}
+.home-root .prc-step.reverse {
+  flex-direction: row-reverse;
+}
+.home-root .prc-step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  flex: 0 0 500px;
+  width: 500px;
+}
+.home-root .prc-step-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  white-space: nowrap;
+}
+.home-root .prc-step-title {
+  margin: 0;
+  font-family: var(--font-playfair), "Playfair Display", serif;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #d9d7dd;
+}
+.home-root .prc-step-sprint {
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #676b6a;
+  text-align: right;
+}
+.home-root .prc-bullets {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 0 0 0 24px;
+  list-style: disc;
+  font-family: var(--font-nunito), "Nunito Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #d9d7dd;
+}
+.home-root .prc-bullets strong {
+  font-family: var(--font-nunito-bold), "Nunito Sans", sans-serif;
+  font-weight: 700;
+}
+.home-root .prc-step-image {
+  position: relative;
+  flex: 0 0 440px;
+  width: 440px;
+  height: 316px;
+  border-radius: 36px;
+  border: 1px solid #19181c;
+  box-shadow: 0 8px 40px rgba(41, 0, 100, 0.04), inset 0 4px 12px rgba(254, 255, 255, 0.04);
+  overflow: hidden;
+}
+.home-root .prc-step-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 1240px) {
+  .home-root .prc-steps {
+    width: calc(100% - 48px);
+    max-width: 1040px;
+  }
+  .home-root .prc-timeline {
+    display: none;
+  }
+  .home-root .prc-step,
+  .home-root .prc-step.reverse {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 32px;
+    height: auto;
+  }
+  .home-root .prc-step-text {
+    flex: none;
+    width: 100%;
+  }
+  .home-root .prc-step-image {
+    flex: none;
+    width: 100%;
+    max-width: 440px;
+    height: auto;
+    aspect-ratio: 440 / 316;
+  }
+}
+@media (max-width: 640px) {
+  .home-root .prc-section {
+    padding: 64px 0;
+  }
+  .home-root .prc-heading {
+    margin-bottom: 48px;
+  }
+  .home-root .prc-title {
+    font-size: 26px;
+    white-space: normal;
+  }
+  .home-root .prc-steps {
+    gap: 56px;
+  }
+  .home-root .prc-step-image {
+    border-radius: 28px;
+  }
+}
