@@ -45,6 +45,7 @@ const ICON_PATHS: Record<string, string> = {
   chevrons: '<path d="M7 15l5 5 5-5"/><path d="M7 9l5-5 5 5"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
   plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+  edit: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
   'chevron-right': '<path d="M9 6l6 6-6 6"/>',
   tick: '<path d="M20 6L9 17l-5-5"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
@@ -85,6 +86,7 @@ const PROJECT_STATUS_META: Record<string, { label: string; cls: string }> = {
   review: { label: 'রিভিউ', cls: 's-review' },
   completed: { label: 'সম্পন্ন', cls: 's-done' },
   on_hold: { label: 'হোল্ডে', cls: 's-todo' },
+  draft: { label: 'Draft', cls: 's-todo' },
 };
 
 const CLIENT_STATUS_META: Record<string, { label: string; cls: string }> = {
@@ -513,6 +515,17 @@ export default function ProjectDetailPage() {
             )}
 
             {/* ===== hero: identity + key facts + progress ===== */}
+            {project.status === 'draft' && project.clients && (
+              <div className="pd-draft-banner">
+                <div>
+                  <b>This project is a saved draft.</b> It is hidden from the client until you finish creating it.
+                </div>
+                <Link href={`/clients/${project.clients.id}/create-project?draft=${project.id}`} className="btn btn-accent btn-sm">
+                  <Icon name="edit" size={12} /> Continue editing
+                </Link>
+              </div>
+            )}
+
             <section className="pd-hero">
               <div className="pd-hero-main">
                 <div className="pd-hero-top">

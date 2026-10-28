@@ -103,6 +103,7 @@ const PROJECT_STATUS_META: Record<string, { label: string; cls: string }> = {
   review: { label: 'রিভিউ', cls: 's-review' },
   completed: { label: 'সম্পন্ন', cls: 's-done' },
   on_hold: { label: 'হোল্ডে', cls: 's-todo' },
+  draft: { label: 'Draft', cls: 's-todo' },
 };
 
 type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null; behance_url?: string | null; linkedin_url?: string | null };
@@ -945,9 +946,16 @@ export default function ClientDetailPage() {
                           </div>
                           <span className="proj-pct tabular">{proj.progress ?? 0}%</span>
                         </div>
-                        <Link href={`/projects/${proj.id}`} className="btn btn-ghost btn-sm">
-                          Open Project
-                        </Link>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          {proj.status === 'draft' && (
+                            <Link href={`/clients/${client.id}/create-project?draft=${proj.id}`} className="btn btn-accent btn-sm">
+                              <Icon name="edit" size={12} /> Continue draft
+                            </Link>
+                          )}
+                          <Link href={`/projects/${proj.id}`} className="btn btn-ghost btn-sm">
+                            Open Project
+                          </Link>
+                        </div>
                       </div>
                     ) : (
                       <div className="project-empty-inline">

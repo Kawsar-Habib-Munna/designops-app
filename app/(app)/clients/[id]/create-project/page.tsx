@@ -27,7 +27,7 @@
 // - Duplicate-name detection client-side, বিদ্যমান projects ডেটা থেকেই।
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import '../../clients.css';
 import '../client-detail.css';
@@ -143,6 +143,43 @@ function matchProjectType(raw: string | null): string {
   return found ?? '';
 }
 let deliverableSeq = 0;
+// A saved draft keeps the scope and deliverables as the two combined text notes. These read them back into the form fields
+// (Objectives / Scope / Included Work / Out of Scope / Special Requirements, and "• name (qty)" deliverable lines).
+function parseScopeNote(note: string | null) {
+  const out = { objectives: '', scope: '', included: [] as string[], excluded: [] as string[], special: '' };
+  if (!note) return out;
+  const bullets = (body: string) => body.split('\n').map((l) => l.replace(/^\s*•\s*/, '').trim()).filter(Boolean);
+  for (const block of note.split(/\n\n(?=(?:Objectives|Scope|Included Work|Out of Scope|Special Requirements):\n)/)) {
+    const nl = block.indexOf(':\n');
+    if (nl < 0) continue;
+    const head = block.slice(0, nl);
+    const body = block.slice(nl + 2).trim();
+    if (head === 'Objectives') out.objectives = body;
+    else if (head === 'Scope') out.scope = body;
+    else if (head === 'Included Work') out.included = bullets(body);
+    else if (head === 'Out of Scope') out.excluded = bullets(body);
+    else if (head === 'Special Requirements') out.special = body;
+  }
+  return out;
+}
+function parseDeliverablesNote(note: string | null): { id: string; name: string; description: string; quantity: string; milestone: string }[] {
+  if (!note) return [];
+  const items: { id: string; name: string; description: string; quantity: string; milestone: string }[] = [];
+  for (const line of note.split('\n')) {
+    if (line.startsWith('•')) {
+      const raw = line.replace(/^•\s*/, '').trim();
+      const m = raw.match(/^(.*?)(?:\s+\(([^)]*)\))?$/);
+      items.push({ id: newDeliverableId(), name: (m?.[1] ?? raw).trim(), quantity: m?.[2] ?? '', description: '', milestone: '' });
+    } else if (items.length > 0 && line.trim()) {
+      const last = items[items.length - 1];
+      const text = line.trim();
+      if (text.startsWith('Milestone:')) last.milestone = text.replace(/^Milestone:\s*/, '');
+      else last.description = last.description ? `${last.description}\n${text}` : text;
+    }
+  }
+  return items;
+}
+
 function newDeliverableId() {
   deliverableSeq += 1;
   return `d${deliverableSeq}`;
@@ -152,8 +189,12 @@ export default function CreateProjectPage() {
   const params = useParams();
   const clientId = params.id as string;
   const router = useRouter();
+  const draftParam = useSearchParams().get('draft');
   const { user, loading: sessionLoading } = useSession();
   const [profile, setProfile] = useState<ProfileRow | null>(null);
+  // set once a saved draft has been loaded into the form: saving then updates that project instead of creating another one
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftHasCurrency, setDraftHasCurrency] = useState(false);
   const [managers, setManagers] = useState<ManagerOption[]>([]);
 
   const [client, setClient] = useState<ClientBrief | null>(null);
@@ -252,6 +293,32 @@ export default function CreateProjectPage() {
       setManagers(managerRows);
       setManagerId(user!.id);
 
+      if (draftParam) {
+        const { data: d } = await supabase.from('projects').select('*').eq('id', draftParam).eq('client_id', clientId).maybeSingle();
+        if (d && d.status === 'draft') {
+          prefilledRef.current = true;
+          setDraftId(d.id);
+          setDraftHasCurrency(typeof d.currency === 'string');
+          setName(d.name ?? '');
+          setProjectType(d.category ?? '');
+          setDescription(d.description ?? '');
+          setStartDate(d.start_date ?? '');
+          setDueDate(d.due_date ?? '');
+          setBudgetValue(d.budget != null ? String(d.budget) : '');
+          if (typeof d.currency === 'string') setCurrency(d.currency);
+          if (d.payment_structure) setPaymentStructure(d.payment_structure);
+          if (d.project_manager_id) setManagerId(d.project_manager_id);
+          setClientVisible(d.client_visible ?? true);
+          const sc = parseScopeNote(d.scope_note ?? null);
+          setScopeObjectives(sc.objectives);
+          setScopeDescription(sc.scope);
+          setIncludedWork(sc.included);
+          setExcludedWork(sc.excluded);
+          setSpecialRequirements(sc.special);
+          setDeliverables(parseDeliverablesNote(d.deliverables_note ?? null));
+        }
+      }
+
       if (!prefilledRef.current && req) {
         prefilledRef.current = true;
         if (req.project_name) setName(req.project_name);
@@ -264,7 +331,7 @@ export default function CreateProjectPage() {
     }
 
     run();
-  }, [user, clientId]);
+  }, [user, clientId, draftParam]);
 
   const durationText = useMemo(() => {
     if (!startDate || !dueDate) return null;
@@ -360,7 +427,7 @@ export default function CreateProjectPage() {
     }
 
     if (!asDraft && !force) {
-      const dup = existingProjects.find((p) => p.name.trim().toLowerCase() === name.trim().toLowerCase());
+      const dup = existingProjects.find((p) => p.id !== draftId && p.name.trim().toLowerCase() === name.trim().toLowerCase());
       if (dup) {
         setDuplicateMatch(dup);
         setShowDuplicateModal(true);
@@ -375,16 +442,14 @@ export default function CreateProjectPage() {
     const finalStatus = asDraft ? 'draft' : status;
     const finalVisible = asDraft ? false : clientVisible;
 
-    const { data, error: createError } = await supabase
-      .from('projects')
-      .insert({
+    const projectFields = {
         name: name.trim(),
         client_id: client.id,
         category: projectType || null,
         status: finalStatus,
         progress: 0,
         budget: budgetValue ? Number(budgetValue) : null,
-        ...(currency !== 'BDT' ? { currency } : {}),
+        ...(currency !== 'BDT' || draftHasCurrency ? { currency } : {}),
         start_date: startDate || null,
         due_date: dueDate || null,
         project_manager_id: managerId || null,
@@ -393,7 +458,10 @@ export default function CreateProjectPage() {
         deliverables_note: buildDeliverablesNote(),
         payment_structure: paymentStructure || null,
         client_visible: finalVisible,
-      })
+    };
+    const { data, error: createError } = await (draftId
+      ? supabase.from('projects').update(projectFields).eq('id', draftId)
+      : supabase.from('projects').insert(projectFields))
       .select('id, name')
       .single();
 
@@ -522,6 +590,11 @@ export default function CreateProjectPage() {
               </div>
             </div>
 
+            {draftId && (
+              <div className="error-banner" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>
+                You are continuing a saved draft. Saving updates it; “Create Project” turns it into the official project.
+              </div>
+            )}
             {error && <div className="error-banner">{error}</div>}
 
             <div className="client-context-bar">
