@@ -388,3 +388,6 @@
   .tasklist-root .scope-actions{width:100%;margin-left:0;}
   .tasklist-root .scope-actions .btn{flex:1;justify-content:center;}
 }
+
+.tasklist-root .person-card-assign{display:flex;align-items:center;justify-content:center;width:28px;height:28px;margin-left:2px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink-soft);cursor:pointer;flex-shrink:0;transition:border-color .15s ease,color .15s ease,background .15s ease;}
+.tasklist-root .person-card-assign:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}

@@ -251,8 +251,10 @@ function TasksPageInner() {
   // "Create Task" বাটনে ক্লিক করলে assigned date রিসেট হয়ে আজকের তারিখে আসে —
   // প্রতিদিনের টাস্ক যোগ করার সময় আলাদা করে বাছাই করতে না হয়; ডেডলাইন (due date)
   // ইচ্ছাকৃতভাবে খালি/অপরিবর্তিত থাকে, কারণ সেটা টাস্ক ভেদে ভিন্ন হতে পারে।
-  function openCreateTask() {
+  // assigneeId: a member card's "+" opens the form with that person already chosen
+  function openCreateTask(assigneeId?: string) {
     setNewAssignedDate(todayISO());
+    if (assigneeId) setNewAssigneeIds([assigneeId]);
     setShowCreate(true);
   }
 
@@ -1069,7 +1071,7 @@ function TasksPageInner() {
                 <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="import" size={13} /> ইমপোর্ট</button>
                 <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="export" size={13} /> এক্সপোর্ট</button>
                 <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="bookmark" size={13} /> Saved Views</button>
-                <button className="btn btn-accent" onClick={openCreateTask}>
+                <button className="btn btn-accent" onClick={() => openCreateTask()}>
                   <Icon name="plus" /> টাস্ক তৈরি
                 </button>
               </div>
@@ -1223,7 +1225,7 @@ function TasksPageInner() {
                 <div className="empty-icon"><Icon name="search" /></div>
                 <div className="empty-title">কোনো টাস্ক পাওয়া যায়নি</div>
                 <div className="empty-sub">এই ভিউতে এখনো কোনো টাস্ক যোগ হয়নি, অথবা আপনার ফিল্টারে কোনো ফলাফল মিলছে না।</div>
-                <button className="btn btn-accent btn-sm" onClick={openCreateTask}>
+                <button className="btn btn-accent btn-sm" onClick={() => openCreateTask()}>
                   <Icon name="plus" size={13} /> প্রথম টাস্ক তৈরি করুন
                 </button>
               </div>
@@ -1238,6 +1240,15 @@ function TasksPageInner() {
                         <div className="person-card-sub">{m.activeCount === 0 ? 'No active To-Dos' : `${m.activeCount} active To-Do${m.activeCount > 1 ? 's' : ''}`}</div>
                       </div>
                       <span className="person-card-count tabular">{m.activeCount}</span>
+                      <button
+                        type="button"
+                        className="person-card-assign"
+                        onClick={() => openCreateTask(m.profile.id)}
+                        title={`Assign a task to ${m.profile.full_name}`}
+                        aria-label={`Assign a task to ${m.profile.full_name}`}
+                      >
+                        <Icon name="plus" size={14} />
+                      </button>
                     </div>
 
                     {m.personTasks.length > 0 && (

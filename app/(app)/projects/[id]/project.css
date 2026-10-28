@@ -399,11 +399,16 @@
   .projdetail-root .pd-hero-progress{flex-direction:row;justify-content:flex-start;align-self:auto;padding:16px 0 0;border-left:none;border-top:1px solid var(--border-soft);}
   .projdetail-root .pd-hero-progress svg{width:72px;height:72px;}
   .projdetail-root .pd-hero-top{flex-wrap:wrap;}
+  /* top row: icon on the left, favourite / share / more on the right; the title block takes the full width underneath */
+  .projdetail-root .pd-hero-top .pd-icon{order:1;}
+  .projdetail-root .pd-hero-top .header-actions{order:2;flex:0 0 auto;margin-left:auto;}
+  .projdetail-root .pd-hero-top .pd-hero-titles{order:3;flex:1 1 100%;}
   .projdetail-root .pd-facts{grid-template-columns:repeat(2,minmax(0,1fr));}
   .projdetail-root .pd-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
 }
 @media (max-width:480px){
   .projdetail-root .pd-title{font-size:20px;}
+  .projdetail-root .pd-icon{width:44px;height:44px;border-radius:12px;font-size:18px;}
   .projdetail-root .pd-tools{grid-template-columns:1fr;}
 }
 

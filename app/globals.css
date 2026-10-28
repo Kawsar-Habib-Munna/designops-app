@@ -151,7 +151,8 @@ div.brand.brand-topbar {
 :where([class*="-root"]:not(.client-portal)) .icon-btn { position: relative; }
 :where([class*="-root"]:not(.client-portal)) .bell-count { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 999px; background: var(--accent, #7c3aed); color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid var(--surface, #fff); }
 @media (max-width: 900px) {
-  :where([class*="-root"]:not(.client-portal) .topbar .search-box) { display: none; }
+  /* no search bar in the mobile top bar on any dashboard page (normal specificity, so it beats page rules and the fallback above) */
+  [class*="-root"]:not(.client-portal) .topbar .search-box { display: none; }
 }
 
 /* One narrower, consistent sidebar width for every dashboard page (pages used to differ: 224 / 230 / 248px) */

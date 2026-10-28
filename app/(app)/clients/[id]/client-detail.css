@@ -92,7 +92,8 @@
 .client-detail-root .si-deco{position:absolute;right:-8px;bottom:-8px;transform:scale(.72);transform-origin:bottom right;opacity:.1;pointer-events:none;color:var(--tone);}
 @media (max-width:1280px){.client-detail-root .summary-strip{grid-template-columns:repeat(3,minmax(0,1fr));}}
 @media (max-width:760px){.client-detail-root .summary-strip{grid-template-columns:repeat(2,minmax(0,1fr));}}
-@media (max-width:480px){.client-detail-root .summary-strip{grid-template-columns:1fr;}}
+/* phones keep two cards per row (a lone card in the last row simply spans one column) */
+@media (max-width:480px){.client-detail-root .summary-strip{gap:10px;}.client-detail-root .summary-item{padding:10px 12px;}}
 
 /* ==== lifecycle stepper ==== header (title, current step, count), an overall progress bar, then eight numbered steps joined
    by a line that turns green as steps finish. Done = green check, current = accent ring, upcoming = quiet number. ==== */

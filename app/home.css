@@ -482,11 +482,12 @@ html:has(.home-root) {
 }
 @media (max-width: 640px) {
   .home-root .nav {
-    padding-top: 16px;
+    padding-top: 6px;
     top: -4px;
   }
+  /* the hero is pulled up by a little more than the nav is tall, so its top edge sits just above the screen and no strip of page background shows above it */
   .home-root .nav + .home-body {
-    margin-top: -76px;
+    margin-top: -80px;
   }
   .home-root .nav-inner {
     padding: 0 16px;
