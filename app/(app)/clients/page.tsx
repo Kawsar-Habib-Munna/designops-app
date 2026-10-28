@@ -182,7 +182,7 @@ export default function ClientsListPage() {
   const [page, setPage] = useState(1);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
 
   const [showCreate, setShowCreate] = useState(false);
   const [newCompany, setNewCompany] = useState('');
@@ -512,7 +512,12 @@ export default function ClientsListPage() {
           }
           const rect = e.currentTarget.getBoundingClientRect();
           const menuWidth = 200;
-          setMenuPos({ top: rect.bottom + 6, left: Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8)) });
+          // open below the button, or above it when the rows near the bottom of the screen leave no room for the whole menu
+          const menuHeight = 300;
+          const left = Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8));
+          const roomBelow = window.innerHeight - rect.bottom - 14;
+          const flipUp = roomBelow < menuHeight && rect.top > roomBelow;
+          setMenuPos(flipUp ? { bottom: window.innerHeight - rect.top + 6, left } : { top: rect.bottom + 6, left });
           setOpenMenuId(c.id);
         }}
         aria-label="আরও অপশন"
@@ -527,7 +532,7 @@ export default function ClientsListPage() {
         // শুধু ভ্যারিয়েবল আর .row-actions-menu-কে সত্যিকারের descendant বানায়,
         // যাতে .clientslist-root .row-actions-menu-এর মতো স্কোপড সিলেক্টরগুলো মেলে)
         <div className={`clientslist-root${dark ? ' dark' : ''}`} style={{ display: 'contents' }}>
-          <div className="row-actions-menu open" style={{ top: menuPos.top, left: menuPos.left }} onClick={(e) => e.stopPropagation()}>
+          <div className="row-actions-menu open" style={{ top: menuPos.top, bottom: menuPos.bottom, left: menuPos.left, maxHeight: 'calc(100vh - 16px)', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
             <Link className="ram-item" href={`/clients/${c.id}`}>
               <Icon name="eye" size={13} /> View Client
             </Link>

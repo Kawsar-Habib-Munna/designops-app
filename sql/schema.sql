@@ -2314,3 +2314,12 @@ where profiles.id = sub.id and profiles.order_index = 0;
 -- Run once in the Supabase SQL editor. Existing projects stay on BDT (the old behaviour).
 -- ---------------------------------------------------------------------------
 alter table projects add column if not exists currency text not null default 'BDT';
+
+-- ---------------------------------------------------------------------------
+-- Client requirements: let the team fill in / correct a client's requirements (client dashboard + create-project pages,
+-- "Edit" / "Add details"). Until now only the client could write this table. Run once in the Supabase SQL editor.
+-- ---------------------------------------------------------------------------
+drop policy if exists "team can write client_requirements" on client_requirements;
+drop policy if exists "team can update client_requirements" on client_requirements;
+create policy "team can write client_requirements" on client_requirements for insert with check (public.is_team_member());
+create policy "team can update client_requirements" on client_requirements for update using (public.is_team_member()) with check (public.is_team_member());

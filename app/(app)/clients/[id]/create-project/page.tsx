@@ -39,8 +39,11 @@ import { formatBnDate } from '@/lib/format';
 import { CURRENCIES, currencyLabel, formatMoney } from '@/lib/currency';
 import SignInScreen from '@/app/components/SignInScreen';
 import RichTextField from '@/app/components/RichTextField';
+import RequirementsEditModal from '@/app/components/RequirementsEditModal';
+import { useAppShell } from '@/app/components/appShellContext';
 
 const ICON_PATHS: Record<string, string> = {
+  edit: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
   folder: '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/>',
   check: '<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>',
@@ -155,6 +158,8 @@ export default function CreateProjectPage() {
 
   const [client, setClient] = useState<ClientBrief | null>(null);
   const [requirements, setRequirements] = useState<Requirements | null>(null);
+  const { dark } = useAppShell();
+  const [showReqEdit, setShowReqEdit] = useState(false);
   const [files, setFiles] = useState<FileRow[]>([]);
   const [existingProjects, setExistingProjects] = useState<ExistingProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -606,9 +611,15 @@ export default function CreateProjectPage() {
                 <section className="dcard">
                   <div className="dcard-head">
                     <span className="dcard-title">
-                      Client Requirements <span className="src-tag">Submitted by Client</span>
+                      Client Requirements {requirements && <span className="src-tag">Submitted by Client</span>}
                     </span>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowReqEdit(true)}>
+                      <Icon name="edit" size={12} /> {requirements ? 'Edit' : 'Add details'}
+                    </button>
                   </div>
+                  {showReqEdit && client && (
+                    <RequirementsEditModal clientId={client.id} initial={requirements} dark={dark} onClose={() => setShowReqEdit(false)} onSaved={(next) => setRequirements(next)} />
+                  )}
                   {requirements ? (
                     <>
                       <div className="field-grid" style={{ marginBottom: 14 }}>
@@ -669,7 +680,7 @@ export default function CreateProjectPage() {
                       )}
                     </>
                   ) : (
-                    <p className="side-empty">এই ক্লায়েন্ট এখনো কোনো requirements জমা দেননি।</p>
+                    <p className="side-empty">The client has not submitted any requirements yet. You can add them yourself with “Add details”.</p>
                   )}
                 </section>
 

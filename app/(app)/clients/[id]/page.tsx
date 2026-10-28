@@ -38,6 +38,8 @@ import { formatMoney } from '@/lib/currency';
 import { getProjectCurrencies } from '@/lib/projectCurrency';
 import RichTextField from '@/app/components/RichTextField';
 import RichText from '@/app/components/RichText';
+import RequirementsEditModal from '@/app/components/RequirementsEditModal';
+import { useAppShell } from '@/app/components/appShellContext';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -187,6 +189,8 @@ export default function ClientDetailPage() {
   const [client, setClient] = useState<ClientDetail | null>(null);
   const [manager, setManager] = useState<ManagerOption | null>(null);
   const [requirements, setRequirements] = useState<Requirements | null>(null);
+  const { dark } = useAppShell();
+  const [showReqEdit, setShowReqEdit] = useState(false);
   const [files, setFiles] = useState<FileRow[]>([]);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [projectCurrencies, setProjectCurrencies] = useState<Record<string, string>>({});
@@ -964,7 +968,13 @@ export default function ClientDetailPage() {
                       <span className="dcard-title">
                         Project Request{requirements && <span className="src-tag">Submitted by Client</span>}
                       </span>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowReqEdit(true)}>
+                        <Icon name="edit" size={12} /> {requirements ? 'Edit' : 'Add details'}
+                      </button>
                     </div>
+                    {showReqEdit && (
+                      <RequirementsEditModal clientId={client.id} initial={requirements} dark={dark} onClose={() => setShowReqEdit(false)} onSaved={(next) => setRequirements(next)} />
+                    )}
                     {requirements ? (
                       <>
                         <div className="field-grid" style={{ marginBottom: 14 }}>
@@ -1050,7 +1060,7 @@ export default function ClientDetailPage() {
                         )}
                       </>
                     ) : (
-                      <p className="side-empty">এই ক্লায়েন্ট এখনো কোনো requirements জমা দেননি।</p>
+                      <p className="side-empty">The client has not submitted any requirements yet. You can add them yourself with “Add details”.</p>
                     )}
                   </section>
                 </div>
