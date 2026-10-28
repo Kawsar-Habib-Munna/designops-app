@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClientProject, type ClientRecord } from '@/lib/clientPortal';
 import { uploadFileToDrive } from '@/lib/driveUpload';
 import { relativeTime } from '@/lib/format';
+import RichText from '@/app/components/RichText';
 import '../../../client-shared.css';
 
 type ChangeRequest = { id: string; title: string; description: string | null; reason: string | null; status: string; additional_cost: number | null; additional_time: string | null; admin_notes: string | null; created_at: string };
@@ -176,7 +177,7 @@ export default function ClientChangeRequestsPage() {
                     {cr.additional_time && <>· Additional Time: {cr.additional_time}</>}
                   </div>
                 )}
-                {cr.admin_notes && <p className="cp-item-desc" style={{ fontStyle: 'italic' }}>{cr.admin_notes}</p>}
+                {cr.admin_notes && <RichText text={cr.admin_notes} className="cp-item-desc" />}
               </div>
             ))}
           </div>

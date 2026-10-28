@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { DEFAULT_SITE_SETTINGS, buildWhatsappUrl } from '@/lib/siteSettings';
+import PhoneInput from '@/app/components/PhoneInput';
 
 // /contact পেজের ফর্ম - app/components/ContactForm.tsx-এর থেকে আলাদা কারণ
 // Figma-তে (node 2718:4970) ফিল্ড সেট ভিন্ন (Full Name/Email/Project Budget/
@@ -49,7 +50,7 @@ export default function ContactPageForm({ whatsappNumber = DEFAULT_SITE_SETTINGS
         </label>
         <label className="contact-field">
           <span className="contact-field-label">Whatsapp Number</span>
-          <input className="contact-field-input" type="tel" placeholder="Enter your whatsapp number" value={values.whatsapp} onChange={update('whatsapp')} />
+          <PhoneInput inputClassName="contact-field-input" placeholder="Enter your whatsapp number" value={values.whatsapp} onChange={(v) => setValues((s) => ({ ...s, whatsapp: v }))} />
         </label>
       </div>
       <label className="contact-field">

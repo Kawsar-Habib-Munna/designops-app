@@ -1,0 +1,1338 @@
+"use client";
+
+// Dashboard — lib/supabaseClient.ts দিয়ে রিয়েল Supabase ডেটা: projects, tasks,
+// activity_log, meetings, profiles। RLS পলিসি অনুযায়ী sign-in করা authenticated
+// ইউজার লাগবে (lib/useSession.ts + SignInScreen)।
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import "./dashboard.css";
+import { supabase } from "@/lib/supabaseClient";
+import { useSession } from "@/lib/useSession";
+import { formatBnDate, formatTimeBn, dueMeta, todayISO, relativeTimeBn } from "@/lib/format";
+import SignInScreen from "@/app/components/SignInScreen";
+import Avatar from "@/app/components/Avatar";
+import WorkloadChart from "@/app/components/WorkloadChart";
+import StatusBar from "@/app/components/StatusBar";
+import TrendChart from "@/app/components/TrendChart";
+import OutlookChart from "@/app/components/OutlookChart";
+import ProjectProgress from "@/app/components/ProjectProgress";
+import DonutChart from "@/app/components/DonutChart";
+import { useAppShell } from "@/app/components/appShellContext";
+import {
+  completionsByDay,
+  dueNextDays,
+  projectProgress,
+  projectStatusCounts,
+  projectsDueWeeks,
+  statusCounts,
+  type ChartProject,
+  type ChartTask,
+} from "@/lib/dashboardCharts";
+
+const ICON_PATHS: Record<string, string> = {
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
+  folder:
+    '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/>',
+  check: '<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>',
+  checklist: '<path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M4 6l1 1 2-2"/><path d="M4 12l1 1 2-2"/><path d="M4 18l1 1 2-2"/>',
+  calendar:
+    '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M3 10h18"/>',
+  users:
+    '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  building:
+    '<path d="M6 22V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v18"/><path d="M6 12h12"/><path d="M6 22h14"/>',
+  file: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>',
+  bar: '<path d="M3 21h18"/><rect x="6" y="12" width="3" height="6"/><rect x="11" y="8" width="3" height="10"/><rect x="16" y="4" width="3" height="14"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 21a2 2 0 0 0 4 0"/>',
+  settings:
+    '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/>',
+  chevrons: '<path d="M7 15l5 5 5-5"/><path d="M7 9l5-5 5 5"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  alert:
+    '<path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/>',
+  "chevron-right": '<path d="M9 6l6 6-6 6"/>',
+  tick: '<path d="M20 6L9 17l-5-5"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
+  menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
+  close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  upload:
+    '<path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
+  "check-circle": '<circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/>',
+  message:
+    '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
+  layers:
+    '<path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>',
+  "user-plus":
+    '<path d="M14 19v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="7" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>',
+  spark:
+    '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
+  "folder-plus":
+    '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/><path d="M12 11v4"/><path d="M10 13h4"/>',
+  video:
+    '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/>',
+  "more-horizontal":
+    '<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
+  dollar: '<path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  whiteboard: '<rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 9l3 3 2-2 4 4"/>',
+  trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+};
+
+// action টাইপ অনুযায়ী আইকন + রং — flat ধূসর আইকনের বদলে অ্যাকশনের ধরন (তৈরি/মুছে
+// ফেলা/পেমেন্ট/স্ট্যাটাস বদল ইত্যাদি) এক নজরে বোঝা যায়
+function activityMeta(action: string): { icon: keyof typeof ICON_PATHS; cls: string } {
+  switch (action) {
+    case "task_created":
+    case "project_created":
+    case "client_added":
+      return { icon: "plus", cls: "act-positive" };
+    case "project_deleted":
+    case "payment_cancelled":
+    case "sow_cancelled":
+      return { icon: "close", cls: "act-danger" };
+    case "payment_received":
+    case "payment_confirmation_submitted":
+      return { icon: "dollar", cls: "act-positive" };
+    case "sow_signed":
+    case "sow_agency_signed":
+      return { icon: "check-circle", cls: "act-positive" };
+    case "sow_sent":
+    case "info_requested":
+    case "info_request_resolved":
+    case "requirements_submitted":
+      return { icon: "message", cls: "act-accent" };
+    case "file_uploaded":
+      return { icon: "upload", cls: "act-accent" };
+    case "client_notified":
+      return { icon: "bell", cls: "act-accent" };
+    case "status_changed":
+    case "project_updated":
+    case "manager_assigned":
+      return { icon: "chevron-right", cls: "act-accent" };
+    default:
+      return { icon: "check-circle", cls: "act-neutral" };
+  }
+}
+
+type IconName = keyof typeof ICON_PATHS;
+
+function Icon({
+  name,
+  size = 16,
+  color = "currentColor",
+}: {
+  name: IconName;
+  size?: number;
+  color?: string;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      dangerouslySetInnerHTML={{ __html: ICON_PATHS[name] }}
+    />
+  );
+}
+
+
+
+const QUICK_ACTIONS: { icon: IconName; label: string; href?: string }[] = [
+  { icon: "folder-plus", label: "নতুন প্রজেক্ট" },
+  { icon: "plus", label: "টাস্ক তৈরি", href: "/tasks" },
+  { icon: "dollar", label: "Budget", href: "/budget" },
+  { icon: "whiteboard", label: "Whiteboard", href: "/whiteboard" },
+  { icon: "user-plus", label: "মেম্বার ইনভাইট" },
+  { icon: "upload", label: "ফাইল আপলোড" },
+  { icon: "video", label: "মিটিং শুরু" },
+  { icon: "bar", label: "রিপোর্ট বানান" },
+];
+
+const PRIORITY_COLOR: Record<string, string> = {
+  low: "var(--ink-faint)",
+  normal: "var(--accent)",
+  high: "var(--warning)",
+  urgent: "var(--danger)",
+};
+
+const PROJECT_CHIP: Record<string, { cls: string; label: string }> = {
+  active: { cls: "chip-progress", label: "চলছে" },
+  review: { cls: "chip-review", label: "রিভিউ" },
+  completed: { cls: "chip-done", label: "সম্পন্ন" },
+  on_hold: { cls: "chip-overdue", label: "হোল্ডে" },
+};
+
+type ProfileRow = {
+  id: string;
+  full_name: string;
+  role: string | null;
+  avatar_color: string | null;
+  avatar_url?: string | null;
+  is_admin?: boolean;
+};
+
+type ProjectRow = {
+  id: string;
+  name: string;
+  status: string;
+  progress: number | null;
+  due_date: string | null;
+  clients: { company_name: string } | null;
+  manager: { full_name: string; avatar_color: string | null; avatar_url: string | null } | null;
+  taskCount: number;
+  doneCount: number;
+  discussionCount: number;
+  fileCount: number;
+  avatars: { full_name: string; avatar_color: string | null; avatar_url: string | null }[];
+};
+
+type DashTask = {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  due_date: string | null;
+  projects: { name: string } | null;
+};
+
+type DashChecklistItem = { id: string; task_id: string; label: string; is_done: boolean; position: number | null };
+
+type DashTodo = {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  due_time: string | null;
+  projects: { name: string } | null;
+};
+
+type ActivityRow = {
+  id: string;
+  action: string;
+  detail: string | null;
+  created_at: string;
+  profiles: { full_name: string } | null;
+};
+
+type MeetingRow = { id: string; title: string; meeting_time: string | null };
+
+type WorkloadEntry = { name: string; count: number };
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good Morning";
+  if (h < 16) return "Good Noon";
+  if (h < 19) return "Good Afternoon";
+  return "Good Evening";
+}
+
+function buildInsights(
+  overdue: number,
+  workload: WorkloadEntry[],
+  projects: ProjectRow[],
+) {
+  const list: string[] = [];
+  if (overdue > 0)
+    list.push(`${overdue}টা টাস্ক ডেডলাইন মিস করেছে — এগুলো আগে দেখুন।`);
+  if (workload[0]) {
+    list.push(
+      `${workload[0].name}-এর workload টিমে সবচেয়ে বেশি (${workload[0].count}টা টাস্ক) — নতুন টাস্ক অন্য কাউকে দিন।`,
+    );
+  }
+  const weekFromNow = Date.now() + 7 * 86400000;
+  const atRisk = projects.find(
+    (p) =>
+      p.status === "active" &&
+      (p.progress ?? 0) < 50 &&
+      p.due_date &&
+      new Date(p.due_date).getTime() < weekFromNow,
+  );
+  if (atRisk)
+    list.push(`${atRisk.name} প্রজেক্ট বর্তমান গতিতে ডেডলাইন মিস করতে পারে।`);
+  if (list.length === 0)
+    list.push("এই মুহূর্তে কোনো জরুরি সতর্কতা নেই — সব ট্র্যাকে আছে।");
+  return list;
+}
+
+export default function DashboardPage() {
+  const { user, loading: sessionLoading } = useSession();
+
+  const { dark } = useAppShell();
+  const [cmdkOpen, setCmdkOpen] = useState(false);
+  // the top bar's search box (in the shared shell) asks the dashboard to open its command palette
+  useEffect(() => {
+    const open = () => setCmdkOpen(true);
+    window.addEventListener("app:open-search", open);
+    return () => window.removeEventListener("app:open-search", open);
+  }, []);
+
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [kpis, setKpis] = useState({
+    activeProjects: 0,
+    pendingTasks: 0,
+    dueToday: 0,
+    overdue: 0,
+    teamCount: 0,
+    completion: 0,
+  });
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [tasks, setTasks] = useState<DashTask[]>([]);
+  const [todos, setTodos] = useState<DashTodo[]>([]);
+  // every task, only the columns the charts need (status, due date, last update)
+  const [chartTasks, setChartTasks] = useState<ChartTask[]>([]);
+  // every project, only the columns the project charts need
+  const [chartProjects, setChartProjects] = useState<ChartProject[]>([]);
+  // each of my tasks' checklist (the subtasks inside it), keyed by task id
+  const [checklists, setChecklists] = useState<Record<string, DashChecklistItem[]>>({});
+  const [activity, setActivity] = useState<ActivityRow[]>([]);
+  const [workload, setWorkload] = useState<WorkloadEntry[]>([]);
+  const [meetings, setMeetings] = useState<MeetingRow[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCmdkOpen(true);
+      }
+      if (e.key === "Escape") setCmdkOpen(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    async function loadDashboard() {
+      setDataLoading(true);
+      setError(null);
+      const today = todayISO();
+
+      const [
+        profileRes,
+        activeProjectsRes,
+        pendingTasksRes,
+        dueTodayRes,
+        overdueRes,
+        teamCountRes,
+        totalTasksRes,
+        doneTasksRes,
+        projectsRes,
+        projectTaskStatsRes,
+        projectDiscussionsRes,
+        projectAttachmentsRes,
+        tasksRes,
+        activityRes,
+        workloadRes,
+        meetingsRes,
+      ] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url, is_admin")
+          .eq("id", user!.id)
+          .single(),
+        supabase
+          .from("projects")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "active"),
+        supabase
+          .from("tasks")
+          .select("id", { count: "exact", head: true })
+          .neq("status", "done"),
+        supabase
+          .from("tasks")
+          .select("id", { count: "exact", head: true })
+          .eq("due_date", today)
+          .neq("status", "done"),
+        supabase
+          .from("tasks")
+          .select("id", { count: "exact", head: true })
+          .lt("due_date", today)
+          .neq("status", "done"),
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("tasks").select("id", { count: "exact", head: true }),
+        supabase
+          .from("tasks")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "done"),
+        supabase
+          .from("projects")
+          .select(
+            "id, name, status, progress, due_date, clients(company_name), manager:profiles!project_manager_id(full_name, avatar_color, avatar_url)",
+          )
+          .order("due_date", { ascending: true })
+          .limit(5),
+        supabase
+          .from("tasks")
+          .select("project_id, status, assignee_id, profiles!assignee_id(full_name, avatar_color, avatar_url)")
+          .not("project_id", "is", null),
+        supabase.from("discussions").select("project_id").not("project_id", "is", null),
+        supabase
+          .from("attachments")
+          .select("task_id, folder_id, tasks(project_id), folders(project_id)"),
+        supabase
+          .from("tasks")
+          .select("id, title, status, priority, due_date, projects(name)")
+          .eq("assignee_id", user!.id)
+          .neq("status", "done")
+          .order("due_date", { ascending: true })
+          .limit(100),
+        supabase
+          .from("activity_log")
+          .select("id, action, detail, created_at, profiles(full_name)")
+          .order("created_at", { ascending: false })
+          .limit(6),
+        supabase
+          .from("tasks")
+          .select("assignee_id, profiles!assignee_id(full_name)")
+          .neq("status", "done")
+          .not("assignee_id", "is", null),
+        supabase
+          .from("meetings")
+          .select("id, title, meeting_time")
+          .eq("meeting_date", today)
+          .order("meeting_time", { ascending: true }),
+      ]);
+
+      if (cancelled) return;
+
+      const firstErrored = [
+        profileRes,
+        activeProjectsRes,
+        pendingTasksRes,
+        dueTodayRes,
+        overdueRes,
+        teamCountRes,
+        totalTasksRes,
+        doneTasksRes,
+        projectsRes,
+        projectTaskStatsRes,
+        projectDiscussionsRes,
+        projectAttachmentsRes,
+        tasksRes,
+        activityRes,
+        workloadRes,
+        meetingsRes,
+      ].find((r) => r.error);
+      if (firstErrored?.error) setError(firstErrored.error.message);
+
+      if (profileRes.data) setProfile(profileRes.data as ProfileRow);
+
+      setKpis({
+        activeProjects: activeProjectsRes.count ?? 0,
+        pendingTasks: pendingTasksRes.count ?? 0,
+        dueToday: dueTodayRes.count ?? 0,
+        overdue: overdueRes.count ?? 0,
+        teamCount: teamCountRes.count ?? 0,
+        completion: totalTasksRes.count
+          ? Math.round(((doneTasksRes.count ?? 0) / totalTasksRes.count) * 100)
+          : 0,
+      });
+
+      const projectTaskStats = new Map<string, { done: number; total: number }>();
+      const projectAvatars = new Map<string, Map<string, { full_name: string; avatar_color: string | null; avatar_url: string | null }>>();
+      for (const row of (projectTaskStatsRes.data as unknown as {
+        project_id: string;
+        status: string;
+        assignee_id: string | null;
+        profiles: { full_name: string; avatar_color: string | null; avatar_url: string | null } | null;
+      }[]) ?? []) {
+        const cur = projectTaskStats.get(row.project_id) ?? { done: 0, total: 0 };
+        cur.total += 1;
+        if (row.status === "done") cur.done += 1;
+        projectTaskStats.set(row.project_id, cur);
+
+        if (row.assignee_id && row.profiles) {
+          const avatars = projectAvatars.get(row.project_id) ?? new Map();
+          avatars.set(row.assignee_id, row.profiles);
+          projectAvatars.set(row.project_id, avatars);
+        }
+      }
+
+      const projectDiscussionCounts = new Map<string, number>();
+      for (const row of (projectDiscussionsRes.data as { project_id: string }[]) ?? []) {
+        projectDiscussionCounts.set(row.project_id, (projectDiscussionCounts.get(row.project_id) ?? 0) + 1);
+      }
+
+      const projectFileCounts = new Map<string, number>();
+      for (const row of (projectAttachmentsRes.data as unknown as {
+        task_id: string | null;
+        folder_id: string | null;
+        tasks: { project_id: string | null } | null;
+        folders: { project_id: string | null } | null;
+      }[]) ?? []) {
+        const projectId = row.tasks?.project_id ?? row.folders?.project_id ?? null;
+        if (projectId) projectFileCounts.set(projectId, (projectFileCounts.get(projectId) ?? 0) + 1);
+      }
+
+      const projectsWithProgress = ((projectsRes.data as unknown as ProjectRow[]) ?? []).map((p) => {
+        const stat = projectTaskStats.get(p.id);
+        return {
+          ...p,
+          progress: stat && stat.total > 0 ? Math.round((stat.done / stat.total) * 100) : 0,
+          taskCount: stat?.total ?? 0,
+          doneCount: stat?.done ?? 0,
+          discussionCount: projectDiscussionCounts.get(p.id) ?? 0,
+          fileCount: projectFileCounts.get(p.id) ?? 0,
+          avatars: Array.from((projectAvatars.get(p.id) ?? new Map()).values()),
+        };
+      });
+      setProjects(projectsWithProgress);
+      const myTaskRows = (tasksRes.data as unknown as DashTask[]) ?? [];
+      setTasks(myTaskRows);
+
+      // the checklist (subtasks) of each of those tasks, shown under the task in the My Tasks card
+      if (myTaskRows.length > 0) {
+        const clRes = await supabase
+          .from("checklist_items")
+          .select("id, task_id, label, is_done, position")
+          .in("task_id", myTaskRows.map((t) => t.id))
+          .order("position", { ascending: true });
+        const grouped: Record<string, DashChecklistItem[]> = {};
+        for (const item of ((clRes.data as unknown as DashChecklistItem[]) ?? [])) {
+          (grouped[item.task_id] ??= []).push(item);
+        }
+        if (!cancelled) setChecklists(clRes.error ? {} : grouped);
+      }
+
+      // all tasks (light columns) for the dashboard charts
+      const chartRes = await supabase.from("tasks").select("status, due_date, updated_at, project_id").limit(5000);
+      const chartProjRes = await supabase.from("projects").select("id, name, status, due_date").limit(1000);
+      if (!cancelled) setChartProjects(chartProjRes.error ? [] : ((chartProjRes.data as unknown as ChartProject[]) ?? []));
+      if (!cancelled) setChartTasks(chartRes.error ? [] : ((chartRes.data as unknown as ChartTask[]) ?? []));
+
+      // the To-Do list items due today (only today; the full list lives on /todos)
+      const todosRes = await supabase
+        .from("todos")
+        .select("id, title, status, priority, due_time, projects(name)")
+        .eq("assignee_id", user!.id)
+        .eq("due_date", today)
+        .order("due_time", { ascending: true, nullsFirst: false });
+      if (!cancelled) setTodos(todosRes.error ? [] : ((todosRes.data as unknown as DashTodo[]) ?? []));
+      setActivity((activityRes.data as unknown as ActivityRow[]) ?? []);
+      setMeetings((meetingsRes.data as MeetingRow[]) ?? []);
+
+      const counts = new Map<string, WorkloadEntry>();
+      for (const row of (workloadRes.data as unknown as {
+        assignee_id: string;
+        profiles: { full_name: string } | null;
+      }[]) ?? []) {
+        const name = row.profiles?.full_name ?? "অজানা";
+        const existing = counts.get(row.assignee_id);
+        counts.set(row.assignee_id, {
+          name,
+          count: (existing?.count ?? 0) + 1,
+        });
+      }
+      setWorkload(
+        Array.from(counts.values())
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5),
+      );
+
+      setDataLoading(false);
+    }
+
+    loadDashboard();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  async function toggleChecklistItem(taskId: string, itemId: string, wasDone: boolean) {
+    const flip = (done: boolean) =>
+      setChecklists((prev) => ({
+        ...prev,
+        [taskId]: (prev[taskId] ?? []).map((it) => (it.id === itemId ? { ...it, is_done: done } : it)),
+      }));
+    flip(!wasDone);
+    const { error } = await supabase.from("checklist_items").update({ is_done: !wasDone }).eq("id", itemId);
+    if (error) {
+      setError(error.message);
+      flip(wasDone);
+    }
+  }
+
+  async function toggleTodo(todoId: string, currentStatus: string) {
+    if (!user) return;
+    const next = currentStatus === "completed" ? "pending" : "completed";
+    setTodos((prev) => prev.map((t) => (t.id === todoId ? { ...t, status: next } : t)));
+    const { error } = await supabase
+      .from("todos")
+      .update({ status: next, completed_at: next === "completed" ? new Date().toISOString() : null })
+      .eq("id", todoId);
+    if (error) {
+      setError(error.message);
+      setTodos((prev) => prev.map((t) => (t.id === todoId ? { ...t, status: currentStatus } : t)));
+    }
+  }
+
+  async function toggleTask(taskId: string, currentStatus: string) {
+    if (!user) return;
+    const newStatus = currentStatus === "done" ? "todo" : "done";
+
+    setTasks((prev) =>
+      newStatus === "done" ? prev.filter((t) => t.id !== taskId) : prev,
+    );
+
+    const { error } = await supabase
+      .from("tasks")
+      .update({ status: newStatus })
+      .eq("id", taskId);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    await supabase.from("activity_log").insert({
+      actor_id: user.id,
+      action: "status_changed",
+      entity_type: "task",
+      entity_id: taskId,
+      detail:
+        newStatus === "done"
+          ? "একটা টাস্ক সম্পন্ন করা হয়েছে"
+          : "একটা টাস্ক আবার খোলা হয়েছে",
+    });
+  }
+
+  async function handleDeleteActivity(id: string) {
+    if (!window.confirm("এই অ্যাক্টিভিটি এন্ট্রিটা ডিলিট করতে চান? এটা ফিরিয়ে আনা যাবে না।")) return;
+    setActivity((prev) => prev.filter((a) => a.id !== id));
+    const { error: err } = await supabase.from("activity_log").delete().eq("id", id);
+    if (err) setError(err.message);
+  }
+
+  if (sessionLoading) return null;
+  if (!user) return <SignInScreen />;
+
+  const displayName = profile?.full_name ?? user.email ?? "ব্যবহারকারী";
+  const firstName = displayName.split(" ")[0];
+  const insights = buildInsights(kpis.overdue, workload, projects);
+  const statusSegs = statusCounts(chartTasks);
+  const due = dueNextDays(chartTasks, todayISO());
+  const completions = completionsByDay(chartTasks, todayISO());
+  const projStatusSegs = projectStatusCounts(chartProjects);
+  const projProgress = projectProgress(chartProjects, chartTasks);
+  const projDue = projectsDueWeeks(chartProjects, todayISO());
+
+  const kpiCards: {
+    icon: IconName;
+    iconTone?: "danger" | "positive" | "warning" | "info";
+    value: string;
+    label: string;
+    href: string;
+    percent?: number;
+  }[] = [
+    {
+      icon: "folder",
+      value: String(kpis.activeProjects),
+      label: "Active Projects",
+      href: "/projects",
+    },
+    {
+      icon: "check",
+      iconTone: "info",
+      value: String(kpis.pendingTasks),
+      label: "Pending Tasks",
+      href: "/tasks",
+    },
+    {
+      icon: "clock",
+      iconTone: "warning",
+      value: String(kpis.dueToday),
+      label: "Due Today",
+      href: "/tasks",
+    },
+    {
+      icon: "alert",
+      iconTone: "danger",
+      value: String(kpis.overdue),
+      label: "Overdue Tasks",
+      href: "/tasks",
+    },
+    {
+      icon: "users",
+      iconTone: "positive",
+      value: String(kpis.teamCount),
+      label: "Team Members",
+      href: "/team",
+    },
+    {
+      icon: "bar",
+      value: `${kpis.completion}%`,
+      label: "Completion Rate",
+      href: "/tasks",
+      percent: kpis.completion,
+    },
+  ];
+
+  const KPI_TONE_STYLE: Record<string, { bg: string; fg: string }> = {
+    danger: { bg: "var(--danger-soft)", fg: "var(--danger)" },
+    positive: { bg: "var(--positive-soft)", fg: "var(--positive)" },
+    warning: { bg: "var(--warning-soft)", fg: "var(--warning)" },
+    info: dark ? { bg: "#1E293B", fg: "#60A5FA" } : { bg: "#EFF6FF", fg: "#3B82F6" },
+  };
+
+  const cmdkItems: { icon: IconName; label: string }[] = [
+    { icon: "plus", label: "নতুন টাস্ক তৈরি করুন" },
+    { icon: "folder-plus", label: "নতুন প্রজেক্ট তৈরি করুন" },
+    ...projects
+      .slice(0, 3)
+      .map((p) => ({ icon: "folder" as IconName, label: p.name })),
+    { icon: "users", label: "টিম মেম্বার দেখুন" },
+  ];
+
+  return (
+    <>
+      {/* ---- TOPBAR ---- */}
+      {/* ---- CONTENT ---- */}
+      <main className="content">
+            <div className="welcome-card">
+              <div className="welcome-left">
+                <div className="welcome-greeting">{greeting()}</div>
+                <div className="welcome-name-row">
+                  <Avatar person={profile} size={26} />
+                  <span className="welcome-name">{firstName}</span>
+                </div>
+                <p className="welcome-sub">
+                  আজ টিমজুড়ে যা যা ঘটছে, তার সারসংক্ষেপ এখানে।
+                </p>
+                <span className="date-chip">
+                  <Icon name="calendar" size={12} />
+                  {new Date().toLocaleDateString("bn-BD", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </span>
+              </div>
+              <div className="welcome-banner" aria-hidden="true"></div>
+            </div>
+
+            {error && (
+              <div
+                style={{
+                  marginBottom: 20,
+                  padding: "12px 16px",
+                  borderRadius: "var(--radius-md)",
+                  background: "var(--danger-soft)",
+                  color: "var(--danger)",
+                  fontSize: 13,
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+            {/* KPI GRID */}
+            <section className="kpi-grid" aria-label="মূল সূচক">
+              {kpiCards.map((card) => {
+                const tone = card.iconTone ? KPI_TONE_STYLE[card.iconTone] : null;
+                return (
+                  <div className="kpi-card" key={card.label}>
+                    <div className="kpi-top">
+                      <div
+                        className="kpi-icon"
+                        style={tone ? { background: tone.bg, color: tone.fg } : undefined}
+                      >
+                        <Icon name={card.icon} />
+                      </div>
+                      <Link className="kpi-menu-link" href={card.href} aria-label={`${card.label} বিস্তারিত`}>
+                        <Icon name="more-horizontal" size={15} />
+                      </Link>
+                    </div>
+                    <div className="kpi-value tabular" style={tone ? { color: tone.fg } : { color: "var(--accent)" }}>
+                      {dataLoading ? "—" : card.value}
+                    </div>
+                    <div className="kpi-label">{card.label}</div>
+                    {card.percent !== undefined ? (
+                      <div className="kpi-ring-wrap">
+                        <svg width={48} height={48} viewBox="0 0 48 48">
+                          <circle cx={24} cy={24} r={20} fill="none" stroke="var(--border-soft)" strokeWidth={4} />
+                          <circle
+                            cx={24}
+                            cy={24}
+                            r={20}
+                            fill="none"
+                            stroke="var(--accent)"
+                            strokeWidth={4}
+                            strokeLinecap="round"
+                            strokeDasharray={125.66}
+                            strokeDashoffset={125.66 - (Math.min(card.percent, 100) / 100) * 125.66}
+                          />
+                        </svg>
+                      </div>
+                    ) : (
+                      <div className="kpi-deco" style={tone ? { color: tone.fg } : undefined}>
+                        <Icon name={card.icon} size={70} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </section>
+
+            {/* MY TASKS + INSIGHTS */}
+            <div className="grid-2col top-row">
+              <div>
+                {/* My Tasks */}
+                <section className="panel">
+                  <div className="panel-head">
+                    <span className="panel-title">
+                      My Tasks{" "}
+                      <span className="count">· {tasks.length}টা বাকি</span>
+                    </span>
+                    <Link className="panel-link" href="/tasks">
+                      সব দেখুন <Icon name="chevron-right" />
+                    </Link>
+                  </div>
+                  <div className="panel-body">
+                    {dataLoading ? (
+                      <p
+                        style={{
+                          padding: 16,
+                          fontSize: 13,
+                          color: "var(--ink-faint)",
+                        }}
+                      >
+                        লোড হচ্ছে…
+                      </p>
+                    ) : tasks.length === 0 ? (
+                      <p
+                        style={{
+                          padding: 16,
+                          fontSize: 13,
+                          color: "var(--ink-faint)",
+                        }}
+                      >
+                        আপনার নামে কোনো বাকি টাস্ক নেই 🎉
+                      </p>
+                    ) : (
+                      tasks.map((task) => {
+                        const due = dueMeta(task.due_date, task.status);
+                        const items = checklists[task.id] ?? [];
+                        const doneCount = items.filter((it) => it.is_done).length;
+                        return (
+                          <div className="task-item" key={task.id}>
+                          <div className="task-row">
+                            <button
+                              className="task-status-dot"
+                              aria-label="সম্পন্ন হিসেবে চিহ্নিত করুন"
+                              onClick={() => toggleTask(task.id, task.status)}
+                            ></button>
+                            <Link href={`/tasks?task=${task.id}`} className="task-main">
+                              <div className="task-title">{task.title}</div>
+                              <div className="task-meta">
+                                <span
+                                  className="priority-dot"
+                                  style={{
+                                    background: PRIORITY_COLOR[task.priority],
+                                  }}
+                                ></span>
+                                <span className="task-project-tag">
+                                  {task.projects?.name ?? "কোনো প্রজেক্ট নেই"}
+                                </span>
+                                {items.length > 0 && (
+                                  <span className="task-check-count tabular">
+                                    <Icon name="checklist" size={12} /> {doneCount}/{items.length}
+                                  </span>
+                                )}
+                              </div>
+                            </Link>
+                            <div
+                              className={`task-due${due.cls ? ` ${due.cls}` : ""}`}
+                            >
+                              {due.text}
+                            </div>
+                          </div>
+                          {items.length > 0 && (
+                            <ul className="task-checklist">
+                              {items.slice(0, 5).map((it) => (
+                                <li key={it.id} className={it.is_done ? "is-done" : undefined}>
+                                  <button
+                                    type="button"
+                                    className={`task-check-box${it.is_done ? " done" : ""}`}
+                                    aria-label={it.is_done ? "অসম্পন্ন হিসেবে চিহ্নিত করুন" : "সম্পন্ন হিসেবে চিহ্নিত করুন"}
+                                    aria-pressed={it.is_done}
+                                    onClick={() => toggleChecklistItem(task.id, it.id, it.is_done)}
+                                  ></button>
+                                  <span>{it.label}</span>
+                                </li>
+                              ))}
+                              {items.length > 5 && (
+                                <li className="task-checklist-more">
+                                  <Link href={`/tasks?task=${task.id}`}>+{items.length - 5} আরও</Link>
+                                </li>
+                              )}
+                            </ul>
+                          )}
+                          </div>
+                        );
+                      })
+                    )}
+
+                    {/* Today's To-Do */}
+                    <div className="todo-block">
+                      <div className="todo-block-head">
+                        <span>
+                          Today&apos;s To-Do{" "}
+                          <span className="count">
+                            · {todos.filter((t) => t.status === "completed").length}/{todos.length} সম্পন্ন
+                          </span>
+                        </span>
+                        <Link className="panel-link" href="/todos">
+                          সব দেখুন <Icon name="chevron-right" />
+                        </Link>
+                      </div>
+                      {!dataLoading && todos.length === 0 ? (
+                        <p className="todo-empty">আজকের জন্য কোনো টু-ডু নেই</p>
+                      ) : (
+                        todos.map((todo) => {
+                          const done = todo.status === "completed";
+                          return (
+                            <div className="task-row" key={todo.id}>
+                              <button
+                                className={`task-status-dot${done ? " done" : ""}`}
+                                aria-label={done ? "অসম্পন্ন হিসেবে চিহ্নিত করুন" : "সম্পন্ন হিসেবে চিহ্নিত করুন"}
+                                onClick={() => toggleTodo(todo.id, todo.status)}
+                              ></button>
+                              <Link href="/todos" className="task-main">
+                                <div className={`task-title${done ? " done" : ""}`}>{todo.title}</div>
+                                <div className="task-meta">
+                                  <span
+                                    className="priority-dot"
+                                    style={{ background: PRIORITY_COLOR[todo.priority === "medium" ? "normal" : todo.priority] }}
+                                  ></span>
+                                  <span className="task-project-tag">{todo.projects?.name ?? "কোনো প্রজেক্ট নেই"}</span>
+                                </div>
+                              </Link>
+                              <div className="task-due">{todo.due_time ? formatTimeBn(todo.due_time) : "আজ"}</div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </section>
+              </div>
+              <div>
+                {/* Insights */}
+                <section className="ai-card">
+                  <div className="ai-head">
+                    <div className="ai-badge">
+                      <Icon name="spark" color="#fff" />
+                    </div>
+                    <div className="ai-title">ইনসাইট</div>
+                  </div>
+                  <div className="ai-list">
+                    {insights.map((text, i) => (
+                      <div className="ai-item" key={i}>
+                        <span className="dot"></span> {text}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            {/* CHARTS */}
+            <h2 className="charts-heading">Task Analytics</h2>
+            <section className="charts-row" aria-label="চার্ট">
+              <div className="panel">
+                <div className="panel-head">
+                  <span className="panel-title">Task status</span>
+                </div>
+                <div className="panel-body chart-body">
+                  {dataLoading ? <p className="chart-loading">লোড হচ্ছে…</p> : <StatusBar segments={statusSegs} />}
+                </div>
+              </div>
+              <div className="panel">
+                <div className="panel-head">
+                  <span className="panel-title">Completed tasks</span>
+                </div>
+                <div className="panel-body chart-body">
+                  {dataLoading ? <p className="chart-loading">লোড হচ্ছে…</p> : <TrendChart points={completions} />}
+                </div>
+              </div>
+              <div className="panel">
+                <div className="panel-head">
+                  <span className="panel-title">Due in the next 7 days</span>
+                </div>
+                <div className="panel-body chart-body">
+                  {dataLoading ? (
+                    <p className="chart-loading">লোড হচ্ছে…</p>
+                  ) : (
+                    <OutlookChart buckets={due.buckets} undated={due.later} caption="Open tasks due per day · whole team" periodLabel="Day" showHours={false} />
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* PROJECT CHARTS */}
+            <h2 className="charts-heading">Project Analytics</h2>
+            <section className="charts-row" aria-label="প্রজেক্ট চার্ট">
+              <div className="panel">
+                <div className="panel-head">
+                  <span className="panel-title">Project status</span>
+                </div>
+                <div className="panel-body chart-body">
+                  {dataLoading ? <p className="chart-loading">লোড হচ্ছে…</p> : <DonutChart segments={projStatusSegs} noun="project" />}
+                </div>
+              </div>
+              <div className="panel">
+                <div className="panel-head">
+                  <span className="panel-title">Project progress</span>
+                </div>
+                <div className="panel-body chart-body">
+                  {dataLoading ? <p className="chart-loading">লোড হচ্ছে…</p> : <ProjectProgress rows={projProgress} />}
+                </div>
+              </div>
+              <div className="panel">
+                <div className="panel-head">
+                  <span className="panel-title">Project deadlines</span>
+                </div>
+                <div className="panel-body chart-body">
+                  {dataLoading ? (
+                    <p className="chart-loading">লোড হচ্ছে…</p>
+                  ) : (
+                    <OutlookChart buckets={projDue.buckets} undated={projDue.later} caption="Open projects due per week" periodLabel="Week" showHours={false} noun="project" />
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* TWO COLUMN LAYOUT */}
+            <div className="grid-2col bottom-row">
+              {/* LEFT COLUMN */}
+              <div>
+                {/* Project Overview */}
+                <section className="panel">
+                  <div className="panel-head">
+                    <span className="panel-title-row">
+                      <span className="panel-icon">
+                        <Icon name="folder" size={14} />
+                      </span>
+                      <span className="panel-title">Project Overview</span>
+                      <span className="panel-count-pill tabular">
+                        {kpis.activeProjects} active
+                      </span>
+                    </span>
+                    <Link className="panel-link" href="/projects">
+                      View all <Icon name="chevron-right" />
+                    </Link>
+                  </div>
+                  <div className="panel-body pcard-list">
+                    {dataLoading ? (
+                      <p
+                        style={{
+                          padding: 16,
+                          fontSize: 13,
+                          color: "var(--ink-faint)",
+                        }}
+                      >
+                        লোড হচ্ছে…
+                      </p>
+                    ) : projects.length === 0 ? (
+                      <p
+                        style={{
+                          padding: 16,
+                          fontSize: 13,
+                          color: "var(--ink-faint)",
+                        }}
+                      >
+                        কোনো প্রজেক্ট নেই।
+                      </p>
+                    ) : (
+                      projects.map((p) => {
+                        const chip = PROJECT_CHIP[p.status] ?? {
+                          cls: "chip-progress",
+                          label: p.status,
+                        };
+                        const avatars = p.avatars.length > 0
+                          ? p.avatars
+                          : p.manager
+                            ? [p.manager]
+                            : [];
+                        const visibleAvatars = avatars.slice(0, 4);
+                        const extraAvatars = avatars.length - visibleAvatars.length;
+                        return (
+                          <Link href={`/projects/${p.id}`} className={`pcard is-${p.status}`} key={p.id}>
+                            <div className="pcard-top">
+                              <div className="project-icon">
+                                {p.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="pcard-title">
+                                <div className="project-name">{p.name}</div>
+                                <div className="pcard-client">{p.clients?.company_name ?? "—"}</div>
+                              </div>
+                              <span className={`status-dot-pill ${chip.cls}`}>
+                                <span className="status-dot"></span>
+                                {chip.label}
+                              </span>
+                            </div>
+                            <div className="pcard-progress">
+                              <div className="pcard-progress-row">
+                                <span className="pcard-progress-text tabular">
+                                  <b>{p.doneCount}</b> / {p.taskCount} tasks done
+                                </span>
+                                <span className="pcard-progress-pct tabular">{p.progress ?? 0}%</span>
+                              </div>
+                              <div className="progress-track">
+                                <div
+                                  className="progress-fill"
+                                  style={{
+                                    width: `${p.progress ?? 0}%`,
+                                    ...(chip.cls === "chip-overdue" ? { background: "var(--danger)" } : {}),
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                            <div className="pcard-bottom">
+                              {visibleAvatars.length > 0 ? (
+                                <div className="avatar-stack">
+                                  {visibleAvatars.map((a, i) => (
+                                    <Avatar key={i} person={a} size={26} />
+                                  ))}
+                                  {extraAvatars > 0 && (
+                                    <div className="avatar avatar-more" style={{ width: 26, height: 26, fontSize: 10 }}>
+                                      +{extraAvatars}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span></span>
+                              )}
+                              <div className="pcard-stats">
+                                {p.due_date && (
+                                  <span
+                                    className={`pcard-due${p.status !== "completed" && p.due_date < todayISO() ? " is-overdue" : ""}`}
+                                    title="Deadline"
+                                  >
+                                    <Icon name="calendar" size={13} /> {formatBnDate(p.due_date)}
+                                    {p.status !== "completed" && p.due_date < todayISO() && " · Overdue"}
+                                  </span>
+                                )}
+                                <span className="pcard-stat" title="Discussions">
+                                  <Icon name="message" size={13} /> <b className="tabular">{p.discussionCount}</b>
+                                </span>
+                                <span className="pcard-stat" title="Files">
+                                  <Icon name="file" size={13} /> <b className="tabular">{p.fileCount}</b>
+                                </span>
+                              </div>
+                            </div>
+                          </Link>
+                        );
+                      })
+                    )}
+                  </div>
+                </section>
+
+                {/* Activity Feed */}
+                <section className="panel">
+                  <div className="panel-head">
+                    <span className="panel-title">Activity Feed</span>
+                  </div>
+                  <div className="panel-body">
+                    {dataLoading ? (
+                      <p
+                        style={{
+                          padding: 16,
+                          fontSize: 13,
+                          color: "var(--ink-faint)",
+                        }}
+                      >
+                        লোড হচ্ছে…
+                      </p>
+                    ) : activity.length === 0 ? (
+                      <p
+                        style={{
+                          padding: 16,
+                          fontSize: 13,
+                          color: "var(--ink-faint)",
+                        }}
+                      >
+                        এখনো কোনো অ্যাক্টিভিটি নেই।
+                      </p>
+                    ) : (
+                      activity.map((a) => {
+                        const meta = activityMeta(a.action);
+                        return (
+                          <div className="activity-row" key={a.id}>
+                            <div className={`activity-icon ${meta.cls}`}>
+                              <Icon name={meta.icon} size={14} />
+                            </div>
+                            <div className="activity-body">
+                              <div className="activity-text">
+                                <b>{a.profiles?.full_name ?? "কেউ একজন"}</b>{" "}
+                                {a.detail}
+                              </div>
+                              <div className="activity-time">{relativeTimeBn(a.created_at)}</div>
+                            </div>
+                            {profile?.is_admin && (
+                              <button
+                                className="activity-delete"
+                                onClick={() => handleDeleteActivity(a.id)}
+                                aria-label="ডিলিট করুন"
+                                title="ডিলিট করুন"
+                              >
+                                <Icon name="trash" size={13} />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </section>
+              </div>
+
+              {/* RIGHT COLUMN */}
+              <div>
+                {/* Team Workload */}
+                <section className="panel">
+                  <div className="panel-head">
+                    <span className="panel-title">Team Workload</span>
+                  </div>
+                  <div className="panel-body wl-body">
+                    {dataLoading ? (
+                      <p
+                        style={{
+                          padding: 16,
+                          fontSize: 13,
+                          color: "var(--ink-faint)",
+                        }}
+                      >
+                        লোড হচ্ছে…
+                      </p>
+                    ) : workload.length === 0 ? (
+                      <p
+                        style={{
+                          padding: 16,
+                          fontSize: 13,
+                          color: "var(--ink-faint)",
+                        }}
+                      >
+                        কোনো টাস্ক অ্যাসাইন করা নেই।
+                      </p>
+                    ) : (
+                      <WorkloadChart data={workload} />
+                    )}
+                  </div>
+                </section>
+
+                {/* Calendar Preview */}
+                <section className="panel">
+                  <div className="panel-head">
+                    <span className="panel-title">আজকের সময়সূচি</span>
+                  </div>
+                  <div className="panel-body">
+                    {dataLoading ? (
+                      <p
+                        style={{
+                          padding: 16,
+                          fontSize: 13,
+                          color: "var(--ink-faint)",
+                        }}
+                      >
+                        লোড হচ্ছে…
+                      </p>
+                    ) : meetings.length === 0 ? (
+                      <p
+                        style={{
+                          padding: 16,
+                          fontSize: 13,
+                          color: "var(--ink-faint)",
+                        }}
+                      >
+                        আজ কোনো মিটিং নেই।
+                      </p>
+                    ) : (
+                      meetings.map((m) => (
+                        <div className="cal-row" key={m.id}>
+                          <span className="cal-time tabular">
+                            {formatTimeBn(m.meeting_time) || "—"}
+                          </span>
+                          <span className="cal-dot"></span>
+                          <span className="cal-title">{m.title}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </section>
+
+                {/* Quick Actions */}
+                <section className="panel">
+                  <div className="panel-head">
+                    <span className="panel-title">Quick Actions</span>
+                  </div>
+                  <div className="qa-grid">
+                    {QUICK_ACTIONS.map((qa) =>
+                      qa.href ? (
+                        <a className="qa-btn" key={qa.label} href={qa.href}>
+                          <div className="qa-icon">
+                            <Icon name={qa.icon} size={14} />
+                          </div>
+                          <span className="qa-label">{qa.label}</span>
+                        </a>
+                      ) : (
+                        <button className="qa-btn" key={qa.label} type="button">
+                          <div className="qa-icon">
+                            <Icon name={qa.icon} size={14} />
+                          </div>
+                          <span className="qa-label">{qa.label}</span>
+                        </button>
+                      ),
+                    )}
+                  </div>
+                </section>
+              </div>
+            </div>
+          </main>
+      {/* Command Palette */}
+      <div
+        className={`cmdk-overlay${cmdkOpen ? " open" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="কমান্ড সার্চ"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setCmdkOpen(false);
+        }}
+      >
+        <div className="cmdk-box">
+          <div className="cmdk-input-row">
+            <Icon name="search" />
+            <input
+              type="text"
+              placeholder="প্রজেক্ট, টাস্ক বা কমান্ড খুঁজুন..."
+              autoFocus={cmdkOpen}
+            />
+            <span className="kbd">Esc</span>
+          </div>
+          <div className="cmdk-results">
+            {cmdkItems.map((item, i) => (
+              <div
+                className={`cmdk-item${i === 0 ? " sel" : ""}`}
+                key={`${item.label}-${i}`}
+              >
+                <Icon name={item.icon} /> {item.label}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

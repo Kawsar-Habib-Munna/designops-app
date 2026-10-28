@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, hasSubmittedRequirements, type ClientRecord } from '@/lib/clientPortal';
 import { uploadFileToDrive, guessFileType } from '@/lib/driveUpload';
+import PhoneInput from '@/app/components/PhoneInput';
 import '../client-shared.css';
 import './onboarding.css';
 
@@ -517,7 +518,7 @@ export default function ClientOnboarding() {
                       <label className="field-label" htmlFor="phone">
                         Phone number <span className="opt">(optional)</span>
                       </label>
-                      <input id="phone" type="tel" className="field-input" value={form.phone} onChange={(e) => setField('phone', e.target.value)} placeholder="+880 1XXX-XXXXXX" />
+                      <PhoneInput id="phone" inputClassName="field-input" value={form.phone} onChange={(v) => setField('phone', v)} placeholder="1XXX-XXXXXX" />
                     </div>
                     <div className="field">
                       <label className="field-label" htmlFor="preferredContact">

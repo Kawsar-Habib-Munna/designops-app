@@ -50,3 +50,109 @@ div.brand.brand-topbar {
 .dark .brand-logo-new {
   filter: invert(1) hue-rotate(180deg);
 }
+
+/* ==========================================================================
+   Chip system for the admin dashboard — ONE design for every status / priority chip.
+   A small rounded rectangle: coloured status dot, readable ink text, thin tinted border.
+   Applies to every admin page root (`*-root`, e.g. dashboard-root, tasklist-root, projdetail-root) but not to the
+   client portal (.client-portal keeps its own look). The attribute + :not() selector is deliberately more specific
+   than each page's own `.xxx-root :is(.status-pill, .status-pill-btn)` rule so this one wins without editing a dozen stylesheets.
+   Variants (colour only): neutral s-todo s-archived sp-none sp-draft p-low | accent s-progress p-normal |
+   warning s-review s-action sp-sent p-high | positive s-done s-active sp-signed | danger s-overdue s-danger
+   sp-declined p-urgent | info sp-viewed.
+   ========================================================================== */
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn),
+[class*="-root"]:not(.client-portal) .priority-pill {
+  --pill: var(--ink-faint, #a3a3ae);
+  --pill-bg: var(--surface-muted, #fbfbfc);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  padding: 4px 10px 4px 9px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.005em;
+  white-space: nowrap;
+  color: var(--ink, #14141a);
+  background: var(--pill-bg);
+  border: 1px solid color-mix(in srgb, var(--pill) 28%, transparent);
+}
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn)::before,
+[class*="-root"]:not(.client-portal) .priority-pill::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--pill);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pill) 20%, transparent);
+}
+[class*="-root"]:not(.client-portal) .status-pill-btn { cursor: pointer; }
+/* some pages put their own <span class="dot"> inside; the ::before dot replaces it */
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn) .dot { display: none; }
+
+/* neutral */
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn).s-todo,
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn).s-archived,
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn).sp-none,
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn).sp-draft,
+[class*="-root"]:not(.client-portal) .priority-pill.p-low { --pill: var(--ink-faint, #a3a3ae); --pill-bg: var(--surface-muted, #fbfbfc); color: var(--ink-soft, #6e6e7a); }
+/* accent */
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn).s-progress,
+[class*="-root"]:not(.client-portal) .priority-pill.p-normal { --pill: var(--accent, #5b4fe8); --pill-bg: var(--accent-soft, #efedfe); }
+/* warning */
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn).s-review,
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn).s-action,
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn).sp-sent,
+[class*="-root"]:not(.client-portal) .priority-pill.p-high { --pill: var(--warning, #f5a524); --pill-bg: var(--warning-soft, #fdf3e1); }
+/* positive */
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn).s-done,
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn).s-active,
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn).sp-signed { --pill: var(--positive, #17a34a); --pill-bg: var(--positive-soft, #eaf7ef); }
+/* danger */
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn).s-overdue,
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn).s-danger,
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn).sp-declined,
+[class*="-root"]:not(.client-portal) .priority-pill.p-urgent { --pill: var(--danger, #e5484d); --pill-bg: var(--danger-soft, #fcebec); }
+/* info */
+[class*="-root"]:not(.client-portal) :is(.status-pill, .status-pill-btn).sp-viewed { --pill: #0369a1; --pill-bg: #e3f2fb; }
+[class*="-root"]:not(.client-portal).dark :is(.status-pill, .status-pill-btn).sp-viewed { --pill-bg: #0c2a3d; }
+
+/* Profile chip in the top bar (ProfileMenu variant="topbar"): avatar + name + role, a quiet pill that opens the profile
+   editor. Page tokens with neutral fallbacks so it works on every shell. */
+[class*="-root"] .profile-chip { display: inline-flex; align-items: center; justify-content: flex-start; gap: 10px; max-width: 260px; margin: 0 0 0 8px; padding: 0; border: none; border-radius: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+[class*="-root"] .profile-chip:hover .profile-name { color: var(--accent, #5b4fe8); }
+[class*="-root"] .profile-chip:focus-visible { outline: 2px solid var(--accent, #5b4fe8); outline-offset: 4px; border-radius: 8px; }
+[class*="-root"] .profile-chip .avatar { flex-shrink: 0; border-radius: 50%; order: 2; }
+[class*="-root"] .profile-chip .profile-meta { min-width: 0; line-height: 1.25; text-align: right; order: 1; }
+[class*="-root"] .profile-chip .profile-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--ink, #14141a); }
+[class*="-root"] .profile-chip .profile-role { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--ink-faint, #a3a3ae); }
+@media (max-width: 720px) {
+  [class*="-root"] .profile-chip { margin-left: 2px; }
+  [class*="-root"] .profile-chip .profile-meta { display: none; }
+}
+
+/* a little more breathing room at the left and right ends of the dashboard top bar (profile card on the right,
+   search on the left); phones keep their compact padding */
+@media (min-width: 721px) {
+  [class*="-root"]:not(.client-portal) .topbar { padding-left: 32px; padding-right: 32px; }
+}
+
+/* Fallback styles for the shared dashboard top bar. The shell now puts the same search box and bell on every page, but
+   some page stylesheets never defined them. :where() keeps this at the lowest specificity, so any page that does style
+   them (e.g. .dashboard-root .search-box) still wins and keeps its own look. */
+:where([class*="-root"]:not(.client-portal)) .search-box { flex: 1; max-width: 420px; display: flex; align-items: center; gap: 8px; margin: 0; background: var(--surface-muted, #f2f1f2); border: 1px solid var(--border, #d5d4d7); border-radius: var(--radius-sm, 8px); padding: 8px 10px; color: var(--ink-faint, #939197); font: inherit; font-size: 13px; text-align: left; cursor: pointer; transition: border-color .15s ease; }
+:where([class*="-root"]:not(.client-portal)) .search-box:hover { border-color: var(--ink-faint, #939197); }
+:where([class*="-root"]:not(.client-portal)) .search-box input { border: none; background: transparent; outline: none; font: inherit; font-size: 13px; color: var(--ink, #323135); flex: 1; }
+:where([class*="-root"]:not(.client-portal)) .kbd { font-size: 11px; color: var(--ink-faint, #939197); border: 1px solid var(--border, #d5d4d7); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; background: var(--surface, #fff); font-family: inherit; }
+:where([class*="-root"]:not(.client-portal)) .icon-btn { position: relative; }
+:where([class*="-root"]:not(.client-portal)) .bell-count { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 999px; background: var(--accent, #7c3aed); color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid var(--surface, #fff); }
+@media (max-width: 900px) {
+  :where([class*="-root"]:not(.client-portal) .topbar .search-box) { display: none; }
+}
+
+/* One narrower, consistent sidebar width for every dashboard page (pages used to differ: 224 / 230 / 248px) */
+[class*="-root"]:not(.client-portal) .sidebar { width: 208px; }

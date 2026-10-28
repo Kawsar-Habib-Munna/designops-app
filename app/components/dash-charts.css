@@ -1,0 +1,79 @@
+/* Dashboard charts: the stacked status bar (StatusBar.tsx) and the trend line/area chart (TrendChart.tsx).
+   Page tokens with neutral fallbacks; text always in ink colours, never the series colour. */
+
+/* ---------- StatusBar ---------- */
+.sb-empty { margin: 0; padding: 18px 4px; font-size: 13px; color: var(--ink-faint, #a3a3ae); }
+.sb-total { display: flex; align-items: baseline; gap: 8px; margin-bottom: 16px; }
+.sb-total-num { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; color: var(--ink, #14141a); }
+.sb-total-label { font-size: 13px; color: var(--ink-soft, #6e6e7a); }
+.sb-bar { display: flex; gap: 2px; height: 18px; border-radius: 6px; overflow: hidden; background: var(--border-soft, #f0f0f3); }
+.sb-seg { min-width: 4px; transition: opacity .15s ease; }
+.sb-seg.is-dim { opacity: 0.35; }
+.sb-legend { display: flex; flex-direction: column; gap: 2px; margin: 18px 0 0; padding: 0; list-style: none; }
+.sb-legend li { display: grid; grid-template-columns: 10px 1fr auto 44px; align-items: center; column-gap: 10px; padding: 8px 10px; border-radius: 10px; font-size: 13px; transition: background .15s ease; }
+.sb-legend li.is-active { background: var(--surface-muted, #fbfbfc); }
+.sb-dot { width: 10px; height: 10px; border-radius: 50%; }
+.sb-label { color: var(--ink-soft, #6e6e7a); }
+.sb-legend li.is-active .sb-label { color: var(--ink, #14141a); }
+.sb-count { font-weight: 700; color: var(--ink, #14141a); }
+.sb-pct { text-align: right; font-size: 12px; color: var(--ink-faint, #a3a3ae); }
+
+/* ---------- TrendChart ---------- */
+.tc-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.tc-caption { font-size: 12px; font-weight: 600; color: var(--ink-soft, #6e6e7a); }
+.tc-seg { display: inline-flex; gap: 2px; padding: 3px; background: var(--surface-muted, #fbfbfc); border: 1px solid var(--border, #e8e8ec); border-radius: 9px; }
+.tc-seg button { padding: 4px 12px; border: none; border-radius: 6px; background: transparent; font-size: 12px; font-weight: 600; color: var(--ink-soft, #6e6e7a); cursor: pointer; transition: background .15s ease, color .15s ease; }
+.tc-seg button.active { background: var(--surface, #fff); color: var(--ink, #14141a); box-shadow: var(--shadow-sm, 0 1px 2px rgba(16, 16, 20, .06)); }
+.tc-chart { position: relative; }
+.tc-svg { display: block; width: 100%; height: auto; overflow: visible; outline: none; touch-action: pan-y; }
+.tc-svg:focus-visible { outline: 2px solid var(--accent, #5b4fe8); outline-offset: 4px; border-radius: 6px; }
+.tc-grid { stroke: var(--border-soft, #f0f0f3); stroke-width: 1; }
+.tc-base { stroke: var(--border, #e8e8ec); stroke-width: 1; }
+.tc-ytick, .tc-xtick { font-size: 11px; fill: var(--ink-faint, #a3a3ae); }
+.tc-area { fill: var(--accent, #5b4fe8); fill-opacity: 0.1; }
+.tc-line { fill: none; stroke: var(--accent, #5b4fe8); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.tc-dot { fill: var(--accent, #5b4fe8); stroke: var(--surface, #fff); stroke-width: 2; }
+.tc-cross { stroke: var(--ink-faint, #a3a3ae); stroke-width: 1; }
+.tc-tooltip { position: absolute; z-index: 5; transform: translate(14px, calc(-100% - 12px)); pointer-events: none; min-width: 150px; padding: 9px 12px; background: var(--surface, #fff); border: 1px solid var(--border, #e8e8ec); border-radius: 10px; box-shadow: var(--shadow-md, 0 4px 16px rgba(16, 16, 20, .1)); white-space: nowrap; }
+.tc-tooltip.flip { transform: translate(calc(-100% - 14px), calc(-100% - 12px)); }
+.tc-tooltip-value { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--ink, #14141a); }
+.tc-tooltip-key { width: 12px; height: 3px; border-radius: 2px; background: var(--accent, #5b4fe8); }
+.tc-tooltip-name { margin-top: 2px; font-size: 12px; color: var(--ink-soft, #6e6e7a); }
+.tc-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tc-table th { padding: 8px 6px; text-align: left; font-size: 11px; font-weight: 600; color: var(--ink-faint, #a3a3ae); border-bottom: 1px solid var(--border, #e8e8ec); }
+.tc-table td { padding: 8px 6px; color: var(--ink, #14141a); border-bottom: 1px solid var(--border-soft, #f0f0f3); }
+.tc-table tr:last-child td { border-bottom: none; }
+.tc-table .num { text-align: right; }
+.tc-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-soft, #f0f0f3); font-size: 12px; color: var(--ink-soft, #6e6e7a); }
+.tc-foot b { color: var(--ink, #14141a); font-weight: 700; }
+@media (prefers-reduced-motion: no-preference) { .tc-line { stroke-dasharray: 1200; stroke-dashoffset: 1200; animation: tc-draw 1s ease forwards; } }
+@keyframes tc-draw { to { stroke-dashoffset: 0; } }
+
+/* ---------- ProjectProgress ---------- */
+.pp-list { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.pp-row { display: grid; grid-template-columns: minmax(0, 38%) 1fr 42px; align-items: center; column-gap: 12px; padding: 8px 8px; border-radius: 10px; outline: none; transition: background .15s ease; }
+
+.pp-row:focus-visible { box-shadow: 0 0 0 2px var(--accent, #5b4fe8); }
+.pp-name { font-size: 13px; color: var(--ink, #14141a); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-track { height: 10px; border-radius: 5px; background: var(--border-soft, #f0f0f3); overflow: hidden; }
+.pp-bar { display: block; height: 100%; min-width: 2px; border-radius: 0 5px 5px 0; background: var(--accent, #5b4fe8); }
+.pp-val { text-align: right; font-size: 13px; font-weight: 700; color: var(--ink, #14141a); }
+
+/* ---------- DonutChart ---------- */
+.dn { display: flex; flex-direction: column; align-items: stretch; }
+.dn-ring { position: relative; width: 168px; height: 168px; margin: 4px auto 0; }
+.dn-svg { display: block; width: 100%; height: 100%; }
+.dn-track { fill: none; stroke: var(--border-soft, #f0f0f3); }
+.dn-arc { transition: opacity .15s ease; cursor: default; }
+.dn-arc.is-dim { opacity: 0.35; }
+.dn-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; text-align: center; }
+.dn-num { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; color: var(--ink, #14141a); }
+.dn-sub { margin-top: 4px; max-width: 90px; font-size: 12px; color: var(--ink-soft, #6e6e7a); }
+.dn-legend { margin-top: 14px; }
+.dn-legend li { outline: none; }
+.dn-legend li:focus-visible { box-shadow: 0 0 0 2px var(--accent, #5b4fe8); }
+
+/* ProjectProgress hover: same focus treatment as the other bar charts */
+.pp-bar { transition: opacity .15s ease; }
+.pp-list:has(.pp-row:hover) .pp-row:not(:hover) .pp-bar, .pp-list:has(.pp-row:focus-visible) .pp-row:not(:focus-visible) .pp-bar { opacity: .35; }
+.pp-row:hover .pp-name, .pp-row:focus-visible .pp-name { font-weight: 600; }

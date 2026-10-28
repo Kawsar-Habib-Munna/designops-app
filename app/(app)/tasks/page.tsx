@@ -1,0 +1,1955 @@
+'use client';
+
+// Task List — টেবিল-ভিত্তিক ভিউ, পুরোপুরি Supabase-connected:
+// tasks + projects + profiles (assignee) + checklist_items + comments +
+// attachments + activity_log। RLS-এর জন্য sign-in লাগবে (lib/useSession.ts)।
+//
+// নোট: টুলবারের Import/Export/Sort/Group By/Date Range/Saved Views এবং
+// Advanced Filters প্যানেলের চিপগুলো, আর বাল্ক বারের Assign/Stage/Label/
+// Priority/Deadline/Archive/Export বাটনগুলো — এগুলো এখনো UI প্লেসহোল্ডার
+// (disabled), ব্যাকএন্ডে কিছু করে না। Favorites ভিউ-ও তাই — schema-তে
+// favorite/starred কলাম নেই বলে সবসময় খালি দেখাবে।
+
+import { Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { Manrope } from 'next/font/google';
+import './tasks.css';
+import { supabase } from '@/lib/supabaseClient';
+import { useSession } from '@/lib/useSession';
+import { relativeTimeBn, todayISO } from '@/lib/format';
+import { STATUS_META, PRIORITY_META, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
+import { sendNotifications } from '@/lib/notify';
+import SignInScreen from '@/app/components/SignInScreen';
+import Avatar from '@/app/components/Avatar';
+import RichTextField from '@/app/components/RichTextField';
+import RichText from '@/app/components/RichText';
+
+// PDF এক্সপোর্টের হিডেন ডকুমেন্টে (teamExportRef) ব্যবহারের জন্য — Arial-এর বদলে
+// Manrope, Bengali টেক্সট এমনিতেই ব্রাউজারের সিস্টেম ফলব্যাকে রেন্ডার হবে কারণ
+// Manrope-এ Bengali গ্লিফ নেই।
+const manrope = Manrope({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap' });
+
+const ICON_PATHS: Record<string, string> = {
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
+  folder: '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/>',
+  check: '<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>',
+  checklist: '<path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M4 6l1 1 2-2"/><path d="M4 12l1 1 2-2"/><path d="M4 18l1 1 2-2"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M3 10h18"/>',
+  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  building: '<path d="M6 22V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v18"/><path d="M6 12h12"/><path d="M6 22h14"/>',
+  file: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>',
+  bar: '<path d="M3 21h18"/><rect x="6" y="12" width="3" height="6"/><rect x="11" y="8" width="3" height="10"/><rect x="16" y="4" width="3" height="14"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 21a2 2 0 0 0 4 0"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M4 12h3"/><path d="M17 12h3"/>',
+  chevrons: '<path d="M7 15l5 5 5-5"/><path d="M7 9l5-5 5 5"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
+  menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
+  refresh: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v6h-6"/>',
+  import: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/>',
+  export: '<path d="M12 15V3"/><path d="M7 8l5-5 5 5"/><path d="M4 19h16"/>',
+  whatsapp: '<path d="M3 21l1.65-4.95A8.5 8.5 0 1 1 8.6 19.4L3 21z"/>',
+  bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>',
+  filter: '<path d="M4 4h16l-6 8v6l-4 2v-8z"/>',
+  sort: '<path d="M7 4v16"/><path d="M3 8l4-4 4 4"/><path d="M17 20V4"/><path d="M21 16l-4 4-4-4"/>',
+  layers: '<path d="M12 2l9 5-9 5-9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/>',
+  sliders: '<path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/>',
+  close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
+  paperclip: '<path d="M21 11.5l-9.2 9.2a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8.2-8.2"/>',
+  'chevron-right': '<path d="M9 6l6 6-6 6"/>',
+  tick: '<path d="M20 6L9 17l-5-5"/>',
+  figma: '<path d="M9 2h6a4 4 0 0 1 0 8H9z"/><path d="M9 10h6a4 4 0 0 1 0 8 4 4 0 0 1-8 0v-4a4 4 0 0 1 4-4z"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  alert: '<path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/>',
+  eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  'check-circle': '<circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/>',
+  list: '<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
+  'chevron-left': '<path d="M15 6l-6 6 6 6"/>',
+  trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+  users2: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  edit: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
+};
+
+type IconName = keyof typeof ICON_PATHS;
+
+function Icon({ name, size = 15, color = 'currentColor' }: { name: IconName; size?: number; color?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      dangerouslySetInnerHTML={{ __html: ICON_PATHS[name] }}
+    />
+  );
+}
+
+type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null };
+type ProjectOption = { id: string; name: string };
+type AssigneeOption = { id: string; full_name: string; avatar_color: string | null; avatar_url: string | null };
+
+type TaskRow = {
+  id: string;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  workflow_stage: string;
+  priority: TaskPriority;
+  is_blocked: boolean;
+  due_date: string | null;
+  assigned_date: string;
+  estimated_hours: number | null;
+  progress: number | null;
+  updated_at: string;
+  project_id: string | null;
+  assignee_id: string | null;
+  projects: { name: string } | null;
+  profiles: { full_name: string; avatar_color: string | null; avatar_url: string | null } | null;
+  commentCount: number;
+  attachmentCount: number;
+};
+
+type ChecklistItem = { id: string; label: string; is_done: boolean; position: number };
+type CommentRow = { id: string; body: string; created_at: string; profiles: { full_name: string; avatar_color: string | null; avatar_url: string | null } | null };
+type AttachmentRow = { id: string; file_name: string; file_type: string | null; drive_url: string };
+type TaskActivityRow = { id: string; detail: string | null; created_at: string; profiles: { full_name: string } | null };
+
+type ExpandData = { checklist: ChecklistItem[]; comments: CommentRow[]; attachments: AttachmentRow[]; activity: TaskActivityRow[]; loading: boolean };
+
+type SmartView = 'all' | 'mine' | 'today' | 'overdue' | 'blocked' | 'review' | 'progress' | 'completed' | 'favorites';
+
+
+
+const SMART_VIEWS: { key: SmartView; label: string }[] = [
+  { key: 'all', label: 'All Tasks' },
+  { key: 'mine', label: 'My Tasks' },
+  { key: 'today', label: 'আজকের টাস্ক' },
+  { key: 'overdue', label: 'Overdue' },
+  { key: 'blocked', label: 'Blocked' },
+  { key: 'review', label: 'Waiting for Review' },
+  { key: 'progress', label: 'In Progress' },
+  { key: 'completed', label: 'Completed' },
+];
+
+function isCompletedThisWeek(updatedAt: string) {
+  return Date.now() - new Date(updatedAt).getTime() < 7 * 86400000;
+}
+
+function matchesView(t: TaskRow, view: SmartView, userId: string, today: string) {
+  switch (view) {
+    case 'all':
+      return true;
+    case 'mine':
+      return t.assignee_id === userId;
+    case 'today':
+      return t.assigned_date === today;
+    case 'overdue':
+      return !!t.due_date && t.due_date < today && t.status !== 'done';
+    case 'blocked':
+      return t.is_blocked;
+    case 'review':
+      return t.status === 'review' || t.workflow_stage === 'ux_review' || t.workflow_stage === 'client_review';
+    case 'progress':
+      return t.status === 'in_progress';
+    case 'completed':
+      return t.status === 'done';
+    case 'favorites':
+      return false;
+    default:
+      return true;
+  }
+}
+
+const TASK_SELECT =
+  'id, title, description, status, workflow_stage, priority, is_blocked, due_date, assigned_date, estimated_hours, progress, updated_at, project_id, assignee_id, projects(name), profiles!assignee_id(full_name, avatar_color, avatar_url)';
+
+// ---- Weekly Tasks / Weekly Plan (added alongside the existing table view,
+// which becomes the "List" tab — no existing functionality removed) ----
+type MainTab = 'list' | 'weekly-tasks' | 'weekly-plan';
+type WeeklyScope = 'mine' | 'team';
+type PlanItem = { id: string; plan_date: string; title: string; details: string | null; created_by: string | null; created_at: string };
+type PlanChecklistItem = { id: string; label: string; is_done: boolean; position: number };
+
+const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
+function isoDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+function startOfWeek(offset: number): Date {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun..6=Sat
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday + offset * 7);
+  return monday;
+}
+function formatWeekRange(start: Date, end: Date): string {
+  const fmt = (d: Date) => d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+  const year = end.getFullYear();
+  return `${fmt(start)} – ${fmt(end)} ${year}`;
+}
+
+export default function TasksPage() {
+  return (
+    <Suspense fallback={null}>
+      <TasksPageInner />
+    </Suspense>
+  );
+}
+
+function TasksPageInner() {
+  const { user, loading: sessionLoading } = useSession();
+  const searchParams = useSearchParams();
+
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [tasks, setTasks] = useState<TaskRow[]>([]);
+  const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
+  const [assigneeOptions, setAssigneeOptions] = useState<AssigneeOption[]>([]);
+  const [checklistByTask, setChecklistByTask] = useState<Map<string, ChecklistItem[]>>(new Map());
+  const [loading, setLoading] = useState(true);
+  const [reloading, setReloading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [activeView, setActiveView] = useState<SmartView>('all');
+  const [search, setSearch] = useState('');
+  const [dueDateFilter, setDueDateFilter] = useState('');
+  const [assignedDateFilter, setAssignedDateFilter] = useState('');
+  const [advOpen, setAdvOpen] = useState(false);
+  const [listScope, setListScope] = useState<WeeklyScope>('team');
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [sharingPdf, setSharingPdf] = useState(false);
+  const teamExportRef = useRef<HTMLDivElement>(null);
+
+  const [expandData, setExpandData] = useState<Record<string, ExpandData>>({});
+  const [newComment, setNewComment] = useState<Record<string, string>>({});
+  const [newChecklistItem, setNewChecklistItem] = useState<Record<string, string>>({});
+  const [editingChecklistItem, setEditingChecklistItem] = useState<string | null>(null);
+  const [editChecklistValue, setEditChecklistValue] = useState('');
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newProjectId, setNewProjectId] = useState('');
+  const [newAssigneeIds, setNewAssigneeIds] = useState<string[]>([]);
+  const [newPriority, setNewPriority] = useState<TaskPriority>('normal');
+  const [newDueDate, setNewDueDate] = useState('');
+  // "Assigned date" = কোন দিনের টাস্ক হিসেবে এটা দেখানো হবে (daily লিস্টে/
+  // "আজকের টাস্ক"-এ) — ডেডলাইন (due_date) থেকে সম্পূর্ণ আলাদা, ডেডলাইন ভিন্ন ভিন্ন
+  // দিন হতে পারে কিন্তু assigned date সবসময় থাকবে, ডিফল্ট আজ।
+  const [newAssignedDate, setNewAssignedDate] = useState(todayISO());
+  const [newChecklist, setNewChecklist] = useState<string[]>(['']);
+  const [creating, setCreating] = useState(false);
+
+  // "Create Task" বাটনে ক্লিক করলে assigned date রিসেট হয়ে আজকের তারিখে আসে —
+  // প্রতিদিনের টাস্ক যোগ করার সময় আলাদা করে বাছাই করতে না হয়; ডেডলাইন (due date)
+  // ইচ্ছাকৃতভাবে খালি/অপরিবর্তিত থাকে, কারণ সেটা টাস্ক ভেদে ভিন্ন হতে পারে।
+  function openCreateTask() {
+    setNewAssignedDate(todayISO());
+    setShowCreate(true);
+  }
+
+  // ---- List tab: per-person card view ----
+  const [editTaskId, setEditTaskId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ title: '', projectId: '', assigneeId: '', priority: 'normal' as TaskPriority, status: 'todo' as TaskStatus, dueDate: '', assignedDate: '', description: '' });
+  const [editSaving, setEditSaving] = useState(false);
+  const editingTask = tasks.find((t) => t.id === editTaskId) ?? null;
+
+  // ---- Weekly Tasks / Weekly Plan ----
+  const [mainTab, setMainTab] = useState<MainTab>('list');
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [weeklyScope, setWeeklyScope] = useState<WeeklyScope>('team');
+
+  const [planItems, setPlanItems] = useState<PlanItem[]>([]);
+  const [planChecklistByPlan, setPlanChecklistByPlan] = useState<Map<string, PlanChecklistItem[]>>(new Map());
+  const [planLoading, setPlanLoading] = useState(false);
+  const [addingPlanDate, setAddingPlanDate] = useState<string | null>(null);
+  const [planDraft, setPlanDraft] = useState('');
+  const [showAddPlanModal, setShowAddPlanModal] = useState(false);
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
+  const [modalPlanDate, setModalPlanDate] = useState('');
+  const [modalPlanTitle, setModalPlanTitle] = useState('');
+  const [modalPlanDetails, setModalPlanDetails] = useState('');
+  const [modalPlanChecklist, setModalPlanChecklist] = useState<string[]>(['']);
+  const [planSaving, setPlanSaving] = useState(false);
+
+  const weekStart = useMemo(() => startOfWeek(weekOffset), [weekOffset]);
+  const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i)), [weekStart]);
+  const weekStartISO = isoDate(weekDays[0]);
+  const weekEndISO = isoDate(weekDays[6]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    async function loadPlans() {
+      setPlanLoading(true);
+      const { data, error: err } = await supabase
+        .from('weekly_plan_items')
+        .select('id, plan_date, title, details, created_by, created_at')
+        .gte('plan_date', weekStartISO)
+        .lte('plan_date', weekEndISO)
+        .order('created_at');
+
+      const items = (data as PlanItem[]) ?? [];
+      const ids = items.map((p) => p.id);
+      const checklistMap = new Map<string, PlanChecklistItem[]>();
+      if (ids.length > 0) {
+        const { data: checklistData } = await supabase
+          .from('weekly_plan_checklist_items')
+          .select('id, plan_item_id, label, is_done, position')
+          .in('plan_item_id', ids)
+          .order('position');
+        for (const row of (checklistData as (PlanChecklistItem & { plan_item_id: string })[]) ?? []) {
+          const arr = checklistMap.get(row.plan_item_id) ?? [];
+          arr.push(row);
+          checklistMap.set(row.plan_item_id, arr);
+        }
+      }
+
+      if (!cancelled) {
+        if (!err) setPlanItems(items);
+        setPlanChecklistByPlan(checklistMap);
+        setPlanLoading(false);
+      }
+    }
+    loadPlans();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, weekStartISO, weekEndISO]);
+
+  async function loadExpandData(taskId: string) {
+    setExpandData((prev) => ({ ...prev, [taskId]: { checklist: [], comments: [], attachments: [], activity: [], loading: true } }));
+
+    const [checklistRes, commentsRes, attachmentsRes, activityRes] = await Promise.all([
+      supabase.from('checklist_items').select('id, label, is_done, position').eq('task_id', taskId).order('position'),
+      supabase.from('comments').select('id, body, created_at, profiles(full_name, avatar_color, avatar_url)').eq('task_id', taskId).order('created_at'),
+      supabase.from('attachments').select('id, file_name, file_type, drive_url').eq('task_id', taskId).order('uploaded_at', { ascending: false }),
+      supabase
+        .from('activity_log')
+        .select('id, detail, created_at, profiles(full_name)')
+        .eq('entity_type', 'task')
+        .eq('entity_id', taskId)
+        .order('created_at', { ascending: false })
+        .limit(10),
+    ]);
+
+    setExpandData((prev) => ({
+      ...prev,
+      [taskId]: {
+        checklist: (checklistRes.data as ChecklistItem[]) ?? [],
+        comments: (commentsRes.data as unknown as CommentRow[]) ?? [],
+        attachments: (attachmentsRes.data as AttachmentRow[]) ?? [],
+        activity: (activityRes.data as unknown as TaskActivityRow[]) ?? [],
+        loading: false,
+      },
+    }));
+  }
+
+  useEffect(() => {
+    function applyAssigneeParam() {
+      const assigneeParam = searchParams.get('assignee');
+      if (assigneeParam) {
+        setNewAssigneeIds([assigneeParam]);
+        setNewAssignedDate(todayISO());
+        setShowCreate(true);
+      }
+    }
+    applyAssigneeParam();
+  }, [searchParams]);
+
+  // ড্যাশবোর্ডের "My Tasks" থেকে ?task=<id> দিয়ে এলে সেই টাস্কের এডিট মোডাল খোলে।
+  // সরাসরি effect-এর ভেতর setState কল করলে react-hooks/set-state-in-effect লিন্ট
+  // রুল ধরে — তাই setTimeout(fn, 0) দিয়ে মাইক্রোটাস্ক পরে কল করা হচ্ছে।
+  useEffect(() => {
+    const taskParam = searchParams.get('task');
+    if (!taskParam) return;
+    const timer = setTimeout(() => setEditTaskId(taskParam), 0);
+    return () => clearTimeout(timer);
+  }, [searchParams]);
+
+  // editTaskId/tasks বদলালে ফর্ম আর কমেন্ট/অ্যাটাচমেন্ট/অ্যাক্টিভিটি রিফ্রেশ হয় —
+  // কার্ড ক্লিক আর ?task= URL প্যারাম দুটো পথই এখানে মিলে যায়
+  useEffect(() => {
+    if (!editTaskId) return;
+    const t = tasks.find((x) => x.id === editTaskId);
+    const timer = setTimeout(() => {
+      if (t) {
+        setEditForm({
+          title: t.title,
+          projectId: t.project_id ?? '',
+          assigneeId: t.assignee_id ?? '',
+          priority: t.priority,
+          status: t.status,
+          dueDate: t.due_date ?? '',
+          assignedDate: t.assigned_date,
+          description: t.description ?? '',
+        });
+      }
+      if (!expandData[editTaskId]) loadExpandData(editTaskId);
+    }, 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadExpandData/expandData intentionally excluded, would refetch on every keystroke elsewhere
+  }, [editTaskId, tasks]);
+
+
+  async function fetchTasksData(uid: string) {
+    const [tasksRes, commentsRes, attachmentsRes, projectsRes, teamRes, profileRes, checklistRes] = await Promise.all([
+      supabase.from('tasks').select(TASK_SELECT).order('updated_at', { ascending: false }),
+      supabase.from('comments').select('task_id'),
+      supabase.from('attachments').select('task_id'),
+      supabase.from('projects').select('id, name').order('name'),
+      supabase.from('profiles').select('id, full_name, avatar_color, avatar_url').order('full_name'),
+      supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url').eq('id', uid).single(),
+      supabase.from('checklist_items').select('id, task_id, label, is_done, position').order('position'),
+    ]);
+
+    const firstErrored = [tasksRes, commentsRes, attachmentsRes, projectsRes, teamRes, profileRes].find((r) => r.error);
+
+    const commentCounts = new Map<string, number>();
+    for (const row of (commentsRes.data as { task_id: string }[]) ?? []) {
+      commentCounts.set(row.task_id, (commentCounts.get(row.task_id) ?? 0) + 1);
+    }
+    const attachmentCounts = new Map<string, number>();
+    for (const row of (attachmentsRes.data as { task_id: string }[]) ?? []) {
+      attachmentCounts.set(row.task_id, (attachmentCounts.get(row.task_id) ?? 0) + 1);
+    }
+    const checklistByTask = new Map<string, ChecklistItem[]>();
+    for (const row of (checklistRes.data as (ChecklistItem & { task_id: string })[]) ?? []) {
+      const arr = checklistByTask.get(row.task_id) ?? [];
+      arr.push(row);
+      checklistByTask.set(row.task_id, arr);
+    }
+
+    const rows = ((tasksRes.data as unknown as Omit<TaskRow, 'commentCount' | 'attachmentCount'>[]) ?? []).map((t) => ({
+      ...t,
+      commentCount: commentCounts.get(t.id) ?? 0,
+      attachmentCount: attachmentCounts.get(t.id) ?? 0,
+    }));
+
+    return {
+      errorMessage: firstErrored?.error?.message ?? null,
+      tasks: rows,
+      projectOptions: (projectsRes.data as ProjectOption[]) ?? [],
+      assigneeOptions: (teamRes.data as AssigneeOption[]) ?? [],
+      profile: (profileRes.data as ProfileRow | null) ?? null,
+      checklistByTask,
+    };
+  }
+
+  useEffect(() => {
+    if (!user) return;
+
+    async function run() {
+      const result = await fetchTasksData(user!.id);
+      setError(result.errorMessage);
+      setTasks(result.tasks);
+      setProjectOptions(result.projectOptions);
+      setAssigneeOptions(result.assigneeOptions);
+      setChecklistByTask(result.checklistByTask);
+      if (result.profile) setProfile(result.profile);
+      setLoading(false);
+    }
+
+    run();
+  }, [user]);
+
+  async function handleReload() {
+    if (!user) return;
+    setReloading(true);
+    const result = await fetchTasksData(user.id);
+    setError(result.errorMessage);
+    setTasks(result.tasks);
+    setProjectOptions(result.projectOptions);
+    setAssigneeOptions(result.assigneeOptions);
+    setChecklistByTask(result.checklistByTask);
+    if (result.profile) setProfile(result.profile);
+    setReloading(false);
+  }
+
+  const today = todayISO();
+
+  const kpis = useMemo(() => {
+    if (!user) return { total: 0, mine: 0, dueToday: 0, overdue: 0, review: 0, completedThisWeek: 0 };
+    return {
+      total: tasks.length,
+      mine: tasks.filter((t) => t.assignee_id === user.id && t.status !== 'done').length,
+      dueToday: tasks.filter((t) => t.due_date === today && t.status !== 'done').length,
+      overdue: tasks.filter((t) => !!t.due_date && t.due_date < today && t.status !== 'done').length,
+      review: tasks.filter((t) => matchesView(t, 'review', user.id, today)).length,
+      completedThisWeek: tasks.filter((t) => t.status === 'done' && isCompletedThisWeek(t.updated_at)).length,
+    };
+  }, [tasks, user, today]);
+
+  const filtered = useMemo(() => {
+    if (!user) return [];
+    const q = search.trim().toLowerCase();
+    return tasks.filter(
+      (t) =>
+        matchesView(t, activeView, user.id, today) &&
+        (!q || t.title.toLowerCase().includes(q)) &&
+        (!dueDateFilter || t.due_date === dueDateFilter) &&
+        (!assignedDateFilter || t.assigned_date === assignedDateFilter)
+    );
+  }, [tasks, activeView, search, dueDateFilter, assignedDateFilter, user, today]);
+
+  // ---- List tab: per-person card grid (ঠিক /todos-এর member-grid
+  // প্যাটার্নে, কিন্তু আসল tasks+checklist_items ডেটা দিয়ে)। প্রতি কার্ডের
+  // progress/count real personTasks থেকে (সবসময়), তালিকায় দেখানো আইটেমগুলো
+  // বর্তমান Smart View + সার্চ দিয়ে ফিল্টার করা (filtered থেকে) — যাতে
+  // "My Tasks"/"Overdue" ইত্যাদি pill এখানেও কাজ করে। ----
+  const memberTaskCards = useMemo(() => {
+    const noConstraint = activeView === 'all' && !search.trim() && !dueDateFilter && !assignedDateFilter;
+    const people = listScope === 'mine' && user ? assigneeOptions.filter((p) => p.id === user.id) : assigneeOptions;
+    return people
+      .map((p) => {
+        const personTasks = tasks.filter((t) => t.assignee_id === p.id);
+        const shown = filtered.filter((t) => t.assignee_id === p.id);
+        const active = personTasks.filter((t) => t.status !== 'done');
+        const avgProgress = personTasks.length > 0 ? Math.round(personTasks.reduce((sum, t) => sum + (t.progress ?? 0), 0) / personTasks.length) : 0;
+        return { profile: p, personTasks, shown, activeCount: active.length, avgProgress };
+      })
+      .filter((m) => noConstraint || m.shown.length > 0);
+  }, [assigneeOptions, tasks, filtered, activeView, search, dueDateFilter, assignedDateFilter, listScope, user]);
+
+  // Team tasks কার্ড-গ্রিড PDF এ এক্সপোর্ট — গ্রুপে শেয়ার করার জন্য। স্ক্রিনে
+  // যা দেখা যাচ্ছে (ডার্ক মোডেও) তার বদলে সবসময় লাইট/প্রিন্ট-স্টাইল একটা হিডেন
+  // ডকুমেন্ট (teamExportRef) ক্যাপচার করা হয় — PDF এর রং UI থিমের সাথে বদলানো উচিত না।
+  async function generateTeamTasksPdfBlob(): Promise<{ blob: Blob; filename: string }> {
+    const node = teamExportRef.current;
+    if (!node) throw new Error('Export content not ready');
+    const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
+    await document.fonts.ready;
+    const canvas = await html2canvas(node, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    // addImage নিজে থেকে পেজ-কাট করে না — শুধু পেজের শেষ প্রান্তে (y=pageHeight)
+    // ক্লিপ হয়ে যায়, তাই আগে কনটেন্ট সরাসরি পেজের একদম নিচের কিনারা পর্যন্ত চলে
+    // যেত, কোনো মার্জিন ছাড়াই। এখন প্রতি পেজের উপরে/নিচে marginMM ফাঁকা রাখা হয় —
+    // নিচের অংশটা একটা সাদা রেক্ট্যাঙ্গেল দিয়ে মাস্ক করে (কারণ আসল ছবিটা পেজ-কিনারা
+    // পর্যন্তই রেন্ডার হতে চায়), আর পরের পেজের স্লাইসও সেই অনুযায়ী শিফট করা হয়।
+    const marginMM = 12;
+    const usableHeight = pageHeight - marginMM * 2;
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    function maskMargins() {
+      pdf.setFillColor(255, 255, 255);
+      // পেজ১-এ উপরের ফাঁকা অংশ এমনিতেই ব্ল্যাঙ্ক (ছবিই ওখানে আঁকা হয়নি), কিন্তু
+      // পরের পেজগুলোতে ছবি y=0 থেকে শুরু হয় বলে আগের পেজে যা শেষের দিকে দেখানো
+      // হয়েছিল তারই শেষ ১২মিমি আবার উপরে পুনরাবৃত্তি হয়ে যাচ্ছিল (বাগ — টাস্ক/
+      // চেকলিস্ট আইটেম ডুপ্লিকেট দেখাচ্ছিল)। তাই এখন প্রতি পেজেই উপরে-নিচে দুই
+      // দিকেই মাস্ক করা হয়।
+      pdf.rect(0, 0, pageWidth, marginMM, 'F');
+      pdf.rect(0, pageHeight - marginMM, pageWidth, marginMM, 'F');
+    }
+
+    let heightLeft = imgHeight;
+    let position = marginMM;
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    maskMargins();
+    heightLeft -= usableHeight;
+    while (heightLeft > 0) {
+      position = marginMM - (imgHeight - heightLeft);
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      maskMargins();
+      heightLeft -= usableHeight;
+    }
+    return { blob: pdf.output('blob'), filename: `team-tasks-${todayISO()}.pdf` };
+  }
+
+  // WhatsApp-এ PDF-এর বদলে PNG শেয়ার করা হয় — WhatsApp-এ ছবি সরাসরি চ্যাটে
+  // থাম্বনেইল-প্রিভিউ সহ দেখায়, PDF-এর মতো আলাদা করে খুলে দেখতে হয় না।
+  async function generateTeamTasksPngBlob(): Promise<{ blob: Blob; filename: string }> {
+    const node = teamExportRef.current;
+    if (!node) throw new Error('Export content not ready');
+    const [{ default: html2canvas }] = await Promise.all([import('html2canvas')]);
+    await document.fonts.ready;
+    const canvas = await html2canvas(node, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+    const blob: Blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
+    });
+    return { blob, filename: `team-tasks-${todayISO()}.png` };
+  }
+
+  async function handleExportTeamTasksPdf() {
+    if (exportingPdf) return;
+    setExportingPdf(true);
+    try {
+      const { blob, filename } = await generateTeamTasksPdfBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      setError('PDF তৈরি করা যায়নি। আবার চেষ্টা করুন।');
+    } finally {
+      setExportingPdf(false);
+    }
+  }
+
+  // WhatsApp-এ শেয়ার: Web Share API ফাইল-সহ সাপোর্ট করলে (বেশিরভাগ মোবাইল ব্রাউজার)
+  // নেটিভ শেয়ার শিট খোলে যেখানে WhatsApp অপশন থাকে। সাপোর্ট না থাকলে (যেমন ডেস্কটপ
+  // ব্রাউজার) PDF ডাউনলোড করে WhatsApp Web-এ একটা মেসেজ বক্স খুলে দেওয়া হয়, যাতে
+  // ইউজার ডাউনলোড হওয়া ফাইলটা ম্যানুয়ালি অ্যাটাচ করে পাঠাতে পারে — ব্রাউজার থেকে
+  // সরাসরি ফাইল-অ্যাটাচড WhatsApp Web লিংক পাঠানোর কোনো পাবলিক API নেই।
+  //
+  // গুরুত্বপূর্ণ: navigator.share()/window.open() শুধু ক্লিকের পরের একটা ছোট্ট
+  // "user activation" উইন্ডোর (Chromium-এ ~৫ সেকেন্ড) মধ্যেই কাজ করে। PDF বানাতে
+  // (html2canvas + jsPDF) যদি তার বেশি সময় লাগে, তাহলে ওই সময় পার হয়ে গিয়ে
+  // ব্রাউজার চুপচাপ শেয়ার/popup ব্লক করে দেয় — কোনো এরর ছাড়াই বাটন "কাজ করছে না"
+  // মনে হয়। তাই ডেস্কটপ ফলব্যাক ট্যাবটা সব অ্যাসিঙ্ক কাজের আগেই (ক্লিকের একদম
+  // সাথে সাথে, কোনো await-এর আগে) খুলে রাখা হয় — পরে শুধু তার URL বদলে দেওয়া হয়।
+  async function handleShareTeamTasksWhatsApp() {
+    if (sharingPdf) return;
+    setSharingPdf(true);
+    const dummyFile = new File([''], 'team-tasks.png', { type: 'image/png' });
+    const canShareFile = typeof navigator !== 'undefined' && !!navigator.canShare && !!navigator.share && navigator.canShare({ files: [dummyFile] });
+    const fallbackTab = canShareFile ? null : window.open('about:blank', '_blank', 'noopener');
+    const todayLabel = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+    const shareText = `Today's (${todayLabel}) team tasks`;
+    try {
+      const { blob, filename } = await generateTeamTasksPngBlob();
+      if (canShareFile) {
+        const file = new File([blob], filename, { type: 'image/png' });
+        await navigator.share({ files: [file], title: 'Team Tasks', text: shareText });
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      const waUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(`${shareText} — ছবি ডাউনলোড হয়ে গেছে, এটা চ্যাটে অ্যাটাচ করে পাঠান।`)}`;
+      if (fallbackTab) fallbackTab.location.href = waUrl;
+      else window.open(waUrl, '_blank', 'noopener');
+    } catch (err) {
+      fallbackTab?.close();
+      if ((err as Error)?.name !== 'AbortError') {
+        console.error(err);
+        setError('WhatsApp-এ শেয়ার করা যায়নি। আবার চেষ্টা করুন।');
+      }
+    } finally {
+      setSharingPdf(false);
+    }
+  }
+
+  const weeklyScopedTasks = useMemo(() => (weeklyScope === 'mine' && user ? tasks.filter((t) => t.assignee_id === user.id) : tasks), [tasks, weeklyScope, user]);
+
+  const tasksByDate = useMemo(() => {
+    const map = new Map<string, TaskRow[]>();
+    for (const t of weeklyScopedTasks) {
+      if (!t.due_date) continue;
+      const arr = map.get(t.due_date) ?? [];
+      arr.push(t);
+      map.set(t.due_date, arr);
+    }
+    return map;
+  }, [weeklyScopedTasks]);
+
+  const noDueDateCount = useMemo(() => weeklyScopedTasks.filter((t) => !t.due_date && t.status !== 'done').length, [weeklyScopedTasks]);
+
+  function openTaskFromWeek(taskId: string) {
+    setEditTaskId(taskId);
+  }
+
+  async function handleAddPlanItem(dateISO: string, title: string, details?: string) {
+    const trimmed = title.trim();
+    if (!trimmed || !user) return;
+    setPlanSaving(true);
+    const { data, error: err } = await supabase
+      .from('weekly_plan_items')
+      .insert({ plan_date: dateISO, title: trimmed, details: details?.trim() || null, created_by: user.id })
+      .select('id, plan_date, title, details, created_by, created_at')
+      .single();
+    setPlanSaving(false);
+    if (err || !data) {
+      setError(err?.message ?? 'প্ল্যান আইটেম যোগ করা যায়নি।');
+      return;
+    }
+    setPlanItems((prev) => [...prev, data as PlanItem]);
+  }
+
+  async function handleDeletePlanItem(id: string) {
+    setPlanItems((prev) => prev.filter((p) => p.id !== id));
+    setPlanChecklistByPlan((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+    const { error: err } = await supabase.from('weekly_plan_items').delete().eq('id', id);
+    if (err) setError(err.message);
+  }
+
+  function openAddPlanModal(dateISO: string) {
+    setEditingPlanId(null);
+    setModalPlanDate(dateISO);
+    setModalPlanTitle('');
+    setModalPlanDetails('');
+    setModalPlanChecklist(['']);
+    setShowAddPlanModal(true);
+  }
+
+  function openEditPlanModal(item: PlanItem) {
+    setEditingPlanId(item.id);
+    setModalPlanDate(item.plan_date);
+    setModalPlanTitle(item.title);
+    setModalPlanDetails(item.details ?? '');
+    const existing = planChecklistByPlan.get(item.id) ?? [];
+    setModalPlanChecklist(existing.length > 0 ? existing.map((c) => c.label) : ['']);
+    setShowAddPlanModal(true);
+  }
+
+  function updateModalPlanChecklistItem(index: number, value: string) {
+    setModalPlanChecklist((prev) => prev.map((c, i) => (i === index ? value : c)));
+  }
+  function addModalPlanChecklistRow() {
+    setModalPlanChecklist((prev) => [...prev, '']);
+  }
+  function removeModalPlanChecklistRow(index: number) {
+    setModalPlanChecklist((prev) => (prev.length === 1 ? [''] : prev.filter((_, i) => i !== index)));
+  }
+
+  // মোডাল সাবমিট — editingPlanId থাকলে আপডেট, না থাকলে নতুন প্ল্যান আইটেম তৈরি।
+  // চেকলিস্ট সবসময় "delete all → re-insert current list" দিয়ে sync হয় — ছোট,
+  // সম্পূর্ণ user-managed লিস্ট বলে diff করার দরকার নেই।
+  async function handleSavePlanItem(e: FormEvent) {
+    e.preventDefault();
+    const trimmedTitle = modalPlanTitle.trim();
+    if (!trimmedTitle || !modalPlanDate || !user) return;
+    const checklistLabels = modalPlanChecklist.map((c) => c.trim()).filter(Boolean);
+
+    setPlanSaving(true);
+
+    if (editingPlanId) {
+      const { data, error: err } = await supabase
+        .from('weekly_plan_items')
+        .update({ title: trimmedTitle, details: modalPlanDetails.trim() || null })
+        .eq('id', editingPlanId)
+        .select('id, plan_date, title, details, created_by, created_at')
+        .single();
+
+      if (err || !data) {
+        setPlanSaving(false);
+        setError(err?.message ?? 'প্ল্যান আইটেম আপডেট করা যায়নি।');
+        return;
+      }
+
+      await supabase.from('weekly_plan_checklist_items').delete().eq('plan_item_id', editingPlanId);
+      let newChecklist: PlanChecklistItem[] = [];
+      if (checklistLabels.length > 0) {
+        const { data: checklistData } = await supabase
+          .from('weekly_plan_checklist_items')
+          .insert(checklistLabels.map((label, i) => ({ plan_item_id: editingPlanId, label, position: i })))
+          .select('id, label, is_done, position');
+        newChecklist = (checklistData as PlanChecklistItem[]) ?? [];
+      }
+
+      setPlanItems((prev) => prev.map((p) => (p.id === editingPlanId ? (data as PlanItem) : p)));
+      setPlanChecklistByPlan((prev) => {
+        const next = new Map(prev);
+        next.set(editingPlanId, newChecklist);
+        return next;
+      });
+    } else {
+      const { data, error: err } = await supabase
+        .from('weekly_plan_items')
+        .insert({ plan_date: modalPlanDate, title: trimmedTitle, details: modalPlanDetails.trim() || null, created_by: user.id })
+        .select('id, plan_date, title, details, created_by, created_at')
+        .single();
+
+      if (err || !data) {
+        setPlanSaving(false);
+        setError(err?.message ?? 'প্ল্যান আইটেম যোগ করা যায়নি।');
+        return;
+      }
+
+      const row = data as PlanItem;
+      setPlanItems((prev) => [...prev, row]);
+
+      if (checklistLabels.length > 0) {
+        const { data: checklistData } = await supabase
+          .from('weekly_plan_checklist_items')
+          .insert(checklistLabels.map((label, i) => ({ plan_item_id: row.id, label, position: i })))
+          .select('id, label, is_done, position');
+        if (checklistData) {
+          setPlanChecklistByPlan((prev) => {
+            const next = new Map(prev);
+            next.set(row.id, checklistData as PlanChecklistItem[]);
+            return next;
+          });
+        }
+      }
+    }
+
+    setPlanSaving(false);
+    setShowAddPlanModal(false);
+  }
+
+  async function togglePlanChecklistItem(planId: string, item: PlanChecklistItem) {
+    const newDone = !item.is_done;
+    setPlanChecklistByPlan((prev) => {
+      const next = new Map(prev);
+      next.set(planId, (next.get(planId) ?? []).map((c) => (c.id === item.id ? { ...c, is_done: newDone } : c)));
+      return next;
+    });
+    await supabase.from('weekly_plan_checklist_items').update({ is_done: newDone }).eq('id', item.id);
+  }
+
+  async function toggleChecklistItem(taskId: string, item: ChecklistItem) {
+    const newDone = !item.is_done;
+    setExpandData((prev) => {
+      const cur = prev[taskId];
+      if (!cur) return prev;
+      return { ...prev, [taskId]: { ...cur, checklist: cur.checklist.map((c) => (c.id === item.id ? { ...c, is_done: newDone } : c)) } };
+    });
+    await supabase.from('checklist_items').update({ is_done: newDone }).eq('id', item.id);
+  }
+
+  async function addChecklistItem(taskId: string) {
+    const label = (newChecklistItem[taskId] ?? '').trim();
+    if (!label) return;
+
+    const currentLength = expandData[taskId]?.checklist.length ?? 0;
+    const { data, error } = await supabase
+      .from('checklist_items')
+      .insert({ task_id: taskId, label, position: currentLength })
+      .select('id, label, is_done, position')
+      .single();
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    setExpandData((prev) => {
+      const cur = prev[taskId];
+      if (!cur) return prev;
+      return { ...prev, [taskId]: { ...cur, checklist: [...cur.checklist, data as ChecklistItem] } };
+    });
+    setNewChecklistItem((prev) => ({ ...prev, [taskId]: '' }));
+  }
+
+  async function updateChecklistItemLabel(taskId: string, item: ChecklistItem, newLabel: string) {
+    const label = newLabel.trim();
+    setEditingChecklistItem(null);
+    if (!label || label === item.label) return;
+
+    setExpandData((prev) => {
+      const cur = prev[taskId];
+      if (!cur) return prev;
+      return { ...prev, [taskId]: { ...cur, checklist: cur.checklist.map((c) => (c.id === item.id ? { ...c, label } : c)) } };
+    });
+    await supabase.from('checklist_items').update({ label }).eq('id', item.id);
+  }
+
+  async function submitComment(taskId: string) {
+    const body = (newComment[taskId] ?? '').trim();
+    if (!body || !user) return;
+
+    const { data, error } = await supabase
+      .from('comments')
+      .insert({ task_id: taskId, author_id: user.id, body })
+      .select('id, body, created_at, profiles(full_name, avatar_color, avatar_url)')
+      .single();
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    setExpandData((prev) => {
+      const cur = prev[taskId];
+      if (!cur) return prev;
+      return { ...prev, [taskId]: { ...cur, comments: [...cur.comments, data as unknown as CommentRow] } };
+    });
+    setNewComment((prev) => ({ ...prev, [taskId]: '' }));
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, commentCount: t.commentCount + 1 } : t)));
+  }
+
+  // একাধিক অ্যাসাইনি বেছে নিলে প্রতিজনের জন্য আলাদা real রো তৈরি হয় (একই টাইটেল/
+  // প্রজেক্ট/প্রায়োরিটি/ডিউ ডেট) — "Assign to N selected" মকআপ অনুযায়ী, কোনো
+  // fake "multi-assignee" কলাম বানানো হয়নি, কারণ tasks.assignee_id একজনের।
+  async function handleCreateTask(e: FormEvent) {
+    e.preventDefault();
+    if (!newTitle.trim() || !user) return;
+
+    setCreating(true);
+    const assigneeIds = newAssigneeIds.length > 0 ? newAssigneeIds : [null];
+    const checklistLabels = newChecklist.map((c) => c.trim()).filter(Boolean);
+    const createdRows: (Omit<TaskRow, 'commentCount' | 'attachmentCount'> & { commentCount: 0; attachmentCount: 0 })[] = [];
+    const newChecklistEntries: [string, ChecklistItem[]][] = [];
+
+    for (const assigneeId of assigneeIds) {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert({
+          title: newTitle.trim(),
+          description: newDescription.trim() || null,
+          project_id: newProjectId || null,
+          assignee_id: assigneeId,
+          priority: newPriority,
+          due_date: newDueDate || null,
+          assigned_date: newAssignedDate || todayISO(),
+          status: 'todo',
+          workflow_stage: 'backlog',
+          created_by: user.id,
+        })
+        .select(TASK_SELECT)
+        .single();
+
+      if (error) {
+        setError(error.message);
+        continue;
+      }
+      if (!data) continue;
+
+      const row = data as unknown as Omit<TaskRow, 'commentCount' | 'attachmentCount'>;
+      createdRows.push({ ...row, commentCount: 0, attachmentCount: 0 });
+      await supabase.from('activity_log').insert({
+        actor_id: user.id,
+        action: 'task_created',
+        entity_type: 'task',
+        entity_id: row.id,
+        detail: `"${row.title}" তৈরি করা হয়েছে`,
+      });
+
+      // প্রতিটা assignee-র জন্য আলাদা টাস্ক রো হলেও checklist একই লিস্টের
+      // স্বাধীন কপি — "Create one To-do and assign independent copies" মকআপ অনুযায়ী
+      if (checklistLabels.length > 0) {
+        const { data: checklistData } = await supabase
+          .from('checklist_items')
+          .insert(checklistLabels.map((label, i) => ({ task_id: row.id, label, position: i })))
+          .select('id, label, is_done, position');
+        if (checklistData) newChecklistEntries.push([row.id, checklistData as ChecklistItem[]]);
+      }
+
+      if (assigneeId) {
+        sendNotifications([{
+          recipient_id: assigneeId,
+          actor_id: user.id,
+          type: 'task_assigned',
+          title: `${profile?.full_name?.trim() || user.email || 'কেউ একজন'} আপনাকে একটা টাস্ক অ্যাসাইন করেছে`,
+          subtitle: row.title,
+          link: '/tasks',
+        }]);
+      }
+    }
+
+    if (createdRows.length > 0) {
+      setTasks((prev) => [...createdRows, ...prev]);
+    }
+    if (newChecklistEntries.length > 0) {
+      setChecklistByTask((prev) => {
+        const next = new Map(prev);
+        for (const [taskId, items] of newChecklistEntries) next.set(taskId, items);
+        return next;
+      });
+    }
+
+    setNewTitle('');
+    setNewDescription('');
+    setNewProjectId('');
+    setNewAssigneeIds([]);
+    setNewPriority('normal');
+    setNewDueDate('');
+    setNewAssignedDate(todayISO());
+    setNewChecklist(['']);
+    setCreating(false);
+    setShowCreate(false);
+  }
+
+  function updateNewChecklistItem(index: number, value: string) {
+    setNewChecklist((prev) => prev.map((c, i) => (i === index ? value : c)));
+  }
+  function addNewChecklistRow() {
+    setNewChecklist((prev) => [...prev, '']);
+  }
+  function removeNewChecklistRow(index: number) {
+    setNewChecklist((prev) => (prev.length === 1 ? [''] : prev.filter((_, i) => i !== index)));
+  }
+
+  function toggleNewAssignee(id: string) {
+    setNewAssigneeIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  // ---- List tab: single task edit / delete ----
+  function openEditTask(task: TaskRow) {
+    setEditForm({
+      title: task.title,
+      projectId: task.project_id ?? '',
+      assigneeId: task.assignee_id ?? '',
+      priority: task.priority,
+      status: task.status,
+      dueDate: task.due_date ?? '',
+      assignedDate: task.assigned_date,
+      description: task.description ?? '',
+    });
+    setEditTaskId(task.id);
+  }
+
+  async function handleEditTaskSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!editTaskId || !editForm.title.trim()) return;
+    setEditSaving(true);
+    const assignee = assigneeOptions.find((a) => a.id === editForm.assigneeId) ?? null;
+    const { data, error: err } = await supabase
+      .from('tasks')
+      .update({
+        title: editForm.title.trim(),
+        project_id: editForm.projectId || null,
+        assignee_id: editForm.assigneeId || null,
+        priority: editForm.priority,
+        status: editForm.status,
+        due_date: editForm.dueDate || null,
+        assigned_date: editForm.assignedDate || todayISO(),
+        description: editForm.description.trim() || null,
+      })
+      .eq('id', editTaskId)
+      .select(TASK_SELECT)
+      .single();
+    setEditSaving(false);
+    if (err || !data) {
+      setError(err?.message ?? 'টাস্ক আপডেট করা যায়নি।');
+      return;
+    }
+    const row = data as unknown as Omit<TaskRow, 'commentCount' | 'attachmentCount'>;
+    setTasks((prev) => prev.map((t) => (t.id === editTaskId ? { ...t, ...row, profiles: assignee ? { full_name: assignee.full_name, avatar_color: assignee.avatar_color, avatar_url: assignee.avatar_url } : row.profiles } : t)));
+    setEditTaskId(null);
+  }
+
+  async function handleDeleteSingleTask(id: string) {
+    if (!window.confirm('এই টাস্ক ডিলিট করতে চান? এটা ফিরিয়ে আনা যাবে না।')) return;
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+    const { error: err } = await supabase.from('tasks').delete().eq('id', id);
+    if (err) setError(err.message);
+  }
+
+  async function toggleChecklistItemCard(taskId: string, item: ChecklistItem) {
+    const newDone = !item.is_done;
+    setChecklistByTask((prev) => {
+      const next = new Map(prev);
+      const items = (next.get(taskId) ?? []).map((c) => (c.id === item.id ? { ...c, is_done: newDone } : c));
+      next.set(taskId, items);
+      return next;
+    });
+    await supabase.from('checklist_items').update({ is_done: newDone }).eq('id', item.id);
+  }
+
+  if (sessionLoading) return null;
+  if (!user) return <SignInScreen />;
+
+  return (
+    <>
+      <main className="content">
+            <div className="page-header-row">
+              <div>
+                <h1 className="page-title">Task List</h1>
+                <p className="page-sub">সব অ্যাক্টিভ প্রজেক্টের প্রতিটি টাস্ক এখান থেকে পরিচালনা ও গুছিয়ে রাখুন।</p>
+              </div>
+              <div className="header-actions">
+                <button className="btn btn-ghost btn-sm" onClick={handleReload} disabled={reloading}>
+                  <Icon name="refresh" size={13} /> {reloading ? 'রিলোড হচ্ছে…' : 'রিলোড'}
+                </button>
+                <Link className="btn btn-ghost btn-sm" href="/board"><Icon name="layers" size={13} /> বোর্ড ভিউ</Link>
+                <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="import" size={13} /> ইমপোর্ট</button>
+                <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="export" size={13} /> এক্সপোর্ট</button>
+                <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="bookmark" size={13} /> Saved Views</button>
+                <button className="btn btn-accent" onClick={openCreateTask}>
+                  <Icon name="plus" /> টাস্ক তৈরি
+                </button>
+              </div>
+            </div>
+
+            <nav className="main-tabs" aria-label="View">
+              <button className={`main-tab${mainTab === 'list' ? ' active' : ''}`} onClick={() => setMainTab('list')}>
+                <Icon name="list" size={14} /> List
+              </button>
+              <button className={`main-tab${mainTab === 'weekly-tasks' ? ' active' : ''}`} onClick={() => setMainTab('weekly-tasks')}>
+                <Icon name="calendar" size={14} /> Weekly Tasks
+              </button>
+              <button className={`main-tab${mainTab === 'weekly-plan' ? ' active' : ''}`} onClick={() => setMainTab('weekly-plan')}>
+                <Icon name="calendar" size={14} /> Weekly Plan
+              </button>
+            </nav>
+
+            {error && (
+              <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: 13 }}>
+                {error}
+              </div>
+            )}
+
+            {mainTab === 'list' && (
+            <>
+            {/* KPI summary */}
+            <div className="kpi-grid">
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon"><Icon name="list" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--accent)' }}>{loading ? '—' : kpis.total}</div><div className="kpi-label">Total Tasks</div><div className="kpi-deco"><Icon name="list" size={56} /></div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon"><Icon name="check" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--accent)' }}>{loading ? '—' : kpis.mine}</div><div className="kpi-label">My Tasks</div><div className="kpi-deco"><Icon name="check" size={56} /></div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--warning-soft)', color: 'var(--warning)' }}><Icon name="clock" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--warning)' }}>{loading ? '—' : kpis.dueToday}</div><div className="kpi-label">Due Today</div><div className="kpi-deco" style={{ color: 'var(--warning)' }}><Icon name="clock" size={56} /></div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}><Icon name="alert" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--danger)' }}>{loading ? '—' : kpis.overdue}</div><div className="kpi-label">Overdue</div><div className="kpi-deco" style={{ color: 'var(--danger)' }}><Icon name="alert" size={56} /></div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon"><Icon name="eye" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--accent)' }}>{loading ? '—' : kpis.review}</div><div className="kpi-label">Waiting for Review</div><div className="kpi-deco"><Icon name="eye" size={56} /></div></div>
+              <div className="kpi-card"><div className="kpi-top"><div className="kpi-icon" style={{ background: 'var(--positive-soft)', color: 'var(--positive)' }}><Icon name="check-circle" /></div></div><div className="kpi-value tabular" style={{ color: 'var(--positive)' }}>{loading ? '—' : kpis.completedThisWeek}</div><div className="kpi-label">Completed This Week</div><div className="kpi-deco" style={{ color: 'var(--positive)' }}><Icon name="check-circle" size={56} /></div></div>
+            </div>
+
+            {/* smart views */}
+            <nav className="views-row" aria-label="Smart Views">
+              {SMART_VIEWS.map((v) => (
+                <button key={v.key} className={`view-pill${activeView === v.key ? ' active' : ''}`} onClick={() => setActiveView(v.key)}>
+                  {v.label}
+                </button>
+              ))}
+              <div className="view-sep"></div>
+              <button className={`view-pill${activeView === 'favorites' ? ' active' : ''}`} onClick={() => setActiveView('favorites')}>
+                ★ Favorites
+              </button>
+            </nav>
+
+            {/* toolbar */}
+            <div className="toolbar">
+              <div className="toolbar-search">
+                <Icon name="search" size={13} />
+                <input type="text" placeholder="টাস্ক খুঁজুন..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              </div>
+              <button className="filter-chip" disabled title="শীঘ্রই আসছে"><Icon name="filter" size={12} /> Quick Filter</button>
+              <button className="filter-chip" disabled title="শীঘ্রই আসছে"><Icon name="sort" size={12} /> Sort</button>
+              <button className="filter-chip" disabled title="শীঘ্রই আসছে"><Icon name="layers" size={12} /> Group By</button>
+              <label className={`filter-chip${assignedDateFilter ? ' applied' : ''}`} title="যেদিনের টাস্ক হিসেবে অ্যাসাইন করা হয়েছে">
+                <Icon name="calendar" size={12} /> Assigned
+                <input
+                  type="date"
+                  value={assignedDateFilter}
+                  onChange={(e) => setAssignedDateFilter(e.target.value)}
+                  style={{ border: 'none', background: 'transparent', font: 'inherit', color: 'inherit', padding: 0, outline: 'none', width: 108 }}
+                />
+                {assignedDateFilter && (
+                  <button
+                    type="button"
+                    aria-label="অ্যাসাইনড-ডেট ফিল্টার সরান"
+                    onClick={(e) => { e.preventDefault(); setAssignedDateFilter(''); }}
+                    style={{ display: 'flex', background: 'none', border: 'none', padding: 0, color: 'inherit' }}
+                  >
+                    <Icon name="close" size={10} />
+                  </button>
+                )}
+              </label>
+              <button className={`filter-chip${assignedDateFilter === todayISO() ? ' applied' : ''}`} onClick={() => setAssignedDateFilter(todayISO())}>Today</button>
+              <label className={`filter-chip${dueDateFilter ? ' applied' : ''}`} title="ডেডলাইন অনুযায়ী ফিল্টার">
+                <Icon name="calendar" size={12} /> Due
+                <input
+                  type="date"
+                  value={dueDateFilter}
+                  onChange={(e) => setDueDateFilter(e.target.value)}
+                  style={{ border: 'none', background: 'transparent', font: 'inherit', color: 'inherit', padding: 0, outline: 'none', width: 108 }}
+                />
+                {dueDateFilter && (
+                  <button
+                    type="button"
+                    aria-label="ডিউ-ডেট ফিল্টার সরান"
+                    onClick={(e) => { e.preventDefault(); setDueDateFilter(''); }}
+                    style={{ display: 'flex', background: 'none', border: 'none', padding: 0, color: 'inherit' }}
+                  >
+                    <Icon name="close" size={10} />
+                  </button>
+                )}
+              </label>
+              <button className={`filter-chip${advOpen ? ' applied' : ''}`} onClick={() => setAdvOpen((o) => !o)}>
+                <Icon name="sliders" size={12} /> Advanced Filters
+              </button>
+              <button
+                className="filter-chip"
+                onClick={() => {
+                  setSearch('');
+                  setActiveView('all');
+                  setDueDateFilter('');
+                  setAssignedDateFilter('');
+                }}
+              >
+                <Icon name="close" size={12} /> Clear Filters
+              </button>
+              <div className="toolbar-spacer"></div>
+              <button className="filter-chip" disabled title="শীঘ্রই আসছে"><Icon name="bookmark" size={12} /> Saved Views</button>
+            </div>
+
+            {/* advanced filters (placeholder — schema-তে labels/sprint নেই) */}
+            <div className={`adv-panel${advOpen ? ' open' : ''}`}>
+              <div className="adv-grid">
+                {['Project', 'Assignee', 'Priority', 'Status', 'Workflow Stage', 'Sprint', 'Labels', 'Due Date', 'Created By', 'Client', 'Estimated Time', 'Review Status', 'Blocked', 'Recently Updated'].map((label) => (
+                  <button key={label} className="adv-chip" disabled title="শীঘ্রই আসছে">{label}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* per-person card list */}
+            <div className="scope-row">
+              <div className="scope-toggle">
+                <button className={`scope-btn${listScope === 'mine' ? ' active' : ''}`} onClick={() => setListScope('mine')}>
+                  <Icon name="user" size={13} /> My tasks
+                </button>
+                <button className={`scope-btn${listScope === 'team' ? ' active' : ''}`} onClick={() => setListScope('team')}>
+                  <Icon name="users2" size={13} /> Team tasks
+                </button>
+              </div>
+              {listScope === 'team' && (
+                <div className="scope-actions">
+                  <button className="btn btn-ghost btn-sm" onClick={handleExportTeamTasksPdf} disabled={exportingPdf || memberTaskCards.length === 0}>
+                    <Icon name="export" size={13} /> {exportingPdf ? 'এক্সপোর্ট হচ্ছে…' : 'Export PDF'}
+                  </button>
+                  <button className="btn btn-ghost btn-sm" style={{ color: '#25D366' }} onClick={handleShareTeamTasksWhatsApp} disabled={sharingPdf || memberTaskCards.length === 0}>
+                    <Icon name="whatsapp" size={13} color="#25D366" /> {sharingPdf ? 'শেয়ার হচ্ছে…' : 'Share to WhatsApp'}
+                  </button>
+                </div>
+              )}
+            </div>
+            {loading ? (
+              <div className="table-scroll">
+                <div style={{ padding: 40, textAlign: 'center', fontSize: 13, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</div>
+              </div>
+            ) : memberTaskCards.length === 0 ? (
+              <div className="empty-state show">
+                <div className="empty-icon"><Icon name="search" /></div>
+                <div className="empty-title">কোনো টাস্ক পাওয়া যায়নি</div>
+                <div className="empty-sub">এই ভিউতে এখনো কোনো টাস্ক যোগ হয়নি, অথবা আপনার ফিল্টারে কোনো ফলাফল মিলছে না।</div>
+                <button className="btn btn-accent btn-sm" onClick={openCreateTask}>
+                  <Icon name="plus" size={13} /> প্রথম টাস্ক তৈরি করুন
+                </button>
+              </div>
+            ) : (
+              <div className="person-card-grid">
+                {memberTaskCards.map((m) => (
+                  <div className="person-card" key={m.profile.id}>
+                    <div className="person-card-head">
+                      <Avatar person={m.profile} size={34} />
+                      <div className="person-card-name-wrap">
+                        <div className="person-card-name">{m.profile.full_name}</div>
+                        <div className="person-card-sub">{m.activeCount === 0 ? 'No active To-Dos' : `${m.activeCount} active To-Do${m.activeCount > 1 ? 's' : ''}`}</div>
+                      </div>
+                      <span className="person-card-count tabular">{m.activeCount}</span>
+                    </div>
+
+                    {m.personTasks.length > 0 && (
+                      <div className="person-progress-wrap">
+                        <span className="person-progress-label">Overall progress</span>
+                        <span className="person-progress-pct tabular">{m.avgProgress}%</span>
+                        <div className="progress-track"><div className="progress-fill" style={{ width: `${m.avgProgress}%`, background: m.avgProgress === 100 ? 'var(--positive)' : undefined }}></div></div>
+                      </div>
+                    )}
+
+                    {m.personTasks.length === 0 ? (
+                      <div className="person-card-empty">
+                        <div className="person-card-empty-icon"><Icon name="check" size={16} /></div>
+                        <div className="person-card-empty-title">All clear</div>
+                      </div>
+                    ) : m.shown.length === 0 ? (
+                      <p style={{ fontSize: 12, color: 'var(--ink-faint)', padding: '8px 2px' }}>এই ফিল্টারে কিছু নেই।</p>
+                    ) : (
+                      <div className="person-task-list">
+                        {m.shown.map((task) => {
+                          const status = STATUS_META[task.status];
+                          const checklist = checklistByTask.get(task.id) ?? [];
+                          return (
+                            <div className="person-task-item" key={task.id}>
+                              <div className="person-task-top">
+                                <span className={`person-task-dot ${status.cls}`}></span>
+                                <div className="person-task-main">
+                                  <div className={`person-task-title${task.status === 'done' ? ' done' : ''}`}>{task.title}</div>
+                                  <div className="person-task-meta tabular">
+                                    {task.progress ?? 0}% · {status.label}
+                                    {task.assigned_date !== today ? ` · Scheduled ${task.assigned_date.slice(8, 10)}/${task.assigned_date.slice(5, 7)}` : ''}
+                                    {task.due_date ? ` · Due ${task.due_date.slice(8, 10)}/${task.due_date.slice(5, 7)}/${task.due_date.slice(0, 4)}` : ''}
+                                  </div>
+                                  {task.description && <RichText text={task.description} className="person-task-desc" />}
+                                </div>
+                                <button className="person-task-action" onClick={() => openEditTask(task)} aria-label="এডিট করুন">
+                                  <Icon name="edit" size={13} />
+                                </button>
+                                <button className="person-task-action danger" onClick={() => handleDeleteSingleTask(task.id)} aria-label="ডিলিট করুন">
+                                  <Icon name="trash" size={13} />
+                                </button>
+                              </div>
+                              {checklist.length > 0 && (
+                                <div className="person-task-checklist">
+                                  {checklist.map((item) => (
+                                    <button key={item.id} className={`person-checklist-item${item.is_done ? ' done' : ''}`} onClick={() => toggleChecklistItemCard(task.id, item)}>
+                                      <span className="icb">{item.is_done && <Icon name="tick" size={7} color="#fff" />}</span>
+                                      {item.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* PDF এক্সপোর্টের জন্য হিডেন প্রিন্ট-স্টাইল ডকুমেন্ট — স্ক্রিনে দেখা যায় না
+                (viewport-এর বাইরে বসানো), শুধু html2canvas দিয়ে ক্যাপচার করার জন্য।
+                থিম (dark mode) নির্বিশেষে সবসময় লাইট/হার্ডকোডেড রঙে রেন্ডার হয়। */}
+            <div
+              ref={teamExportRef}
+              style={{ position: 'fixed', top: 0, left: -99999, width: 600, background: '#ffffff', padding: 32, fontFamily: manrope.style.fontFamily, color: '#14141A' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '2px solid #14141A' }}>
+                <div style={{ fontSize: 20, fontWeight: 700 }}>Flow 53 - Daily Task</div>
+                <div style={{ fontSize: 12, color: '#6E6E7A' }}>
+                  {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </div>
+              </div>
+              {memberTaskCards.map((m) => (
+                <div key={m.profile.id} style={{ marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #E8E8EC' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700 }}>{m.profile.full_name}</div>
+                    <div style={{ fontSize: 12, color: '#6E6E7A' }}>
+                      {m.activeCount === 0 ? 'No active To-Dos' : `${m.activeCount} active To-Do${m.activeCount > 1 ? 's' : ''}`}
+                    </div>
+                  </div>
+                  {m.personTasks.length === 0 ? (
+                    <div style={{ fontSize: 12, color: '#A3A3AE' }}>All clear</div>
+                  ) : m.shown.length === 0 ? (
+                    <div style={{ fontSize: 12, color: '#A3A3AE' }}>No tasks match the current filter</div>
+                  ) : (
+                    m.shown.map((task) => {
+                      const status = STATUS_META[task.status];
+                      const checklist = checklistByTask.get(task.id) ?? [];
+                      return (
+                        <div key={task.id} style={{ padding: '5px 0' }}>
+                          {/* কাস্টম div/span দিয়ে আঁকা bullet/checkbox html2canvas-এ টেক্সটের
+                              সাথে উপরে-নিচে মিসঅ্যালাইন হয়ে যাচ্ছিল (flex/table কোনোটাতেই পুরো
+                              ঠিক হয়নি) — তাই এখন প্লেইন ইউনিকোড ক্যারেক্টার ব্যবহার করা হয়েছে,
+                              এগুলো টেক্সটেরই অংশ বলে লাইনের সাথে এমনিতেই নিখুঁতভাবে বেসলাইন-অ্যালাইন থাকে। */}
+                          <div style={{ display: 'table', width: '100%', fontSize: 12 }}>
+                            <div style={{ display: 'table-cell', textDecoration: task.status === 'done' ? 'line-through' : 'none', color: task.status === 'done' ? '#A3A3AE' : '#14141A' }}>
+                              • {task.title}
+                            </div>
+                            <div style={{ display: 'table-cell', textAlign: 'right', whiteSpace: 'nowrap', color: '#6E6E7A', paddingLeft: 8 }}>
+                              {task.status !== 'todo' && status.label}
+                              {task.due_date ? `${task.status !== 'todo' ? ' · ' : ''}Due ${task.due_date.slice(8, 10)}/${task.due_date.slice(5, 7)}/${task.due_date.slice(0, 4)}` : ''}
+                            </div>
+                          </div>
+                          {task.description && (
+                            <div style={{ fontSize: 11, color: task.status === 'done' ? '#A3A3AE' : '#14141A', marginTop: 2, marginLeft: 14 }}><RichText text={task.description} /></div>
+                          )}
+                          {checklist.length > 0 && (
+                            <div style={{ marginLeft: 14, marginTop: 3 }}>
+                              {checklist.map((item) => (
+                                <div
+                                  key={item.id}
+                                  style={{
+                                    fontSize: 11,
+                                    padding: '2px 0',
+                                    color: item.is_done ? '#A3A3AE' : '#14141A',
+                                    textDecoration: item.is_done ? 'line-through' : 'none',
+                                  }}
+                                >
+                                  {item.is_done ? '☑' : '☐'} {item.label}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              ))}
+            </div>
+            </>
+            )}
+
+            {mainTab === 'weekly-tasks' && (
+              <div>
+                <div className="week-nav">
+                  <button className="week-nav-btn" onClick={() => setWeekOffset((w) => w - 1)} aria-label="আগের সপ্তাহ">
+                    <Icon name="chevron-left" size={16} />
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setWeekOffset(0)}>এই সপ্তাহ</button>
+                  <span className="week-range">{formatWeekRange(weekDays[0], weekDays[6])}</span>
+                  <button className="week-nav-btn" onClick={() => setWeekOffset((w) => w + 1)} aria-label="পরের সপ্তাহ">
+                    <Icon name="chevron-right" size={16} />
+                  </button>
+                  <div className="toolbar-spacer"></div>
+                  <div className="scope-toggle">
+                    <button className={`scope-btn${weeklyScope === 'mine' ? ' active' : ''}`} onClick={() => setWeeklyScope('mine')}>
+                      <Icon name="user" size={13} /> My tasks
+                    </button>
+                    <button className={`scope-btn${weeklyScope === 'team' ? ' active' : ''}`} onClick={() => setWeeklyScope('team')}>
+                      <Icon name="users2" size={13} /> Team tasks
+                    </button>
+                  </div>
+                </div>
+
+                <div className="week-grid">
+                  {weekDays.map((d, i) => {
+                    const dateISO = isoDate(d);
+                    const dayTasks = (tasksByDate.get(dateISO) ?? []).filter((t) => t.status !== 'done');
+                    const isToday = dateISO === today;
+                    return (
+                      <div className={`week-day-col${isToday ? ' is-today' : ''}`} key={dateISO}>
+                        <div className="week-day-head">
+                          <span className="week-day-label">{DAY_LABELS[i]}</span>
+                          <span className="week-day-num">{d.getDate()}</span>
+                          <span className="week-day-count tabular">{dayTasks.length} tasks</span>
+                        </div>
+                        <div className="week-day-body">
+                          {dayTasks.length === 0 ? (
+                            <div className="week-empty">No tasks planned</div>
+                          ) : (
+                            dayTasks.map((t) => {
+                              const priority = PRIORITY_META[t.priority];
+                              return (
+                                <button className="week-task-card" key={t.id} onClick={() => openTaskFromWeek(t.id)}>
+                                  <span className="week-task-title">{t.title}</span>
+                                  {t.profiles && <Avatar person={t.profiles} size={18} />}
+                                  <span className={`priority-pill ${priority.cls}`} style={{ fontSize: 9.5, padding: '1px 6px' }}>{priority.label}</span>
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {noDueDateCount > 0 && (
+                  <div className="week-footnote">
+                    <Icon name="calendar" size={13} /> {noDueDateCount} task{noDueDateCount > 1 ? 's' : ''} {noDueDateCount > 1 ? 'have' : 'has'} no due date and appear in List view.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {mainTab === 'weekly-plan' && (
+              <div>
+                <div className="page-header-row" style={{ marginBottom: 18 }}>
+                  <div>
+                    <h1 className="page-title" style={{ fontSize: 20 }}>Weekly Plan</h1>
+                    <p className="page-sub">টিমের শেয়ার্ড ফোকাস আর এই সপ্তাহের অ্যাক্টিভিটি।</p>
+                  </div>
+                  <div className="header-actions">
+                    <button className="btn btn-accent" onClick={() => openAddPlanModal(weekStartISO)}>
+                      <Icon name="plus" /> Add plan item
+                    </button>
+                  </div>
+                </div>
+
+                <div className="week-nav">
+                  <button className="week-nav-btn" onClick={() => setWeekOffset((w) => w - 1)} aria-label="আগের সপ্তাহ">
+                    <Icon name="chevron-left" size={16} />
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setWeekOffset(0)}>এই সপ্তাহ</button>
+                  <span className="week-range">{formatWeekRange(weekDays[0], weekDays[6])}</span>
+                  <button className="week-nav-btn" onClick={() => setWeekOffset((w) => w + 1)} aria-label="পরের সপ্তাহ">
+                    <Icon name="chevron-right" size={16} />
+                  </button>
+                </div>
+
+                <div className="week-grid">
+                  {weekDays.map((d, i) => {
+                    const dateISO = isoDate(d);
+                    const dayPlans = planItems.filter((p) => p.plan_date === dateISO);
+                    const isToday = dateISO === today;
+                    const isAdding = addingPlanDate === dateISO;
+                    return (
+                      <div className={`week-day-col${isToday ? ' is-today' : ''}`} key={dateISO}>
+                        <div className="week-day-head">
+                          <span className="week-day-label">{DAY_LABELS[i]}</span>
+                          <span className="week-day-num">{d.getDate()}</span>
+                          <span className="week-day-count tabular">{dayPlans.length} plans</span>
+                        </div>
+                        <div className="week-day-body">
+                          {planLoading ? (
+                            <div className="week-empty">লোড হচ্ছে…</div>
+                          ) : dayPlans.length === 0 && !isAdding ? (
+                            <div className="week-empty">No plans yet</div>
+                          ) : (
+                            dayPlans.map((p, idx) => {
+                              const checklist = planChecklistByPlan.get(p.id) ?? [];
+                              const doneCount = checklist.filter((c) => c.is_done).length;
+                              return (
+                                <div className="plan-item" key={p.id}>
+                                  <span className="plan-item-badge tabular">{idx + 1}</span>
+                                  <div className="plan-item-body">
+                                    <span className="plan-item-title">{p.title}</span>
+                                    {p.details && <span className="plan-item-details"><RichText text={p.details} /></span>}
+                                    {checklist.length > 0 && (
+                                      <>
+                                        <span className="plan-item-checklist-count tabular">{doneCount}/{checklist.length} done</span>
+                                        <div className="plan-item-checklist">
+                                          {checklist.map((item) => (
+                                            <button key={item.id} className={`person-checklist-item${item.is_done ? ' done' : ''}`} onClick={() => togglePlanChecklistItem(p.id, item)}>
+                                              <span className="icb">{item.is_done && <Icon name="tick" size={7} color="#fff" />}</span>
+                                              {item.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                  <div className="plan-item-actions">
+                                    <button className="plan-item-edit" onClick={() => openEditPlanModal(p)} aria-label="এডিট করুন">
+                                      <Icon name="edit" size={12} />
+                                    </button>
+                                    <button className="plan-item-delete" onClick={() => handleDeletePlanItem(p.id)} aria-label="মুছুন">
+                                      <Icon name="trash" size={12} />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+
+                          {isAdding ? (
+                            <div className="plan-add-input-row">
+                              <input
+                                className="field-input"
+                                style={{ marginBottom: 0 }}
+                                autoFocus
+                                value={planDraft}
+                                onChange={(e) => setPlanDraft(e.target.value)}
+                                placeholder="প্ল্যান লিখুন..."
+                                onKeyDown={async (e) => {
+                                  if (e.key === 'Enter') {
+                                    await handleAddPlanItem(dateISO, planDraft);
+                                    setPlanDraft('');
+                                    setAddingPlanDate(null);
+                                  } else if (e.key === 'Escape') {
+                                    setAddingPlanDate(null);
+                                    setPlanDraft('');
+                                  }
+                                }}
+                                onBlur={() => {
+                                  if (!planDraft.trim()) setAddingPlanDate(null);
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <button className="plan-add-btn" onClick={() => { setAddingPlanDate(dateISO); setPlanDraft(''); }} disabled={planSaving}>
+                              <Icon name="plus" size={12} /> Add
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </main>
+      {/* create task modal */}
+      {showCreate && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowCreate(false);
+          }}
+        >
+          <div className="modal-box modal-box-lg">
+            <div className="modal-title">নতুন টাস্ক তৈরি করুন</div>
+            <form onSubmit={handleCreateTask}>
+              <label className="field-label">টাস্কের নাম</label>
+              <input
+                className="field-input"
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="যেমন: হোমপেজ ওয়্যারফ্রেম বানানো"
+                autoFocus
+                required
+              />
+
+              <label className="field-label">Description</label>
+              <RichTextField value={newDescription} onChange={setNewDescription} textareaClassName="field-input" placeholder="একটা বিবরণ যোগ করুন (ঐচ্ছিক)..." minHeight={64} />
+
+              <label className="field-label">To-do list</label>
+              <div className="todo-draft-box">
+                {newChecklist.map((item, i) => (
+                  <div className="todo-draft-row" key={i}>
+                    <input
+                      className="field-input"
+                      style={{ marginBottom: 0 }}
+                      type="text"
+                      value={item}
+                      onChange={(e) => updateNewChecklistItem(i, e.target.value)}
+                      placeholder={`Checklist item ${i + 1}`}
+                    />
+                    <button type="button" className="todo-draft-remove" onClick={() => removeNewChecklistRow(i)} aria-label="বাদ দিন">
+                      <Icon name="close" size={12} />
+                    </button>
+                  </div>
+                ))}
+                <button type="button" className="btn btn-ghost btn-sm" onClick={addNewChecklistRow}>
+                  <Icon name="plus" size={13} /> Add item
+                </button>
+              </div>
+
+              <label className="field-label">প্রজেক্ট</label>
+              <select className="field-input" value={newProjectId} onChange={(e) => setNewProjectId(e.target.value)}>
+                <option value="">কোনো প্রজেক্ট নেই</option>
+                {projectOptions.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+
+              <label className="field-label">Assign to {newAssigneeIds.length > 0 ? `— ${newAssigneeIds.length} selected` : ''}</label>
+              <div className="assignee-check-grid">
+                {assigneeOptions.map((a) => {
+                  const checked = newAssigneeIds.includes(a.id);
+                  return (
+                    <button type="button" key={a.id} className={`assignee-check-item${checked ? ' checked' : ''}`} onClick={() => toggleNewAssignee(a.id)}>
+                      <span className={`cb${checked ? ' checked' : ''}`}>{checked && <Icon name="tick" size={9} color="#fff" />}</span>
+                      <Avatar person={a} size={20} />
+                      {a.full_name}
+                    </button>
+                  );
+                })}
+              </div>
+              {newAssigneeIds.length === 0 && <p style={{ fontSize: 11.5, color: 'var(--ink-faint)', margin: '2px 0 14px' }}>কাউকে না বাছলে টাস্কটা অনির্ধারিত থাকবে।</p>}
+
+              <label className="field-label">প্রায়োরিটি</label>
+              <select className="field-input" value={newPriority} onChange={(e) => setNewPriority(e.target.value as TaskPriority)}>
+                {(Object.keys(PRIORITY_META) as TaskPriority[]).map((p) => (
+                  <option key={p} value={p}>{PRIORITY_META[p].label}</option>
+                ))}
+              </select>
+
+              <label className="field-label">Assigned Date <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <input
+                className="field-input"
+                type="date"
+                required
+                value={newAssignedDate}
+                onChange={(e) => setNewAssignedDate(e.target.value)}
+              />
+              <p style={{ fontSize: 11.5, color: 'var(--ink-faint)', margin: '2px 0 14px' }}>কোন দিনের টাস্ক হিসেবে এটা তালিকায় দেখাবে — ডেডলাইনের থেকে আলাদা হতে পারে।</p>
+
+              <label className="field-label">ডেডলাইন (ঐচ্ছিক)</label>
+              <input className="field-input" type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} />
+
+              <div className="modal-foot">
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowCreate(false)}>বাতিল</button>
+                <button type="submit" className="btn btn-accent btn-sm" disabled={creating || !newTitle.trim()}>
+                  {creating ? 'তৈরি হচ্ছে…' : newAssigneeIds.length > 1 ? `Assign to ${newAssigneeIds.length} selected` : 'টাস্ক তৈরি করুন'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* edit task modal — List কার্ডের Edit বাটন + Weekly Tasks থেকে এলে খোলে;
+          পুরনো table-এর expand-row-এ থাকা comments/attachments/checklist/activity
+          এখানেই থাকে, কোনো ফাংশনালিটি হারায়নি */}
+      {editingTask && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditTaskId(null);
+          }}
+        >
+          <div className="modal-box modal-box-lg">
+            <div className="modal-title">টাস্ক এডিট করুন</div>
+            <form onSubmit={handleEditTaskSubmit}>
+              <label className="field-label">টাস্কের নাম</label>
+              <input
+                className="field-input"
+                type="text"
+                value={editForm.title}
+                onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                autoFocus
+                required
+              />
+
+              <div className="edit-field-row">
+                <div>
+                  <label className="field-label">প্রজেক্ট</label>
+                  <select className="field-input" value={editForm.projectId} onChange={(e) => setEditForm((f) => ({ ...f, projectId: e.target.value }))}>
+                    <option value="">কোনো প্রজেক্ট নেই</option>
+                    {projectOptions.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="field-label">অ্যাসাইনি</label>
+                  <select className="field-input" value={editForm.assigneeId} onChange={(e) => setEditForm((f) => ({ ...f, assigneeId: e.target.value }))}>
+                    <option value="">অনির্ধারিত</option>
+                    {assigneeOptions.map((a) => (
+                      <option key={a.id} value={a.id}>{a.full_name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="edit-field-row">
+                <div>
+                  <label className="field-label">প্রায়োরিটি</label>
+                  <select className="field-input" value={editForm.priority} onChange={(e) => setEditForm((f) => ({ ...f, priority: e.target.value as TaskPriority }))}>
+                    {(Object.keys(PRIORITY_META) as TaskPriority[]).map((p) => (
+                      <option key={p} value={p}>{PRIORITY_META[p].label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="field-label">স্ট্যাটাস</label>
+                  <select className="field-input" value={editForm.status} onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value as TaskStatus }))}>
+                    {(Object.keys(STATUS_META) as TaskStatus[]).map((s) => (
+                      <option key={s} value={s}>{STATUS_META[s].label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <label className="field-label">Assigned Date <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <input
+                className="field-input"
+                type="date"
+                required
+                value={editForm.assignedDate}
+                onChange={(e) => setEditForm((f) => ({ ...f, assignedDate: e.target.value }))}
+              />
+
+              <label className="field-label">ডেডলাইন (ঐচ্ছিক)</label>
+              <input className="field-input" type="date" value={editForm.dueDate} onChange={(e) => setEditForm((f) => ({ ...f, dueDate: e.target.value }))} />
+
+              <label className="field-label">Description</label>
+              <RichTextField value={editForm.description} onChange={(v) => setEditForm((f) => ({ ...f, description: v }))} textareaClassName="field-input" placeholder="একটা বিবরণ যোগ করুন..." minHeight={64} />
+
+              {(() => {
+                const detail = expandData[editingTask.id];
+                return (
+                  <div className="expand-grid" style={{ marginTop: 6 }}>
+                    <div>
+                      <div className="expand-label">
+                        Checklist{detail && detail.checklist.length > 0 ? ` · ${detail.checklist.filter((c) => c.is_done).length}/${detail.checklist.length}` : ''}
+                      </div>
+                      {!detail || detail.loading ? (
+                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
+                      ) : (
+                        <>
+                          {detail.checklist.length === 0 ? (
+                            <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>কোনো চেকলিস্ট আইটেম নেই।</p>
+                          ) : (
+                            detail.checklist.map((item) => (
+                              editingChecklistItem === item.id ? (
+                                <div className="comment-form" key={item.id} style={{ marginTop: 0, marginBottom: 4 }}>
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    value={editChecklistValue}
+                                    onChange={(e) => setEditChecklistValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') { e.preventDefault(); updateChecklistItemLabel(editingTask.id, item, editChecklistValue); }
+                                      if (e.key === 'Escape') { e.preventDefault(); setEditingChecklistItem(null); }
+                                    }}
+                                  />
+                                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => updateChecklistItemLabel(editingTask.id, item, editChecklistValue)}>সেভ</button>
+                                </div>
+                              ) : (
+                                <div className="checklist-item-row" key={item.id}>
+                                  <button type="button" className={`checklist-item${item.is_done ? ' done' : ''}`} onClick={() => toggleChecklistItem(editingTask.id, item)}>
+                                    <span className="icb">{item.is_done && <Icon name="tick" size={8} color="#fff" />}</span>
+                                    {item.label}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="checklist-item-edit-btn"
+                                    aria-label="এডিট করুন"
+                                    onClick={() => { setEditingChecklistItem(item.id); setEditChecklistValue(item.label); }}
+                                  >
+                                    <Icon name="edit" size={11} />
+                                  </button>
+                                </div>
+                              )
+                            ))
+                          )}
+                          <div className="comment-form">
+                            <input
+                              type="text"
+                              placeholder="নতুন আইটেম যোগ করুন..."
+                              value={newChecklistItem[editingTask.id] ?? ''}
+                              onChange={(e) => setNewChecklistItem((prev) => ({ ...prev, [editingTask.id]: e.target.value }))}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') { e.preventDefault(); addChecklistItem(editingTask.id); }
+                              }}
+                            />
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={() => addChecklistItem(editingTask.id)}>যোগ করুন</button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="expand-label">Attachments</div>
+                      {!detail || detail.loading ? (
+                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
+                      ) : detail.attachments.length === 0 ? (
+                        <div className="design-preview-card" style={{ opacity: 0.6 }}>
+                          <div className="dp-row">
+                            <div className="dp-thumb"><Icon name="figma" size={14} /></div>
+                            <div className="dp-meta">কোনো ফাইল আপলোড হয়নি</div>
+                          </div>
+                        </div>
+                      ) : (
+                        detail.attachments.map((a) => (
+                          <div className="design-preview-card" key={a.id}>
+                            <div className="dp-row">
+                              <div className="dp-thumb"><Icon name="figma" size={14} /></div>
+                              <div className="dp-meta">
+                                {a.file_name} {a.file_type ? `· ${a.file_type}` : ''}
+                                <br />
+                                <a href={a.drive_url} target="_blank" rel="noopener noreferrer">Drive-এ দেখুন</a>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+
+                      <div className="expand-label">Comments{detail && detail.comments.length > 0 ? ` · ${detail.comments.length}` : ''}</div>
+                      {!detail || detail.loading ? (
+                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
+                      ) : (
+                        <>
+                          {detail.comments.length === 0 && <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>এখনো কোনো কমেন্ট নেই।</p>}
+                          {detail.comments.map((c) => (
+                            <div className="expand-comment" key={c.id}>
+                              <Avatar person={c.profiles} size={20} />
+                              <div className="expand-comment-bubble">
+                                <b>{c.profiles?.full_name ?? 'কেউ একজন'}:</b> {c.body}
+                              </div>
+                            </div>
+                          ))}
+                          <div className="comment-form">
+                            <input
+                              type="text"
+                              placeholder="কমেন্ট লিখুন..."
+                              value={newComment[editingTask.id] ?? ''}
+                              onChange={(e) => setNewComment((prev) => ({ ...prev, [editingTask.id]: e.target.value }))}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') { e.preventDefault(); submitComment(editingTask.id); }
+                              }}
+                            />
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={() => submitComment(editingTask.id)}>পাঠান</button>
+                          </div>
+                        </>
+                      )}
+
+                      <div className="expand-label" style={{ marginTop: 14 }}>Activity Timeline</div>
+                      {!detail || detail.loading ? (
+                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
+                      ) : detail.activity.length === 0 ? (
+                        <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>এখনো কোনো অ্যাক্টিভিটি নেই।</p>
+                      ) : (
+                        <div style={{ fontSize: 11, color: 'var(--ink-soft)', lineHeight: 2 }}>
+                          {detail.activity.map((a) => (
+                            <div key={a.id}>
+                              {a.profiles?.full_name ?? 'কেউ একজন'} — {a.detail} · {relativeTimeBn(a.created_at)}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="modal-foot">
+                <button type="button" className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => { handleDeleteSingleTask(editingTask.id); setEditTaskId(null); }}>
+                  <Icon name="trash" size={13} /> ডিলিট
+                </button>
+                <div style={{ flex: 1 }}></div>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditTaskId(null)}>বাতিল</button>
+                <button type="submit" className="btn btn-accent btn-sm" disabled={editSaving || !editForm.title.trim()}>
+                  {editSaving ? 'সেভ হচ্ছে…' : 'সেভ করুন'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* add plan item modal */}
+      {showAddPlanModal && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAddPlanModal(false);
+          }}
+        >
+          <div className="modal-box modal-box-lg">
+            <div className="modal-title">{editingPlanId ? 'প্ল্যান আইটেম এডিট করুন' : 'নতুন প্ল্যান আইটেম'}</div>
+            <form onSubmit={handleSavePlanItem}>
+              <label className="field-label">Plan date</label>
+              <select className="field-input" value={modalPlanDate} onChange={(e) => setModalPlanDate(e.target.value)}>
+                {weekDays.map((d, i) => (
+                  <option key={isoDate(d)} value={isoDate(d)}>
+                    {DAY_LABELS[i]} · {d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                  </option>
+                ))}
+              </select>
+
+              <label className="field-label">Plan title</label>
+              <input
+                className="field-input"
+                type="text"
+                value={modalPlanTitle}
+                onChange={(e) => setModalPlanTitle(e.target.value)}
+                placeholder="যেমন: Client review call — 3pm"
+                autoFocus
+                required
+              />
+
+              <label className="field-label">Description</label>
+              <RichTextField value={modalPlanDetails} onChange={setModalPlanDetails} textareaClassName="field-input" placeholder="বিস্তারিত লিখুন (ঐচ্ছিক)..." minHeight={70} />
+
+              <label className="field-label">To-do list</label>
+              <div className="todo-draft-box">
+                {modalPlanChecklist.map((item, i) => (
+                  <div className="todo-draft-row" key={i}>
+                    <input
+                      className="field-input"
+                      style={{ marginBottom: 0 }}
+                      type="text"
+                      value={item}
+                      onChange={(e) => updateModalPlanChecklistItem(i, e.target.value)}
+                      placeholder={`Checklist item ${i + 1}`}
+                    />
+                    <button type="button" className="todo-draft-remove" onClick={() => removeModalPlanChecklistRow(i)} aria-label="বাদ দিন">
+                      <Icon name="close" size={12} />
+                    </button>
+                  </div>
+                ))}
+                <button type="button" className="btn btn-ghost btn-sm" onClick={addModalPlanChecklistRow}>
+                  <Icon name="plus" size={13} /> Add item
+                </button>
+              </div>
+
+              <div className="modal-foot">
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowAddPlanModal(false)}>বাতিল</button>
+                <button type="submit" className="btn btn-accent btn-sm" disabled={planSaving || !modalPlanTitle.trim()}>
+                  {planSaving ? 'সেভ হচ্ছে…' : editingPlanId ? 'সেভ করুন' : 'যোগ করুন'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

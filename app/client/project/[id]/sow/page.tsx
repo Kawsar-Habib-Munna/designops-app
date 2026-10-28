@@ -34,10 +34,10 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
-import { formatDateLong, todayISO } from '@/lib/format';
-import { driveThumbnailUrl } from '@/lib/driveUpload';
+import { todayISO } from '@/lib/format';
 import '../../../client-shared.css';
 import './sow.css';
+import SowDocument from '@/app/components/SowDocument';
 
 const ICONS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -89,69 +89,13 @@ type Sow = {
   agency_signature_image_url: string | null;
 };
 
-type SowDocument = { id: string; file_name: string; file_url: string; file_size: number | null };
+type SowAttachmentRow = { id: string; file_name: string; file_url: string; file_size: number | null };
 
 function toOne<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
   return Array.isArray(v) ? (v[0] ?? null) : v;
 }
-function formatBytes(bytes: number | null): string {
-  if (!bytes) return '0 B';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
-function fileExtension(name: string): string {
-  const parts = name.split('.');
-  return parts.length > 1 ? (parts.pop() as string).toUpperCase() : 'FILE';
-}
-
-const CURRENCY_SYMBOL: Record<string, string> = { BDT: '৳', USD: '$', GBP: '£' };
 const WHATSAPP_URL_BASE = 'https://wa.me/8801804409235';
-
-// অ্যাডমিন পেজের (app/projects/[id]/sow) parseServices/parseMilestones-এর সাথে
-// হুবহু মেলানো ফরম্যাট - একই "• service || deliverable || quantity" এবং
-// "• label — week" এনকোডিং, scope/timeline টেক্সট কলামেই (নতুন jsonb কলাম
-// ছাড়াই)। পুরনো সিঙ্গেল-লাইন স্ট্রিং ডেটা (কোনো "||" নেই) ব্যাকওয়ার্ড-কম্প্যাটিবল -
-// পুরোটা service-এ বসে, deliverable/quantity খালি দেখায়।
-type ServiceRow = { service: string; deliverable: string; quantity: string };
-type MilestoneRow = { label: string; week: string };
-type PaymentRow = { description: string; amount: string; dueDate: string };
-
-function parseServiceRows(scope: string | null): ServiceRow[] {
-  if (!scope) return [];
-  return scope
-    .split('\n')
-    .map((l) => l.replace(/^[•\-]\s*/, '').trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [service, deliverable, quantity] = line.split(' || ');
-      return { service: (service ?? '').trim(), deliverable: (deliverable ?? '').trim(), quantity: (quantity ?? '').trim() };
-    });
-}
-function parseMilestoneRows(timeline: string | null): MilestoneRow[] {
-  if (!timeline) return [];
-  return timeline
-    .split('\n')
-    .filter((l) => l.trim().startsWith('•'))
-    .map((l) => {
-      const clean = l.replace(/^•\s*/, '').trim();
-      const [label, week] = clean.split(' — ');
-      return { label: (label ?? '').trim(), week: (week ?? '').trim() };
-    });
-}
-function parsePaymentRows(paymentTerms: string | null): PaymentRow[] {
-  if (!paymentTerms) return [];
-  return paymentTerms
-    .split('\n')
-    .map((l) => l.replace(/^[•\-]\s*/, '').trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [description, amount, dueDate] = line.split(' || ');
-      return { description: (description ?? '').trim(), amount: (amount ?? '').trim(), dueDate: (dueDate ?? '').trim() };
-    });
-}
 
 // ---- shared sidebar/topbar shell (identical structure to Screen 9) ----
 function SowShell({
@@ -260,7 +204,7 @@ export default function ClientSowPage() {
   const [project, setProject] = useState<ProjectBrief | null>(null);
   const [client, setClient] = useState<ClientRecord | null>(null);
   const [sow, setSow] = useState<Sow | null>(null);
-  const [documents, setDocuments] = useState<SowDocument[]>([]);
+  const [documents, setDocuments] = useState<SowAttachmentRow[]>([]);
 
   const [signError, setSignError] = useState<string | null>(null);
 
@@ -295,7 +239,7 @@ export default function ClientSowPage() {
 
         if (sowRow) {
           const { data: docsData } = await supabase.from('sow_documents').select('id, file_name, file_url, file_size').eq('sow_id', sowRow.id).order('uploaded_at', { ascending: false });
-          setDocuments((docsData as SowDocument[]) ?? []);
+          setDocuments((docsData as SowAttachmentRow[]) ?? []);
         }
 
         if (sowRow && sowRow.status === 'sent' && !(sowRow as unknown as { viewed_at: string | null }).viewed_at) {
@@ -445,11 +389,7 @@ export default function ClientSowPage() {
     );
   }
 
-  const deliverableRows = parseServiceRows(sow.scope);
-  const milestoneRows = parseMilestoneRows(sow.timeline);
-  const paymentRows = parsePaymentRows(sow.payment_terms);
   const isSigned = sow.status === 'signed';
-  const sym = CURRENCY_SYMBOL[sow.currency ?? 'BDT'] ?? sow.currency ?? '';
 
   const manager = toOne(project.project_manager);
 
@@ -490,253 +430,14 @@ export default function ClientSowPage() {
 
           <div className="sw-layout">
           <div className="sw-main">
-          <div className="doc-card">
-            <div className="doc-letterhead-row">
-              <div className="doc-letterhead-left">
-                <img src="/flow53-logo.svg" alt="" className="doc-brand-mark" />
-                <div>
-                  <div className="doc-letterhead">FLOW 53</div>
-                  <div className="doc-letterhead-sub">Innovate-Design-Elevate</div>
-                </div>
-              </div>
-              <div className="doc-letterhead-right">
-                <div className="doc-letterhead-doctype">STATEMENT OF WORK</div>
-                <div className="doc-letterhead-ref">
-                  {sow.sow_number ?? `v${sow.version}`} · v{sow.version}.0
-                </div>
-              </div>
-            </div>
-            <hr className="doc-hr" />
-
-            <div className="sw-parties-row">
-              <div className="sw-parties-left">
-                <div className="doc-eyebrow">Service Provider</div>
-                <div className="doc-kv-value">FLOW 53 Design Studio</div>
-                <div className="doc-kv-sub">Dhaka, Bangladesh</div>
-              </div>
-              <table className="sw-table sw-parties-table">
-                <tbody>
-                  <tr>
-                    <th>Client</th>
-                    <td>{client.primary_contact}</td>
-                  </tr>
-                  <tr>
-                    <th>Project</th>
-                    <td>{project.name}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div className="sw-doc-section" id="sec-scope">
-              <div className="doc-section-head">
-                <span className="doc-section-num">01</span>
-                <span className="doc-section-title">Scope of Work</span>
-              </div>
-              {sow.objectives && (
-                <>
-                  <div className="doc-subhead">Project overview</div>
-                  <p className="doc-p">{sow.objectives}</p>
-                </>
-              )}
-              {deliverableRows.length > 0 && (
-                <>
-                  <div className="doc-subhead">Deliverables</div>
-                  <table className="sw-table">
-                    <thead>
-                      <tr>
-                        <th>Service</th>
-                        <th>Deliverable</th>
-                        <th>Quantity</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {deliverableRows.map((r, i) => (
-                        <tr key={i}>
-                          <td>{r.service}</td>
-                          <td>{r.deliverable || '—'}</td>
-                          <td>{r.quantity || '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </>
-              )}
-            </div>
-
-            <div className="sw-doc-section" id="sec-timeline">
-              <div className="doc-section-head">
-                <span className="doc-section-num">02</span>
-                <span className="doc-section-title">Timeline</span>
-              </div>
-              {milestoneRows.length > 0 && (
-                <>
-                  <div className="doc-subhead">Project milestones</div>
-                  <table className="sw-table">
-                    <thead>
-                      <tr>
-                        <th>Milestone</th>
-                        <th>Target date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {milestoneRows.map((m, i) => (
-                        <tr key={i}>
-                          <td>{m.label}</td>
-                          <td>{m.week || '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </>
-              )}
-              {(sow.start_date || sow.delivery_date) && (
-                <p className="doc-p">
-                  {sow.start_date && `Start: ${formatDateLong(sow.start_date)}`}
-                  {sow.start_date && sow.delivery_date && ' · '}
-                  {sow.delivery_date && `Expected Delivery: ${formatDateLong(sow.delivery_date)}`}
-                </p>
-              )}
-            </div>
-
-            <div className="sw-doc-section" id="sec-payment">
-              <div className="doc-section-head">
-                <span className="doc-section-num">03</span>
-                <span className="doc-section-title">Payment Terms</span>
-              </div>
-              {sow.project_value != null && (
-                <table className="sw-table sw-fee-table">
-                  <tbody>
-                    <tr>
-                      <th>Project Fee</th>
-                      <td>
-                        {sym}
-                        {sow.project_value.toLocaleString('en-US')}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              )}
-              {paymentRows.length > 0 && (
-                <>
-                  <div className="doc-subhead">Payment schedule</div>
-                  <table className="sw-table">
-                    <thead>
-                      <tr>
-                        <th>Description</th>
-                        <th>Amount</th>
-                        <th>Due date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paymentRows.map((r, i) => (
-                        <tr key={i}>
-                          <td>{r.description}</td>
-                          <td>{r.amount || '—'}</td>
-                          <td>{r.dueDate || '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </>
-              )}
-              {sow.revision_policy && <p className="doc-p">{sow.revision_policy}</p>}
-            </div>
-
-            <div className="sw-doc-section" id="sec-terms">
-              <div className="doc-section-head">
-                <span className="doc-section-num">04</span>
-                <span className="doc-section-title">Terms &amp; Conditions</span>
-              </div>
-              {sow.terms && (
-                <p className="doc-p" style={{ whiteSpace: 'pre-wrap' }}>
-                  {sow.terms}
-                </p>
-              )}
-              {sow.document_url && (
-                <a href={sow.document_url} target="_blank" rel="noopener noreferrer" className="sw-doc-link">
-                  📄 View attached document ↗
-                </a>
-              )}
-            </div>
-
-            <div className="sw-doc-section" id="sec-signatures">
-              <div className="doc-section-head">
-                <span className="doc-section-num">05</span>
-                <span className="doc-section-title">Agreement &amp; Signatures</span>
-              </div>
-              <div className="sig-block-grid">
-                <div className="sig-block">
-                  <div className="sig-block-label">Client</div>
-                  <div className="sig-block-name">{client.primary_contact}</div>
-                  <div className="sig-block-sub">{client.company_name}</div>
-                  <hr className="sig-block-line" />
-                  {isSigned ? (
-                    <>
-                      {sow.signature_image_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img className="sig-block-image" src={driveThumbnailUrl(sow.signature_image_url)} alt={`${sow.signed_by_name} signature`} />
-                      ) : (
-                        <div className="sig-block-typed">{sow.signed_by_name}</div>
-                      )}
-                      <div className="sig-block-caption">{sow.signature_method === 'drawn' ? 'Drawn Signature' : sow.signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
-                      <div className="sig-block-meta">Signed on {sow.signed_at ? formatDateLong(sow.signed_at) : ''}</div>
-                    </>
-                  ) : (
-                    <div className="sig-block-pending">Awaiting Signature</div>
-                  )}
-                </div>
-                <div className="sig-block">
-                  <div className="sig-block-label">Agency</div>
-                  <div className="sig-block-name">{sow.agency_signer_name ?? manager?.full_name ?? 'FLOW 53'}</div>
-                  <div className="sig-block-sub">{manager?.role ?? 'Project Manager'} · FLOW 53</div>
-                  <hr className="sig-block-line" />
-                  {sow.agency_signed_at ? (
-                    <>
-                      {sow.agency_signature_image_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img className="sig-block-image" src={driveThumbnailUrl(sow.agency_signature_image_url)} alt={`${sow.agency_signer_name} signature`} />
-                      ) : (
-                        <div className="sig-block-typed">{sow.agency_signer_name}</div>
-                      )}
-                      <div className="sig-block-caption">{sow.agency_signature_method === 'drawn' ? 'Drawn Signature' : sow.agency_signature_method === 'uploaded' ? 'Uploaded Signature' : 'Typed Signature'}</div>
-                      <div className="sig-block-meta">Signed on {formatDateLong(sow.agency_signed_at)}</div>
-                    </>
-                  ) : (
-                    <div className="sig-block-pending">Pending Agency Signature</div>
-                  )}
-                </div>
-              </div>
-              {isSigned && <p className="sig-version-line">SOW Version: v{sow.version}.0 · Status: Signed ✓</p>}
-            </div>
-
-            <div className="doc-footer">
-              <span>
-                {sow.sow_number ?? `v${sow.version}`} · v{sow.version}.0
-              </span>
-              <span>Page 1</span>
-            </div>
-          </div>
-
-          {documents.length > 0 && (
-            <div className="doc-card sw-doc-attachments-card">
-              <div className="doc-h2">
-                <span className="doc-h2-num">📎</span>Documents &amp; Attachments
-              </div>
-              <div className="sw-doc-list">
-                {documents.map((d) => (
-                  <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="sw-doc-item" key={d.id}>
-                    <span className="sw-doc-ext">{fileExtension(d.file_name)}</span>
-                    <div className="sw-doc-item-meta">
-                      <span className="sw-doc-item-name">{d.file_name}</span>
-                      <span className="sw-doc-item-size">{formatBytes(d.file_size)}</span>
-                    </div>
-                    <Icon name="download" size={13} />
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
+          <SowDocument
+            sow={sow}
+            clientContact={client.primary_contact}
+            companyName={client.company_name}
+            projectName={project.name}
+            manager={manager}
+            attachments={documents}
+          />
           </div>
 
           <aside className="sw-sidebar">

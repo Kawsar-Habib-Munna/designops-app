@@ -1,0 +1,58 @@
+/* Team Workload bar chart (WorkloadChart.tsx). Colours come from the dashboard tokens (--accent, --ink*, --border*,
+   --surface*), so light and dark mode both work; the fallbacks keep it usable if a token is missing.
+   Mark specs: bar <= 24px thick (14px here), 4px rounded tip + square base, hairline solid gridlines, text in ink
+   colours (never the bar colour). */
+.wl { --wl-name: 104px; --wl-gap: 12px; }
+
+.wl-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.wl-caption { font-size: 12px; font-weight: 600; color: var(--ink-soft, #6e6e7a); }
+.wl-seg { display: inline-flex; gap: 2px; padding: 3px; background: var(--surface-muted, #fbfbfc); border: 1px solid var(--border, #e8e8ec); border-radius: 9px; }
+.wl-seg button { padding: 4px 12px; border: none; border-radius: 6px; background: transparent; font-size: 12px; font-weight: 600; color: var(--ink-soft, #6e6e7a); cursor: pointer; transition: background .15s ease, color .15s ease; }
+.wl-seg button.active { background: var(--surface, #fff); color: var(--ink, #14141a); box-shadow: var(--shadow-sm, 0 1px 2px rgba(16, 16, 20, .06)); }
+
+.wl-chart { position: relative; }
+.wl-plot { position: relative; display: flex; flex-direction: column; gap: 6px; padding-top: 20px; }
+
+/* gridlines + full-load marker: absolutely positioned over the track column only */
+.wl-grid { position: absolute; top: 20px; bottom: 0; left: calc(var(--wl-name) + var(--wl-gap)); right: 0; pointer-events: none; }
+.wl-gridline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border-soft, #f0f0f3); }
+.wl-cap { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--ink-faint, #a3a3ae); }
+.wl-cap-label { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; white-space: nowrap; font-size: 11px; font-weight: 600; color: var(--ink-soft, #6e6e7a); }
+
+.wl-row { position: relative; display: grid; grid-template-columns: var(--wl-name) minmax(0, 1fr); column-gap: var(--wl-gap); align-items: center; height: 30px; border-radius: 8px; outline: none; }
+.wl-row:focus-visible { outline: 2px solid var(--accent, #5b4fe8); outline-offset: 2px; }
+.wl-name { font-size: 12.5px; color: var(--ink-soft, #6e6e7a); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wl-row.is-hover .wl-name { color: var(--ink, #14141a); font-weight: 600; }
+.wl-track { position: relative; display: block; height: 100%; }
+.wl-bar { position: absolute; left: 0; top: 50%; height: 14px; margin-top: -7px; background: var(--accent, #5b4fe8); border-radius: 0 4px 4px 0; transform-origin: left center; animation: wl-grow .5s cubic-bezier(.2, .8, .2, 1) both; transition: opacity .15s ease, height .15s ease, margin-top .15s ease; }
+.wl-row.is-hover .wl-bar { height: 16px; margin-top: -8px; }
+.wl-val { position: absolute; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 700; color: var(--ink, #14141a); white-space: nowrap; }
+@keyframes wl-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .wl-bar { animation: none; transition: none; } }
+
+.wl-axis { display: grid; grid-template-columns: var(--wl-name) minmax(0, 1fr); column-gap: var(--wl-gap); margin-top: 6px; height: 16px; }
+.wl-axis-track { position: relative; display: block; }
+.wl-tick { position: absolute; top: 0; transform: translateX(-50%); font-size: 11px; color: var(--ink-faint, #a3a3ae); }
+
+/* tooltip: the value leads, the name follows; a short line key (not a box) carries the series colour */
+.wl-tooltip { position: absolute; z-index: 5; transform: translate(14px, -130%); pointer-events: none; min-width: 150px; padding: 9px 12px; background: var(--surface, #fff); border: 1px solid var(--border, #e8e8ec); border-radius: 10px; box-shadow: var(--shadow-md, 0 4px 16px rgba(16, 16, 20, .1)); white-space: nowrap; }
+.wl-tooltip.flip { transform: translate(calc(-100% - 14px), -130%); }
+.wl-tooltip-value { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--ink, #14141a); }
+.wl-tooltip-key { width: 12px; height: 3px; border-radius: 2px; background: var(--accent, #5b4fe8); flex-shrink: 0; }
+.wl-tooltip-name { margin-top: 2px; font-size: 12px; color: var(--ink-soft, #6e6e7a); }
+.wl-tooltip-note { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border-soft, #f0f0f3); font-size: 11.5px; color: var(--ink-soft, #6e6e7a); }
+
+.wl-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.wl-table th { padding: 8px 6px; text-align: left; font-size: 11px; font-weight: 600; color: var(--ink-faint, #a3a3ae); border-bottom: 1px solid var(--border, #e8e8ec); }
+.wl-table td { padding: 9px 6px; color: var(--ink, #14141a); border-bottom: 1px solid var(--border-soft, #f0f0f3); }
+.wl-table tr:last-child td { border-bottom: none; }
+.wl-table .num { text-align: right; }
+
+.wl-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-soft, #f0f0f3); font-size: 12px; color: var(--ink-soft, #6e6e7a); }
+.wl-foot b { color: var(--ink, #14141a); font-weight: 700; }
+
+@media (max-width: 480px) { .wl { --wl-name: 80px; --wl-gap: 8px; } }
+
+/* hover: the hovered person stays full strength, the other bars step back; no colour change, just focus */
+.wl-plot:has(.wl-row.is-hover) .wl-row:not(.is-hover) .wl-bar { opacity: .35; }
+.wl-plot:has(.wl-row.is-hover) .wl-row:not(.is-hover) .wl-val { opacity: .55; }

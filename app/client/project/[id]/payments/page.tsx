@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
 import { formatDateLong, todayISO } from '@/lib/format';
+import { CURRENCY_SYMBOL } from '@/lib/currency';
 import '../../../client-shared.css';
 import './payments.css';
 
@@ -64,7 +65,6 @@ type Invoice = {
 type Payment = { id: string; invoice_id: string; payment_method: string | null; transaction_id: string | null; payment_date: string | null; confirmed_at: string | null; status: string; receipt_number: string | null };
 
 const WHATSAPP_URL_BASE = 'https://wa.me/8801804409235';
-const CURRENCY_SYMBOL: Record<string, string> = { BDT: '৳', USD: '$', GBP: '£' };
 const TABS = [
   { key: 'all', label: 'All' },
   { key: 'paid', label: 'Paid' },

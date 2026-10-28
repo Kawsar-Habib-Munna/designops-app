@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
 import { formatDateLong } from '@/lib/format';
+import { CURRENCY_SYMBOL } from '@/lib/currency';
 import '../../../../client-shared.css';
 import '../sow.css';
 import './history.css';
@@ -48,7 +49,6 @@ type SowVersion = {
   signature_method: string | null;
 };
 
-const CURRENCY_SYMBOL: Record<string, string> = { BDT: '৳', USD: '$', GBP: '£' };
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   signed: { label: 'Signed', cls: 'hv-signed' },

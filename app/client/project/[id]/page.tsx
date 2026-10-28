@@ -36,6 +36,9 @@ import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
 import { driveThumbnailUrl } from '@/lib/driveUpload';
 import { relativeTime, formatDate } from '@/lib/format';
+import { formatMoney } from '@/lib/currency';
+import { getProjectCurrency } from '@/lib/projectCurrency';
+import RichText from '@/app/components/RichText';
 import '../../client-shared.css';
 import './project-dashboard.css';
 
@@ -156,6 +159,10 @@ export default function ClientProjectDashboard() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [client, setClient] = useState<ClientRecord | null>(null);
   const [project, setProject] = useState<ProjectDetail | null>(null);
+  const [currency, setCurrency] = useState('BDT');
+  useEffect(() => {
+    if (projectId) getProjectCurrency(projectId).then(setCurrency);
+  }, [projectId]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [files, setFiles] = useState<FileRow[]>([]);
   const [invoices, setInvoices] = useState<InvoiceBrief[]>([]);
@@ -478,11 +485,11 @@ export default function ClientProjectDashboard() {
                       <>
                         <div className="detail-row">
                           <span>Project Value</span>
-                          <span>৳{project.budget.toLocaleString('en-US')}</span>
+                          <span>{formatMoney(project.budget, currency)}</span>
                         </div>
                         <div className="detail-row">
                           <span>Paid</span>
-                          <span>৳{totalPaid.toLocaleString('en-US')}</span>
+                          <span>{formatMoney(totalPaid, currency)}</span>
                         </div>
                       </>
                     ) : (
@@ -696,15 +703,15 @@ export default function ClientProjectDashboard() {
                       <>
                         <div className="detail-row">
                           <span>Project Value</span>
-                          <span>৳{project.budget.toLocaleString('en-US')}</span>
+                          <span>{formatMoney(project.budget, currency)}</span>
                         </div>
                         <div className="detail-row">
                           <span>Paid</span>
-                          <span>৳{totalPaid.toLocaleString('en-US')}</span>
+                          <span>{formatMoney(totalPaid, currency)}</span>
                         </div>
                         <div className="detail-row">
                           <span>Remaining</span>
-                          <span>৳{Math.max(0, project.budget - totalPaid).toLocaleString('en-US')}</span>
+                          <span>{formatMoney(Math.max(0, project.budget - totalPaid), currency)}</span>
                         </div>
                         <div className="payment-bar">
                           <div className="payment-fill" style={{ width: `${paymentPct}%` }}></div>
@@ -743,7 +750,7 @@ export default function ClientProjectDashboard() {
                         <div className="update-meta">
                           {formatDate(latestUpdate.created_at)} · Posted by {toOne(latestUpdate.author)?.full_name ?? 'FLOW 53 Team'}
                         </div>
-                        {latestUpdate.description && <p className="update-body">{latestUpdate.description}</p>}
+                        {latestUpdate.description && <RichText text={latestUpdate.description} className="update-body" />}
                         {latestUpdate.attachment_url && (
                           <a className="update-attachment" href={latestUpdate.attachment_url} target="_blank" rel="noopener noreferrer">
                             <Icon name="paperclip" size={12} /> View Attachment

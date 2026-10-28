@@ -18,6 +18,7 @@ import { uploadFileToDrive, driveThumbnailUrl } from '@/lib/driveUpload';
 import { renderBudgetMessage, buildGreetingLine, buildPriceBlock, DEFAULT_MESSAGE_TEMPLATES, MESSAGE_STYLE_LABEL, type MessageStyle } from '@/lib/budgetMessage';
 import SignInScreen from '@/app/components/SignInScreen';
 import BudgetShell, { Icon, type ProfileRow } from '../components/BudgetShell';
+import PhoneInput from '@/app/components/PhoneInput';
 
 const CURRENCIES = ['BDT', 'INR', 'USD', 'GBP'];
 
@@ -258,7 +259,7 @@ export default function BudgetSettingsPage() {
               </div>
               <div className="field">
                 <label className="field-label">Contact Phone</label>
-                <input className="field-input" value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} />
+                <PhoneInput inputClassName="field-input" value={form.contact_phone} onChange={(v) => setForm({ ...form, contact_phone: v })} />
               </div>
             </div>
             <div className="field" style={{ marginBottom: 0 }}>

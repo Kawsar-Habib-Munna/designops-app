@@ -1,0 +1,161 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700&display=swap");
+
+/* The SOW document exactly as the client sees it (see SowDocument.tsx). Everything is scoped to .sow-document and
+   uses its own `sd-*` class names, so it cannot clash with either page's stylesheet. The colour tokens below are the
+   client portal's (client-shared.css), light + dark, so the admin preview shows the client's real palette and font
+   even though the admin app itself uses a different theme. The values mirror the document rules that used to live
+   in the client's sow.css. */
+
+.sow-document {
+  --bg: #f2f1f2;
+  --surface: #ffffff;
+  --border: #d5d4d7;
+  --ink: #323135;
+  --ink-soft: #6d6a72;
+  --ink-faint: #939197;
+  --accent: #7c3aed;
+  --accent-soft: #f2ebfd;
+  --positive: #10b981;
+  --positive-soft: #e7f8f2;
+  --warning: #f5a524;
+  --warning-soft: #fdf3e1;
+  --shadow-lg: 0 12px 32px rgba(16, 16, 20, 0.1);
+  --radius-lg: 16px;
+  --radius-sm: 8px;
+
+  color: var(--ink);
+  font-family: "Nunito Sans", "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: normal;
+  /* lets the layout react to the width of the preview pane instead of the browser window */
+  container-type: inline-size;
+}
+.sow-document.theme-dark {
+  --bg: #323135;
+  --surface: #424045;
+  --border: #555359;
+  --ink: #f2f1f2;
+  --ink-soft: #c1c0c3;
+  --ink-faint: #939197;
+  --accent: #9661f1;
+  --accent-soft: #442082;
+  --positive: #40c79a;
+  --positive-soft: #074e36;
+  --warning: #f5b455;
+  --warning-soft: #332616;
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+@media (prefers-color-scheme: dark) {
+  .sow-document.theme-auto {
+    --bg: #323135;
+    --surface: #424045;
+    --border: #555359;
+    --ink: #f2f1f2;
+    --ink-soft: #c1c0c3;
+    --ink-faint: #939197;
+    --accent: #9661f1;
+    --accent-soft: #442082;
+    --positive: #40c79a;
+    --positive-soft: #074e36;
+    --warning: #f5b455;
+    --warning-soft: #332616;
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+  }
+}
+.sow-document,
+.sow-document * {
+  box-sizing: border-box;
+}
+.sow-document p,
+.sow-document h1,
+.sow-document h2,
+.sow-document h3 {
+  margin-top: 0;
+}
+
+.sow-document .sd-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 40px 38px 36px; margin-bottom: 20px; overflow: hidden; }
+.sow-document .sd-letterhead-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.sow-document .sd-letterhead-left { display: flex; align-items: center; gap: 12px; }
+.sow-document .sd-brand-mark { width: 34px; height: 34px; flex-shrink: 0; object-fit: contain; display: block; }
+.sow-document .sd-letterhead { font-size: 17px; font-weight: 800; color: var(--accent); line-height: 1.2; }
+.sow-document .sd-letterhead-sub { font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
+.sow-document .sd-letterhead-right { text-align: right; flex-shrink: 0; }
+.sow-document .sd-letterhead-doctype { font-size: 15px; font-weight: 800; letter-spacing: 0.02em; color: var(--ink); }
+.sow-document .sd-letterhead-ref { font-size: 11.5px; color: var(--ink-faint); margin-top: 3px; }
+.sow-document .sd-hr { border: none; border-top: 1px solid var(--border); margin: 0 0 26px; }
+
+.sow-document .sd-h2 { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: 0.03em; margin: 30px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.sow-document .sd-h2-num { width: 20px; height: 20px; flex-shrink: 0; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 10.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; text-transform: none; letter-spacing: 0; }
+
+/* anchor links (#sec-scope ...) scroll a section to just below the sticky top bar */
+.sow-document .sd-section { scroll-margin-top: 84px; }
+
+/* numbered section heads ("01  SCOPE OF WORK ———") */
+.sow-document .sd-section-head { display: flex; align-items: center; gap: 14px; margin: 32px 0 16px; scroll-margin-top: 80px; }
+.sow-document .sd-section-head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.sow-document .sd-section-num { font-size: 13px; font-weight: 800; color: var(--ink-faint); flex-shrink: 0; }
+.sow-document .sd-section-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink); flex-shrink: 0; }
+.sow-document .sd-subhead { font-size: 13px; font-weight: 700; color: var(--ink); margin: 18px 0 8px; }
+
+.sow-document .sd-p { font-size: 13.5px; line-height: 1.8; color: var(--ink-soft); margin: 0 0 10px; }
+.sow-document .sd-link { display: inline-block; font-size: 12.5px; font-weight: 600; color: var(--accent); margin-top: 8px; text-decoration: none; }
+.sow-document .sd-link:hover { text-decoration: underline; }
+
+.sow-document .sd-kv-value { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.sow-document .sd-kv-sub { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+.sow-document .sd-eyebrow { font-size: 10.5px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 5px; }
+
+/* Parties: left plain-text Service Provider block + right bordered Client/Project table */
+.sow-document .sd-parties-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; margin-bottom: 8px; }
+
+/* generic bordered document table (Deliverables / Milestones / Parties). Square corners on purpose:
+   border-collapse + border-radius/overflow:hidden clips the collapsed outer border in some browsers. */
+.sow-document .sd-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); margin-bottom: 10px; font-size: 13px; }
+.sow-document .sd-table th, .sow-document .sd-table td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
+.sow-document .sd-table thead th { background: var(--bg); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-faint); }
+.sow-document .sd-table tbody td { color: var(--ink-soft); }
+.sow-document .sd-parties-table th { background: var(--bg); width: 90px; font-size: 12px; font-weight: 700; color: var(--ink-faint); }
+.sow-document .sd-parties-table td { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.sow-document .sd-fee-table th { background: var(--bg); width: 140px; font-size: 12px; font-weight: 700; color: var(--ink-faint); }
+.sow-document .sd-fee-table td { font-size: 14px; font-weight: 700; color: var(--ink); }
+
+.sow-document .sd-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--ink-faint); }
+
+/* Documents & Attachments */
+.sow-document .sd-doc-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.sow-document .sd-doc-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: inherit; text-decoration: none; }
+.sow-document .sd-doc-item:hover { border-color: var(--accent); background: var(--accent-soft); }
+.sow-document .sd-doc-ext { flex-shrink: 0; font-size: 10px; font-weight: 800; color: var(--accent); background: var(--accent-soft); border-radius: 5px; padding: 3px 7px; letter-spacing: 0.02em; }
+.sow-document .sd-doc-item:hover .sd-doc-ext { background: var(--surface); }
+.sow-document .sd-doc-item-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sow-document .sd-doc-item-name { font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sow-document .sd-doc-item-size { font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
+.sow-document .sd-doc-item svg { flex-shrink: 0; color: var(--ink-faint); }
+
+/* Agreement & Signatures */
+.sow-document .sd-sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 8px; }
+.sow-document .sd-sig { padding-top: 8px; }
+.sow-document .sd-sig-label { font-size: 10px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+.sow-document .sd-sig-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+.sow-document .sd-sig-sub { font-size: 12px; color: var(--ink-faint); }
+.sow-document .sd-sig-line { border: none; border-top: 1px solid var(--border); margin: 14px 0 10px; }
+.sow-document .sd-sig-typed { font-family: 'Georgia', serif; font-style: italic; font-size: 24px; color: var(--ink); border-bottom: 1.5px solid var(--border); padding-bottom: 6px; margin-bottom: 4px; }
+.sow-document .sd-sig-image { max-width: 200px; max-height: 80px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px; margin-bottom: 6px; display: block; }
+.sow-document .sd-sig-caption { font-size: 10.5px; color: var(--ink-faint); margin-bottom: 6px; }
+.sow-document .sd-sig-meta { font-size: 12px; color: var(--ink-soft); }
+.sow-document .sd-sig-pending { font-size: 12px; font-weight: 600; color: var(--warning); display: inline-block; padding: 4px 10px; }
+.sow-document .sd-version-line { font-size: 11.5px; color: var(--ink-faint); margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--border); }
+
+/* narrow container (phone width on the client's side, a narrow pane in the admin preview) */
+@container (max-width: 640px) {
+  .sow-document .sd-card { padding: 26px 20px; }
+  .sow-document .sd-parties-row { grid-template-columns: 1fr; }
+  .sow-document .sd-sig-grid { grid-template-columns: 1fr; }
+  .sow-document .sd-letterhead-row { flex-direction: column; }
+  .sow-document .sd-letterhead-right { text-align: left; }
+}
+
+@media print {
+  .sow-document .sd-card { box-shadow: none; border: none; }
+  .sow-document .sd-attachments { display: none !important; }
+}

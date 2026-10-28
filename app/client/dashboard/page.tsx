@@ -26,6 +26,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
 import { uploadFileToDrive, guessFileType, driveThumbnailUrl } from '@/lib/driveUpload';
 import { relativeTime, formatDate, formatDateLong, todayISO } from '@/lib/format';
+import { CURRENCY_SYMBOL } from '@/lib/currency';
 import '../client-shared.css';
 import './dashboard.css';
 
@@ -126,7 +127,6 @@ const PROJECT_STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   planning: { label: 'Planning', cls: 'b-review' },
   completed: { label: 'Completed', cls: 'b-done' },
 };
-const CURRENCY_SYMBOL: Record<string, string> = { BDT: '৳', USD: '$', GBP: '£' };
 
 function toOne<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;

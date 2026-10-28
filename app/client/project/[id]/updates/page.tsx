@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClientProject } from '@/lib/clientPortal';
 import { formatDateLong, relativeTime } from '@/lib/format';
+import RichText from '@/app/components/RichText';
 import '../../../client-shared.css';
 
 type Update = { id: string; title: string; description: string | null; attachment_url: string | null; created_at: string };
@@ -69,7 +70,7 @@ export default function ClientUpdatesPage() {
                 <div className="cp-item-meta">
                   {formatDateLong(u.created_at)} · {relativeTime(u.created_at)}
                 </div>
-                {u.description && <p className="cp-item-desc">{u.description}</p>}
+                {u.description && <RichText text={u.description} className="cp-item-desc" />}
                 {u.attachment_url && (
                   <a href={u.attachment_url} target="_blank" rel="noopener noreferrer" className="cp-item-link">
                     View attachment ↗

@@ -99,7 +99,6 @@ export default function BudgetShell({
               )}
             </nav>
           </div>
-          <ProfileMenu profile={profile} email={email} onUpdated={onProfileUpdated} dark={dark} />
         </aside>
 
         <div className="main">
@@ -112,6 +111,7 @@ export default function BudgetShell({
             <button className="icon-btn" aria-label="থিম পরিবর্তন" onClick={() => setDark((d) => !d)}>
               <Icon name={dark ? 'moon' : 'sun'} />
             </button>
+            <ProfileMenu variant="topbar" profile={profile} email={email} onUpdated={onProfileUpdated} dark={dark} />
           </header>
           <main className="content">{children}</main>
         </div>

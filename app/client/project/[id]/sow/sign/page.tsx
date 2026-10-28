@@ -20,6 +20,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
 import { formatDateLong, formatDateTime, todayISO } from '@/lib/format';
 import { uploadFileToDrive, driveThumbnailUrl } from '@/lib/driveUpload';
+import { CURRENCY_SYMBOL } from '@/lib/currency';
 import '../../../../client-shared.css';
 import './sign.css';
 
@@ -54,7 +55,6 @@ function toOne<T>(v: T | T[] | null | undefined): T | null {
   return Array.isArray(v) ? (v[0] ?? null) : v;
 }
 
-const CURRENCY_SYMBOL: Record<string, string> = { BDT: '৳', USD: '$', GBP: '£' };
 const WHATSAPP_URL_BASE = 'https://wa.me/8801804409235';
 const MAX_SIGNATURE_BYTES = 5 * 1024 * 1024;
 

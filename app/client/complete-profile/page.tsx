@@ -9,6 +9,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient } from '@/lib/clientPortal';
+import PhoneInput from '@/app/components/PhoneInput';
 import '../client-shared.css';
 
 export default function ClientCompleteProfile() {
@@ -108,7 +109,7 @@ export default function ClientCompleteProfile() {
               <label className="cp-label" htmlFor="profile-phone">
                 Phone Number <span style={{ fontWeight: 400, color: 'var(--ink-faint)' }}>(optional)</span>
               </label>
-              <input id="profile-phone" type="tel" className="cp-input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+880…" />
+              <PhoneInput id="profile-phone" inputClassName="cp-input" value={phone} onChange={setPhone} placeholder="1XXX XXXXXX" />
             </div>
 
             <button type="submit" className="cp-btn cp-btn-primary cp-btn-block" disabled={submitting}>

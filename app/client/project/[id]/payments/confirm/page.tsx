@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
 import { formatDateTime, formatDateLong, todayISO } from '@/lib/format';
 import { uploadFileToDrive, driveThumbnailUrl } from '@/lib/driveUpload';
+import RichText from '@/app/components/RichText';
 import '../../../../client-shared.css';
 import './confirm.css';
 
@@ -489,7 +490,7 @@ export default function ConfirmPaymentPage() {
         {needsCorrection && (
           <div className="cf-banner cf-banner-warning">
             <div className="cf-banner-title">Action Required</div>
-            <p>{latestPayment?.correction_reason || 'Please review your payment details and resubmit.'}</p>
+            <RichText text={latestPayment?.correction_reason || 'Please review your payment details and resubmit.'} />
           </div>
         )}
         {unableToVerify && !needsCorrection && (
@@ -534,9 +535,7 @@ export default function ConfirmPaymentPage() {
         {invoice.client_instructions && (
           <div className="cf-sow-card">
             <span className="cf-sow-label">How to Pay</span>
-            <p className="cf-instructions" style={{ whiteSpace: 'pre-wrap' }}>
-              {invoice.client_instructions}
-            </p>
+            <RichText text={invoice.client_instructions} className="cf-instructions" />
           </div>
         )}
 

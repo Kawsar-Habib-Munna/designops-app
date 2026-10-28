@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { DEFAULT_SITE_SETTINGS, buildWhatsappUrl } from '@/lib/siteSettings';
+import PhoneInput from '@/app/components/PhoneInput';
 
 // Figma-র form-এ (node 918:3546) লেবেলগুলো unfinished placeholder ছিল - দুই সারিতেই
 // "Full Name"/"Email" পুনরাবৃত্তি আর টেক্সটএরিয়ার প্লেসহোল্ডারে টাইপো ("Enter your
@@ -47,7 +48,7 @@ export default function ContactForm({ whatsappNumber = DEFAULT_SITE_SETTINGS.boo
         </label>
         <label className="contact-field">
           <span className="contact-field-label">Phone Number</span>
-          <input className="contact-field-input" type="tel" placeholder="Enter your phone number" value={values.phone} onChange={update('phone')} />
+          <PhoneInput inputClassName="contact-field-input" placeholder="Enter your phone number" value={values.phone} onChange={(v) => setValues((s) => ({ ...s, phone: v }))} />
         </label>
         <label className="contact-field">
           <span className="contact-field-label">Subject</span>

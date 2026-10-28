@@ -1,0 +1,47 @@
+/* Workload Distribution chart (CapacityChart.tsx). Uses the page's tokens with neutral fallbacks. Bars are 12px
+   (<= 24px), rounded tip + square base, hairline solid gridlines at the state boundaries, text in ink colours. */
+.cc { --cc-person: 168px; --cc-meta: 64px; --cc-gap: 14px; }
+
+.cc-legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 0 0 18px; padding: 0; list-style: none; }
+.cc-legend li { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.cc-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.cc-legend-label { font-weight: 600; color: var(--ink, #14141a); }
+.cc-legend-range { color: var(--ink-faint, #a3a3ae); }
+
+.cc-chart { position: relative; }
+.cc-plot { position: relative; display: flex; flex-direction: column; gap: 4px; }
+.cc-grid { position: absolute; top: 0; bottom: 0; left: calc(var(--cc-person) + var(--cc-gap)); right: calc(var(--cc-meta) + var(--cc-gap)); pointer-events: none; }
+.cc-gridline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border-soft, #f0f0f3); }
+
+.cc-row { position: relative; display: grid; grid-template-columns: var(--cc-person) minmax(0, 1fr) var(--cc-meta); column-gap: var(--cc-gap); align-items: center; min-height: 44px; border-radius: 10px; outline: none; transition: background .15s ease; }
+.cc-row:hover, .cc-row.is-hover { background: var(--surface-muted, #fbfbfc); }
+.cc-row:focus-visible { outline: 2px solid var(--accent, #5b4fe8); outline-offset: 2px; }
+.cc-person { display: flex; align-items: center; gap: 10px; min-width: 0; padding-left: 6px; }
+.cc-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--ink, #14141a); }
+/* the track is a light tint of the bar's own state colour, so the state reads across the whole row */
+.cc-track { position: relative; display: block; height: 12px; border-radius: 0 4px 4px 0; background: color-mix(in srgb, var(--cc-color) 12%, transparent); }
+.cc-bar { position: absolute; left: 0; top: 0; bottom: 0; background: var(--cc-color); border-radius: 0 4px 4px 0; transform-origin: left center; animation: cc-grow .5s cubic-bezier(.2, .8, .2, 1) both; transition: filter .15s ease; }
+.cc-row:hover .cc-bar, .cc-row.is-hover .cc-bar { filter: brightness(1.12); }
+.cc-val { position: absolute; top: 50%; transform: translateY(-50%); font-size: 12.5px; font-weight: 700; color: var(--ink, #14141a); white-space: nowrap; }
+.cc-meta { text-align: right; padding-right: 6px; font-size: 12px; color: var(--ink-soft, #6e6e7a); white-space: nowrap; }
+@keyframes cc-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .cc-bar { animation: none; transition: none; } }
+
+.cc-axis { display: grid; grid-template-columns: var(--cc-person) minmax(0, 1fr) var(--cc-meta); column-gap: var(--cc-gap); margin-top: 8px; height: 16px; }
+.cc-axis-track { position: relative; display: block; }
+.cc-tick { position: absolute; top: 0; transform: translateX(-50%); font-size: 11px; color: var(--ink-faint, #a3a3ae); }
+
+.cc-tooltip { position: absolute; z-index: 5; transform: translate(14px, -125%); pointer-events: none; min-width: 190px; max-width: 280px; padding: 10px 13px; background: var(--surface, #fff); border: 1px solid var(--border, #e8e8ec); border-radius: 10px; box-shadow: var(--shadow-md, 0 4px 16px rgba(16, 16, 20, .1)); }
+.cc-tooltip.flip { transform: translate(calc(-100% - 14px), -125%); }
+.cc-tooltip-value { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--ink, #14141a); }
+.cc-tooltip-key { width: 12px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+.cc-tooltip-name { margin-top: 2px; font-size: 12px; color: var(--ink-soft, #6e6e7a); }
+.cc-tooltip-detail { margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--border-soft, #f0f0f3); font-size: 11.5px; line-height: 1.5; color: var(--ink-soft, #6e6e7a); }
+
+@media (max-width: 640px) {
+  .cc { --cc-person: 120px; --cc-meta: 0px; --cc-gap: 10px; }
+  .cc-meta { display: none; }
+  .cc-row, .cc-axis { grid-template-columns: var(--cc-person) minmax(0, 1fr); }
+  .cc-grid { right: 0; }
+  .cc-axis > :last-child { display: none; }
+}

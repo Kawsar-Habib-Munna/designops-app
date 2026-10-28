@@ -1,0 +1,58 @@
+/* Workload Outlook column chart (OutlookChart.tsx). Page tokens with neutral fallbacks. Columns are 24px (<= 24px
+   spec) with a 4px rounded cap and a square base on the baseline; hairline solid gridlines; text in ink colours. */
+.oc-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.oc-caption { font-size: 12px; font-weight: 600; color: var(--ink-soft, #6e6e7a); }
+.oc-seg { display: inline-flex; gap: 2px; padding: 3px; background: var(--surface-muted, #fbfbfc); border: 1px solid var(--border, #e8e8ec); border-radius: 9px; }
+.oc-seg button { padding: 4px 12px; border: none; border-radius: 6px; background: transparent; font-size: 12px; font-weight: 600; color: var(--ink-soft, #6e6e7a); cursor: pointer; transition: background .15s ease, color .15s ease; }
+.oc-seg button.active { background: var(--surface, #fff); color: var(--ink, #14141a); box-shadow: var(--shadow-sm, 0 1px 2px rgba(16, 16, 20, .06)); }
+
+.oc-chart { position: relative; }
+.oc-frame { display: grid; grid-template-columns: 30px minmax(0, 1fr); column-gap: 10px; padding-top: 20px; }
+.oc-yaxis { position: relative; }
+.oc-ytick { position: absolute; right: 0; transform: translateY(50%); font-size: 11px; color: var(--ink-faint, #a3a3ae); }
+.oc-plot { position: relative; }
+.oc-grid { position: absolute; top: 0; left: 0; right: 0; pointer-events: none; }
+.oc-gridline { position: absolute; left: 0; right: 0; height: 1px; background: var(--border-soft, #f0f0f3); }
+.oc-gridline:first-child { background: var(--border, #e8e8ec); } /* the baseline */
+
+.oc-cols { position: relative; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.oc-col { display: flex; flex-direction: column; align-items: center; border-radius: 10px; outline: none; transition: background .15s ease; }
+.oc-col:hover, .oc-col.is-hover { background: transparent; }
+.oc-col:focus-visible { outline: 2px solid var(--accent, #5b4fe8); outline-offset: 2px; }
+.oc-slot { position: relative; display: flex; align-items: flex-end; justify-content: center; width: 100%; }
+.oc-bar { position: relative; display: block; width: 24px; min-height: 0; background: var(--accent, #5b4fe8); border-radius: 4px 4px 0 0; transform-origin: bottom center; animation: oc-grow .5s cubic-bezier(.2, .8, .2, 1) both; transition: opacity .15s ease, width .15s ease; }
+.oc-col.is-overdue .oc-bar { background: var(--danger, #e5484d); }
+.oc-col:hover .oc-bar, .oc-col.is-hover .oc-bar { width: 28px; }
+.oc-val { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); margin-bottom: 5px; font-size: 12px; font-weight: 700; color: var(--ink, #14141a); white-space: nowrap; }
+.oc-xlabel { margin-top: 10px; max-width: 100%; padding: 0 2px; text-align: center; font-size: 11.5px; line-height: 1.3; color: var(--ink-soft, #6e6e7a); white-space: normal; overflow-wrap: anywhere; }
+.oc-col.is-overdue .oc-xlabel { color: var(--danger, #e5484d); font-weight: 600; }
+@keyframes oc-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .oc-bar { animation: none; transition: none; } }
+
+.oc-tooltip { position: absolute; z-index: 5; transform: translate(-50%, calc(-100% - 6px)); pointer-events: none; min-width: 170px; padding: 10px 13px; background: var(--surface, #fff); border: 1px solid var(--border, #e8e8ec); border-radius: 10px; box-shadow: var(--shadow-md, 0 4px 16px rgba(16, 16, 20, .1)); white-space: nowrap; }
+.oc-tooltip.flip { transform: translate(-50%, calc(-100% - 6px)); }
+.oc-tooltip-value { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--ink, #14141a); }
+.oc-tooltip-key { width: 12px; height: 3px; border-radius: 2px; background: var(--accent, #5b4fe8); flex-shrink: 0; }
+.oc-tooltip-key.danger { background: var(--danger, #e5484d); }
+.oc-tooltip-name { margin-top: 2px; font-size: 12px; color: var(--ink-soft, #6e6e7a); }
+.oc-tooltip-detail { margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--border-soft, #f0f0f3); font-size: 11.5px; color: var(--ink-soft, #6e6e7a); }
+
+.oc-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.oc-table th { padding: 8px 6px; text-align: left; font-size: 11px; font-weight: 600; color: var(--ink-faint, #a3a3ae); border-bottom: 1px solid var(--border, #e8e8ec); }
+.oc-table td { padding: 9px 6px; color: var(--ink, #14141a); border-bottom: 1px solid var(--border-soft, #f0f0f3); }
+.oc-table tr:last-child td { border-bottom: none; }
+.oc-table .num { text-align: right; }
+
+.oc-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-soft, #f0f0f3); font-size: 12px; color: var(--ink-soft, #6e6e7a); }
+.oc-foot b { color: var(--ink, #14141a); font-weight: 700; }
+
+@media (max-width: 560px) {
+  .oc-frame { grid-template-columns: 24px minmax(0, 1fr); column-gap: 6px; }
+  .oc-xlabel { font-size: 10.5px; }
+  .oc-bar { width: 18px; }
+}
+
+/* hover: the hovered column stays full strength, the others step back; no colour change, just focus */
+.oc-cols:has(.oc-col.is-hover) .oc-col:not(.is-hover) .oc-bar { opacity: .35; }
+.oc-cols:has(.oc-col.is-hover) .oc-col:not(.is-hover) .oc-val { opacity: .55; }
+.oc-col.is-hover .oc-xlabel { color: var(--ink, #14141a); font-weight: 600; }

@@ -2307,3 +2307,10 @@ alter table profiles add column if not exists order_index int default 0;
 update profiles set order_index = sub.rn - 1
 from (select id, row_number() over (order by created_at) as rn from profiles) sub
 where profiles.id = sub.id and profiles.order_index = 0;
+
+-- ---------------------------------------------------------------------------
+-- Project currency — the creator picks it when the project is created (create-project page / projects page);
+-- the SOW starts from it, and invoices take their currency from the signed SOW. ISO 4217 code.
+-- Run once in the Supabase SQL editor. Existing projects stay on BDT (the old behaviour).
+-- ---------------------------------------------------------------------------
+alter table projects add column if not exists currency text not null default 'BDT';

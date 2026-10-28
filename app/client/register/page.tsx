@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, hasSubmittedRequirements } from '@/lib/clientPortal';
+import PhoneInput from '@/app/components/PhoneInput';
 import '../client-shared.css';
 import './register.css';
 
@@ -286,7 +287,7 @@ export default function ClientRegister() {
                     <label className="cp-label" htmlFor="reg-phone">
                       Phone <span className="cp-label-optional">(optional)</span>
                     </label>
-                    <input id="reg-phone" type="tel" className="cp-input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 555 000 0000" autoComplete="tel" />
+                    <PhoneInput id="reg-phone" inputClassName="cp-input" value={phone} onChange={setPhone} placeholder="1XXX XXXXXX" />
                   </div>
                 </div>
 

@@ -1,0 +1,12 @@
+/* Formatting for SowRichText (SOW terms). Everything inherits the surrounding text colour/size so it fits the client
+   document, the live preview and the admin document view alike; only spacing and emphasis are set here. */
+.sow-rich .sow-rich-p { margin: 0 0 10px; }
+.sow-rich .sow-rich-h { margin: 16px 0 6px; font-weight: 700; color: var(--ink, inherit); }
+.sow-rich .sow-rich-h:first-child { margin-top: 0; }
+.sow-rich .sow-rich-list { margin: 0 0 10px; padding-left: 22px; }
+.sow-rich ul.sow-rich-list { list-style: disc; }
+.sow-rich ol.sow-rich-list { list-style: decimal; }
+.sow-rich .sow-rich-list li { margin: 0 0 4px; padding-left: 2px; }
+.sow-rich strong { font-weight: 700; color: var(--ink, inherit); }
+.sow-rich em { font-style: italic; }
+.sow-rich > :last-child { margin-bottom: 0; }

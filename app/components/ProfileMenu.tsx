@@ -28,7 +28,7 @@ import { uploadFileToDrive, driveThumbnailUrl } from '@/lib/driveUpload';
 
 type Profile = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null; bio?: string | null; behance_url?: string | null; linkedin_url?: string | null; facebook_url?: string | null; instagram_url?: string | null };
 
-export default function ProfileMenu({ profile, email, onUpdated, dark = false }: { profile: Profile | null; email: string; onUpdated: (p: Profile) => void; dark?: boolean }) {
+export default function ProfileMenu({ profile, email, onUpdated, dark = false, variant = 'sidebar' }: { profile: Profile | null; email: string; onUpdated: (p: Profile) => void; dark?: boolean; variant?: 'sidebar' | 'topbar' }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(profile?.full_name ?? '');
   const [role, setRole] = useState(profile?.role ?? '');
@@ -154,12 +154,12 @@ export default function ProfileMenu({ profile, email, onUpdated, dark = false }:
 
   const modal = open ? (
     <div
-      className="fixed inset-0 z-[1000] flex items-start justify-center overflow-y-auto bg-black/45 px-4 py-[8vh] font-[Manrope,Google_Sans,sans-serif]"
+      className="fixed inset-0 z-[1000] flex items-start justify-center overflow-y-auto bg-black/45 px-4 py-[5vh] sm:px-8 font-[Manrope,Google_Sans,sans-serif]"
       onClick={(e) => {
         if (e.target === e.currentTarget) setOpen(false);
       }}
     >
-      <div className={`w-full max-w-[420px] rounded-2xl border shadow-2xl ${cardBg}`}>
+      <div className={`w-full max-w-[800px] rounded-2xl border shadow-2xl ${cardBg}`}>
         <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: dark ? '#3f3f46' : '#e4e4e7' }}>
           <div className="text-base font-semibold">প্রোফাইল</div>
           <button
@@ -214,29 +214,43 @@ export default function ProfileMenu({ profile, email, onUpdated, dark = false }:
           </div>
 
           <form onSubmit={handleSave}>
-            <label className={labelCls}>ইমেইল</label>
-            <input className={`${inputCls} mb-3 opacity-60`} type="text" value={email} disabled />
+            <div className="grid gap-x-5 md:grid-cols-2">
+              <div>
+                <label className={labelCls}>ইমেইল</label>
+                <input className={`${inputCls} mb-3 opacity-60`} type="text" value={email} disabled />
+              </div>
+              <div>
+                <label className={labelCls}>নাম</label>
+                <input className={`${inputCls} mb-3`} type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="আপনার নাম" required autoFocus />
+              </div>
 
-            <label className={labelCls}>নাম</label>
-            <input className={`${inputCls} mb-3`} type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="আপনার নাম" required autoFocus />
+              <div className="md:col-span-2">
+                <label className={labelCls}>রোল</label>
+                <input className={`${inputCls} mb-3`} type="text" value={role} onChange={(e) => setRole(e.target.value)} placeholder="যেমন: UX Designer" />
+              </div>
 
-            <label className={labelCls}>রোল</label>
-            <input className={`${inputCls} mb-3`} type="text" value={role} onChange={(e) => setRole(e.target.value)} placeholder="যেমন: UX Designer" />
+              <div className="md:col-span-2">
+                <label className={labelCls}>বায়ো (ঐচ্ছিক)</label>
+                <textarea className={`${inputCls} mb-3`} style={{ minHeight: 88, resize: 'vertical' }} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="এক-দুই লাইনে নিজের সম্পর্কে লিখুন" />
+              </div>
 
-            <label className={labelCls}>বায়ো (ঐচ্ছিক)</label>
-            <textarea className={`${inputCls} mb-3`} style={{ minHeight: 64, resize: 'vertical' }} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="এক-দুই লাইনে নিজের সম্পর্কে লিখুন" />
-
-            <label className={labelCls}>Facebook প্রোফাইল লিংক (ঐচ্ছিক)</label>
-            <input className={`${inputCls} mb-3`} type="url" value={facebookUrl} onChange={(e) => setFacebookUrl(e.target.value)} placeholder="https://facebook.com/yourname" />
-
-            <label className={labelCls}>Instagram প্রোফাইল লিংক (ঐচ্ছিক)</label>
-            <input className={`${inputCls} mb-3`} type="url" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} placeholder="https://instagram.com/yourname" />
-
-            <label className={labelCls}>Behance প্রোফাইল লিংক (ঐচ্ছিক)</label>
-            <input className={`${inputCls} mb-3`} type="url" value={behanceUrl} onChange={(e) => setBehanceUrl(e.target.value)} placeholder="https://behance.net/yourname" />
-
-            <label className={labelCls}>LinkedIn প্রোফাইল লিংক (ঐচ্ছিক)</label>
-            <input className={`${inputCls} mb-3`} type="url" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/yourname" />
+              <div>
+                <label className={labelCls}>Facebook প্রোফাইল লিংক (ঐচ্ছিক)</label>
+                <input className={`${inputCls} mb-3`} type="url" value={facebookUrl} onChange={(e) => setFacebookUrl(e.target.value)} placeholder="https://facebook.com/yourname" />
+              </div>
+              <div>
+                <label className={labelCls}>Instagram প্রোফাইল লিংক (ঐচ্ছিক)</label>
+                <input className={`${inputCls} mb-3`} type="url" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} placeholder="https://instagram.com/yourname" />
+              </div>
+              <div>
+                <label className={labelCls}>Behance প্রোফাইল লিংক (ঐচ্ছিক)</label>
+                <input className={`${inputCls} mb-3`} type="url" value={behanceUrl} onChange={(e) => setBehanceUrl(e.target.value)} placeholder="https://behance.net/yourname" />
+              </div>
+              <div>
+                <label className={labelCls}>LinkedIn প্রোফাইল লিংক (ঐচ্ছিক)</label>
+                <input className={`${inputCls} mb-3`} type="url" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/yourname" />
+              </div>
+            </div>
             <p className="mb-3 text-[11px]" style={{ color: dark ? '#71717a' : '#9C9C98' }}>
               বায়ো আর এই লিংকগুলো FLOW 53-এর পাবলিক ওয়েবসাইটের About পেজের Team সেকশনে দেখানো হয়।
             </p>
@@ -291,8 +305,8 @@ export default function ProfileMenu({ profile, email, onUpdated, dark = false }:
 
   return (
     <>
-      <button className="profile-card" onClick={handleOpen} aria-label="প্রোফাইল দেখুন ও এডিট করুন">
-        <div className="avatar" style={{ width: 34, height: 34, fontSize: 13, background: avatarImg ? undefined : (profile?.avatar_color ?? undefined), overflow: 'hidden', padding: 0 }}>
+      <button className={variant === 'topbar' ? 'profile-chip' : 'profile-card'} onClick={handleOpen} aria-label="প্রোফাইল দেখুন ও এডিট করুন">
+        <div className="avatar" style={{ width: variant === 'topbar' ? 32 : 34, height: variant === 'topbar' ? 32 : 34, fontSize: 13, background: avatarImg ? undefined : (profile?.avatar_color ?? undefined), overflow: 'hidden', padding: 0 }}>
           {avatarImg ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={avatarImg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
