@@ -248,6 +248,47 @@ export default function CreateProjectPage() {
 
   const prefilledRef = useRef(false);
 
+  // ---- keep what you type if you leave the page: the form is saved to this browser as you edit and restored when you
+  // come back (cleared once the project is saved, or when you discard) ----
+  const storageKey = `create-project-draft:${clientId}:${draftParam ?? 'new'}`;
+  const [restoredFromStorage, setRestoredFromStorage] = useState(false);
+  const restoredRef = useRef(false);
+  const clearedRef = useRef(false);
+  const baselineRef = useRef<string | null>(null);
+  const formSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        name, projectType, description, status, scopeObjectives, scopeDescription, includedWork, excludedWork, specialRequirements,
+        deliverables, startDate, dueDate, useDefaultMilestones, budgetValue, currency, paymentStructure, depositPercent, managerId,
+        clientVisible, notifyClient, internalNote,
+      }),
+    [name, projectType, description, status, scopeObjectives, scopeDescription, includedWork, excludedWork, specialRequirements, deliverables, startDate, dueDate, useDefaultMilestones, budgetValue, currency, paymentStructure, depositPercent, managerId, clientVisible, notifyClient, internalNote]
+  );
+  useEffect(() => {
+    if (loading || clearedRef.current) return;
+    if (baselineRef.current === null) {
+      baselineRef.current = formSnapshot; // the form as it was right after loading (defaults, or a server draft)
+      if (!restoredRef.current) return;
+    }
+    if (!restoredRef.current && formSnapshot === baselineRef.current) return; // untouched: nothing to keep
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(storageKey, formSnapshot);
+      } catch {
+        // storage full or blocked: the form just is not remembered
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [formSnapshot, loading, storageKey]);
+  function clearSavedForm() {
+    clearedRef.current = true;
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {
+      // ignore
+    }
+  }
+
   useEffect(() => {
     if (!user || !clientId) return;
 
@@ -327,11 +368,45 @@ export default function CreateProjectPage() {
         if (req.project_description) setDescription(req.project_description);
       }
 
+      // anything you had typed before leaving the page wins over the defaults and over the saved draft
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (raw) {
+          const d = JSON.parse(raw) as Record<string, unknown>;
+          if (typeof d.name === 'string') setName(d.name);
+          if (typeof d.projectType === 'string') setProjectType(d.projectType);
+          if (typeof d.description === 'string') setDescription(d.description);
+          if (typeof d.status === 'string') setStatus(d.status);
+          if (typeof d.scopeObjectives === 'string') setScopeObjectives(d.scopeObjectives);
+          if (typeof d.scopeDescription === 'string') setScopeDescription(d.scopeDescription);
+          if (Array.isArray(d.includedWork)) setIncludedWork(d.includedWork as string[]);
+          if (Array.isArray(d.excludedWork)) setExcludedWork(d.excludedWork as string[]);
+          if (typeof d.specialRequirements === 'string') setSpecialRequirements(d.specialRequirements);
+          if (Array.isArray(d.deliverables)) setDeliverables(d.deliverables as Deliverable[]);
+          if (typeof d.startDate === 'string') setStartDate(d.startDate);
+          if (typeof d.dueDate === 'string') setDueDate(d.dueDate);
+          if (typeof d.useDefaultMilestones === 'boolean') setUseDefaultMilestones(d.useDefaultMilestones);
+          if (typeof d.budgetValue === 'string') setBudgetValue(d.budgetValue);
+          if (typeof d.currency === 'string') setCurrency(d.currency);
+          if (typeof d.paymentStructure === 'string') setPaymentStructure(d.paymentStructure);
+          if (typeof d.depositPercent === 'number') setDepositPercent(d.depositPercent);
+          if (typeof d.managerId === 'string' && d.managerId) setManagerId(d.managerId);
+          if (typeof d.clientVisible === 'boolean') setClientVisible(d.clientVisible);
+          if (typeof d.notifyClient === 'boolean') setNotifyClient(d.notifyClient);
+          if (typeof d.internalNote === 'string') setInternalNote(d.internalNote);
+          restoredRef.current = true;
+          setRestoredFromStorage(true);
+          setDirty(true);
+        }
+      } catch {
+        // unreadable saved copy: start from the defaults
+      }
+
       setLoading(false);
     }
 
     run();
-  }, [user, clientId, draftParam]);
+  }, [user, clientId, draftParam, storageKey]);
 
   const durationText = useMemo(() => {
     if (!startDate || !dueDate) return null;
@@ -522,6 +597,7 @@ export default function CreateProjectPage() {
       await supabase.from('activity_log').insert({ actor_id: user.id, action: 'client_notified', entity_type: 'project', entity_id: data.id, detail: 'ক্লায়েন্টকে WhatsApp-এ প্রজেক্ট তৈরির নোটিফিকেশন পাঠানো হয়েছে' });
     }
 
+    clearSavedForm();
     setDirty(false);
     router.push(`/projects/${data.id}`);
   }
@@ -593,6 +669,21 @@ export default function CreateProjectPage() {
             {draftId && (
               <div className="error-banner" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>
                 You are continuing a saved draft. Saving updates it; “Create Project” turns it into the official project.
+              </div>
+            )}
+            {restoredFromStorage && (
+              <div className="error-banner" style={{ background: 'var(--accent-soft)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <span>Your unsaved changes from earlier were restored.</span>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    clearSavedForm();
+                    window.location.reload();
+                  }}
+                >
+                  Discard and start over
+                </button>
               </div>
             )}
             {error && <div className="error-banner">{error}</div>}
@@ -1250,7 +1341,14 @@ export default function CreateProjectPage() {
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowCancelConfirm(false)}>
                 Continue Editing
               </button>
-              <button type="button" className="btn btn-danger-ghost btn-sm" onClick={() => router.push(`/clients/${clientId}`)}>
+              <button
+                type="button"
+                className="btn btn-danger-ghost btn-sm"
+                onClick={() => {
+                  clearSavedForm();
+                  router.push(`/clients/${clientId}`);
+                }}
+              >
                 Discard Changes
               </button>
             </div>

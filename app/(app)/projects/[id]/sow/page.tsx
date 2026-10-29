@@ -45,6 +45,8 @@ import SowDocument, { type SowDocData } from '@/app/components/SowDocument';
 import RichTextField from '@/app/components/RichTextField';
 import { CURRENCIES, currencyLabel } from '@/lib/currency';
 import { getProjectCurrency } from '@/lib/projectCurrency';
+import ChangeManagerModal from '@/app/components/ChangeManagerModal';
+import { useAppShell } from '@/app/components/appShellContext';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -105,6 +107,7 @@ type ProjectBrief = {
   client_id: string | null;
   budget: number | null;
   clients: { company_name: string; primary_contact: string | null } | { company_name: string; primary_contact: string | null }[] | null;
+  project_manager_id: string | null;
   project_manager: { full_name: string; role: string | null } | { full_name: string; role: string | null }[] | null;
 };
 type Sow = {
@@ -229,6 +232,8 @@ export default function AdminSowPage() {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
 
   const [project, setProject] = useState<ProjectBrief | null>(null);
+  const { dark } = useAppShell();
+  const [showManagerModal, setShowManagerModal] = useState(false);
   const [versions, setVersions] = useState<Sow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -321,7 +326,7 @@ export default function AdminSowPage() {
 
     async function run() {
       const [projectRes, sowsRes, profileRes] = await Promise.all([
-        supabase.from('projects').select('id, name, description, client_id, budget, clients(company_name, primary_contact), project_manager:profiles!project_manager_id(full_name, role)').eq('id', projectId).maybeSingle(),
+        supabase.from('projects').select('id, name, description, client_id, budget, project_manager_id, clients(company_name, primary_contact), project_manager:profiles!project_manager_id(full_name, role)').eq('id', projectId).maybeSingle(),
         supabase.from('sows').select('*').eq('project_id', projectId).order('version', { ascending: false }),
         supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url').eq('id', user!.id).single(),
       ]);
@@ -846,6 +851,26 @@ export default function AdminSowPage() {
                   <span className="sep">/</span>
                   <span className="current">SOW</span>
                 </div>
+
+                <div className="pm-strip">
+                  <span className="pm-strip-label">Project manager</span>
+                  <span className="pm-strip-name">{manager ? manager.full_name : 'Not assigned'}</span>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowManagerModal(true)}>
+                    Change
+                  </button>
+                </div>
+                {showManagerModal && user && (
+                  <ChangeManagerModal
+                    projectId={project.id}
+                    projectName={project.name}
+                    clientId={project.client_id}
+                    currentManagerId={project.project_manager_id}
+                    actorId={user.id}
+                    dark={dark}
+                    onClose={() => setShowManagerModal(false)}
+                    onSaved={(m) => setProject((prev) => (prev ? { ...prev, project_manager_id: m.id, project_manager: { full_name: m.full_name, role: m.role } } : prev))}
+                  />
+                )}
 
                 {error && <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: 13 }}>{error}</div>}
 

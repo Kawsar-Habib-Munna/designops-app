@@ -29,6 +29,7 @@ import { getProjectCurrency } from '@/lib/projectCurrency';
 import RichTextField from '@/app/components/RichTextField';
 import RichText from '@/app/components/RichText';
 import { useAppShell } from '@/app/components/appShellContext';
+import ChangeManagerModal from '@/app/components/ChangeManagerModal';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -127,6 +128,7 @@ type ProjectDetail = {
     contact_phone: string | null;
     status: string;
   } | null;
+  project_manager_id: string | null;
   manager: { full_name: string; avatar_color: string | null; avatar_url: string | null } | null;
 };
 
@@ -162,7 +164,7 @@ async function fetchProjectData(projectId: string) {
     supabase
       .from('projects')
       .select(
-        'id, name, status, progress, budget, start_date, due_date, description, category, final_delivery_status, final_delivery_notes, completed_at, clients(id, company_name, industry, primary_contact, contact_email, contact_phone, status), manager:profiles!project_manager_id(full_name, avatar_color, avatar_url)'
+        'id, name, status, progress, budget, start_date, due_date, description, category, final_delivery_status, final_delivery_notes, completed_at, project_manager_id, clients(id, company_name, industry, primary_contact, contact_email, contact_phone, status), manager:profiles!project_manager_id(full_name, avatar_color, avatar_url)'
       )
       .eq('id', projectId)
       .single(),
@@ -256,6 +258,7 @@ export default function ProjectDetailPage() {
   const [profile, setProfile] = useState<{ id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null } | null>(null);
 
   const [project, setProject] = useState<ProjectDetail | null>(null);
+  const [showManagerModal, setShowManagerModal] = useState(false);
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [attachments, setAttachments] = useState<ProjectAttachment[]>([]);
@@ -526,6 +529,19 @@ export default function ProjectDetailPage() {
               </div>
             )}
 
+            {showManagerModal && user && (
+              <ChangeManagerModal
+                projectId={project.id}
+                projectName={project.name}
+                clientId={project.clients?.id ?? null}
+                currentManagerId={project.project_manager_id}
+                actorId={user.id}
+                dark={dark}
+                onClose={() => setShowManagerModal(false)}
+                onSaved={(m) => setProject((prev) => (prev ? { ...prev, project_manager_id: m.id, manager: { full_name: m.full_name, avatar_color: m.avatar_color, avatar_url: m.avatar_url } } : prev))}
+              />
+            )}
+
             <section className="pd-hero">
               <div className="pd-hero-main">
                 <div className="pd-hero-top">
@@ -538,7 +554,10 @@ export default function ProjectDetailPage() {
                     <div className="pd-meta">
                       {project.category && <span className="pd-meta-item">{project.category}</span>}
                       {project.clients && <span className="pd-meta-item"><Icon name="building" size={13} />{project.clients.company_name}</span>}
-                      {project.manager && <span className="pd-meta-item"><Icon name="users" size={13} />PM: {project.manager.full_name}</span>}
+                      <span className="pd-meta-item">
+                        <Icon name="users" size={13} />PM: {project.manager ? project.manager.full_name : 'Not assigned'}
+                        <button type="button" className="pd-pm-change" onClick={() => setShowManagerModal(true)}>Change</button>
+                      </span>
                     </div>
                   </div>
                   <div className="header-actions">
