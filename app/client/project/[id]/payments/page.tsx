@@ -19,7 +19,8 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
 import { formatDateLong, todayISO } from '@/lib/format';
-import { CURRENCY_SYMBOL } from '@/lib/currency';
+import { CURRENCY_SYMBOL, formatMoney } from '@/lib/currency';
+import ReceiptDocument from '@/app/components/ReceiptDocument';
 import '../../../client-shared.css';
 import './payments.css';
 
@@ -41,6 +42,7 @@ const ICONS: Record<string, string> = {
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17h.01"/>',
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
   alert: '<path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/>',
 };
 function Icon({ name, size = 14 }: { name: string; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICONS[name] }} />;
@@ -76,6 +78,43 @@ type TabKey = (typeof TABS)[number]['key'];
 
 function humanizeType(slug: string) {
   return slug.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+type RingSegment = { key: string; label: string; color: string; value: number };
+
+// Ring (donut) of the project value split by payment status, with the paid share in the middle. Segments are stroked arcs
+// with small gaps on a track; the legend next to it names every segment, so colour is never the only cue.
+function PayRing({ segments, centerPct }: { segments: RingSegment[]; centerPct: number }) {
+  const size = 156;
+  const stroke = 18;
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const total = segments.reduce((sum, seg) => sum + seg.value, 0);
+  const visible = segments.filter((seg) => seg.value > 0);
+  const gap = visible.length > 1 ? 3 : 0;
+  return (
+    <div className="pm-ring" role="img" aria-label={`${centerPct}% of the project value paid`}>
+      <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--bg)" strokeWidth={stroke} />
+        <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+          {visible.map((seg, i) => {
+            const before = visible.slice(0, i).reduce((sum, v) => sum + v.value, 0);
+            const len = total > 0 ? (seg.value / total) * circ : 0;
+            const dash = Math.max(len - gap, 0.5);
+            return <circle key={seg.key} cx={size / 2} cy={size / 2} r={r} fill="none" stroke={seg.color} strokeWidth={stroke} strokeDasharray={`${dash} ${circ - dash}`} strokeDashoffset={-((before / total) * circ)} />;
+          })}
+        </g>
+      </svg>
+      <div className="pm-ring-center">
+        <span className="pm-ring-pct tabular">{centerPct}%</span>
+        <span className="pm-ring-sub">paid</span>
+      </div>
+    </div>
+  );
+}
+
+function daysBetween(fromISO: string, toISO: string) {
+  return Math.round((new Date(`${toISO}T00:00:00`).getTime() - new Date(`${fromISO}T00:00:00`).getTime()) / 86400000);
 }
 
 type ScheduleKey = Exclude<TabKey, 'all'> | 'other';
@@ -404,6 +443,32 @@ export default function ClientPaymentsPage() {
     if (key !== 'other') counts[key] += 1;
   });
 
+  // amounts by status, for the ring / progress bar / installments chart
+  const live = invoices.filter((inv) => scheduleStatus(inv, today).key !== 'other');
+  const sumBy = (key: ScheduleKey) => live.filter((inv) => scheduleStatus(inv, today).key === key).reduce((sum, inv) => sum + inv.amount, 0);
+  const amountBy = { paid: sumBy('paid'), pending: sumBy('pending'), upcoming: sumBy('upcoming'), overdue: sumBy('overdue') };
+  const scheduledTotal = amountBy.paid + amountBy.pending + amountBy.upcoming + amountBy.overdue;
+  const ringTotal = Math.max(totalValue ?? 0, scheduledTotal);
+  const notYetRequested = Math.max(ringTotal - scheduledTotal, 0);
+  const ringSegments: RingSegment[] = [
+    { key: 'paid', label: 'Paid', color: 'var(--positive)', value: amountBy.paid },
+    { key: 'pending', label: 'Awaiting confirmation', color: 'var(--warning)', value: amountBy.pending },
+    { key: 'upcoming', label: 'Upcoming', color: 'var(--accent)', value: amountBy.upcoming },
+    { key: 'overdue', label: 'Overdue', color: 'var(--danger)', value: amountBy.overdue },
+    { key: 'rest', label: 'Not yet requested', color: 'var(--border)', value: notYetRequested },
+  ];
+  const countByKey: Record<string, number> = { paid: counts.paid, pending: counts.pending, upcoming: counts.upcoming, overdue: counts.overdue };
+  const barMax = Math.max(...live.map((inv) => inv.amount), 1);
+  // the payment to look at next: one waiting on the client or the team, else the soonest upcoming one
+  const nextPayment =
+    actionable ??
+    [...invoices]
+      .filter((inv) => ['upcoming', 'overdue'].includes(scheduleStatus(inv, today).key))
+      .sort((a, b) => (a.due_date ?? '9999') .localeCompare(b.due_date ?? '9999'))[0] ??
+    null;
+  const nextStatus = nextPayment ? scheduleStatus(nextPayment, today) : null;
+  const nextDays = nextPayment?.due_date ? daysBetween(today, nextPayment.due_date) : null;
+
   const filteredInvoices = filterTab === 'all' ? invoices : invoices.filter((inv) => scheduleStatus(inv, today).key === filterTab);
   const tableRows = [...filteredInvoices].reverse();
 
@@ -443,55 +508,103 @@ export default function ClientPaymentsPage() {
           </div>
         </div>
 
-        {/* ---- stat strip ---- */}
-        <div className="pm-stat-strip">
-          <div className="pm-stat">
-            <div className="pm-stat-icon">
-              <Icon name="card" size={16} />
-            </div>
-            <div>
-              <div className="pm-stat-label">Project Value</div>
-              <div className="pm-stat-value tabular">{totalValue != null ? `${sym}${totalValue.toLocaleString('en-US')}` : '—'}</div>
-            </div>
-          </div>
-          <div className="pm-stat">
-            <div className="pm-stat-icon positive">
-              <Icon name="wallet" size={16} />
-            </div>
-            <div>
-              <div className="pm-stat-label">Total Paid</div>
-              <div className="pm-stat-value tabular" style={{ color: 'var(--positive)' }}>
-                {sym}
-                {totalPaid.toLocaleString('en-US')}
+        {/* ---- KPI cards ---- */}
+        <div className="pm-kpis">
+          <div className="pm-kpi">
+            <div className="pm-kpi-top">
+              <div className="pm-kpi-icon">
+                <Icon name="card" size={17} />
               </div>
             </div>
+            <div className="pm-kpi-value tabular">{totalValue != null ? formatMoney(totalValue, currency) : '—'}</div>
+            <div className="pm-kpi-label">Project value</div>
           </div>
-          <div className="pm-stat">
-            <div className="pm-stat-icon warning">
-              <Icon name="clock" size={16} />
-            </div>
-            <div>
-              <div className="pm-stat-label">Outstanding</div>
-              <div className="pm-stat-value tabular" style={{ color: outstanding && outstanding > 0 ? 'var(--warning)' : 'var(--ink)' }}>
-                {outstanding != null ? `${sym}${outstanding.toLocaleString('en-US')}` : '—'}
+          <div className="pm-kpi">
+            <div className="pm-kpi-top">
+              <div className="pm-kpi-icon positive">
+                <Icon name="wallet" size={17} />
               </div>
             </div>
+            <div className="pm-kpi-value tabular" style={{ color: 'var(--positive)' }}>{formatMoney(totalPaid, currency)}</div>
+            <div className="pm-kpi-label">Total paid</div>
           </div>
-          <div className="pm-progress-block">
-            <div className="pm-progress-top">
-              <span className="pm-progress-label">Payment Progress</span>
-              <span className="pm-progress-pct">{paymentPct}% Paid</span>
-            </div>
-            <div className="pm-progress-track">
-              <div className="pm-progress-fill" style={{ width: `${paymentPct}%` }} />
-            </div>
-            {outstanding != null && (
-              <div className="pm-progress-caption">
-                {sym}
-                {totalPaid.toLocaleString('en-US')} paid · {sym}
-                {outstanding.toLocaleString('en-US')} remaining
+          <div className="pm-kpi">
+            <div className="pm-kpi-top">
+              <div className="pm-kpi-icon warning">
+                <Icon name="clock" size={17} />
               </div>
-            )}
+            </div>
+            <div className="pm-kpi-value tabular">{outstanding != null ? formatMoney(outstanding, currency) : '—'}</div>
+            <div className="pm-kpi-label">Outstanding</div>
+          </div>
+          <div className="pm-kpi">
+            <div className="pm-kpi-top">
+              <div className="pm-kpi-icon accent">
+                <Icon name="calendar" size={17} />
+              </div>
+              {nextDays != null && nextStatus && nextStatus.key !== 'paid' && (
+                <span className={`pm-kpi-chip ${nextDays < 0 ? 'overdue' : nextDays <= 7 ? 'soon' : ''}`}>{nextDays < 0 ? `${-nextDays}d overdue` : nextDays === 0 ? 'Due today' : `in ${nextDays}d`}</span>
+              )}
+            </div>
+            <div className="pm-kpi-value tabular">{nextPayment ? formatMoney(nextPayment.amount, nextPayment.currency) : '—'}</div>
+            <div className="pm-kpi-label">{nextPayment ? (nextPayment.due_date ? `Next payment · ${formatDateLong(nextPayment.due_date)}` : 'Next payment') : 'No payment due'}</div>
+          </div>
+        </div>
+
+        {/* ---- charts: ring + progress bar, installments ---- */}
+        <div className="pm-charts">
+          <div className="pm-card">
+            <div className="pm-card-head">
+              <div>
+                <div className="pm-card-title">Payment progress</div>
+                <div className="pm-card-sub">Share of the project value by payment status</div>
+              </div>
+            </div>
+            <div className="pm-ring-row">
+              <PayRing segments={ringSegments} centerPct={paymentPct} />
+              <ul className="pm-legend">
+                {ringSegments.map((seg) => (
+                  <li key={seg.key}>
+                    <span className="pm-legend-dot" style={{ background: seg.color }} />
+                    <span className="pm-legend-label">{seg.label}</span>
+                    {countByKey[seg.key] != null && <span className="pm-legend-count">{countByKey[seg.key]}</span>}
+                    <b className="pm-legend-amount tabular">{formatMoney(seg.value, currency)}</b>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="pm-stackbar" role="img" aria-label="Payment progress by status">
+              {ringSegments.filter((seg) => seg.value > 0).map((seg) => (
+                <span key={seg.key} style={{ flexGrow: seg.value, background: seg.color }} title={`${seg.label}: ${formatMoney(seg.value, currency)}`} />
+              ))}
+            </div>
+            <div className="pm-stackbar-caption">
+              {formatMoney(totalPaid, currency)} paid{outstanding != null ? ` · ${formatMoney(outstanding, currency)} remaining` : ''}
+            </div>
+          </div>
+
+          <div className="pm-card">
+            <div className="pm-card-head">
+              <div>
+                <div className="pm-card-title">Installments</div>
+                <div className="pm-card-sub">Amount of each payment, coloured by status</div>
+              </div>
+            </div>
+            <div className="pm-bars" role="list" aria-label="Installment amounts">
+              {live.map((inv) => {
+                const st = scheduleStatus(inv, today);
+                return (
+                  <div className="pm-bar-col" role="listitem" key={inv.id} title={`${inv.description || humanizeType(inv.payment_type)} — ${formatMoney(inv.amount, inv.currency)} (${st.label})`}>
+                    <span className="pm-bar-value tabular">{formatMoney(inv.amount, inv.currency)}</span>
+                    <div className="pm-bar-slot">
+                      <span className={`pm-bar ${st.key}`} style={{ height: `${Math.max((inv.amount / barMax) * 100, 4)}%` }} />
+                    </div>
+                    <span className="pm-bar-label">{humanizeType(inv.payment_type)}</span>
+                    <span className={`pm-bar-status ${st.key}`}>{st.label}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -532,7 +645,7 @@ export default function ClientPaymentsPage() {
                         </div>
                         <div className="pm-schedule-right">
                           <span className="pm-schedule-amount tabular">
-                            {inv.currency} {inv.amount.toLocaleString('en-US')}
+                            {formatMoney(inv.amount, inv.currency)}
                           </span>
                           <span className={`pm-status-pill ${status.key}`}>{status.label}</span>
                         </div>
@@ -552,40 +665,43 @@ export default function ClientPaymentsPage() {
             </div>
           </div>
 
-          {/* ---- Payment Summary counts ---- */}
-          <div className="pm-card">
-            <div className="pm-card-title">Payment Summary</div>
-            <div className="pm-count-row">
-              <div className="pm-count-icon positive">
-                <Icon name="check" size={13} />
-              </div>
-              <span>Paid</span>
-              <strong>{counts.paid}</strong>
-            </div>
-            <div className="pm-count-row">
-              <div className="pm-count-icon warning">
-                <Icon name="clock" size={13} />
-              </div>
-              <span>Pending</span>
-              <strong>{counts.pending}</strong>
-            </div>
-            <div className="pm-count-row">
-              <div className="pm-count-icon accent">
-                <Icon name="clock" size={13} />
-              </div>
-              <span>Upcoming</span>
-              <strong>{counts.upcoming}</strong>
-            </div>
-            <div className="pm-count-row">
-              <div className="pm-count-icon danger">
-                <Icon name="alert" size={13} />
-              </div>
-              <span>Overdue</span>
-              <strong>{counts.overdue}</strong>
-            </div>
-            <p className="pm-currency-note">
-              All amounts are in {currency} ({sym})
-            </p>
+          {/* ---- Next payment ---- */}
+          <div className="pm-card pm-next">
+            {nextPayment && nextStatus ? (
+              <>
+                <div className="pm-card-title">{nextStatus.key === 'pending' ? 'Waiting for confirmation' : 'Next payment'}</div>
+                <div className="pm-next-amount tabular">{formatMoney(nextPayment.amount, nextPayment.currency)}</div>
+                <div className="pm-next-name">{nextPayment.description || humanizeType(nextPayment.payment_type)}</div>
+                <div className="pm-next-meta">
+                  <Icon name="calendar" size={13} />
+                  {nextPayment.due_date ? (
+                    <span>
+                      Due {formatDateLong(nextPayment.due_date)}
+                      {nextDays != null && nextStatus.key !== 'pending' && <b className={nextDays < 0 ? 'overdue' : ''}> · {nextDays < 0 ? `${-nextDays} days overdue` : nextDays === 0 ? 'today' : `in ${nextDays} days`}</b>}
+                    </span>
+                  ) : (
+                    <span>Due before project completion</span>
+                  )}
+                </div>
+                {actionable && (
+                  <Link href={`/client/project/${project.id}/payments/confirm`} className="cp-btn cp-btn-primary pm-next-cta">
+                    <Icon name="doc" size={13} /> {actionable.status === 'processing' ? 'View submission' : 'View payment request'}
+                  </Link>
+                )}
+                <p className="pm-currency-note">All amounts are in {currency} ({sym})</p>
+              </>
+            ) : (
+              <>
+                <div className="pm-card-title">All caught up</div>
+                <div className="pm-next-done">
+                  <span className="pm-next-done-icon">
+                    <Icon name="check" size={18} />
+                  </span>
+                  <p>Every payment request is settled. Receipts stay available in the history below.</p>
+                </div>
+                <p className="pm-currency-note">All amounts are in {currency} ({sym})</p>
+              </>
+            )}
           </div>
         </div>
 
@@ -649,9 +765,7 @@ export default function ClientPaymentsPage() {
                           </div>
                         </td>
                         <td>{inv.description || '—'}</td>
-                        <td className="tabular">
-                          {inv.currency} {inv.amount.toLocaleString('en-US')}
-                        </td>
+                        <td className="tabular">{formatMoney(inv.amount, inv.currency)}</td>
                         <td>{status.key === 'paid' && pay?.payment_date ? formatDateLong(pay.payment_date) : inv.due_date ? formatDateLong(inv.due_date) : '—'}</td>
                         <td>{pay?.payment_method ?? inv.payment_method ?? '—'}</td>
                         <td>
@@ -726,69 +840,23 @@ export default function ClientPaymentsPage() {
               )}
 
               <div className="receipt-doc-offscreen" aria-hidden="true">
-                <div className="receipt-doc" ref={receiptDocRef}>
-                  <div className="receipt-doc-head">
-                    <div className="receipt-brand">FLOW 53</div>
-                    <div className="receipt-doc-title">Payment Receipt</div>
-                  </div>
-
-                  <div className="receipt-meta-row">
-                    <div>
-                      <div className="receipt-meta-label">Receipt Number</div>
-                      <div className="receipt-meta-value">{viewingReceipt.pay.receipt_number ?? '—'}</div>
-                    </div>
-                    <div>
-                      <div className="receipt-meta-label">Date</div>
-                      <div className="receipt-meta-value">{formatDateLong(viewingReceipt.pay.payment_date)}</div>
-                    </div>
-                  </div>
-
-                  <div className="receipt-divider"></div>
-
-                  <div className="receipt-field-grid">
-                    <div>
-                      <div className="receipt-meta-label">Client</div>
-                      <div className="receipt-meta-value">{client.primary_contact ?? '—'}</div>
-                    </div>
-                    <div>
-                      <div className="receipt-meta-label">Company</div>
-                      <div className="receipt-meta-value">{client.company_name}</div>
-                    </div>
-                    <div>
-                      <div className="receipt-meta-label">Project</div>
-                      <div className="receipt-meta-value">{project.name}</div>
-                    </div>
-                    <div>
-                      <div className="receipt-meta-label">Status</div>
-                      <div className="receipt-meta-value">Paid ✓</div>
-                    </div>
-                  </div>
-
-                  <div className="receipt-divider"></div>
-
-                  <div className="receipt-amount-row">
-                    <div>
-                      <div className="receipt-meta-label">Description</div>
-                      <div className="receipt-meta-value">{viewingReceipt.inv.description || humanizeType(viewingReceipt.inv.payment_type)}</div>
-                    </div>
-                    <div className="receipt-amount">
-                      {viewingReceipt.inv.currency} {viewingReceipt.inv.amount.toLocaleString('en-US')}
-                    </div>
-                  </div>
-
-                  <div className="receipt-field-grid">
-                    <div>
-                      <div className="receipt-meta-label">Payment Method</div>
-                      <div className="receipt-meta-value">{viewingReceipt.pay.payment_method ?? '—'}</div>
-                    </div>
-                    <div>
-                      <div className="receipt-meta-label">Transaction ID</div>
-                      <div className="receipt-meta-value">{viewingReceipt.pay.transaction_id ?? '—'}</div>
-                    </div>
-                  </div>
-
-                  <div className="receipt-footer">Thank you for your business — FLOW 53</div>
-                </div>
+                <ReceiptDocument
+                  docRef={receiptDocRef}
+                  data={{
+                    receiptNumber: viewingReceipt.pay.receipt_number,
+                    requestNumber: viewingReceipt.inv.request_number,
+                    dateText: formatDateLong(viewingReceipt.pay.payment_date),
+                    confirmedText: viewingReceipt.pay.confirmed_at ? formatDateLong(viewingReceipt.pay.confirmed_at) : null,
+                    clientName: client.primary_contact ?? client.company_name,
+                    company: client.primary_contact ? client.company_name : null,
+                    projectName: project.name,
+                    description: viewingReceipt.inv.description || humanizeType(viewingReceipt.inv.payment_type),
+                    currency: viewingReceipt.inv.currency,
+                    amount: viewingReceipt.inv.amount,
+                    method: viewingReceipt.pay.payment_method,
+                    transactionId: viewingReceipt.pay.transaction_id,
+                  }}
+                />
               </div>
             </div>
           </div>

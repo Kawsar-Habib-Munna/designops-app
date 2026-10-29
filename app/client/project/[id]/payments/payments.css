@@ -79,23 +79,7 @@
 .client-payments-root .pm-help-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-faint); }
 .client-payments-root .pm-help-link:hover { color: var(--accent); }
 
-/* ---- stat strip ---- */
-.client-payments-root .pm-stat-strip { display: flex; align-items: center; flex-wrap: wrap; gap: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 20px 26px; margin-bottom: 20px; }
-.client-payments-root .pm-stat { display: flex; align-items: center; gap: 12px; padding-right: 28px; border-right: 1px solid var(--border); }
-.client-payments-root .pm-stat-icon { width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.client-payments-root .pm-stat-icon.positive { background: var(--positive-soft); color: var(--positive); }
-.client-payments-root .pm-stat-icon.warning { background: var(--warning-soft); color: var(--warning); }
-.client-payments-root .pm-stat-label { font-size: 11px; color: var(--ink-faint); margin-bottom: 3px; }
-.client-payments-root .pm-stat-value { font-size: 18px; font-weight: 700; color: var(--ink); }
-.client-payments-root .pm-progress-block { flex: 1; min-width: 220px; }
-.client-payments-root .pm-progress-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
-.client-payments-root .pm-progress-label { font-size: 11px; color: var(--ink-faint); }
-.client-payments-root .pm-progress-pct { font-size: 13px; font-weight: 700; color: var(--ink); }
-.client-payments-root .pm-progress-track { height: 8px; border-radius: 999px; background: var(--bg); overflow: hidden; }
-.client-payments-root .pm-progress-fill { height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.3s ease; }
-.client-payments-root .pm-progress-caption { font-size: 11px; color: var(--ink-faint); margin-top: 6px; }
-
-/* ---- main grid (schedule + summary) ---- */
+/* ---- main grid (schedule + next payment) ---- */
 .client-payments-root .pm-main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; margin-bottom: 20px; }
 .client-payments-root .pm-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 22px; }
 .client-payments-root .pm-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
@@ -129,18 +113,6 @@
 .client-payments-root .pm-status-pill.upcoming { background: var(--accent-soft); color: var(--accent); }
 .client-payments-root .pm-status-pill.overdue { background: var(--danger-soft); color: var(--danger); }
 .client-payments-root .pm-status-pill.other { background: var(--bg); color: var(--ink-faint); }
-
-/* payment summary counts */
-.client-payments-root .pm-count-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
-.client-payments-root .pm-count-row:last-of-type { border-bottom: none; }
-.client-payments-root .pm-count-icon { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--bg); color: var(--ink-faint); }
-.client-payments-root .pm-count-icon.positive { background: var(--positive-soft); color: var(--positive); }
-.client-payments-root .pm-count-icon.warning { background: var(--warning-soft); color: var(--warning); }
-.client-payments-root .pm-count-icon.accent { background: var(--accent-soft); color: var(--accent); }
-.client-payments-root .pm-count-icon.danger { background: var(--danger-soft); color: var(--danger); }
-.client-payments-root .pm-count-row span { flex: 1; font-size: 13px; color: var(--ink-soft); }
-.client-payments-root .pm-count-row strong { font-size: 15px; color: var(--ink); }
-.client-payments-root .pm-currency-note { font-size: 11px; color: var(--ink-faint); margin: 14px 0 0; }
 
 /* ---- history table ---- */
 .client-payments-root .pm-history-card { margin-bottom: 20px; }
@@ -194,9 +166,6 @@
   .client-payments-root .pm-main-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 700px) {
-  .client-payments-root .pm-stat-strip { flex-direction: column; align-items: stretch; gap: 14px; }
-  .client-payments-root .pm-stat { border-right: none; border-bottom: 1px solid var(--border); padding-right: 0; padding-bottom: 14px; }
-  .client-payments-root .pm-progress-block { min-width: 0; }
 }
 @media (max-width: 600px) {
   .client-payments-root .pm-top-row { flex-direction: column; }
@@ -222,21 +191,75 @@
 .client-payments-root .receipt-modal-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; font-size: 13px; color: #C7C7CF; }
 
 /* ---- offscreen source for the PDF render (plain document, same as the old print-ready receipt) ---- */
-.client-payments-root .receipt-doc-offscreen { position: fixed; top: 0; left: -10000px; width: 480px; pointer-events: none; }
-.client-payments-root .receipt-doc { background: var(--surface); padding: 32px 30px; }
-.client-payments-root .receipt-doc-head { text-align: center; margin-bottom: 22px; }
-.client-payments-root .receipt-brand { font-family: 'Gugi', sans-serif; font-size: 18px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
-.client-payments-root .receipt-doc-title { font-size: 12px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.08em; }
-.client-payments-root .receipt-meta-row { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
-.client-payments-root .receipt-meta-label { font-size: 10.5px; color: var(--ink-faint); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.02em; }
-.client-payments-root .receipt-meta-value { font-size: 13.5px; font-weight: 600; color: var(--ink); }
-.client-payments-root .receipt-divider { height: 1px; background: var(--border); margin: 18px 0; }
-.client-payments-root .receipt-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 4px; }
-.client-payments-root .receipt-amount-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
-.client-payments-root .receipt-amount { font-size: 22px; font-weight: 800; color: var(--ink); letter-spacing: -0.01em; }
-.client-payments-root .receipt-footer { text-align: center; font-size: 11.5px; color: var(--ink-faint); margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border); }
+.client-payments-root .receipt-doc-offscreen { position: fixed; top: 0; left: -10000px; width: 760px; pointer-events: none; }
 
 @media (max-width: 520px) {
   .client-payments-root .receipt-modal-box { height: 92vh; max-height: 92vh; border-radius: 0; }
   .client-payments-root .receipt-modal-filename { font-size: 12.5px; }
+}
+
+/* ================= redesign: KPI cards, charts, next payment ================= */
+.client-payments-root .pm-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
+.client-payments-root .pm-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; box-shadow: var(--shadow-lg); }
+.client-payments-root .pm-kpi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.client-payments-root .pm-kpi-icon { width: 38px; height: 38px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; }
+.client-payments-root .pm-kpi-icon.positive { background: var(--positive-soft); color: var(--positive); }
+.client-payments-root .pm-kpi-icon.warning { background: var(--warning-soft); color: var(--warning); }
+.client-payments-root .pm-kpi-value { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; color: var(--ink); }
+.client-payments-root .pm-kpi-label { margin-top: 6px; font-size: 12px; color: var(--ink-soft); }
+.client-payments-root .pm-kpi-chip { padding: 3px 9px; border-radius: 999px; background: var(--bg); font-size: 11px; font-weight: 700; color: var(--ink-soft); }
+.client-payments-root .pm-kpi-chip.soon { background: var(--warning-soft); color: var(--warning); }
+.client-payments-root .pm-kpi-chip.overdue { background: var(--danger-soft); color: var(--danger); }
+
+.client-payments-root .pm-charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; margin-bottom: 20px; }
+.client-payments-root .pm-ring-row { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.client-payments-root .pm-ring { position: relative; width: 156px; height: 156px; flex-shrink: 0; }
+.client-payments-root .pm-ring svg { display: block; }
+.client-payments-root .pm-ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+.client-payments-root .pm-ring-pct { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; color: var(--ink); }
+.client-payments-root .pm-ring-sub { margin-top: 4px; font-size: 12px; color: var(--ink-faint); }
+.client-payments-root .pm-legend { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.client-payments-root .pm-legend li { display: grid; grid-template-columns: 10px 1fr auto auto; align-items: center; column-gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.client-payments-root .pm-legend li:last-child { border-bottom: none; }
+.client-payments-root .pm-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.client-payments-root .pm-legend-label { color: var(--ink-soft); }
+.client-payments-root .pm-legend-count { min-width: 20px; padding: 1px 7px; border-radius: 999px; background: var(--bg); font-size: 11px; font-weight: 700; text-align: center; color: var(--ink-soft); }
+.client-payments-root .pm-legend-amount { min-width: 84px; text-align: right; font-weight: 700; color: var(--ink); }
+.client-payments-root .pm-stackbar { display: flex; gap: 2px; height: 10px; margin-top: 22px; border-radius: 999px; overflow: hidden; background: var(--bg); }
+.client-payments-root .pm-stackbar span { min-width: 3px; }
+.client-payments-root .pm-stackbar-caption { margin-top: 8px; font-size: 12px; color: var(--ink-faint); }
+
+.client-payments-root .pm-bars { display: flex; align-items: flex-end; gap: 14px; min-height: 230px; overflow-x: auto; padding-bottom: 4px; }
+.client-payments-root .pm-bar-col { flex: 1 1 0; min-width: 76px; max-width: 140px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.client-payments-root .pm-bar-value { font-size: 12px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.client-payments-root .pm-bar-slot { display: flex; align-items: flex-end; justify-content: center; width: 100%; height: 130px; border-bottom: 1px solid var(--border); }
+.client-payments-root .pm-bar { display: block; width: 38px; border-radius: 6px 6px 0 0; background: var(--border); }
+.client-payments-root .pm-bar.paid { background: var(--positive); }
+.client-payments-root .pm-bar.pending { background: var(--warning); }
+.client-payments-root .pm-bar.upcoming { background: var(--accent); }
+.client-payments-root .pm-bar.overdue { background: var(--danger); }
+.client-payments-root .pm-bar-label { max-width: 100%; text-align: center; font-size: 12px; font-weight: 600; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.client-payments-root .pm-bar-status { font-size: 11px; font-weight: 700; }
+.client-payments-root .pm-bar-status.paid { color: var(--positive); }
+.client-payments-root .pm-bar-status.pending { color: var(--warning); }
+.client-payments-root .pm-bar-status.upcoming { color: var(--accent); }
+.client-payments-root .pm-bar-status.overdue { color: var(--danger); }
+
+.client-payments-root .pm-next .pm-next-amount { margin-top: 14px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; color: var(--ink); }
+.client-payments-root .pm-next-name { margin-top: 6px; font-size: 14px; font-weight: 600; color: var(--ink); }
+.client-payments-root .pm-next-meta { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12.5px; color: var(--ink-soft); }
+.client-payments-root .pm-next-meta b { font-weight: 700; color: var(--accent); }
+.client-payments-root .pm-next-meta b.overdue { color: var(--danger); }
+.client-payments-root .pm-next-cta { margin-top: 20px; width: 100%; justify-content: center; }
+.client-payments-root .pm-next-done { display: flex; align-items: flex-start; gap: 12px; margin-top: 14px; }
+.client-payments-root .pm-next-done p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--ink-soft); }
+.client-payments-root .pm-next-done-icon { width: 36px; height: 36px; border-radius: 50%; background: var(--positive-soft); color: var(--positive); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+@media (max-width: 1100px) {
+  .client-payments-root .pm-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .client-payments-root .pm-charts { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .client-payments-root .pm-kpis { grid-template-columns: 1fr; }
+  .client-payments-root .pm-ring-row { justify-content: center; }
 }
