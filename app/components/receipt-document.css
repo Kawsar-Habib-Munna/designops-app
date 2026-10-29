@@ -53,10 +53,10 @@
 /* letterhead — same as the SOW */
 .receipt-document .rd-letterhead-row { display: table; width: 100%; margin-bottom: 20px; }
 .receipt-document .rd-letterhead-left { display: table-cell; vertical-align: middle; }
-.receipt-document .rd-brand-cell { display: inline-block; vertical-align: middle; width: 34px; height: 34px; margin-right: 12px; }
-.receipt-document .rd-brand-mark { display: block; width: 34px; height: 34px; object-fit: contain; }
-.receipt-document .rd-brand-text { display: inline-block; vertical-align: middle; }
-.receipt-document .rd-letterhead { display: block; font-size: 17px; font-weight: 800; color: var(--accent); line-height: 1.2; }
+.receipt-document .rd-brand-cell { display: inline-block; vertical-align: top; width: 40px; height: 40px; margin-right: 12px; }
+.receipt-document .rd-brand-mark { display: block; width: 40px; height: 40px; object-fit: contain; }
+.receipt-document .rd-brand-text { display: inline-block; vertical-align: top; }
+.receipt-document .rd-letterhead { display: block; font-size: 19px; font-weight: 800; color: var(--accent); line-height: 1.1; }
 .receipt-document .rd-letterhead-sub { display: block; font-size: 11px; color: var(--ink-faint); margin-top: 1px; line-height: 1.3; }
 .receipt-document .rd-letterhead-right { display: table-cell; vertical-align: middle; text-align: right; white-space: nowrap; }
 .receipt-document .rd-doctype { font-size: 15px; font-weight: 800; letter-spacing: 0.02em; color: var(--ink); }
@@ -67,7 +67,7 @@
 .receipt-document .rd-hero { display: table; width: 100%; padding: 0; border: 1px solid var(--border); border-radius: 0; background: transparent; }
 /* left side: a green accent edge, a small label, the amount, then a one-line status (check + Paid in full + date) */
 .receipt-document .rd-hero-main { display: table-cell; vertical-align: middle; padding: 18px 20px; }
-.receipt-document .rd-hero-main-bar { border-left: 4px solid var(--positive); }
+
 .receipt-document .rd-hero-amount { margin-top: 2px; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; color: var(--ink); }
 .receipt-document .rd-hero-status { margin-top: 8px; font-size: 12px; color: var(--ink-soft); }
 .receipt-document .rd-paid-text { font-weight: 700; color: var(--positive-ink); }
@@ -108,14 +108,14 @@
 .receipt-document .rd-footer > span:last-child { text-align: right; }
 
 @media (max-width: 640px) {
-  .receipt-document .rd-card { padding: 26px 20px 22px; }
-  .receipt-document .rd-letterhead-row, .receipt-document .rd-letterhead-left, .receipt-document .rd-letterhead-right { display: block; text-align: left; }
-  .receipt-document .rd-letterhead-right { margin-top: 14px; }
-  .receipt-document .rd-hero, .receipt-document .rd-hero-main, .receipt-document .rd-hero-meta { display: block; width: auto; }
-  .receipt-document .rd-hero-meta { border-left: none; border-top: 1px solid var(--border); }
-  .receipt-document .rd-hero-amount { font-size: 22px; }
-  .receipt-document .rd-kv-table th { width: 110px; }
-  .receipt-document .rd-num { width: auto; }
+  .receipt-document:not(.rd-fixed) .rd-card { padding: 26px 20px 22px; }
+  .receipt-document:not(.rd-fixed) .rd-letterhead-row, .receipt-document:not(.rd-fixed) .rd-letterhead-left, .receipt-document:not(.rd-fixed) .rd-letterhead-right { display: block; text-align: left; }
+  .receipt-document:not(.rd-fixed) .rd-letterhead-right { margin-top: 14px; }
+  .receipt-document:not(.rd-fixed) .rd-hero, .receipt-document:not(.rd-fixed) .rd-hero-main, .receipt-document:not(.rd-fixed) .rd-hero-meta { display: block; width: auto; }
+  .receipt-document:not(.rd-fixed) .rd-hero-meta { border-left: none; border-top: 1px solid var(--border); }
+  .receipt-document:not(.rd-fixed) .rd-hero-amount { font-size: 22px; }
+  .receipt-document:not(.rd-fixed) .rd-kv-table th { width: 110px; }
+  .receipt-document:not(.rd-fixed) .rd-num { width: auto; }
 }
 
 @media print {

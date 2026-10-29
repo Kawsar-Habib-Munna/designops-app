@@ -29,7 +29,7 @@ export default function ReceiptDocument({ data, theme = 'light', docRef }: { dat
   const ref = data.receiptNumber ?? 'Receipt';
 
   return (
-    <div className={`receipt-document theme-${theme}`} ref={docRef}>
+    <div className={`receipt-document theme-${theme}${docRef ? ' rd-fixed' : ''}`} ref={docRef}>
       <div className="rd-card">
         <div className="rd-letterhead-row">
           <div className="rd-letterhead-left">
