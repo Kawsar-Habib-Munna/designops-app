@@ -23,6 +23,7 @@ import { uploadFileToDrive } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import RichTextField from '@/app/components/RichTextField';
 import ReceiptDocument from '@/app/components/ReceiptDocument';
+import { renderReceiptPdf } from '@/lib/receiptPdf';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -232,6 +233,7 @@ export default function AdminPaymentsPage() {
   const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState<{ inv: Invoice; submission: Payment } | null>(null);
   const [receiptPdfUrl, setReceiptPdfUrl] = useState<string | null>(null);
+  const [receiptPages, setReceiptPages] = useState<string[]>([]);
   const [generatingPreview, setGeneratingPreview] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const receiptDocRef = useRef<HTMLDivElement>(null);
@@ -449,46 +451,12 @@ export default function AdminPaymentsPage() {
       setGeneratingPreview(true);
       setDownloadError(null);
       setReceiptPdfUrl(null);
+      setReceiptPages([]);
       try {
         const node = receiptDocRef.current;
         if (!node) throw new Error('Document not ready');
-        const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
-        const canvas = await Promise.race([
-          html2canvas(node, {
-            scale: 2,
-            backgroundColor: '#ffffff',
-            useCORS: true,
-            imageTimeout: 15000,
-            onclone: (doc, el) => {
-              // ডার্ক মোড চালু থাকলেও PDF সবসময় লাইট/প্রিন্ট-স্টাইল কালারেই জেনারেট হয় —
-              // একটা ফরমাল ডকুমেন্টের রং UI থিমের সাথে বদলানো উচিত না।
-              el.style.setProperty('--surface', '#FFFFFF');
-              el.style.setProperty('--ink', '#14141A');
-              el.style.setProperty('--ink-soft', '#6E6E7A');
-              el.style.setProperty('--ink-faint', '#A3A3AE');
-              el.style.setProperty('--border', '#E8E8EC');
-              el.style.setProperty('--border-soft', '#F0F0F3');
-            },
-          }),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('PDF generation timed out')), 25000)),
-        ]);
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const imgWidth = pageWidth;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-        const blob = pdf.output('blob');
+        const { blob, pages } = await renderReceiptPdf(node);
+        if (!cancelled) setReceiptPages(pages);
         if (cancelled) return;
         objectUrl = URL.createObjectURL(blob);
         setReceiptPdfUrl(objectUrl);
@@ -1235,7 +1203,16 @@ export default function AdminPaymentsPage() {
 
             <div className="receipt-modal-body">
               {receiptPdfUrl ? (
-                <iframe src={receiptPdfUrl} className="receipt-pdf-frame" title="Payment Receipt PDF" />
+                typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches ? (
+                  <div className="receipt-pages">
+                    {receiptPages.map((src, i) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={i} src={src} alt={`Receipt page ${i + 1}`} className="receipt-page-img" />
+                    ))}
+                  </div>
+                ) : (
+                  <iframe src={receiptPdfUrl} className="receipt-pdf-frame" title="Payment Receipt PDF" />
+                )
               ) : (
                 <div className="receipt-modal-loading">{downloadError ?? 'PDF প্রিভিউ তৈরি হচ্ছে…'}</div>
               )}

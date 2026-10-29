@@ -267,3 +267,7 @@
 /* the next-payment card stretches to the schedule card's height; its currency note sits at the bottom */
 .client-payments-root .pm-next { display: flex; flex-direction: column; }
 .client-payments-root .pm-currency-note { margin: auto 0 0; padding-top: 16px; font-size: 11px; color: var(--ink-faint); }
+
+/* receipt preview as page images (phones cannot show a PDF inside an iframe) */
+.client-payments-root .receipt-pages { position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.client-payments-root .receipt-page-img { width: 100%; height: auto; display: block; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.35); }

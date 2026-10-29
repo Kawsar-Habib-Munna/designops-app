@@ -21,6 +21,7 @@ import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
 import { formatDateLong, todayISO } from '@/lib/format';
 import { CURRENCY_SYMBOL, formatMoney } from '@/lib/currency';
 import ReceiptDocument from '@/app/components/ReceiptDocument';
+import { renderReceiptPdf } from '@/lib/receiptPdf';
 import '../../../client-shared.css';
 import './payments.css';
 
@@ -249,6 +250,7 @@ export default function ClientPaymentsPage() {
 
   const [viewingReceipt, setViewingReceipt] = useState<{ inv: Invoice; pay: Payment } | null>(null);
   const [receiptPdfUrl, setReceiptPdfUrl] = useState<string | null>(null);
+  const [receiptPages, setReceiptPages] = useState<string[]>([]);
   const [generatingReceiptPdf, setGeneratingReceiptPdf] = useState(false);
   const [receiptPdfError, setReceiptPdfError] = useState<string | null>(null);
   const receiptDocRef = useRef<HTMLDivElement>(null);
@@ -308,45 +310,12 @@ export default function ClientPaymentsPage() {
       setGeneratingReceiptPdf(true);
       setReceiptPdfError(null);
       setReceiptPdfUrl(null);
+      setReceiptPages([]);
       try {
         const node = receiptDocRef.current;
         if (!node) throw new Error('Document not ready');
-        const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
-        const canvas = await Promise.race([
-          html2canvas(node, {
-            scale: 2,
-            backgroundColor: '#ffffff',
-            useCORS: true,
-            imageTimeout: 15000,
-            onclone: (doc, el) => {
-              // ডার্ক মোড চালু থাকলেও রসিদ সবসময় লাইট কালারেই জেনারেট হয়।
-              el.style.setProperty('--surface', '#ffffff');
-              el.style.setProperty('--bg', '#f2f1f2');
-              el.style.setProperty('--border', '#d5d4d7');
-              el.style.setProperty('--ink', '#323135');
-              el.style.setProperty('--ink-soft', '#6d6a72');
-              el.style.setProperty('--ink-faint', '#939197');
-            },
-          }),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('PDF generation timed out')), 25000)),
-        ]);
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const imgWidth = pageWidth;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-        const blob = pdf.output('blob');
+        const { blob, pages } = await renderReceiptPdf(node);
+        if (!cancelled) setReceiptPages(pages);
         if (cancelled) return;
         objectUrl = URL.createObjectURL(blob);
         setReceiptPdfUrl(objectUrl);
@@ -834,7 +803,16 @@ export default function ClientPaymentsPage() {
 
             <div className="receipt-modal-body">
               {receiptPdfUrl ? (
-                <iframe src={receiptPdfUrl} className="receipt-pdf-frame" title="Payment Receipt PDF" />
+                typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches ? (
+                  <div className="receipt-pages">
+                    {receiptPages.map((src, i) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={i} src={src} alt={`Receipt page ${i + 1}`} className="receipt-page-img" />
+                    ))}
+                  </div>
+                ) : (
+                  <iframe src={receiptPdfUrl} className="receipt-pdf-frame" title="Payment Receipt PDF" />
+                )
               ) : (
                 <div className="receipt-modal-loading">{receiptPdfError ?? 'Generating PDF preview…'}</div>
               )}
