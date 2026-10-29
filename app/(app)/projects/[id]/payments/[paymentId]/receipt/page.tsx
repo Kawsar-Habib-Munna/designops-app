@@ -10,8 +10,9 @@ import '../../../project.css';
 import './admin-receipt.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
-import { formatBnDateLong } from '@/lib/format';
+import { formatDateLong } from '@/lib/format';
 import SignInScreen from '@/app/components/SignInScreen';
+import ReceiptDocument from '@/app/components/ReceiptDocument';
 
 type Payment = { id: string; invoice_id: string; amount: number | null; payment_method: string | null; transaction_id: string | null; payment_date: string | null; receipt_number: string | null; confirmed_at: string | null };
 type Invoice = { payment_type: string; currency: string; description: string | null; status: string; client_id: string; project_id: string };
@@ -78,69 +79,21 @@ export default function AdminReceiptPage() {
               </button>
             </div>
 
-            <div className="admin-receipt-doc">
-              <div className="admin-receipt-doc-head">
-                <div className="admin-receipt-brand">FLOW 53</div>
-                <div className="admin-receipt-doc-title">Payment Receipt</div>
-              </div>
-
-              <div className="admin-receipt-meta-row">
-                <div>
-                  <div className="admin-receipt-meta-label">Receipt Number</div>
-                  <div className="admin-receipt-meta-value">{payment.receipt_number ?? '—'}</div>
-                </div>
-                <div>
-                  <div className="admin-receipt-meta-label">Date</div>
-                  <div className="admin-receipt-meta-value">{formatBnDateLong(payment.payment_date)}</div>
-                </div>
-              </div>
-
-              <div className="admin-receipt-divider"></div>
-
-              <div className="admin-receipt-field-grid">
-                <div>
-                  <div className="admin-receipt-meta-label">Client</div>
-                  <div className="admin-receipt-meta-value">{client?.primary_contact ?? '—'}</div>
-                </div>
-                <div>
-                  <div className="admin-receipt-meta-label">Company</div>
-                  <div className="admin-receipt-meta-value">{client?.company_name ?? '—'}</div>
-                </div>
-                <div>
-                  <div className="admin-receipt-meta-label">Project</div>
-                  <div className="admin-receipt-meta-value">{projectName}</div>
-                </div>
-                <div>
-                  <div className="admin-receipt-meta-label">Status</div>
-                  <div className="admin-receipt-meta-value">Paid ✓</div>
-                </div>
-              </div>
-
-              <div className="admin-receipt-divider"></div>
-
-              <div className="admin-receipt-amount-row">
-                <div>
-                  <div className="admin-receipt-meta-label">Description</div>
-                  <div className="admin-receipt-meta-value">{invoice.description || invoice.payment_type.replace('_', ' ')}</div>
-                </div>
-                <div className="admin-receipt-amount">
-                  {invoice.currency} {payment.amount?.toLocaleString('en-US') ?? '—'}
-                </div>
-              </div>
-
-              <div className="admin-receipt-field-grid">
-                <div>
-                  <div className="admin-receipt-meta-label">Payment Method</div>
-                  <div className="admin-receipt-meta-value">{payment.payment_method ?? '—'}</div>
-                </div>
-                <div>
-                  <div className="admin-receipt-meta-label">Transaction ID</div>
-                  <div className="admin-receipt-meta-value">{payment.transaction_id ?? '—'}</div>
-                </div>
-              </div>
-
-              <div className="admin-receipt-footer">Thank you for your business — FLOW 53</div>
-            </div>
+            <ReceiptDocument
+              data={{
+                receiptNumber: payment.receipt_number,
+                dateText: formatDateLong(payment.payment_date),
+                confirmedText: payment.confirmed_at ? formatDateLong(payment.confirmed_at) : null,
+                clientName: client?.primary_contact ?? client?.company_name ?? '—',
+                company: client?.primary_contact ? client.company_name : null,
+                projectName,
+                description: invoice.description || invoice.payment_type.replace(/_/g, ' '),
+                currency: invoice.currency,
+                amount: payment.amount,
+                method: payment.payment_method,
+                transactionId: payment.transaction_id,
+              }}
+            />
           </>
         )}
       </div>

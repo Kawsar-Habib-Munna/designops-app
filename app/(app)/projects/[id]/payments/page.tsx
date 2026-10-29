@@ -18,10 +18,11 @@ import '../project.css';
 import './payments.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
-import { formatBnDate, formatBnDateLong, todayISO } from '@/lib/format';
+import { formatBnDate, todayISO, formatDateLong } from '@/lib/format';
 import { uploadFileToDrive } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import RichTextField from '@/app/components/RichTextField';
+import ReceiptDocument from '@/app/components/ReceiptDocument';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -1240,84 +1241,25 @@ export default function AdminPaymentsPage() {
               )}
 
               <div className="receipt-doc-offscreen" aria-hidden="true">
-              <div className="receipt-doc" ref={receiptDocRef}>
-                <div className="receipt-doc-head">
-                  <div>
-                    <div className="receipt-doc-brand">FLOW 53</div>
-                    <div className="receipt-doc-doctitle">Payment Receipt</div>
-                  </div>
-                  <span className="receipt-doc-badge">
-                    <Icon name="check" size={12} /> Paid
-                  </span>
-                </div>
-
-                <div className="receipt-doc-meta-row">
-                  <div className="receipt-doc-field">
-                    <div className="receipt-doc-field-label">Receipt Number</div>
-                    <div className="receipt-doc-field-value">{viewingReceipt.submission.receipt_number ?? '—'}</div>
-                  </div>
-                  <div className="receipt-doc-field receipt-doc-field-right">
-                    <div className="receipt-doc-field-label">Date</div>
-                    <div className="receipt-doc-field-value">{formatBnDateLong(viewingReceipt.submission.payment_date)}</div>
-                  </div>
-                </div>
-
-                <div className="receipt-doc-divider" />
-
-                <div className="receipt-doc-grid">
-                  <div className="receipt-doc-field">
-                    <div className="receipt-doc-field-label">Client</div>
-                    <div className="receipt-doc-field-value">{client?.primary_contact ?? client?.company_name ?? '—'}</div>
-                  </div>
-                  <div className="receipt-doc-field">
-                    <div className="receipt-doc-field-label">Company</div>
-                    <div className="receipt-doc-field-value">{client?.company_name ?? '—'}</div>
-                  </div>
-                  <div className="receipt-doc-field">
-                    <div className="receipt-doc-field-label">Project</div>
-                    <div className="receipt-doc-field-value">{project.name}</div>
-                  </div>
-                  <div className="receipt-doc-field">
-                    <div className="receipt-doc-field-label">Request No.</div>
-                    <div className="receipt-doc-field-value">{viewingReceipt.inv.request_number ?? '—'}</div>
-                  </div>
-                </div>
-
-                <div className="receipt-doc-divider" />
-
-                <div className="receipt-doc-amount-row">
-                  <div className="receipt-doc-field">
-                    <div className="receipt-doc-field-label">Description</div>
-                    <div className="receipt-doc-field-value">{viewingReceipt.inv.description || humanizeType(viewingReceipt.inv.payment_type)}</div>
-                  </div>
-                  <div className="receipt-doc-amount">
-                    {viewingReceipt.inv.currency} {(viewingReceipt.submission.amount ?? viewingReceipt.inv.amount).toLocaleString('en-US')}
-                  </div>
-                </div>
-
-                <div className="receipt-doc-grid">
-                  <div className="receipt-doc-field">
-                    <div className="receipt-doc-field-label">Payment Method</div>
-                    <div className="receipt-doc-field-value">{viewingReceipt.submission.payment_method ?? '—'}</div>
-                  </div>
-                  <div className="receipt-doc-field">
-                    <div className="receipt-doc-field-label">Transaction ID</div>
-                    <div className="receipt-doc-field-value">{viewingReceipt.submission.transaction_id ?? '—'}</div>
-                  </div>
-                </div>
-
-                {viewingReceipt.submission.notes && (
-                  <>
-                    <div className="receipt-doc-divider" />
-                    <div className="receipt-doc-field">
-                      <div className="receipt-doc-field-label">Note</div>
-                      <div className="receipt-doc-field-value receipt-doc-notes">{viewingReceipt.submission.notes}</div>
-                    </div>
-                  </>
-                )}
-
-                <div className="receipt-doc-footer">Thank you for your business — FLOW 53</div>
-              </div>
+              <ReceiptDocument
+                docRef={receiptDocRef}
+                data={{
+                  receiptNumber: viewingReceipt.submission.receipt_number,
+                  requestNumber: viewingReceipt.inv.request_number,
+                  dateText: formatDateLong(viewingReceipt.submission.payment_date),
+                  confirmedText: viewingReceipt.submission.confirmed_at ? formatDateLong(viewingReceipt.submission.confirmed_at) : null,
+                  clientName: client?.primary_contact ?? client?.company_name ?? '—',
+                  company: client?.primary_contact ? client.company_name : null,
+                  projectName: project.name,
+                  description: viewingReceipt.inv.description || humanizeType(viewingReceipt.inv.payment_type),
+                  currency: viewingReceipt.inv.currency,
+                  amount: viewingReceipt.submission.amount ?? viewingReceipt.inv.amount,
+                  method: viewingReceipt.submission.payment_method,
+                  transactionId: viewingReceipt.submission.transaction_id,
+                  senderName: viewingReceipt.submission.sender_name,
+                  notes: viewingReceipt.submission.notes,
+                }}
+              />
               </div>
             </div>
           </div>

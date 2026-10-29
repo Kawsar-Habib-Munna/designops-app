@@ -1,0 +1,118 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700;800&display=swap");
+
+/* The payment receipt document (ReceiptDocument.tsx). Everything is scoped to .receipt-document with `rd-*` class names so
+   it cannot clash with any page stylesheet, and the colour tokens match the SOW document / client portal palette. */
+
+.receipt-document {
+  --bg: #f2f1f2;
+  --surface: #ffffff;
+  --border: #d5d4d7;
+  --ink: #323135;
+  --ink-soft: #6d6a72;
+  --ink-faint: #939197;
+  --accent: #7c3aed;
+  --accent-soft: #f2ebfd;
+  --positive: #10b981;
+  --positive-soft: #e7f8f2;
+  --positive-ink: #0b835c;
+  --shadow-lg: 0 12px 32px rgba(16, 16, 20, 0.1);
+  --radius-lg: 16px;
+  --radius-sm: 8px;
+
+  max-width: 820px;
+  margin: 0 auto;
+  color: var(--ink);
+  font-family: "Nunito Sans", "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: normal;
+}
+.receipt-document.theme-dark {
+  --bg: #323135;
+  --surface: #424045;
+  --border: #555359;
+  --ink: #f2f1f2;
+  --ink-soft: #c1c0c3;
+  --ink-faint: #939197;
+  --accent: #9661f1;
+  --accent-soft: #442082;
+  --positive: #40c79a;
+  --positive-soft: #074e36;
+  --positive-ink: #7ee0be;
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+.receipt-document,
+.receipt-document * {
+  box-sizing: border-box;
+}
+.receipt-document p {
+  margin-top: 0;
+}
+
+.receipt-document .rd-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 40px 38px 32px; overflow: hidden; }
+
+/* letterhead — same as the SOW */
+.receipt-document .rd-letterhead-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.receipt-document .rd-letterhead-left { display: flex; align-items: center; gap: 12px; }
+.receipt-document .rd-brand-mark { width: 34px; height: 34px; flex-shrink: 0; object-fit: contain; display: block; }
+.receipt-document .rd-letterhead { font-size: 17px; font-weight: 800; color: var(--accent); line-height: 1.2; }
+.receipt-document .rd-letterhead-sub { font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
+.receipt-document .rd-letterhead-right { text-align: right; flex-shrink: 0; }
+.receipt-document .rd-doctype { font-size: 15px; font-weight: 800; letter-spacing: 0.02em; color: var(--ink); }
+.receipt-document .rd-ref { font-size: 11.5px; color: var(--ink-faint); margin-top: 3px; }
+.receipt-document .rd-hr { border: none; border-top: 1px solid var(--border); margin: 0 0 24px; }
+
+/* hero: the amount that was paid, front and centre */
+.receipt-document .rd-hero { display: flex; align-items: stretch; justify-content: space-between; gap: 24px; padding: 16px 20px; border: 1px solid var(--border); border-radius: 0; background: transparent; }
+/* left side: a green accent edge, a small label, the amount, then a one-line status (check + Paid in full + date) */
+.receipt-document .rd-hero-main { padding-left: 16px; border-left: 4px solid var(--positive); display: flex; flex-direction: column; justify-content: center; }
+.receipt-document .rd-hero-amount { margin-top: 2px; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; color: var(--ink); }
+.receipt-document .rd-hero-status { display: flex; align-items: center; gap: 7px; margin-top: 8px; font-size: 12px; color: var(--ink-soft); }
+.receipt-document .rd-check { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--positive); color: #fff; flex-shrink: 0; }
+.receipt-document .rd-paid-text { font-weight: 700; color: var(--positive-ink); }
+.receipt-document .rd-hero-dot { color: var(--ink-faint); }
+.receipt-document .rd-hero-meta { flex-shrink: 0; min-width: 160px; padding-left: 20px; border-left: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; }
+.receipt-document .rd-eyebrow { font-size: 10.5px; font-weight: 700; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.receipt-document .rd-eyebrow-gap { margin-top: 10px; }
+.receipt-document .rd-kv-value { font-size: 12.5px; font-weight: 700; color: var(--ink); word-break: break-word; }
+
+/* numbered section heads ("01  BILLED TO ———") */
+.receipt-document .rd-section-head { display: flex; align-items: center; gap: 14px; margin: 30px 0 14px; }
+.receipt-document .rd-section-head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.receipt-document .rd-section-num { font-size: 13px; font-weight: 800; color: var(--ink-faint); flex-shrink: 0; }
+.receipt-document .rd-section-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink); flex-shrink: 0; }
+
+/* bordered tables (square corners on purpose, as in the SOW) */
+.receipt-document .rd-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); font-size: 13px; }
+.receipt-document .rd-table th, .receipt-document .rd-table td { padding: 11px 14px; border: 1px solid var(--border); text-align: left; vertical-align: top; }
+.receipt-document .rd-table thead th { background: var(--bg); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-faint); }
+.receipt-document .rd-table tbody td { color: var(--ink-soft); }
+.receipt-document .rd-kv-table th { width: 150px; background: var(--bg); font-size: 12px; font-weight: 700; color: var(--ink-faint); }
+.receipt-document .rd-kv-table td { font-size: 13.5px; font-weight: 600; color: var(--ink); word-break: break-word; }
+.receipt-document .rd-num { text-align: right !important; white-space: nowrap; width: 190px; }
+.receipt-document .rd-desc { color: var(--ink) !important; font-weight: 600; }
+.receipt-document .rd-strong { font-weight: 700; color: var(--ink) !important; }
+.receipt-document .rd-total-row td { background: var(--bg); font-size: 14px; font-weight: 800; color: var(--ink) !important; }
+.receipt-document .rd-note { font-size: 13.5px; line-height: 1.8; color: var(--ink-soft); margin: 0; white-space: pre-wrap; }
+
+/* confirmation block */
+.receipt-document .rd-confirm { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--border); }
+.receipt-document .rd-confirm-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+.receipt-document .rd-confirm-sub { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+.receipt-document .rd-stamp { padding: 6px 16px; border: 2px solid var(--positive); border-radius: var(--radius-sm); color: var(--positive-ink); font-size: 15px; font-weight: 800; letter-spacing: 0.16em; transform: rotate(-6deg); flex-shrink: 0; }
+
+.receipt-document .rd-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 11px; color: var(--ink-faint); }
+
+@media (max-width: 640px) {
+  .receipt-document .rd-card { padding: 26px 20px 22px; }
+  .receipt-document .rd-letterhead-row { flex-direction: column; }
+  .receipt-document .rd-letterhead-right { text-align: left; }
+  .receipt-document .rd-hero { flex-direction: column; gap: 16px; padding: 18px; }
+  .receipt-document .rd-hero-amount { font-size: 22px; }
+  .receipt-document .rd-hero-meta { padding-left: 0; padding-top: 14px; border-left: none; border-top: 1px solid var(--border); min-width: 0; }
+  .receipt-document .rd-kv-table th { width: 110px; }
+  .receipt-document .rd-num { width: auto; }
+}
+
+@media print {
+  .receipt-document .rd-card { box-shadow: none; border: none; padding: 0; }
+}
