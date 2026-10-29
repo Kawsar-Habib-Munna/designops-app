@@ -80,7 +80,7 @@
 .client-payments-root .pm-help-link:hover { color: var(--accent); }
 
 /* ---- main grid (schedule + next payment) ---- */
-.client-payments-root .pm-main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start; margin-bottom: 20px; }
+.client-payments-root .pm-main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: stretch; margin-bottom: 20px; }
 .client-payments-root .pm-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 22px; }
 .client-payments-root .pm-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
 .client-payments-root .pm-card-title { font-size: 14px; font-weight: 800; color: var(--ink); }
@@ -263,3 +263,7 @@
   .client-payments-root .pm-kpis { grid-template-columns: 1fr; }
   .client-payments-root .pm-ring-row { justify-content: center; }
 }
+
+/* the next-payment card stretches to the schedule card's height; its currency note sits at the bottom */
+.client-payments-root .pm-next { display: flex; flex-direction: column; }
+.client-payments-root .pm-currency-note { margin: auto 0 0; padding-top: 16px; font-size: 11px; color: var(--ink-faint); }
