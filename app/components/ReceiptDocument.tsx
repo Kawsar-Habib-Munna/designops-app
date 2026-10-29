@@ -33,12 +33,14 @@ export default function ReceiptDocument({ data, theme = 'light', docRef }: { dat
       <div className="rd-card">
         <div className="rd-letterhead-row">
           <div className="rd-letterhead-left">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/flow53-logo.svg" alt="" className="rd-brand-mark" />
-            <div>
-              <div className="rd-letterhead">FLOW 53</div>
-              <div className="rd-letterhead-sub">Innovate-Design-Elevate</div>
-            </div>
+            <span className="rd-brand-cell">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/flow53-logo.svg" alt="" className="rd-brand-mark" />
+            </span>
+            <span className="rd-brand-text">
+              <span className="rd-letterhead">FLOW 53</span>
+              <span className="rd-letterhead-sub">Innovate-Design-Elevate</span>
+            </span>
           </div>
           <div className="rd-letterhead-right">
             <div className="rd-doctype">PAYMENT RECEIPT</div>
@@ -48,15 +50,10 @@ export default function ReceiptDocument({ data, theme = 'light', docRef }: { dat
         <hr className="rd-hr" />
 
         <div className="rd-hero">
-          <div className="rd-hero-main">
+          <div className="rd-hero-main rd-hero-main-bar">
             <div className="rd-eyebrow">Amount paid</div>
             <div className="rd-hero-amount">{money}</div>
             <div className="rd-hero-status">
-              <span className="rd-check" aria-hidden="true">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12l5 5L20 7" />
-                </svg>
-              </span>
               <span className="rd-paid-text">Paid in full</span>
               <span className="rd-hero-dot">·</span>
               <span className="rd-hero-sub">{data.dateText}</span>
@@ -163,7 +160,9 @@ export default function ReceiptDocument({ data, theme = 'light', docRef }: { dat
             <div className="rd-confirm-name">FLOW 53 Design Studio</div>
             <div className="rd-confirm-sub">{data.confirmedText ? `Payment verified on ${data.confirmedText}` : 'Payment verified'}</div>
           </div>
-          <span className="rd-stamp">PAID</span>
+          <span className="rd-stamp">
+            <span className="rd-stamp-box">PAID</span>
+          </span>
         </div>
 
         <div className="rd-footer">
