@@ -439,8 +439,5 @@
 @media (max-width:560px){.projdetail-root .pd-assign-grid{grid-template-columns:1fr;}.projdetail-root .pd-task-row{grid-template-columns:1fr;}}
 .projdetail-root .pd-draft-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px;padding:12px 16px;border:1px solid var(--accent-soft-2);border-radius:var(--radius-md);background:var(--accent-soft);font-size:13px;color:var(--ink-soft);}
 .projdetail-root .pd-draft-banner b{color:var(--ink);font-weight:600;}
-.projdetail-root .pm-strip{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:8px 8px 8px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);width:fit-content;max-width:100%;}
-.projdetail-root .pm-strip-label{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);}
-.projdetail-root .pm-strip-name{font-size:13px;font-weight:600;color:var(--ink);}
 .projdetail-root .pd-pm-change{margin-left:6px;padding:0;border:none;background:none;font:inherit;font-size:12px;font-weight:600;color:var(--accent);cursor:pointer;}
 .projdetail-root .pd-pm-change:hover{text-decoration:underline;}
