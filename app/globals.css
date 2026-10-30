@@ -155,8 +155,8 @@ div.brand.brand-topbar {
   [class*="-root"]:not(.client-portal) .topbar .search-box { display: none; }
 }
 
-/* One narrower, consistent sidebar width for every dashboard page (pages used to differ: 224 / 230 / 248px) */
-[class*="-root"]:not(.client-portal) .sidebar { width: 208px; }
+/* One narrow, consistent sidebar width (184px) for every dashboard page (pages used to differ: 224 / 230 / 248px) */
+[class*="-root"]:not(.client-portal) .sidebar { width: 184px; }
 
 /* Tall dashboard modals (e.g. Edit Project) used to run past the bottom of the screen with the buttons out of reach.
    The overlay now scrolls, and the box keeps some room below it. Only adds properties the pages do not set. */
