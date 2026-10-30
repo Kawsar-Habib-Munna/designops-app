@@ -28,7 +28,9 @@ import { uploadFileToDrive, guessFileType, driveThumbnailUrl } from '@/lib/drive
 import { relativeTime, formatDate, formatDateLong, todayISO } from '@/lib/format';
 import { CURRENCY_SYMBOL } from '@/lib/currency';
 import '../client-shared.css';
+import ClientBottomNav from '@/app/components/ClientBottomNav';
 import './dashboard.css';
+import './dashboard-v2.css';
 
 const WHATSAPP_URL = 'https://wa.me/8801804409235?text=Hi%20FLOW53,%20I%27m%20a%20client%20and%20I%27d%20like%20to%20get%20in%20touch%20about%20my%20project.';
 
@@ -50,6 +52,11 @@ const ICONS: Record<string, string> = {
   send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>',
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
   paperclip: '<path d="M21.44 11.05 12.25 20.24a5.5 5.5 0 0 1-7.78-7.78l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95L9.42 17.4a1.5 1.5 0 0 1-2.12-2.12l7.78-7.78"/>',
+  arrow: '<path d="M7 17 17 7"/><path d="M8 7h9v9"/>',
+  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+  calendarcheck: '<path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>',
+  wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+  chats: '<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17h.01"/>',
 };
 function Icon({ name, size = 14 }: { name: string; size?: number }) {
@@ -127,6 +134,19 @@ const PROJECT_STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   planning: { label: 'Planning', cls: 'b-review' },
   completed: { label: 'Completed', cls: 'b-done' },
 };
+
+// progress ring: a grey track with a coloured arc, drawn from the top
+function Ring({ pct, size, stroke, color }: { pct: number; size: number; stroke: number; color: string }) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const p = Math.max(0, Math.min(100, pct));
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="dx-ring" aria-hidden="true">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${(c * p) / 100} ${c}`} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+    </svg>
+  );
+}
 
 function toOne<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
@@ -397,6 +417,11 @@ export default function ClientDashboard() {
     const hour = now ? now.getHours() : 9;
     const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
     const dateLabel = now ? now.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    const phasePct = milestones.length > 0 ? Math.round((milestones.filter((m) => m.completed_at).length / milestones.length) * 100) : progressPct;
+    const sowDone = sow?.status === 'signed';
+    const sowSteps = sowDone ? 3 : sow ? 2 : 0;
+    const nextInvoice = invoices.find((i) => i.status === 'pending') ?? null;
+    const daysLeft = project.due_date && now ? Math.ceil((new Date(project.due_date).getTime() - now.getTime()) / 86400000) : null;
     const firstName = (client.primary_contact ?? client.company_name).split(' ')[0];
 
     type UpcomingItem = { key: string; sortKey: string; day: string; month: string; title: string; sub: string; icon: string };
@@ -453,16 +478,6 @@ export default function ClientDashboard() {
                 </Link>
               </nav>
             </div>
-            <button type="button" className="profile-card" onClick={handleSignOut} title="Sign out">
-              <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-                {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
-              </div>
-              <div className="profile-meta">
-                <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
-                <div className="profile-role">{client.company_name}</div>
-              </div>
-              <Icon name="logout" />
-            </button>
           </aside>
 
           <div className="main">
@@ -471,343 +486,442 @@ export default function ClientDashboard() {
                 <Icon name="menu" />
               </button>
               <span className="topbar-title">Overview</span>
-            </header>
+                          <button type="button" className="topbar-avatar" aria-label="Sign out" onClick={() => { if (window.confirm('Sign out of your account?')) (handleSignOut)(); }}>
+                {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+              </button>
+</header>
 
             <header className="page-topbar">
               <div className="breadcrumb">Client Portal / Overview</div>
               <a className="page-help-link" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
                 <Icon name="help" size={13} /> Need help?
               </a>
-            </header>
+            <button type="button" className="profile-card topbar-profile" onClick={handleSignOut} title="Sign out">
+              <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
+                {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+              </div>
+              <div className="profile-meta">
+                <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
+                <div className="profile-role">{client.company_name}</div>
+              </div>
+            </button>
+</header>
 
             <main className="content">
-              <div className="ov-welcome-card">
-                <div className="ov-welcome-left">
-                  <div className="ov-greeting-row">
-                    <div className="avatar" style={{ width: 40, height: 40, fontSize: 15 }}>
-                      {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
-                    </div>
-                    <h1 className="ov-greeting-title">
-                      {greeting}, {firstName} 👋
+              <div className="dx">
+                {/* ---- hero: greeting, project, overall progress ---- */}
+                <section className="dx-hero">
+                  <div className="dx-hero-text">
+                    {dateLabel && <div className="dx-eyebrow">{dateLabel}</div>}
+                    <h1 className="dx-title">
+                      {greeting}, {firstName}
                     </h1>
-                  </div>
-                  <p className="ov-greeting-sub">Here&apos;s what&apos;s happening with your project today.</p>
-                  {dateLabel && (
-                    <div className="ov-date-chip">
-                      <Icon name="calendar" size={13} /> {dateLabel}
+                    <p className="dx-sub">Here&apos;s where your project stands today.</p>
+                    <div className="dx-hero-project">
+                      <span className="dx-hero-project-name">{project.name}</span>
+                      <span className={`status-badge ${statusMeta.cls}`}>
+                        <span className="dot"></span>
+                        {statusMeta.label}
+                      </span>
                     </div>
-                  )}
-                </div>
-                <div className="ov-welcome-banner" aria-hidden="true"></div>
-              </div>
-
-              {!isCompleted && pendingAction && (
-                <div className="ov-action-banner block">
-                  <div className="ov-action-icon">
-                    <Icon name={pendingAction.key === 'payment' ? 'card' : pendingAction.key === 'approval' ? 'check' : 'doc'} size={20} />
-                  </div>
-                  <div className="ov-action-body">
-                    <span className="ov-action-label">{pendingAction.label}</span>
-                    <div className="ov-action-title">{pendingAction.title}</div>
-                    <p className="ov-action-desc">{pendingAction.desc}</p>
-                    {pendingAction.key === 'sow' && sow?.sow_number && (
-                      <div className="ov-action-meta">
-                        {sow.sow_number} <span className="ov-dot" /> v{sow.version}.0
-                      </div>
-                    )}
-                  </div>
-                  <div className="ov-action-actions">
-                    {pendingAction.key === 'approval' ? (
-                      <button type="button" className="btn btn-accent" onClick={() => setApprovalsModalOpen(true)}>
-                        {pendingAction.ctaLabel}
-                      </button>
-                    ) : (
-                      <Link href={pendingAction.href} className="btn btn-accent">
-                        {pendingAction.ctaLabel}
+                    <div className="dx-hero-actions">
+                      <Link href={`/client/project/${project.id}`} className="btn btn-accent">
+                        View project
                       </Link>
-                    )}
-                    {pendingAction.moreCount && <span className="ov-more-link">+{pendingAction.moreCount} more action{pendingAction.moreCount > 1 ? 's' : ''}</span>}
-                  </div>
-                </div>
-              )}
-
-              <div className="ov-grid block">
-                {/* ---- Project Snapshot ---- */}
-                <div className="ov-card">
-                  <div className="ov-card-head">
-                    <div className="ov-card-title">Project Snapshot</div>
-                    <span className={`status-badge ${statusMeta.cls}`}>{statusMeta.label}</span>
-                  </div>
-                  <div className="ov-snapshot-name">{project.name}</div>
-                  <div className="ov-progress-row">
-                    <span className="ov-progress-pct">{progressPct}% Complete</span>
-                  </div>
-                  <div className="ov-progress-track">
-                    <div className="ov-progress-fill" style={{ width: `${progressPct}%` }} />
-                  </div>
-                  <div className="ov-mini-stats">
-                    <div>
-                      <Icon name="check" size={12} />
-                      <span className="ov-mini-label">Current Phase</span>
-                      <span className="ov-mini-value">{currentMilestone?.title ?? (isCompleted ? 'Completed' : '—')}</span>
-                    </div>
-                    <div>
-                      <Icon name="calendar" size={12} />
-                      <span className="ov-mini-label">Expected Delivery</span>
-                      <span className="ov-mini-value">{formatDate(project.due_date) || '—'}</span>
-                    </div>
-                    <div>
-                      <Icon name="user" size={12} />
-                      <span className="ov-mini-label">Project Manager</span>
-                      <span className="ov-mini-value">{manager?.full_name ?? '—'}</span>
-                    </div>
-                  </div>
-                  <Link href={`/client/project/${project.id}`} className="ov-link">
-                    View Project →
-                  </Link>
-                </div>
-
-                {/* ---- Project Journey ---- */}
-                <div className="ov-card">
-                  <div className="ov-card-title">Project Journey</div>
-                  {milestones.length === 0 ? (
-                    <p className="empty-inline">Your project phases will appear here once our team sets them up.</p>
-                  ) : (
-                    <div className="ov-journey-row">
-                      {milestones.map((m) => {
-                        const isDone = !!m.completed_at;
-                        const isCurrent = !isDone && currentMilestone?.id === m.id;
-                        return (
-                          <div className={`ov-journey-step${isDone ? ' done' : ''}${isCurrent ? ' current' : ''}`} key={m.id}>
-                            <div className="ov-journey-line" />
-                            <div className="ov-journey-dot">{isDone ? '✓' : ''}</div>
-                            <div className="ov-journey-label">{m.title}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* ---- Upcoming ---- */}
-                <div className="ov-card">
-                  <div className="ov-card-head">
-                    <div className="ov-card-title">Upcoming</div>
-                  </div>
-                  {upcomingTop.length === 0 ? (
-                    <p className="empty-inline">Nothing scheduled right now.</p>
-                  ) : (
-                    <div className="ov-upcoming-list">
-                      {upcomingTop.map((u) => (
-                        <div className="ov-upcoming-item" key={u.key}>
-                          <div className="ov-upcoming-date">
-                            <span className="ov-upcoming-day">{u.day}</span>
-                            <span className="ov-upcoming-month">{u.month}</span>
-                          </div>
-                          <div className="ov-upcoming-body">
-                            <div className="ov-upcoming-title">{u.title}</div>
-                            <div className="ov-upcoming-sub">{u.sub}</div>
-                          </div>
-                          <Icon name={u.icon} size={13} />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="ov-grid ov-grid-payments block">
-                {/* ---- Agreement & Payment ---- */}
-                <div className="ov-card ov-card-wide">
-                  <div className="ov-card-title">Agreement &amp; Payment</div>
-                  <div className="ov-ap-grid">
-                    <div className="ov-ap-col">
-                      <div className="ov-ap-icon">
-                        <Icon name="doc" size={16} />
-                      </div>
-                      <div className="ov-ap-title">Statement of Work</div>
-                      <div className="ov-ap-sub">
-                        {sow?.sow_number ?? '—'}
-                        {sow ? ` · v${sow.version}.0` : ''}
-                      </div>
-                      {sow?.status === 'signed' ? (
-                        <span className="ov-pill ov-pill-positive">
-                          Signed <Icon name="check" size={9} />
-                        </span>
-                      ) : sow ? (
-                        <span className="ov-pill ov-pill-warning">Awaiting Signature</span>
-                      ) : (
-                        <span className="ov-pill">Being Prepared</span>
-                      )}
-                      {sow?.signed_at && <div className="ov-ap-meta">Signed on {formatDate(sow.signed_at)}</div>}
-                      <Link href={`/client/project/${project.id}/sow`} className="btn btn-ghost btn-sm" style={{ marginTop: 12 }}>
-                        View SOW
-                      </Link>
-                    </div>
-                    <div className="ov-ap-divider" />
-                    <div className="ov-ap-col">
-                      <div className="ov-ap-icon">
-                        <Icon name="card" size={16} />
-                      </div>
-                      <div className="ov-ap-title">Payment Summary</div>
-                      {project.budget != null ? (
-                        <>
-                          <div className="ov-ap-stats">
-                            <div>
-                              <span>Project Value</span>
-                              <strong>
-                                {sym}
-                                {project.budget.toLocaleString('en-US')}
-                              </strong>
-                            </div>
-                            <div>
-                              <span>Paid</span>
-                              <strong style={{ color: 'var(--positive)' }}>
-                                {sym}
-                                {totalPaid.toLocaleString('en-US')}
-                              </strong>
-                            </div>
-                            <div>
-                              <span>Remaining</span>
-                              <strong style={{ color: remaining && remaining > 0 ? 'var(--warning)' : 'var(--ink)' }}>
-                                {sym}
-                                {(remaining ?? 0).toLocaleString('en-US')}
-                              </strong>
-                            </div>
-                          </div>
-                          <div className="ov-progress-track" style={{ marginTop: 10 }}>
-                            <div className="ov-progress-fill" style={{ width: `${paymentPct}%` }} />
-                          </div>
-                          <div className="ov-ap-meta">{paymentPct}% Paid</div>
-                        </>
-                      ) : (
-                        <p className="empty-inline">Payment details will appear here once available.</p>
-                      )}
-                      <Link href={`/client/project/${project.id}/payments`} className="btn btn-ghost btn-sm" style={{ marginTop: 12 }}>
-                        View Payments
+                      <Link href={`/client/project/${project.id}/messages`} className="btn btn-ghost">
+                        <Icon name="message" size={13} /> Message team
                       </Link>
                     </div>
                   </div>
-                </div>
-
-                {/* ---- Messages ---- */}
-                <div className="ov-card">
-                  <div className="ov-card-head">
-                    <div className="ov-card-title">
-                      Messages {unreadFromTeam > 0 && <span className="ov-unread-chip">{unreadFromTeam} unread</span>}
+                  <div className="dx-hero-progress">
+                    <div className="dx-hero-ring">
+                      <Ring pct={progressPct} size={132} stroke={11} color="var(--accent)" />
+                      <div className="dx-ring-center">
+                        <strong>{progressPct}%</strong>
+                        <span>complete</span>
+                      </div>
                     </div>
-                    <Link href={`/client/project/${project.id}/messages`} className="ov-link">
-                      Open Messages →
-                    </Link>
+                    <ul className="dx-hero-stats">
+                      <li>
+                        <span className="dx-hero-stat-label">Phases done</span>
+                        <strong>{milestones.length > 0 ? `${milestones.filter((m) => m.completed_at).length} of ${milestones.length}` : '—'}</strong>
+                      </li>
+                      <li>
+                        <span className="dx-hero-stat-label">Time left</span>
+                        <strong>{isCompleted ? 'Delivered' : daysLeft == null ? '—' : daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : daysLeft === 0 ? 'Due today' : `${daysLeft} day${daysLeft === 1 ? '' : 's'}`}</strong>
+                      </li>
+                    </ul>
                   </div>
-                  {latestMessage ? (
-                    <div className="ov-msg-preview">
-                      <div className="avatar" style={{ width: 30, height: 30, fontSize: 12 }}>
-                        {(latestMessage.sender === 'client' ? (client.primary_contact ?? client.company_name) : (manager?.full_name ?? 'F')).charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="ov-msg-sender">{latestMessage.sender === 'client' ? 'You' : (manager?.full_name ?? 'FLOW 53 Team')}</div>
-                        <div className="ov-msg-text">{latestMessage.message}</div>
-                        <div className="ov-msg-time">{relativeTime(latestMessage.created_at)}</div>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="empty-inline">No messages yet.</p>
-                  )}
-                </div>
-              </div>
+                </section>
 
-              <div className="ov-grid block">
-                {/* ---- Recent Updates ---- */}
-                <div className="ov-card">
-                  <div className="ov-card-head">
-                    <div className="ov-card-title">Recent Updates</div>
+                {/* ---- updates ---- */}
+                <section className="dx-card">
+                  <div className="dx-card-head">
+                    <h2 className="dx-card-title">Recent updates</h2>
                     {updates.length > 0 && (
-                      <Link href={`/client/project/${project.id}/updates`} className="ov-link">
-                        View All →
-                      </Link>
+                      <Link href={`/client/project/${project.id}/updates`} className="dx-link">View all</Link>
                     )}
                   </div>
                   {updates.length === 0 ? (
-                    <p className="empty-inline">Your project updates will appear here as work progresses.</p>
+                    <p className="dx-empty">Your project updates will appear here as work progresses.</p>
                   ) : (
-                    <div className="ov-update-list">
+                    <ul className="dx-list">
                       {updates.map((u) => (
-                        <div className="ov-update-row" key={u.id}>
-                          <div className="ov-update-icon">
-                            <Icon name="check" size={12} />
-                          </div>
-                          <div>
-                            <div className="ov-update-title">{u.title}</div>
-                            <div className="ov-update-time">{relativeTime(u.created_at)}</div>
-                          </div>
-                        </div>
+                        <li className="dx-row" key={u.id}>
+                          <span className="dx-row-icon"><Icon name="check" size={12} /></span>
+                          <span className="dx-row-body">
+                            <span className="dx-row-title">{u.title}</span>
+                            <span className="dx-row-sub">{relativeTime(u.created_at)}</span>
+                          </span>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   )}
-                </div>
+                </section>
 
-                {/* ---- Recent Files ---- */}
-                <div className="ov-card">
-                  <div className="ov-card-head">
-                    <div className="ov-card-title">Recent Files</div>
-                    {projectFiles.length > 0 && (
-                      <Link href={`/client/project/${project.id}/files`} className="ov-link">
-                        View All Files →
-                      </Link>
-                    )}
+                {/* ---- the one thing that needs the client ---- */}
+                {!isCompleted && pendingAction && (
+                  <section className="dx-action">
+                    <div className="dx-action-icon">
+                      <Icon name={pendingAction.key === 'payment' ? 'card' : pendingAction.key === 'approval' ? 'check' : 'doc'} size={20} />
+                    </div>
+                    <div className="dx-action-body">
+                      <span className="dx-action-label">{pendingAction.label}</span>
+                      <div className="dx-action-title">{pendingAction.title}</div>
+                      <p className="dx-action-desc">
+                        {pendingAction.desc}
+                        {pendingAction.key === 'sow' && sow?.sow_number ? ` · ${sow.sow_number} v${sow.version}.0` : ''}
+                      </p>
+                    </div>
+                    <div className="dx-action-cta">
+                      {pendingAction.key === 'approval' ? (
+                        <button type="button" className="btn btn-accent" onClick={() => setApprovalsModalOpen(true)}>
+                          {pendingAction.ctaLabel}
+                        </button>
+                      ) : (
+                        <Link href={pendingAction.href} className="btn btn-accent">
+                          {pendingAction.ctaLabel}
+                        </Link>
+                      )}
+                      {pendingAction.moreCount && <span className="dx-action-more">+{pendingAction.moreCount} more</span>}
+                    </div>
+                  </section>
+                )}
+
+                {/* ---- key numbers ---- */}
+                <section className="dx-kpis">
+                  <Link href={`/client/project/${project.id}`} className="dx-kpi">
+                    <span className="dx-kpi-top">
+                      <span className="dx-kpi-icon dx-tone-accent"><Icon name="flag" size={20} /></span>
+                      <span className="dx-kpi-go" aria-hidden="true"><Icon name="arrow" size={14} /></span>
+                      <span className="dx-kpi-mini" aria-hidden="true">
+                      <Ring pct={phasePct} size={46} stroke={5} color="var(--accent)" />
+                      <span className="dx-kpi-mini-num">{phasePct}%</span>
+                    </span>
+                    </span>
+                    <span className="dx-kpi-label">Current phase</span>
+                    <strong className="dx-kpi-value dx-kpi-text">{currentMilestone?.title ?? (isCompleted ? 'Completed' : 'Getting started')}</strong>
+                    <span className="dx-kpi-sub">{milestones.length > 0 ? `${milestones.filter((m) => m.completed_at).length} of ${milestones.length} phases done` : 'Phases coming soon'}</span>
+                  </Link>
+                  <Link href={`/client/project/${project.id}`} className="dx-kpi">
+                    <span className="dx-kpi-top">
+                      <span className="dx-kpi-icon dx-tone-blue"><Icon name="calendarcheck" size={20} /></span>
+                      <span className="dx-kpi-go" aria-hidden="true"><Icon name="arrow" size={14} /></span>
+                    </span>
+                    <span className="dx-kpi-label">Expected delivery</span>
+                    <strong className="dx-kpi-value">{formatDate(project.due_date) || '—'}</strong>
+                    <span className={`dx-kpi-sub${daysLeft != null && daysLeft < 0 && !isCompleted ? ' dx-warn' : ''}`}>
+                      {isCompleted ? 'Delivered' : daysLeft == null ? 'Date to be confirmed' : daysLeft < 0 ? `${Math.abs(daysLeft)} day${Math.abs(daysLeft) === 1 ? '' : 's'} overdue` : daysLeft === 0 ? 'Due today' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`}
+                    </span>
+                  </Link>
+                  <Link href={`/client/project/${project.id}/payments`} className="dx-kpi">
+                    <span className="dx-kpi-top">
+                      <span className="dx-kpi-icon dx-tone-green"><Icon name="wallet" size={20} /></span>
+                      <span className="dx-kpi-go" aria-hidden="true"><Icon name="arrow" size={14} /></span>
+                      <span className="dx-kpi-mini" aria-hidden="true">
+                      <Ring pct={paymentPct} size={46} stroke={5} color="var(--positive)" />
+                      <span className="dx-kpi-mini-num">{paymentPct}%</span>
+                    </span>
+                    </span>
+                    <span className="dx-kpi-label">Paid so far</span>
+                    <strong className="dx-kpi-value">{project.budget != null ? `${sym}${totalPaid.toLocaleString('en-US')}` : '—'}</strong>
+                    <span className="dx-kpi-sub">{project.budget != null ? `${paymentPct}% of ${sym}${project.budget.toLocaleString('en-US')}` : 'Details coming soon'}</span>
+                  </Link>
+                  <Link href={`/client/project/${project.id}/messages`} className="dx-kpi">
+                    <span className="dx-kpi-top">
+                      <span className="dx-kpi-icon dx-tone-amber"><Icon name="chats" size={20} /></span>
+                      <span className="dx-kpi-go" aria-hidden="true"><Icon name="arrow" size={14} /></span>
+                    </span>
+                    <span className="dx-kpi-label">Messages</span>
+                    <strong className="dx-kpi-value">{unreadFromTeam > 0 ? `${unreadFromTeam} new` : 'All read'}</strong>
+                    <span className="dx-kpi-sub">{latestMessage ? `Last ${relativeTime(latestMessage.created_at)}` : 'No messages yet'}</span>
+                  </Link>
+                </section>
+
+                {/* ---- upcoming ---- */}
+                <section className="dx-card">
+                  <div className="dx-card-head">
+                    <h2 className="dx-card-title">Coming up</h2>
                   </div>
-                  {projectFiles.length === 0 ? (
-                    <p className="empty-inline">No files shared yet.</p>
+                  {upcomingTop.length === 0 ? (
+                    <p className="dx-empty">Nothing scheduled right now.</p>
                   ) : (
-                    <div className="ov-file-list">
-                      {projectFiles.map((f) => (
-                        <div className="ov-file-row" key={f.id}>
-                          <div className={`ov-file-icon${f.file_type === 'pdf' ? ' pdf' : f.file_type === 'image' ? ' image' : ''}`}>
-                            <Icon name="file" size={13} />
-                          </div>
-                          <div className="ov-file-info">
-                            <span className="ov-file-name">{f.name}</span>
-                            <span className="ov-file-meta">
-                              {(f.file_type ?? 'file').toUpperCase()} · {formatBytes(f.size_bytes ?? 0)} · {formatDate(f.created_at)}
-                            </span>
-                          </div>
-                          <a href={driveThumbnailUrl(f.drive_url)} target="_blank" rel="noopener noreferrer" className="icon-btn" style={{ width: 28, height: 28 }}>
-                            <Icon name="download" size={12} />
-                          </a>
-                        </div>
-                      ))}
+                    <div className="dx-table-wrap">
+                      <table className="dx-table">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>What</th>
+                            <th className="dx-col-type">Type</th>
+                            <th className="dx-col-due">Due</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {upcomingTop.map((u) => {
+                            const diff = Math.round((new Date(u.sortKey).getTime() - new Date(today).getTime()) / 86400000);
+                            return (
+                              <tr className={diff <= 3 ? 'soon' : ''} key={u.key}>
+                                <td className="dx-td-date">
+                                  <strong>{Number(u.day)} {u.month.charAt(0) + u.month.slice(1).toLowerCase()}</strong>
+                                  <span className="dx-td-weekday">{new Date(u.sortKey).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })}</span>
+                                </td>
+                                <td className="dx-td-title">
+                                  {u.title}
+                                  <span className="dx-td-sub">{u.sub}</span>
+                                </td>
+                                <td className="dx-col-type">
+                                  <span className="dx-td-type"><Icon name={u.icon} size={12} /> {u.icon === 'card' ? 'Payment' : 'Milestone'}</span>
+                                </td>
+                                <td className="dx-col-due">
+                                  <span className="dx-up-when">{diff <= 0 ? 'Today' : diff === 1 ? 'Tomorrow' : `In ${diff} days`}</span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   )}
-                </div>
+                </section>
 
-                {/* ---- Your Project Manager ---- */}
-                <div className="ov-card">
-                  <div className="ov-card-title">Your Project Manager</div>
-                  {manager ? (
-                    <>
-                      <div className="ov-manager-row">
-                        <div className="avatar" style={{ width: 44, height: 44, fontSize: 15 }}>
-                          {manager.full_name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="ov-manager-name">{manager.full_name}</div>
-                          <div className="ov-manager-role">{manager.role ?? 'Project Manager'}</div>
-                        </div>
+                <div className="dx-cols">
+                  <div className="dx-col">
+                    {/* ---- journey ---- */}
+                    <section className="dx-card">
+                      <div className="dx-card-head">
+                        <h2 className="dx-card-title">Project journey</h2>
+                        <Link href={`/client/project/${project.id}`} className="dx-link">Details</Link>
                       </div>
-                      <p className="ov-manager-sub">Need help or have a question about your project?</p>
-                      <Link href={`/client/project/${project.id}/messages`} className="btn btn-accent btn-sm">
-                        <Icon name="send" size={12} /> Send Message
-                      </Link>
-                    </>
-                  ) : (
-                    <p className="empty-inline">No project manager assigned yet.</p>
-                  )}
+                      {milestones.length === 0 ? (
+                        <p className="dx-empty">Your project phases will appear here once our team sets them up.</p>
+                      ) : (
+                        <ol className="dx-journey">
+                          {milestones.map((m) => {
+                            const isDone = !!m.completed_at;
+                            const isCurrent = !isDone && currentMilestone?.id === m.id;
+                            return (
+                              <li className={`dx-step${isDone ? ' done' : ''}${isCurrent ? ' current' : ''}`} key={m.id}>
+                                <span className="dx-step-dot">{isDone ? <Icon name="check" size={11} /> : null}</span>
+                                <span className="dx-step-text">
+                                  <span className="dx-step-label">{m.title}</span>
+                                  <span className="dx-step-sub">{isDone ? `Done ${formatDate(m.completed_at)}` : isCurrent ? 'In progress' : m.due_date ? `Due ${formatDate(m.due_date)}` : 'Upcoming'}</span>
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ol>
+                      )}
+                    </section>
+
+                    {/* ---- agreement & payment ---- */}
+                    {/* ---- agreement & payment: two focused cards ---- */}
+                    <div className="dx-ap2">
+                      <section className="dx-card dx-sow">
+                        <div className="dx-sow-banner">
+                          <div className="dx-sow-banner-text">
+                            <h2 className="dx-card-title">Statement of Work</h2>
+                          </div>
+                          <span className={`dx-sow-state ${sowDone ? 'ok' : sow ? 'wait' : 'idle'}`}>
+                            <span className="dx-sow-state-dot" />
+                            {sowDone ? 'Signed' : sow ? 'Needs signature' : 'In preparation'}
+                          </span>
+                        </div>
+                        <div className="dx-sow-about">
+                          <p className="dx-sow-intro">The agreement that sets out what we will deliver, when, and for how much.</p>
+                          <dl className="dx-sow-facts">
+                            <div>
+                              <dt>SOW number</dt>
+                              <dd>{sow?.sow_number ?? '—'}</dd>
+                            </div>
+                            <div>
+                              <dt>Version</dt>
+                              <dd>{sow ? `v${sow.version}.0` : '—'}</dd>
+                            </div>
+                          </dl>
+                        </div>
+                        <ol className="dx-sow-timeline">
+                          <li className={sowSteps > 0 ? 'done' : 'current'}>
+                            <span className="dx-sow-dot">{sowSteps > 0 ? <Icon name="check" size={10} /> : null}</span>
+                            <span className="dx-sow-step">
+                              <strong>Prepared by FLOW 53</strong>
+                              <span>{sow ? 'Ready for your review' : 'Our team is writing it'}</span>
+                            </span>
+                          </li>
+                          <li className={sowSteps > 1 ? 'done' : ''}>
+                            <span className="dx-sow-dot">{sowSteps > 1 ? <Icon name="check" size={10} /> : null}</span>
+                            <span className="dx-sow-step">
+                              <strong>Sent to you</strong>
+                              <span>{sow?.sent_at ? formatDate(sow.sent_at) : 'Not sent yet'}</span>
+                            </span>
+                          </li>
+                          <li className={sowDone ? 'done' : sowSteps === 2 ? 'current' : ''}>
+                            <span className="dx-sow-dot">{sowDone ? <Icon name="check" size={10} /> : null}</span>
+                            <span className="dx-sow-step">
+                              <strong>Signed by you</strong>
+                              <span>{sowDone ? (sow?.signed_at ? formatDate(sow.signed_at) : 'Complete') : sow ? 'Waiting for your signature' : 'After you review it'}</span>
+                            </span>
+                          </li>
+                        </ol>
+                        <Link href={`/client/project/${project.id}/sow`} className={`btn btn-sm ${sow && !sowDone ? 'btn-accent' : 'btn-ghost'}`}>
+                          {sow && !sowDone ? 'Review & sign' : 'View SOW'}
+                        </Link>
+                      </section>
+
+                      <section className="dx-card dx-doc">
+                        <div className="dx-doc-head">
+                          <span className="dx-kpi-icon dx-tone-green"><Icon name="wallet" size={20} /></span>
+                          <div>
+                            <h2 className="dx-card-title">Payments</h2>
+                            <div className="dx-ap-sub">{project.budget != null ? `Project value ${sym}${project.budget.toLocaleString('en-US')}` : 'Details coming soon'}</div>
+                          </div>
+                        </div>
+                        {project.budget != null ? (
+                          <>
+                            <div className="dx-pay2">
+                              <div className="dx-pay-ring">
+                                <Ring pct={paymentPct} size={96} stroke={10} color="var(--positive)" />
+                                <div className="dx-ring-center dx-ring-small">
+                                  <strong>{paymentPct}%</strong>
+                                  <span>paid</span>
+                                </div>
+                              </div>
+                              <div className="dx-pay-legend">
+                                <div><span className="dx-swatch dx-swatch-green" />Paid<strong>{sym}{totalPaid.toLocaleString('en-US')}</strong></div>
+                                <div><span className="dx-swatch dx-swatch-grey" />Remaining<strong>{sym}{(remaining ?? 0).toLocaleString('en-US')}</strong></div>
+                              </div>
+                            </div>
+                            {nextInvoice && (
+                              <div className="dx-next-pay">
+                                <span className="dx-next-pay-label">Next payment</span>
+                                <strong>{nextInvoice.currency === currency ? sym : `${nextInvoice.currency} `}{nextInvoice.amount.toLocaleString('en-US')}</strong>
+                                <span>{nextInvoice.due_date ? `due ${formatDate(nextInvoice.due_date)}` : humanizeType(nextInvoice.payment_type)}</span>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <p className="dx-empty">Payment details will appear here once available.</p>
+                        )}
+                        <Link href={`/client/project/${project.id}/payments`} className={`btn btn-sm ${nextInvoice ? 'btn-accent' : 'btn-ghost'}`}>
+                          {nextInvoice ? 'View & pay' : 'View payments'}
+                        </Link>
+                      </section>
+                    </div>
+                  </div>
+
+                  <div className="dx-col">
+                    {/* ---- messages ---- */}
+                    <section className="dx-card">
+                      <div className="dx-card-head">
+                        <h2 className="dx-card-title">
+                          Messages {unreadFromTeam > 0 && <span className="dx-chip">{unreadFromTeam} new</span>}
+                        </h2>
+                        <Link href={`/client/project/${project.id}/messages`} className="dx-link">Open</Link>
+                      </div>
+                      {latestMessage ? (
+                        <div className="dx-msg">
+                          <div className="avatar dx-avatar" style={{ width: 34, height: 34, fontSize: 13 }}>
+                            {latestMessage.sender !== 'client' && manager?.avatar_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={manager.avatar_url} alt="" />
+                            ) : (
+                              (latestMessage.sender === 'client' ? (client.primary_contact ?? client.company_name) : (manager?.full_name ?? 'F')).charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          <div className="dx-msg-body">
+                            <div className="dx-msg-top">
+                              <span className="dx-msg-sender">{latestMessage.sender === 'client' ? 'You' : (manager?.full_name ?? 'FLOW 53 Team')}</span>
+                              <span className="dx-row-sub">{relativeTime(latestMessage.created_at)}</span>
+                            </div>
+                            <div className="dx-msg-text">{latestMessage.message}</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="dx-empty">No messages yet. Say hello to your team.</p>
+                      )}
+                    </section>
+
+                    {/* ---- files ---- */}
+                    <section className="dx-card">
+                      <div className="dx-card-head">
+                        <h2 className="dx-card-title">Recent files</h2>
+                        {projectFiles.length > 0 && (
+                          <Link href={`/client/project/${project.id}/files`} className="dx-link">View all</Link>
+                        )}
+                      </div>
+                      {projectFiles.length === 0 ? (
+                        <p className="dx-empty">No files shared yet.</p>
+                      ) : (
+                        <ul className="dx-list">
+                          {projectFiles.map((f) => (
+                            <li className="dx-row" key={f.id}>
+                              <span className={`dx-row-icon${f.file_type === 'pdf' ? ' pdf' : f.file_type === 'image' ? ' image' : ''}`}><Icon name="file" size={13} /></span>
+                              <span className="dx-row-body">
+                                <span className="dx-row-title">{f.name}</span>
+                                <span className="dx-row-sub">{(f.file_type ?? 'file').toUpperCase()} · {formatBytes(f.size_bytes ?? 0)} · {formatDate(f.created_at)}</span>
+                              </span>
+                              <a href={driveThumbnailUrl(f.drive_url)} target="_blank" rel="noopener noreferrer" className="dx-icon-btn" aria-label={`Open ${f.name}`}>
+                                <Icon name="download" size={14} />
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
+
+                    {/* ---- manager ---- */}
+                    <section className="dx-card">
+                      <div className="dx-card-head">
+                        <h2 className="dx-card-title">Your project manager</h2>
+                      </div>
+                      {manager ? (
+                        <div className="dx-manager">
+                          <div className="avatar dx-avatar" style={{ width: 56, height: 56, fontSize: 20 }}>
+                            {manager.avatar_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={manager.avatar_url} alt={manager.full_name} />
+                            ) : (
+                              manager.full_name.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          <div className="dx-manager-body">
+                            <div className="dx-row-title">{manager.full_name}</div>
+                            <div className="dx-row-sub">{manager.role ?? 'Project Manager'}</div>
+                          </div>
+                          <Link href={`/client/project/${project.id}/messages`} className="btn btn-accent btn-sm">
+                            <Icon name="send" size={12} /> Message
+                          </Link>
+                        </div>
+                      ) : (
+                        <p className="dx-empty">No project manager assigned yet.</p>
+                      )}
+                    </section>
+                  </div>
                 </div>
               </div>
             </main>
           </div>
         </div>
+        <ClientBottomNav projectId={project.id} active="overview" unread={unreadFromTeam} />
 
         {approvalsModalOpen && (
           <div className="cp-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setApprovalsModalOpen(false); setRespondingApprovalId(null); } }}>
@@ -907,16 +1021,6 @@ export default function ClientDashboard() {
               ))}
             </nav>
           </div>
-          <button type="button" className="profile-card" onClick={handleSignOut} title="Sign out">
-            <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
-            </div>
-            <div className="profile-meta">
-              <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
-              <div className="profile-role">{client.company_name}</div>
-            </div>
-            <Icon name="logout" />
-          </button>
         </aside>
 
         <div className="main">
@@ -925,14 +1029,26 @@ export default function ClientDashboard() {
               <Icon name="menu" />
             </button>
             <span className="topbar-title">Client Portal</span>
-          </header>
+                      <button type="button" className="topbar-avatar" aria-label="Sign out" onClick={() => { if (window.confirm('Sign out of your account?')) (handleSignOut)(); }}>
+              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            </button>
+</header>
 
           <header className="page-topbar">
             <div className="breadcrumb">Client Portal</div>
             <a className="page-help-link" href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
               <Icon name="help" size={13} /> Need help?
             </a>
-          </header>
+          <button type="button" className="profile-card topbar-profile" onClick={handleSignOut} title="Sign out">
+            <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
+              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            </div>
+            <div className="profile-meta">
+              <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
+              <div className="profile-role">{client.company_name}</div>
+            </div>
+          </button>
+</header>
 
           <main className="content">
             <h1 className="welcome-title">Welcome, {client.primary_contact ?? client.company_name} 👋</h1>
@@ -1188,6 +1304,7 @@ export default function ClientDashboard() {
           </main>
         </div>
       </div>
+      <ClientBottomNav projectId={null} active="overview" />
     </div>
   );
 }

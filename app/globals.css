@@ -162,3 +162,13 @@ div.brand.brand-topbar {
    The overlay now scrolls, and the box keeps some room below it. Only adds properties the pages do not set. */
 [class*="-root"]:not(.client-portal) .modal-overlay { overflow-y: auto; overscroll-behavior: contain; }
 [class*="-root"]:not(.client-portal) .modal-overlay > .modal-box { margin-bottom: 24px; flex-shrink: 0; }
+
+/* Client portal: the same narrower desktop sidebar (pages used 240px). Below the mobile breakpoint the sidebar is a slide-in drawer and keeps its own width. */
+@media (min-width: 861px) {
+  div.client-portal .sidebar { width: 184px; }
+}
+
+/* Client portal slide-in menu on phones: narrower than the old 240px so more of the page stays visible behind it */
+@media (max-width: 860px) {
+  div.client-portal .sidebar { width: min(176px, 62vw); }
+}

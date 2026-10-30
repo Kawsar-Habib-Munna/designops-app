@@ -21,9 +21,12 @@ import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
 import { formatDateLong, todayISO } from '@/lib/format';
 import { CURRENCY_SYMBOL, formatMoney } from '@/lib/currency';
 import ReceiptDocument from '@/app/components/ReceiptDocument';
-import { renderReceiptPdf } from '@/lib/receiptPdf';
+import PaymentStatement from '@/app/components/PaymentStatement';
+import { renderReceiptPdf, renderDocumentImage } from '@/lib/receiptPdf';
+import ClientBottomNav from '@/app/components/ClientBottomNav';
 import '../../../client-shared.css';
 import './payments.css';
+import './payments-v2.css';
 
 const ICONS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -40,6 +43,9 @@ const ICONS: Record<string, string> = {
   wallet: '<path d="M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H8"/><circle cx="16" cy="14" r="1.5"/>',
   shield: '<path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5z"/>',
   lock: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  calendarcheck: '<path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>',
+  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
+  arrow: '<path d="M7 17 17 7"/><path d="M8 7h9v9"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17h.01"/>',
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
   alert: '<path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/>',
@@ -111,6 +117,21 @@ function PayRing({ segments, centerPct }: { segments: RingSegment[]; centerPct: 
         <span className="pm-ring-sub">paid</span>
       </div>
     </div>
+  );
+}
+
+// compact progress ring used inside the KPI cards
+function PayMiniRing({ pct }: { pct: number }) {
+  const size = 46;
+  const stroke = 5;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const p = Math.max(0, Math.min(100, pct));
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="dx-ring" aria-hidden="true">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--positive)" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${(c * p) / 100} ${c}`} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+    </svg>
   );
 }
 
@@ -191,16 +212,6 @@ function PaymentsShell({
             </Link>
           </nav>
         </div>
-        <button type="button" className="profile-card" onClick={onSignOut} title="Sign out">
-          <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
-          </div>
-          <div className="profile-meta">
-            <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
-            <div className="profile-role">{client.company_name}</div>
-          </div>
-          <Icon name="logout" />
-        </button>
       </aside>
 
       <div className="main">
@@ -209,7 +220,10 @@ function PaymentsShell({
             <Icon name="menu" />
           </button>
           <span className="topbar-title">Payments</span>
-        </header>
+                  <button type="button" className="topbar-avatar" aria-label="Sign out" onClick={() => { if (window.confirm('Sign out of your account?')) (onSignOut)(); }}>
+            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+          </button>
+</header>
 
         <header className="page-topbar">
           <div className="breadcrumb">
@@ -223,12 +237,22 @@ function PaymentsShell({
           >
             <Icon name="help" size={13} /> Need help?
           </a>
-        </header>
+        <button type="button" className="profile-card topbar-profile" onClick={onSignOut} title="Sign out">
+          <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
+            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+          </div>
+          <div className="profile-meta">
+            <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
+            <div className="profile-role">{client.company_name}</div>
+          </div>
+        </button>
+</header>
 
         <main className="content">
           {children}
         </main>
       </div>
+      <ClientBottomNav projectId={project.id} active="payments" />
     </div>
   );
 }
@@ -254,6 +278,10 @@ export default function ClientPaymentsPage() {
   const [generatingReceiptPdf, setGeneratingReceiptPdf] = useState(false);
   const [receiptPdfError, setReceiptPdfError] = useState<string | null>(null);
   const receiptDocRef = useRef<HTMLDivElement>(null);
+  const statementRef = useRef<HTMLDivElement>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exporting, setExporting] = useState<'pdf' | 'image' | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -452,85 +480,271 @@ export default function ClientPaymentsPage() {
     downloadCsv(`payments-${project.name.replace(/\s+/g, '-').toLowerCase()}.csv`, rows);
   }
 
+  // the whole payment statement as a PDF or one tall image
+  async function handleExportDocument(kind: 'pdf' | 'image') {
+    if (!project) return;
+    const node = statementRef.current;
+    setExportOpen(false);
+    setExportError(null);
+    if (!node) return;
+    setExporting(kind);
+    try {
+      const name = `payments-${project.name.replace(/\s+/g, '-').toLowerCase()}`;
+      const blob = kind === 'pdf' ? (await renderReceiptPdf(node)).blob : await renderDocumentImage(node);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${name}.${kind === 'pdf' ? 'pdf' : 'png'}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      setExportError("Couldn't create the file. Please try again.");
+    } finally {
+      setExporting(null);
+    }
+  }
+
   return (
     <div className="client-portal client-payments-root">
       <PaymentsShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
-        <div className="pm-top-row">
-          <div>
-            <h1 className="pm-title">Payments</h1>
-            <p className="pm-page-sub">Track your project payments, balances and receipts.</p>
-          </div>
-          <div className="pm-top-actions">
-            {actionable && (
-              <Link href={`/client/project/${project.id}/payments/confirm`} className="cp-btn cp-btn-primary cp-btn-sm">
-                <Icon name="doc" size={13} /> View Payment Request
-              </Link>
-            )}
-            <a
-              href={`${WHATSAPP_URL_BASE}?text=${encodeURIComponent(`Hi FLOW53, I have a question about my payments for ${project.name}.`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="pm-help-link"
-            >
-              <Icon name="help" size={13} /> Need help? Contact your project manager
-            </a>
-          </div>
-        </div>
+        <div className="dx">
+          {/* ---- hero ---- */}
+          <section className="dx-hero">
+            <div className="dx-hero-text">
+              <div className="dx-eyebrow">Payments</div>
+              <h1 className="dx-title">Your payments</h1>
+              <p className="dx-sub">Track your project payments, balances and receipts in one place.</p>
+              {exportError && <p className="dx-export-error">{exportError}</p>}
+              <div className="dx-hero-project">
+                <span className="dx-hero-project-name">{project.name}</span>
+              </div>
+              <div className="dx-hero-actions">
+                {actionable && (
+                  <Link href={`/client/project/${project.id}/payments/confirm`} className="btn btn-accent">
+                    <Icon name="doc" size={13} /> {actionable.status === 'processing' ? 'View submission' : 'View payment request'}
+                  </Link>
+                )}
+                <div className="dx-export">
+                  <button type="button" className="btn btn-ghost" onClick={() => setExportOpen((v) => !v)} aria-haspopup="menu" aria-expanded={exportOpen} disabled={exporting !== null}>
+                    <Icon name="download" size={13} /> {exporting ? 'Preparing…' : 'Export'}
+                  </button>
+                  {exportOpen && (
+                    <>
+                      <div className="dx-export-backdrop" onClick={() => setExportOpen(false)} />
+                      <div className="dx-export-menu" role="menu">
+                        <button type="button" role="menuitem" onClick={() => handleExportDocument('pdf')}>
+                          <Icon name="doc" size={14} /> <span><strong>PDF statement</strong><small>Printable, A4</small></span>
+                        </button>
+                        <button type="button" role="menuitem" onClick={() => handleExportDocument('image')}>
+                          <Icon name="image" size={14} /> <span><strong>Image (PNG)</strong><small>One picture, easy to share</small></span>
+                        </button>
+                        <button type="button" role="menuitem" onClick={() => { setExportOpen(false); handleExport(); }}>
+                          <Icon name="download" size={14} /> <span><strong>CSV spreadsheet</strong><small>For Excel or Sheets</small></span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="dx-hero-progress">
+              <div className="dx-ring-col">
+                <div className="dx-hero-ring">
+                  <PayRing segments={ringSegments} centerPct={paymentPct} />
+                </div>
+                <span className="dx-ring-currency">{currency} ({sym})</span>
+              </div>
+              <ul className="dx-hero-stats">
+                <li>
+                  <span className="dx-hero-stat-label">Paid</span>
+                  <strong>{formatMoney(totalPaid, currency)}</strong>
+                </li>
+                <li>
+                  <span className="dx-hero-stat-label">Outstanding</span>
+                  <strong>{outstanding != null ? formatMoney(outstanding, currency) : '—'}</strong>
+                </li>
+              </ul>
+            </div>
+          </section>
 
-        {/* ---- KPI cards ---- */}
-        <div className="pm-kpis">
-          <div className="pm-kpi">
-            <div className="pm-kpi-top">
-              <div className="pm-kpi-icon">
-                <Icon name="card" size={17} />
+          {/* ---- what needs attention ---- */}
+          {actionable ? (
+            <section className="dx-action">
+              <div className="dx-action-icon">
+                <Icon name={actionable.status === 'processing' ? 'clock' : 'card'} size={20} />
               </div>
-            </div>
-            <div className="pm-kpi-value tabular">{totalValue != null ? formatMoney(totalValue, currency) : '—'}</div>
-            <div className="pm-kpi-label">Project value</div>
-          </div>
-          <div className="pm-kpi">
-            <div className="pm-kpi-top">
-              <div className="pm-kpi-icon positive">
-                <Icon name="wallet" size={17} />
+              <div className="dx-action-body">
+                <span className="dx-action-label">{actionable.status === 'processing' ? 'Awaiting confirmation' : actionable.due_date && actionable.due_date < today ? 'Payment overdue' : 'Payment due'}</span>
+                <div className="dx-action-title">{formatMoney(actionable.amount, actionable.currency)} · {actionable.description || humanizeType(actionable.payment_type)}</div>
+                <p className="dx-action-desc">
+                  {actionable.status === 'processing'
+                    ? 'We received your payment details and are confirming them.'
+                    : actionable.due_date
+                      ? `Due ${formatDateLong(actionable.due_date)}${nextDays != null && nextDays >= 0 ? ` (${nextDays === 0 ? 'today' : `in ${nextDays} day${nextDays === 1 ? '' : 's'}`})` : ''}.`
+                      : 'Due before project completion.'}
+                </p>
               </div>
-            </div>
-            <div className="pm-kpi-value tabular" style={{ color: 'var(--positive)' }}>{formatMoney(totalPaid, currency)}</div>
-            <div className="pm-kpi-label">Total paid</div>
-          </div>
-          <div className="pm-kpi">
-            <div className="pm-kpi-top">
-              <div className="pm-kpi-icon warning">
-                <Icon name="clock" size={17} />
+              <div className="dx-action-cta">
+                <Link href={`/client/project/${project.id}/payments/confirm`} className="btn btn-accent">
+                  {actionable.status === 'processing' ? 'View submission' : 'Pay now'}
+                </Link>
               </div>
-            </div>
-            <div className="pm-kpi-value tabular">{outstanding != null ? formatMoney(outstanding, currency) : '—'}</div>
-            <div className="pm-kpi-label">Outstanding</div>
-          </div>
-          <div className="pm-kpi">
-            <div className="pm-kpi-top">
-              <div className="pm-kpi-icon accent">
-                <Icon name="calendar" size={17} />
+            </section>
+          ) : (
+            <section className="dx-clear">
+              <span className="dx-clear-icon">
+                <Icon name="check" size={22} />
+              </span>
+              <div className="dx-clear-body">
+                <div className="dx-clear-title-row">
+                  <div className="dx-clear-title">You&apos;re all caught up</div>
+                  <span className="dx-clear-pill">
+                    <span className="dx-clear-dot" />
+                    Up to date
+                  </span>
+                </div>
+                <p className="dx-clear-desc">No payment is waiting on you right now. Receipts stay available in the history below.</p>
               </div>
-              {nextDays != null && nextStatus && nextStatus.key !== 'paid' && (
-                <span className={`pm-kpi-chip ${nextDays < 0 ? 'overdue' : nextDays <= 7 ? 'soon' : ''}`}>{nextDays < 0 ? `${-nextDays}d overdue` : nextDays === 0 ? 'Due today' : `in ${nextDays}d`}</span>
-              )}
-            </div>
-            <div className="pm-kpi-value tabular">{nextPayment ? formatMoney(nextPayment.amount, nextPayment.currency) : '—'}</div>
-            <div className="pm-kpi-label">{nextPayment ? (nextPayment.due_date ? `Next payment · ${formatDateLong(nextPayment.due_date)}` : 'Next payment') : 'No payment due'}</div>
-          </div>
-        </div>
+            </section>
+          )}
 
-        {/* ---- charts: ring + progress bar, installments ---- */}
-        <div className="pm-charts">
-          <div className="pm-card">
-            <div className="pm-card-head">
+          {/* ---- key numbers ---- */}
+          <section className="dx-kpis">
+            <Link href={`/client/project/${project.id}/sow`} className="dx-kpi">
+              <span className="dx-kpi-top">
+                <span className="dx-kpi-icon dx-tone-accent"><Icon name="card" size={20} /></span>
+                <span className="dx-kpi-go" aria-hidden="true"><Icon name="arrow" size={14} /></span>
+              </span>
+              <span className="dx-kpi-label">Project value</span>
+              <strong className="dx-kpi-value">{totalValue != null ? formatMoney(totalValue, currency) : '—'}</strong>
+              <span className="dx-kpi-sub">{signedSow ? `Per signed ${signedSow.sow_number ?? `v${signedSow.version}`}` : 'Agreed project total'}</span>
+            </Link>
+            <Link href="#payment-history" className="dx-kpi">
+              <span className="dx-kpi-top">
+                <span className="dx-kpi-icon dx-tone-green"><Icon name="wallet" size={20} /></span>
+                <span className="dx-kpi-go" aria-hidden="true"><Icon name="arrow" size={14} /></span>
+                <span className="dx-kpi-mini" aria-hidden="true">
+                  <PayMiniRing pct={paymentPct} />
+                  <span className="dx-kpi-mini-num">{paymentPct}%</span>
+                </span>
+              </span>
+              <span className="dx-kpi-label">Total paid</span>
+              <strong className="dx-kpi-value">{formatMoney(totalPaid, currency)}</strong>
+              <span className="dx-kpi-sub">{counts.paid} payment{counts.paid === 1 ? '' : 's'} confirmed</span>
+            </Link>
+            <Link href="#payment-schedule" className="dx-kpi">
+              <span className="dx-kpi-top">
+                <span className="dx-kpi-icon dx-tone-amber"><Icon name="clock" size={20} /></span>
+                <span className="dx-kpi-go" aria-hidden="true"><Icon name="arrow" size={14} /></span>
+              </span>
+              <span className="dx-kpi-label">Outstanding</span>
+              <strong className="dx-kpi-value">{outstanding != null ? formatMoney(outstanding, currency) : '—'}</strong>
+              <span className="dx-kpi-sub">{counts.overdue > 0 ? `${counts.overdue} overdue` : counts.upcoming + counts.pending > 0 ? `${counts.upcoming + counts.pending} still to come` : 'Nothing left to pay'}</span>
+            </Link>
+            <Link href={actionable ? `/client/project/${project.id}/payments/confirm` : "#payment-schedule"} className="dx-kpi">
+              <span className="dx-kpi-top">
+                <span className="dx-kpi-icon dx-tone-blue"><Icon name="calendarcheck" size={20} /></span>
+                <span className="dx-kpi-go" aria-hidden="true"><Icon name="arrow" size={14} /></span>
+              </span>
+              <span className="dx-kpi-label">{nextPayment ? 'Next payment' : 'No payment due'}</span>
+              <strong className="dx-kpi-value">{nextPayment ? formatMoney(nextPayment.amount, nextPayment.currency) : '—'}</strong>
+              <span className={`dx-kpi-sub${nextDays != null && nextDays < 0 ? ' dx-warn' : ''}`}>
+                {nextPayment ? (nextPayment.due_date ? `${formatDateLong(nextPayment.due_date)}${nextDays != null ? ` · ${nextDays < 0 ? `${-nextDays}d overdue` : nextDays === 0 ? 'today' : `in ${nextDays}d`}` : ''}` : 'Due before project completion') : 'All settled'}
+              </span>
+            </Link>
+          </section>
+
+          {/* ---- payment history ---- */}
+          <section className="dx-card" id="payment-history">
+            <div className="dx-card-head">
               <div>
-                <div className="pm-card-title">Payment progress</div>
-                <div className="pm-card-sub">Share of the project value by payment status</div>
+                <h2 className="dx-card-title">Payment history</h2>
+                <div className="dx-row-sub">Every payment request and transaction.</div>
               </div>
             </div>
-            <div className="pm-ring-row">
-              <PayRing segments={ringSegments} centerPct={paymentPct} />
+            <div className="ph-tabs" role="tablist">
+              {TABS.map((t) => {
+                const n = t.key === 'all' ? invoices.length : counts[t.key];
+                return (
+                  <button key={t.key} type="button" role="tab" aria-selected={filterTab === t.key} className={`ph-tab${filterTab === t.key ? ' active' : ''}`} onClick={() => setFilterTab(t.key)}>
+                    {t.label}
+                    <span className="ph-tab-count">{n}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="ph-wrap">
+              <table className="ph-table">
+                <thead>
+                  <tr>
+                    <th>Payment</th>
+                    <th>Date</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th className="ph-right">Amount</th>
+                    <th className="ph-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tableRows.length === 0 ? (
+                    <tr className="ph-empty-row">
+                      <td colSpan={6}>No payments in this category.</td>
+                    </tr>
+                  ) : (
+                    tableRows.map((inv) => {
+                      const status = scheduleStatus(inv, today);
+                      const pay = payments.find((p) => p.invoice_id === inv.id);
+                      return (
+                        <tr key={inv.id}>
+                          <td data-label="Payment">
+                            <div className="ph-name">{inv.description || humanizeType(inv.payment_type)}</div>
+                            {inv.request_number && <div className="ph-ref">{inv.request_number}</div>}
+                          </td>
+                          <td data-label="Date">{status.key === 'paid' && pay?.payment_date ? formatDateLong(pay.payment_date) : inv.due_date ? formatDateLong(inv.due_date) : '—'}</td>
+                          <td data-label="Method">{pay?.payment_method ?? inv.payment_method ?? '—'}</td>
+                          <td data-label="Status">
+                            <span className={`ps-status ${status.key}`}>
+                              <span className="ps-status-icon">
+                                <Icon name={status.key === 'paid' ? 'check' : status.key === 'pending' ? 'clock' : status.key === 'overdue' ? 'alert' : 'calendar'} size={8} />
+                              </span>
+                              {status.label}
+                            </span>
+                          </td>
+                          <td data-label="Amount" className="ph-right ph-amount tabular">{formatMoney(inv.amount, inv.currency)}</td>
+                          <td data-label="Action" className="ph-right">
+                            {status.key === 'paid' && pay ? (
+                              <button type="button" className="ph-action" onClick={() => setViewingReceipt({ inv, pay })} title={pay.receipt_number ?? undefined}>
+                                <Icon name="doc" size={14} /> View receipt
+                              </button>
+                            ) : inv.status === 'pending' || inv.status === 'processing' ? (
+                              <Link href={`/client/project/${project.id}/payments/confirm`} className="ph-action primary">
+                                {inv.status === 'processing' ? 'View submission' : 'Pay now'} <Icon name="arrow" size={13} />
+                              </Link>
+                            ) : (
+                              <span className="ph-none">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <div className="dx-pair">
+            {/* ---- progress ---- */}
+            <section className="dx-card">
+              <div className="dx-card-head">
+                <h2 className="dx-card-title">Payment progress</h2>
+              </div>
+              <div className="pg-donut">
+                <PayRing segments={ringSegments} centerPct={paymentPct} />
+                <span className="dx-ring-currency">{currency} ({sym})</span>
+              </div>
               <ul className="pm-legend">
                 {ringSegments.map((seg) => (
                   <li key={seg.key}>
@@ -541,250 +755,146 @@ export default function ClientPaymentsPage() {
                   </li>
                 ))}
               </ul>
-            </div>
-            <div className="pm-stackbar" role="img" aria-label="Payment progress by status">
-              {ringSegments.filter((seg) => seg.value > 0).map((seg) => (
-                <span key={seg.key} style={{ flexGrow: seg.value, background: seg.color }} title={`${seg.label}: ${formatMoney(seg.value, currency)}`} />
-              ))}
-            </div>
-            <div className="pm-stackbar-caption">
-              {formatMoney(totalPaid, currency)} paid{outstanding != null ? ` · ${formatMoney(outstanding, currency)} remaining` : ''}
-            </div>
-          </div>
+            </section>
 
-          <div className="pm-card">
-            <div className="pm-card-head">
-              <div>
-                <div className="pm-card-title">Installments</div>
-                <div className="pm-card-sub">Amount of each payment, coloured by status</div>
+            {/* ---- installments ---- */}
+            <section className="dx-card">
+              <div className="dx-card-head">
+                <h2 className="dx-card-title">Installments</h2>
               </div>
-            </div>
-            <div className="pm-bars" role="list" aria-label="Installment amounts">
-              {live.map((inv) => {
-                const st = scheduleStatus(inv, today);
-                return (
-                  <div className="pm-bar-col" role="listitem" key={inv.id} title={`${inv.description || humanizeType(inv.payment_type)} — ${formatMoney(inv.amount, inv.currency)} (${st.label})`}>
-                    <span className="pm-bar-value tabular">{formatMoney(inv.amount, inv.currency)}</span>
-                    <div className="pm-bar-slot">
-                      <span className={`pm-bar ${st.key}`} style={{ height: `${Math.max((inv.amount / barMax) * 100, 4)}%` }} />
+              <div className="pm-bars" role="list" aria-label="Installment amounts">
+                {live.map((inv) => {
+                  const st = scheduleStatus(inv, today);
+                  return (
+                    <div className="pm-bar-col" role="listitem" key={inv.id} title={`${inv.description || humanizeType(inv.payment_type)} — ${formatMoney(inv.amount, inv.currency)} (${st.label})`}>
+                      <span className="pm-bar-value tabular">{formatMoney(inv.amount, inv.currency)}</span>
+                      <div className="pm-bar-slot">
+                        <span className={`pm-bar ${st.key}`} style={{ height: `${Math.max((inv.amount / barMax) * 100, 4)}%` }} />
+                      </div>
+                      <span className="pm-bar-label">{humanizeType(inv.payment_type)}</span>
+                      <span className={`pm-bar-status ${st.key}`}>{st.label}</span>
                     </div>
-                    <span className="pm-bar-label">{humanizeType(inv.payment_type)}</span>
-                    <span className={`pm-bar-status ${st.key}`}>{st.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        <div className="pm-main-grid">
-          {/* ---- Payment Schedule ---- */}
-          <div className="pm-card">
-            <div className="pm-card-head">
-              <div>
-                <div className="pm-card-title">Payment Schedule</div>
-                {signedSow && (
-                  <div className="pm-card-sub">
-                    Based on signed {signedSow.sow_number ?? `v${signedSow.version}`} · v{signedSow.version}.0
-                  </div>
-                )}
+                  );
+                })}
               </div>
-              {signedSow && (
-                <Link href={`/client/project/${project.id}/sow`} className="cp-btn cp-btn-secondary cp-btn-sm">
-                  View Signed SOW
-                </Link>
-              )}
-            </div>
-
-            <div className="pm-schedule-list">
-              {invoices.map((inv, i) => {
-                const status = scheduleStatus(inv, today);
-                const pay = payments.find((p) => p.invoice_id === inv.id);
-                return (
-                  <div className="pm-schedule-item" key={inv.id}>
-                    <div className="pm-schedule-marker">
-                      <div className={`pm-schedule-dot ${status.key}`}>{status.key === 'paid' ? '✓' : status.key === 'pending' ? '⏱' : ''}</div>
-                      {i < invoices.length - 1 && <div className="pm-schedule-line" />}
-                    </div>
-                    <div className="pm-schedule-body">
-                      <div className="pm-schedule-top">
-                        <div>
-                          <div className="pm-schedule-name">{inv.description || humanizeType(inv.payment_type)}</div>
-                          <div className="pm-schedule-pct">{inv.percentage != null ? `${inv.percentage}% of project value` : humanizeType(inv.payment_type)}</div>
-                        </div>
-                        <div className="pm-schedule-right">
-                          <span className="pm-schedule-amount tabular">
-                            {formatMoney(inv.amount, inv.currency)}
-                          </span>
-                          <span className={`pm-status-pill ${status.key}`}>{status.label}</span>
-                        </div>
-                      </div>
-                      <div className="pm-schedule-meta">
-                        {status.key === 'paid' && pay?.payment_date ? `Paid on ${formatDateLong(pay.payment_date)}` : inv.due_date ? `Due ${formatDateLong(inv.due_date)}` : 'Due before project completion'}
-                        {pay?.receipt_number && (
-                          <button type="button" className="pm-receipt-link" onClick={() => setViewingReceipt({ inv, pay })}>
-                            Receipt: {pay.receipt_number}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            </section>
           </div>
 
-          {/* ---- Next payment ---- */}
-          <div className="pm-card pm-next">
-            {nextPayment && nextStatus ? (
-              <>
-                <div className="pm-card-title">{nextStatus.key === 'pending' ? 'Waiting for confirmation' : 'Next payment'}</div>
-                <div className="pm-next-amount tabular">{formatMoney(nextPayment.amount, nextPayment.currency)}</div>
-                <div className="pm-next-name">{nextPayment.description || humanizeType(nextPayment.payment_type)}</div>
-                <div className="pm-next-meta">
-                  <Icon name="calendar" size={13} />
-                  {nextPayment.due_date ? (
-                    <span>
-                      Due {formatDateLong(nextPayment.due_date)}
-                      {nextDays != null && nextStatus.key !== 'pending' && <b className={nextDays < 0 ? 'overdue' : ''}> · {nextDays < 0 ? `${-nextDays} days overdue` : nextDays === 0 ? 'today' : `in ${nextDays} days`}</b>}
-                    </span>
-                  ) : (
-                    <span>Due before project completion</span>
+          <div className="dx-cols">
+            <div className="dx-col">
+              {/* ---- payment schedule ---- */}
+              <section className="dx-card" id="payment-schedule">
+                <div className="dx-card-head">
+                  <div>
+                    <h2 className="dx-card-title">Payment schedule</h2>
+                    {signedSow && <div className="dx-row-sub">Based on signed {signedSow.sow_number ?? `v${signedSow.version}`} · v{signedSow.version}.0</div>}
+                  </div>
+                  {signedSow && (
+                    <Link href={`/client/project/${project.id}/sow`} className="dx-link">View SOW</Link>
                   )}
                 </div>
-                {actionable && (
-                  <Link href={`/client/project/${project.id}/payments/confirm`} className="cp-btn cp-btn-primary pm-next-cta">
-                    <Icon name="doc" size={13} /> {actionable.status === 'processing' ? 'View submission' : 'View payment request'}
-                  </Link>
-                )}
-                <p className="pm-currency-note">All amounts are in {currency} ({sym})</p>
-              </>
-            ) : (
-              <>
-                <div className="pm-card-title">All caught up</div>
-                <div className="pm-next-done">
-                  <span className="pm-next-done-icon">
-                    <Icon name="check" size={18} />
-                  </span>
-                  <p>Every payment request is settled. Receipts stay available in the history below.</p>
-                </div>
-                <p className="pm-currency-note">All amounts are in {currency} ({sym})</p>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* ---- Payment History table ---- */}
-        <div className="pm-card pm-history-card">
-          <div className="pm-card-head">
-            <div>
-              <div className="pm-card-title">Payment History</div>
-              <div className="pm-card-sub">A record of all payment requests and transactions.</div>
-            </div>
-            <div className="pm-history-actions">
-              <div className="pm-tabs">
-                {TABS.map((t) => (
-                  <button key={t.key} type="button" className={`pm-tab${filterTab === t.key ? ' active' : ''}`} onClick={() => setFilterTab(t.key)}>
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-              <button type="button" className="cp-btn cp-btn-secondary cp-btn-sm" onClick={handleExport}>
-                <Icon name="download" size={13} /> Export
-              </button>
-            </div>
-          </div>
-
-          <div className="pm-table-wrap">
-            <table className="pm-table">
-              <thead>
-                <tr>
-                  <th>Payment</th>
-                  <th>Description</th>
-                  <th>Amount</th>
-                  <th>Date</th>
-                  <th>Method</th>
-                  <th>Status</th>
-                  <th>Receipt</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tableRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="pm-table-empty">
-                      No payments in this category.
-                    </td>
-                  </tr>
-                ) : (
-                  tableRows.map((inv) => {
+                <ol className="ps-list">
+                  {invoices.map((inv) => {
                     const status = scheduleStatus(inv, today);
                     const pay = payments.find((p) => p.invoice_id === inv.id);
+                    const isNext = !!actionable && actionable.id === inv.id;
+                    const whenText = status.key === 'paid' && pay?.payment_date ? `Paid on ${formatDateLong(pay.payment_date)}` : inv.due_date ? `Due ${formatDateLong(inv.due_date)}` : 'Due before project completion';
                     return (
-                      <tr key={inv.id}>
-                        <td>
-                          <div className="pm-table-payment">
-                            <div className={`pm-table-icon ${status.key}`}>
-                              <Icon name={status.key === 'paid' ? 'check' : 'clock'} size={13} />
-                            </div>
-                            <div>
-                              <div className="pm-table-type">{humanizeType(inv.payment_type)}</div>
-                              {inv.request_number && <div className="pm-table-ref">{inv.request_number}</div>}
-                            </div>
+                      <li className={`ps-item ${status.key}${isNext ? ' next' : ''}`} key={inv.id}>
+                        <div className="ps-body">
+                          <div className="ps-name">{inv.description || humanizeType(inv.payment_type)}</div>
+                          <div className="ps-sub">{inv.percentage != null ? `${inv.percentage}% · ` : ''}{whenText}</div>
+                        </div>
+                        <div className="ps-side">
+                          <span className={`ps-status ${status.key}`}>
+                            <span className="ps-status-icon">
+                              <Icon name={status.key === 'paid' ? 'check' : status.key === 'pending' ? 'clock' : status.key === 'overdue' ? 'alert' : 'calendar'} size={8} />
+                            </span>
+                            {status.label}
+                          </span>
+                          <div className="ps-amount tabular">{formatMoney(inv.amount, inv.currency)}</div>
+                        </div>
+                        {(pay?.receipt_number || isNext) && (
+                          <div className="ps-actions">
+                            {isNext && (
+                              <Link href={`/client/project/${project.id}/payments/confirm`} className="btn btn-accent btn-sm">
+                                {inv.status === 'processing' ? 'View submission' : 'Pay now'}
+                              </Link>
+                            )}
+                            {pay?.receipt_number && (
+                              <button type="button" className="ps-link" onClick={() => setViewingReceipt({ inv, pay })}>
+                                <Icon name="doc" size={13} /> Receipt {pay.receipt_number}
+                              </button>
+                            )}
                           </div>
-                        </td>
-                        <td>{inv.description || '—'}</td>
-                        <td className="tabular">{formatMoney(inv.amount, inv.currency)}</td>
-                        <td>{status.key === 'paid' && pay?.payment_date ? formatDateLong(pay.payment_date) : inv.due_date ? formatDateLong(inv.due_date) : '—'}</td>
-                        <td>{pay?.payment_method ?? inv.payment_method ?? '—'}</td>
-                        <td>
-                          <span className={`pm-status-pill ${status.key}`}>{status.label}</span>
-                        </td>
-                        <td>{pay?.receipt_number ?? '—'}</td>
-                        <td>
-                          {status.key === 'paid' && pay ? (
-                            <button type="button" className="pm-table-action" onClick={() => setViewingReceipt({ inv, pay })}>
-                              View Receipt
-                            </button>
-                          ) : inv.status === 'pending' || inv.status === 'processing' ? (
-                            <Link href={`/client/project/${project.id}/payments/confirm`} className="pm-table-action">
-                              View Payment
-                            </Link>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
-                      </tr>
+                        )}
+                      </li>
                     );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                  })}
+                </ol>
+              </section>
 
-        {/* ---- trust banner ---- */}
-        <div className="pm-trust-banner">
-          <div className="pm-trust-icon">
-            <Icon name="shield" size={18} />
-          </div>
-          <div className="pm-trust-body">
-            <div className="pm-trust-title">Secure &amp; Transparent</div>
-            <p className="pm-trust-desc">Your payment information is only ever visible to you and your project team. Receipts are available once payments are confirmed.</p>
-          </div>
-          <div className="pm-trust-lock">
-            <Icon name="lock" size={13} /> We never store your card or bank details.
+            </div>
+
+            <div className="dx-col">
+              {/* ---- need help / trust ---- */}
+              <section className="dx-card dx-trust">
+                <div className="dx-trust-head">
+                  <span className="dx-kpi-icon dx-tone-green"><Icon name="shield" size={20} /></span>
+                  <h2 className="dx-card-title">Secure &amp; transparent</h2>
+                </div>
+                <p className="dx-empty">Your payment information is only visible to you and your project team. Receipts are available once payments are confirmed. We never store your card or bank details.</p>
+                <a
+                  href={`${WHATSAPP_URL_BASE}?text=${encodeURIComponent(`Hi FLOW53, I have a question about my payments for ${project.name}.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-ghost btn-sm"
+                >
+                  <Icon name="help" size={13} /> Ask your project manager
+                </a>
+              </section>
+            </div>
           </div>
         </div>
       </PaymentsShell>
+
+      <div className="receipt-doc-offscreen" aria-hidden="true">
+        <PaymentStatement
+          docRef={statementRef}
+          data={{
+            generatedText: formatDateLong(today),
+            clientName: client.primary_contact ?? client.company_name,
+            company: client.primary_contact ? client.company_name : null,
+            projectName: project.name,
+            currencyLabel: `${currency} (${sym})`,
+            totalText: totalValue != null ? formatMoney(totalValue, currency) : '—',
+            paidText: formatMoney(totalPaid, currency),
+            outstandingText: outstanding != null ? formatMoney(outstanding, currency) : '—',
+            rows: invoices.map((inv) => {
+              const pay = payments.find((p) => p.invoice_id === inv.id);
+              const st = scheduleStatus(inv, today);
+              return {
+                ref: inv.request_number,
+                description: inv.description || humanizeType(inv.payment_type),
+                dateText: st.key === 'paid' && pay?.payment_date ? formatDateLong(pay.payment_date) : inv.due_date ? formatDateLong(inv.due_date) : '—',
+                amountText: formatMoney(inv.amount, inv.currency),
+                status: st.label,
+              };
+            }),
+          }}
+        />
+      </div>
 
       {viewingReceipt && project && client && (
         <div className="receipt-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setViewingReceipt(null); }}>
           <div className="receipt-modal-box">
             <div className="receipt-modal-head">
-              <div>
-                <div className="receipt-modal-filename">{viewingReceipt.pay.receipt_number ?? viewingReceipt.inv.request_number ?? 'Receipt'}.pdf</div>
-                <div className="receipt-modal-eyebrow">{receiptPdfError ?? 'Payment Receipt'}</div>
+              <div className="receipt-modal-who">
+                <span className="receipt-modal-icon"><Icon name="doc" size={18} /></span>
+                <div>
+                  <div className="receipt-modal-title">Payment receipt</div>
+                  <div className={`receipt-modal-sub${receiptPdfError ? ' error' : ''}`}>{receiptPdfError ?? viewingReceipt.pay.receipt_number ?? viewingReceipt.inv.request_number ?? 'Receipt'}</div>
+                </div>
               </div>
               <div className="receipt-modal-head-actions">
                 <a
@@ -803,18 +913,14 @@ export default function ClientPaymentsPage() {
 
             <div className="receipt-modal-body">
               {receiptPdfUrl ? (
-                typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches ? (
-                  <div className="receipt-pages">
-                    {receiptPages.map((src, i) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img key={i} src={src} alt={`Receipt page ${i + 1}`} className="receipt-page-img" />
-                    ))}
-                  </div>
-                ) : (
-                  <iframe src={receiptPdfUrl} className="receipt-pdf-frame" title="Payment Receipt PDF" />
-                )
+                <div className="receipt-pages">
+                  {receiptPages.map((src, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={i} src={src} alt={`Receipt page ${i + 1}`} className="receipt-page-img" />
+                  ))}
+                </div>
               ) : (
-                <div className="receipt-modal-loading">{receiptPdfError ?? 'Generating PDF preview…'}</div>
+                <div className="receipt-modal-loading">{receiptPdfError ?? (<><span className="cp-spinner" /> Preparing your receipt…</>)}</div>
               )}
 
               <div className="receipt-doc-offscreen" aria-hidden="true">

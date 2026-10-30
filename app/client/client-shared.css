@@ -162,7 +162,7 @@
 }
 .client-portal .cp-brand-sidebar .cp-brand-logo-combined {
   display: block;
-  width: 105px;
+  width: 88px;
   height: auto;
 }
 
@@ -652,4 +652,50 @@
   .client-portal .cp-dash-shell {
     padding: 24px 16px 48px;
   }
+}
+
+/* ---- profile in the page top bar (desktop) ----
+   The sidebar profile card moves to the right end of the top bar: avatar on the right, name/company right-aligned beside it, no border. */
+div.client-portal .page-topbar .page-help-link { margin-left: auto; }
+div.client-portal .page-topbar .profile-card.topbar-profile { display: flex; flex-direction: row-reverse; align-items: center; gap: 10px; width: auto; flex-shrink: 0; margin-left: 20px; padding: 4px 6px; border: none; background: transparent; border-radius: 10px; cursor: pointer; text-align: right; }
+div.client-portal .page-topbar .profile-card.topbar-profile:hover { background: var(--accent-soft, rgba(124, 58, 237, 0.08)); }
+div.client-portal .page-topbar .topbar-profile .profile-meta { text-align: right; min-width: 0; }
+div.client-portal .page-topbar .topbar-profile .profile-name { font-size: 13px; font-weight: 700; line-height: 1.2; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+div.client-portal .page-topbar .topbar-profile .profile-role { font-size: 11.5px; line-height: 1.2; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (min-width: 861px) {
+  div.client-portal:has(.topbar-profile) .sidebar .profile-card { display: none; }
+}
+
+/* ---- icon tiles across the whole client portal: circular, with a thin border in the icon's own colour ----
+   (the `body` prefix beats each page's own single-class rules, whatever order the stylesheets load in) */
+body .client-portal :is(
+  .dx-kpi-icon, .dx-row-icon, .dx-action-icon, .dx-clear-icon,
+  .pm-kpi-icon, .pm-table-icon, .pm-trust-icon, .pm-next-done-icon,
+  .files-row-icon, .files-stat-icon, .files-folder-icon, .file-icon,
+  .ov-file-icon, .ov-update-icon, .ov-ap-icon, .ov-action-icon,
+  .msg-attachment-icon, .msg-start-icon, .panel-feature-icon, .state-icon, .pe-icon-wrap
+) {
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  box-sizing: border-box;
+}
+
+/* ---- profile in the mobile top bar: the person's initial in an accent circle, far right ---- */
+body .client-portal .topbar { gap: 10px; }
+body .client-portal .topbar-avatar { margin-left: auto; flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--accent); color: #fff; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+body .client-portal .topbar-avatar:hover { background: var(--accent-hover); }
+
+/* the close (X) button of the phone menu sits vertically centred in the logo row */
+body .client-portal .cp-brand-sidebar .sidebar-close-btn { top: 50%; right: 10px; transform: translateY(-50%); }
+
+/* a little more room before the logo, so it lines up with the menu icons below it */
+body .client-portal .cp-brand-sidebar { padding-left: 24px; }
+
+/* the close (X) button of the phone menu: a circle with a thin border */
+body .client-portal .cp-brand-sidebar .sidebar-close-btn { width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 50%; background: var(--surface); color: var(--ink-soft); }
+body .client-portal .cp-brand-sidebar .sidebar-close-btn:hover { background: var(--bg); color: var(--ink); }
+
+/* bigger sidebar logo on desktop only; phones keep the smaller one */
+@media (min-width: 861px) {
+  body .client-portal .cp-brand-sidebar .cp-brand-logo-combined { width: 112px; }
 }

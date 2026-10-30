@@ -40,7 +40,9 @@ import { formatMoney } from '@/lib/currency';
 import { getProjectCurrency } from '@/lib/projectCurrency';
 import RichText from '@/app/components/RichText';
 import '../../client-shared.css';
+import ClientBottomNav from '@/app/components/ClientBottomNav';
 import './project-dashboard.css';
+import './project-v2.css';
 
 const ICONS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -58,6 +60,12 @@ const ICONS: Record<string, string> = {
   eye: '<path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8z"/><circle cx="12" cy="12" r="3"/>',
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
   paperclip: '<path d="M21.44 11.05 12.25 20.24a5.5 5.5 0 0 1-7.78-7.78l9.19-9.19a3.5 3.5 0 0 1 4.95 4.95L9.42 17.4a1.5 1.5 0 0 1-2.12-2.12l7.78-7.78"/>',
+  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+  calendarcheck: '<path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>',
+  wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+  chats: '<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>',
+  arrow: '<path d="M7 17 17 7"/><path d="M8 7h9v9"/>',
+  send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17h.01"/>',
 };
 function Icon({ name, size = 14 }: { name: string; size?: number }) {
@@ -100,6 +108,19 @@ const PROJECT_STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   completed: { label: 'Completed', cls: 'b-done' },
 };
 const WHATSAPP_URL_BASE = 'https://wa.me/8801804409235';
+
+// progress ring: a grey track with a coloured arc, drawn from the top
+function Ring({ pct, size, stroke, color }: { pct: number; size: number; stroke: number; color: string }) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const p = Math.max(0, Math.min(100, pct));
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="dx-ring" aria-hidden="true">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${(c * p) / 100} ${c}`} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+    </svg>
+  );
+}
 
 function toOne<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
@@ -174,6 +195,7 @@ export default function ClientProjectDashboard() {
   const [respondingApprovalId, setRespondingApprovalId] = useState<string | null>(null);
   const [approvalComment, setApprovalComment] = useState('');
   const [submittingApproval, setSubmittingApproval] = useState(false);
+  const [nowMs] = useState(() => Date.now());
 
   useEffect(() => {
     async function load() {
@@ -298,6 +320,10 @@ export default function ClientProjectDashboard() {
   const hasPendingPayment = invoices.some((i) => i.status === 'pending');
   const paymentPct = project.budget && project.budget > 0 ? Math.min(100, Math.round((totalPaid / project.budget) * 100)) : 0;
 
+  const sowDone = sow?.status === 'signed';
+  const daysLeft = project.due_date ? Math.ceil((new Date(project.due_date).getTime() - nowMs) / 86400000) : null;
+  const phasePct = milestones.length > 0 ? Math.round((milestones.filter((m) => m.completed_at).length / milestones.length) * 100) : progressPct;
+
   type ActivityItem = { key: string; text: string; time: string };
   const activityItems: ActivityItem[] = [];
   activityItems.push({ key: 'created', text: `${project.name} project created`, time: project.created_at });
@@ -345,16 +371,6 @@ export default function ClientProjectDashboard() {
               </Link>
             </nav>
           </div>
-          <button type="button" className="profile-card" onClick={async () => { await supabase.auth.signOut(); router.push('/client'); }} title="Sign out">
-            <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
-            </div>
-            <div className="profile-meta">
-              <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
-              <div className="profile-role">{client.company_name}</div>
-            </div>
-            <Icon name="logout" />
-          </button>
         </aside>
 
         <div className="main">
@@ -363,7 +379,10 @@ export default function ClientProjectDashboard() {
               <Icon name="menu" />
             </button>
             <span className="topbar-title">My Project</span>
-          </header>
+                      <button type="button" className="topbar-avatar" aria-label="Sign out" onClick={() => { if (window.confirm('Sign out of your account?')) (async () => { await supabase.auth.signOut(); router.push('/client'); })(); }}>
+              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            </button>
+</header>
 
           <header className="page-topbar">
             <div className="breadcrumb">
@@ -377,499 +396,458 @@ export default function ClientProjectDashboard() {
             >
               <Icon name="help" size={13} /> Need help?
             </a>
-          </header>
+          <button type="button" className="profile-card topbar-profile" onClick={async () => { await supabase.auth.signOut(); router.push('/client'); }} title="Sign out">
+            <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
+              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            </div>
+            <div className="profile-meta">
+              <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
+              <div className="profile-role">{client.company_name}</div>
+            </div>
+          </button>
+</header>
 
           <main className="content">
-            <div className="ph-row block">
-              <div className="ph-section-head">
-                <h2 className="section-title">Project Overview</h2>
-                <p className="ph-section-desc">Key details about this project, at a glance.</p>
-              </div>
-              <div className="ph-table-grid">
-                <table className="ph-table">
-                  <tbody>
-                    <tr>
-                      <th>Project</th>
-                      <td>{project.name}</td>
-                    </tr>
-                    <tr>
-                      <th>Status</th>
-                      <td>
-                        <span className={`status-badge ${statusMeta.cls}`}>
-                          <span className="dot"></span>
-                          {statusMeta.label}
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th>Client</th>
-                      <td>{client.company_name}</td>
-                    </tr>
-                  </tbody>
-                </table>
-                <table className="ph-table">
-                  <tbody>
-                    {project.category && (
-                      <tr>
-                        <th>Type</th>
-                        <td>{project.category}</td>
-                      </tr>
-                    )}
-                    {manager && (
-                      <tr>
-                        <th>Project Manager</th>
-                        <td>{manager.full_name}</td>
-                      </tr>
-                    )}
-                    {project.due_date && (
-                      <tr>
-                        <th>Expected Delivery</th>
-                        <td>{formatDate(project.due_date)}</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <p className="welcome-sub">
-              {isCompleted ? "Here's a summary of your completed project." : currentMilestone ? `Your project is currently in the ${currentMilestone.title} phase.` : `Here's the latest on your project, ${client.primary_contact ?? ''}.`}
-            </p>
-
-            {isCompleted ? (
-              <>
-                <section className="block completed-banner">
-                  <div className="completed-title">Project Completed ✓</div>
-                  <div className="completed-sub">{project.completed_at ? `Completed ${formatDate(project.completed_at)}` : 'This project has been marked complete.'}</div>
-                </section>
-
-                <section className="block content-2col">
-                  <div className="dcard">
-                    <div className="dcard-head">
-                      <span className="dcard-title">Final Files</span>
-                      <Link href={`/client/project/${project.id}/files`} className="btn btn-ghost btn-sm">
-                        View All Files
-                      </Link>
+            <div className="dx">
+              {/* ---- hero: project, status, overall progress ---- */}
+              <section className="dx-hero">
+                <div className="dx-hero-text">
+                  <div className="dx-eyebrow">My project</div>
+                  <h1 className="dx-title">{project.name}</h1>
+                  <p className="dx-sub">
+                    {isCompleted
+                      ? "Here's a summary of your completed project."
+                      : currentMilestone
+                        ? `Your project is currently in the ${currentMilestone.title} phase.`
+                        : `Here's the latest on your project, ${client.primary_contact?.split(' ')[0] ?? client.company_name}.`}
+                  </p>
+                  <div className="dx-hero-project">
+                    <span className={`status-badge ${statusMeta.cls}`}>
+                      <span className="dot"></span>
+                      {statusMeta.label}
+                    </span>
+                    {project.category && <span className="dx-hero-chip">{project.category}</span>}
+                    {isCompleted && project.completed_at && <span className="dx-hero-chip">Completed {formatDate(project.completed_at)}</span>}
+                  </div>
+                  <div className="dx-hero-actions">
+                    <Link href={`/client/project/${project.id}/messages`} className="btn btn-accent">
+                      <Icon name="message" size={13} /> Message team
+                    </Link>
+                    <Link href={`/client/project/${project.id}/files`} className="btn btn-ghost">
+                      <Icon name="file" size={13} /> Files
+                    </Link>
+                  </div>
+                </div>
+                <div className="dx-hero-progress">
+                  <div className="dx-hero-ring">
+                    <Ring pct={progressPct} size={132} stroke={11} color="var(--accent)" />
+                    <div className="dx-ring-center">
+                      <strong>{progressPct}%</strong>
+                      <span>complete</span>
                     </div>
-                    {files.length === 0 ? (
-                      <p className="empty-inline">No files shared yet.</p>
+                  </div>
+                  <ul className="dx-hero-stats">
+                    <li>
+                      <span className="dx-hero-stat-label">Phases done</span>
+                      <strong>{milestones.length > 0 ? `${milestones.filter((m) => m.completed_at).length} of ${milestones.length}` : '—'}</strong>
+                    </li>
+                    <li>
+                      <span className="dx-hero-stat-label">Time left</span>
+                      <strong>{isCompleted ? 'Delivered' : daysLeft == null ? '—' : daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : daysLeft === 0 ? 'Due today' : `${daysLeft} day${daysLeft === 1 ? '' : 's'}`}</strong>
+                    </li>
+                  </ul>
+                </div>
+              </section>
+
+              {/* ---- status banner: completed / on hold / action needed / all good ---- */}
+              {isCompleted ? (
+                <section className="dx-action ok">
+                  <div className="dx-action-icon">
+                    <Icon name="check" size={20} />
+                  </div>
+                  <div className="dx-action-body">
+                    <span className="dx-action-label">Project completed</span>
+                    <div className="dx-action-title">Everything has been delivered</div>
+                    <p className="dx-action-desc">{project.completed_at ? `Completed ${formatDate(project.completed_at)}.` : 'This project has been marked complete.'} Your final files are below.</p>
+                  </div>
+                </section>
+              ) : project.status === 'on_hold' ? (
+                <section className="dx-action">
+                  <div className="dx-action-icon">
+                    <Icon name="alert" size={20} />
+                  </div>
+                  <div className="dx-action-body">
+                    <span className="dx-action-label">Project on hold</span>
+                    <div className="dx-action-title">We&apos;re waiting before work can continue</div>
+                    <p className="dx-action-desc">{client.admin_request ? client.admin_request : 'Our team will reach out with more details.'}</p>
+                  </div>
+                  {client.admin_request && (
+                    <div className="dx-action-cta">
+                      <a href={`${WHATSAPP_URL_BASE}?text=${encodeURIComponent(`Hi FLOW53, regarding: ${client.admin_request}`)}`} target="_blank" rel="noopener noreferrer" className="btn btn-accent">
+                        Provide information
+                      </a>
+                    </div>
+                  )}
+                </section>
+              ) : pendingAction ? (
+                <section className="dx-action">
+                  <div className="dx-action-icon">
+                    <Icon name={pendingAction.key === 'payment' ? 'card' : pendingAction.key === 'approval' ? 'check' : 'doc'} size={20} />
+                  </div>
+                  <div className="dx-action-body">
+                    <span className="dx-action-label">{pendingAction.label}</span>
+                    <div className="dx-action-title">{pendingAction.title}</div>
+                    <p className="dx-action-desc">{pendingAction.desc}</p>
+                  </div>
+                  <div className="dx-action-cta">
+                    {pendingAction.key === 'approval' ? (
+                      <button type="button" className="btn btn-accent" onClick={() => setApprovalsModalOpen(true)}>
+                        {pendingAction.ctaLabel}
+                      </button>
                     ) : (
-                      files.map((f) => (
-                        <div className="file-row" key={f.id}>
-                          <div className="file-icon">
-                            <Icon name="file" size={14} />
-                          </div>
-                          <div className="file-row-main">
-                            <div className="file-row-name">{f.name}</div>
-                            <div className="file-row-meta">
-                              {formatBytes(f.size_bytes)} · {formatDate(f.created_at)}
+                      <Link href={pendingAction.href} className="btn btn-accent">
+                        {pendingAction.ctaLabel}
+                      </Link>
+                    )}
+                    {pendingAction.moreCount && <span className="dx-action-more">+{pendingAction.moreCount} more</span>}
+                  </div>
+                </section>
+              ) : (
+                <section className="dx-clear">
+                  <span className="dx-clear-icon">
+                    <Icon name="check" size={22} />
+                  </span>
+                  <div className="dx-clear-body">
+                    <div className="dx-clear-title-row">
+                      <div className="dx-clear-title">You&apos;re all caught up</div>
+                      <span className="dx-clear-pill">
+                        <span className="dx-clear-dot" />
+                        On track
+                      </span>
+                    </div>
+                    <p className="dx-clear-desc">Nothing is needed from you right now. We&apos;ll let you know as soon as your input is required.</p>
+                  </div>
+                </section>
+              )}
+
+            {/* ---- latest update ---- */}
+            <section className="dx-card">
+              <div className="dx-card-head">
+                <h2 className="dx-card-title">Latest update</h2>
+                {updates.length > 0 && (
+                  <Link href={`/client/project/${project.id}/updates`} className="dx-link">View all</Link>
+                )}
+              </div>
+              {!latestUpdate ? (
+                <p className="dx-empty">Your project updates will appear here as work progresses.</p>
+              ) : (
+                <div className="dx-update">
+                  <div className="dx-update-title">{latestUpdate.title}</div>
+                  <div className="dx-row-sub">{formatDate(latestUpdate.created_at)} · Posted by {toOne(latestUpdate.author)?.full_name ?? 'FLOW 53 Team'}</div>
+                  {latestUpdate.description && <RichText text={latestUpdate.description} className="dx-update-body" />}
+                  {latestUpdate.attachment_url && (
+                    <a className="dx-update-file" href={latestUpdate.attachment_url} target="_blank" rel="noopener noreferrer">
+                      <Icon name="paperclip" size={13} /> View attachment
+                    </a>
+                  )}
+                </div>
+              )}
+            </section>
+
+              {/* ---- key numbers ---- */}
+              <section className="dx-kpis">
+                <Link href={`/client/project/${project.id}`} className="dx-kpi">
+                  <span className="dx-kpi-top">
+                    <span className="dx-kpi-icon dx-tone-accent"><Icon name="flag" size={20} /></span>
+                    <span className="dx-kpi-go" aria-hidden="true"><Icon name="arrow" size={14} /></span>
+                    <span className="dx-kpi-mini" aria-hidden="true">
+                      <Ring pct={phasePct} size={46} stroke={5} color="var(--accent)" />
+                      <span className="dx-kpi-mini-num">{phasePct}%</span>
+                    </span>
+                  </span>
+                  <span className="dx-kpi-label">Current phase</span>
+                  <strong className="dx-kpi-value dx-kpi-text">{currentMilestone?.title ?? (isCompleted ? 'Completed' : 'Getting started')}</strong>
+                  <span className="dx-kpi-sub">{milestones.length > 0 ? `${milestones.filter((m) => m.completed_at).length} of ${milestones.length} phases done` : 'Phases coming soon'}</span>
+                </Link>
+                <div className="dx-kpi">
+                  <span className="dx-kpi-top">
+                    <span className="dx-kpi-icon dx-tone-blue"><Icon name="calendarcheck" size={20} /></span>
+                  </span>
+                  <span className="dx-kpi-label">Expected delivery</span>
+                  <strong className="dx-kpi-value">{formatDate(project.due_date) || '—'}</strong>
+                  <span className={`dx-kpi-sub${daysLeft != null && daysLeft < 0 && !isCompleted ? ' dx-warn' : ''}`}>
+                    {isCompleted ? 'Delivered' : daysLeft == null ? 'Date to be confirmed' : daysLeft < 0 ? `${Math.abs(daysLeft)} day${Math.abs(daysLeft) === 1 ? '' : 's'} overdue` : daysLeft === 0 ? 'Due today' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`}
+                  </span>
+                </div>
+                <Link href={`/client/project/${project.id}/payments`} className="dx-kpi">
+                  <span className="dx-kpi-top">
+                    <span className="dx-kpi-icon dx-tone-green"><Icon name="wallet" size={20} /></span>
+                    <span className="dx-kpi-go" aria-hidden="true"><Icon name="arrow" size={14} /></span>
+                    <span className="dx-kpi-mini" aria-hidden="true">
+                      <Ring pct={paymentPct} size={46} stroke={5} color="var(--positive)" />
+                      <span className="dx-kpi-mini-num">{paymentPct}%</span>
+                    </span>
+                  </span>
+                  <span className="dx-kpi-label">Paid so far</span>
+                  <strong className="dx-kpi-value">{project.budget ? formatMoney(totalPaid, currency) : '—'}</strong>
+                  <span className="dx-kpi-sub">{project.budget ? `${paymentPct}% of ${formatMoney(project.budget, currency)}` : 'Details coming soon'}</span>
+                </Link>
+                <Link href={`/client/project/${project.id}/messages`} className="dx-kpi">
+                  <span className="dx-kpi-top">
+                    <span className="dx-kpi-icon dx-tone-amber"><Icon name="chats" size={20} /></span>
+                    <span className="dx-kpi-go" aria-hidden="true"><Icon name="arrow" size={14} /></span>
+                  </span>
+                  <span className="dx-kpi-label">Messages</span>
+                  <strong className="dx-kpi-value">{unreadFromTeam > 0 ? `${unreadFromTeam} new` : 'All read'}</strong>
+                  <span className="dx-kpi-sub">{latestMessage ? `Last ${relativeTime(latestMessage.created_at)}` : 'No messages yet'}</span>
+                </Link>
+              </section>
+
+              {/* ---- project details ---- */}
+              <section className="dx-card">
+                <div className="dx-card-head">
+                  <h2 className="dx-card-title">Project details</h2>
+                </div>
+                <dl className="dx-details">
+                  <div><dt>Client</dt><dd>{client.company_name}</dd></div>
+                  <div><dt>Project type</dt><dd>{project.category ?? '—'}</dd></div>
+                  <div><dt>Start date</dt><dd>{formatDate(project.start_date) || '—'}</dd></div>
+                  <div><dt>Expected delivery</dt><dd>{formatDate(project.due_date) || '—'}</dd></div>
+                  <div><dt>Project manager</dt><dd>{manager?.full_name ?? '—'}</dd></div>
+                </dl>
+              </section>
+
+              {/* ---- milestones ---- */}
+              <section className="dx-card">
+                <div className="dx-card-head">
+                  <h2 className="dx-card-title">Project milestones</h2>
+                </div>
+                {milestones.length === 0 ? (
+                  <p className="dx-empty">Your project milestones will appear here once our team sets them up.</p>
+                ) : (
+                  <ol className="dx-journey">
+                    {milestones.map((m) => {
+                      const isDone = !!m.completed_at;
+                      const isCurrent = !isDone && currentMilestone?.id === m.id;
+                      return (
+                        <li className={`dx-step${isDone ? ' done' : ''}${isCurrent ? ' current' : ''}`} key={m.id}>
+                          <span className="dx-step-dot">{isDone ? <Icon name="check" size={11} /> : null}</span>
+                          <span className="dx-step-text">
+                            <span className="dx-step-label">{m.title}</span>
+                            <span className="dx-step-sub">{isDone ? `Done ${formatDate(m.completed_at)}` : isCurrent ? 'In progress' : m.due_date ? `Due ${formatDate(m.due_date)}` : 'Upcoming'}</span>
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
+              </section>
+
+              <div className="dx-cols">
+                <div className="dx-col">
+                  {/* ---- current phase ---- */}
+                  {!isCompleted && (
+                    <section className="dx-card">
+                      <div className="dx-card-head">
+                        <h2 className="dx-card-title">Current phase</h2>
+                      </div>
+                      {currentMilestone ? (
+                        <div className="dx-phase">
+                          <div className="dx-phase-ring">
+                            <Ring pct={currentMilestone.progress ?? 0} size={84} stroke={9} color="var(--accent)" />
+                            <div className="dx-ring-center dx-ring-small">
+                              <strong>{currentMilestone.progress ?? 0}%</strong>
                             </div>
                           </div>
-                          <div className="file-actions">
-                            <a className="icon-btn" style={{ width: 28, height: 28 }} href={driveThumbnailUrl(f.drive_url)} target="_blank" rel="noopener noreferrer">
-                              <Icon name="eye" size={13} />
-                            </a>
+                          <div className="dx-phase-body">
+                            <div className="dx-phase-name">{currentMilestone.title}</div>
+                            {currentMilestone.description && <p className="dx-phase-desc">{currentMilestone.description}</p>}
+                            {currentMilestone.due_date && <div className="dx-row-sub">Expected {formatDate(currentMilestone.due_date)}</div>}
                           </div>
                         </div>
-                      ))
-                    )}
-                  </div>
-                  <div className="dcard">
-                    <div className="dcard-head">
-                      <span className="dcard-title">Final Payment</span>
-                      <Link href={`/client/project/${project.id}/payments`} className="btn btn-ghost btn-sm">
-                        View Payment
-                      </Link>
-                    </div>
-                    {project.budget ? (
-                      <>
-                        <div className="detail-row">
-                          <span>Project Value</span>
-                          <span>{formatMoney(project.budget, currency)}</span>
-                        </div>
-                        <div className="detail-row">
-                          <span>Paid</span>
-                          <span>{formatMoney(totalPaid, currency)}</span>
-                        </div>
-                      </>
-                    ) : (
-                      <p className="empty-inline">Payment details will appear here once available.</p>
-                    )}
-                  </div>
-                </section>
+                      ) : (
+                        <p className="dx-empty">{milestones.length === 0 ? 'Your project phases will appear here once our team sets them up.' : 'All phases are complete — finishing up final details.'}</p>
+                      )}
+                    </section>
+                  )}
 
-                <section className="block dcard">
-                  <div className="dcard-head">
-                    <span className="dcard-title">Project Summary</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Project Type</span>
-                    <span>{project.category ?? '—'}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Start Date</span>
-                    <span>{formatDate(project.start_date) || '—'}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Project Manager</span>
-                    <span>{manager?.full_name ?? '—'}</span>
-                  </div>
-                </section>
-              </>
-            ) : (
-              <>
-                {/* ---- On Hold banner ---- */}
-                {project.status === 'on_hold' && (
-                  <section className="block action-card calm">
-                    <div>
-                      <div className="action-label">Project On Hold</div>
-                      <div className="action-title">Project On Hold</div>
-                      <div className="action-desc">{client.admin_request ? client.admin_request : "We're waiting before work can continue. Our team will reach out with more details."}</div>
+                  {/* ---- recent activity ---- */}
+                  <section className="dx-card">
+                    <div className="dx-card-head">
+                      <h2 className="dx-card-title">Recent activity</h2>
                     </div>
-                    {client.admin_request && (
-                      <a href={`${WHATSAPP_URL_BASE}?text=${encodeURIComponent(`Hi FLOW53, regarding: ${client.admin_request}`)}`} target="_blank" rel="noopener noreferrer" className="btn btn-accent">
-                        Provide Information
-                      </a>
+                    {recentActivity.length === 0 ? (
+                      <p className="dx-empty">No activity yet.</p>
+                    ) : (
+                      <ul className="dx-list">
+                        {recentActivity.map((a) => (
+                          <li className="dx-row" key={a.key}>
+                            <span className="dx-row-icon"><Icon name="check" size={12} /></span>
+                            <span className="dx-row-body">
+                              <span className="dx-row-title dx-wrap">{a.text}</span>
+                              <span className="dx-row-sub">{relativeTime(a.time)}</span>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
                     )}
                   </section>
-                )}
+                </div>
 
-                {/* ---- Progress / Pending Action ---- */}
-                <section className="block content-2col">
-                  <div className="progress-card">
-                    <div className="progress-top-row">
-                      <span className="progress-pct">{progressPct}% Complete</span>
-                    </div>
-                    <div className="progress-track">
-                      <div className="progress-fill" style={{ width: `${progressPct}%` }}></div>
-                    </div>
-                    <div className="progress-meta-grid">
-                      <div>
-                        <div className="pm-label">Current Phase</div>
-                        <div className="pm-value">{currentMilestone?.title ?? (isCompleted ? 'Completed' : '—')}</div>
+                <div className="dx-col">
+                  {/* ---- statement of work ---- */}
+                  <section className="dx-card dx-sow">
+                    <div className="dx-sow-banner">
+                      <div className="dx-sow-banner-text">
+                        <h2 className="dx-card-title">Statement of Work</h2>
                       </div>
-                      <div>
-                        <div className="pm-label">Expected Delivery</div>
-                        <div className="pm-value">{formatDate(project.due_date) || '—'}</div>
-                      </div>
+                      <span className={`dx-sow-state ${sowDone ? 'ok' : sow ? 'wait' : 'idle'}`}>
+                        <span className="dx-sow-state-dot" />
+                        {sowDone ? 'Signed' : sow ? 'Needs signature' : 'In preparation'}
+                      </span>
                     </div>
-                  </div>
-                  <div className="action-card">
-                    {pendingAction ? (
-                      <>
+                    <div className="dx-sow-about">
+                      <p className="dx-sow-intro">The agreement that sets out what we will deliver, when, and for how much.</p>
+                      <dl className="dx-sow-facts">
                         <div>
-                          <div className="action-label">{pendingAction.label}</div>
-                          <div className="action-title">{pendingAction.title}</div>
-                          <div className="action-desc">{pendingAction.desc}</div>
-                          {pendingAction.moreCount && <div className="action-more">+{pendingAction.moreCount} more action{pendingAction.moreCount > 1 ? 's' : ''}</div>}
+                          <dt>Version</dt>
+                          <dd>{sow ? `v${sow.version}.0` : '—'}</dd>
                         </div>
-                        {pendingAction.key === 'approval' ? (
-                          <button type="button" className="btn btn-accent" onClick={() => setApprovalsModalOpen(true)}>
-                            {pendingAction.ctaLabel}
-                          </button>
-                        ) : (
-                          <Link href={pendingAction.href} className="btn btn-accent">
-                            {pendingAction.ctaLabel}
-                          </Link>
-                        )}
-                      </>
-                    ) : (
+                        <div>
+                          <dt>{sowDone ? 'Signed on' : 'Sent on'}</dt>
+                          <dd>{sowDone ? (formatDate(sow?.signed_at ?? null) || '—') : (formatDate(sow?.sent_at ?? null) || '—')}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                    <Link href={`/client/project/${project.id}/sow`} className={`btn btn-sm ${sow && !sowDone ? 'btn-accent' : 'btn-ghost'}`}>
+                      {sow && !sowDone ? 'Review & sign' : 'View SOW'}
+                    </Link>
+                  </section>
+
+                  {/* ---- payments ---- */}
+                  <section className="dx-card dx-doc">
+                    <div className="dx-doc-head">
+                      <span className="dx-kpi-icon dx-tone-green"><Icon name="wallet" size={20} /></span>
                       <div>
-                        <div className="action-label" style={{ color: 'var(--positive)' }}>
-                          Nothing needed from you
-                        </div>
-                        <div className="action-title">Your project is progressing normally</div>
-                        <div className="action-desc">We&apos;ll let you know when your input is required.</div>
+                        <h2 className="dx-card-title">Payments</h2>
+                        <div className="dx-ap-sub">{project.budget ? `Project value ${formatMoney(project.budget, currency)}` : 'Details coming soon'}</div>
                       </div>
-                    )}
-                  </div>
-                </section>
-
-                {/* ---- Current Phase / Project Details ---- */}
-                <section className="block content-2col">
-                  <div className="dcard">
-                    <div className="dcard-head">
-                      <span className="dcard-title">Current Phase</span>
                     </div>
-                    {currentMilestone ? (
-                      <>
-                        <div className="phase-name">{currentMilestone.title}</div>
-                        {currentMilestone.description && <p className="phase-desc">{currentMilestone.description}</p>}
-                        <div className="phase-progress-row">
-                          <div className="phase-track">
-                            <div className="phase-fill" style={{ width: `${currentMilestone.progress ?? 0}%` }}></div>
+                    {project.budget ? (
+                      <div className="dx-pay2">
+                        <div className="dx-pay-ring">
+                          <Ring pct={paymentPct} size={96} stroke={10} color="var(--positive)" />
+                          <div className="dx-ring-center dx-ring-small">
+                            <strong>{paymentPct}%</strong>
+                            <span>paid</span>
                           </div>
-                          <span className="phase-pct">{currentMilestone.progress ?? 0}%</span>
                         </div>
-                        {currentMilestone.due_date && <div className="empty-inline">Expected: {formatDate(currentMilestone.due_date)}</div>}
-                      </>
+                        <div className="dx-pay-legend">
+                          <div><span className="dx-swatch dx-swatch-green" />Paid<strong>{formatMoney(totalPaid, currency)}</strong></div>
+                          <div><span className="dx-swatch dx-swatch-grey" />Remaining<strong>{formatMoney(Math.max(0, project.budget - totalPaid), currency)}</strong></div>
+                        </div>
+                      </div>
                     ) : (
-                      <p className="empty-inline">{milestones.length === 0 ? 'Your project phases will appear here once our team sets them up.' : 'All phases are complete — finishing up final details.'}</p>
+                      <p className="dx-empty">Payment information will appear here once available.</p>
                     )}
-                  </div>
-                  <div className="dcard">
-                    <div className="dcard-head">
-                      <span className="dcard-title">Project Details</span>
-                    </div>
-                    <div className="detail-row">
-                      <span>Project Type</span>
-                      <span>{project.category ?? '—'}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span>Start Date</span>
-                      <span>{formatDate(project.start_date) || '—'}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span>Expected Delivery</span>
-                      <span>{formatDate(project.due_date) || '—'}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span>Project Manager</span>
-                      <span>{manager?.full_name ?? '—'}</span>
-                    </div>
-                  </div>
-                </section>
+                    <Link href={`/client/project/${project.id}/payments`} className={`btn btn-sm ${hasPendingPayment ? 'btn-accent' : 'btn-ghost'}`}>
+                      {hasPendingPayment ? 'View & pay' : 'View payments'}
+                    </Link>
+                  </section>
 
-                {/* ---- Milestones ---- */}
-                <section className="block dcard">
-                  <div className="dcard-head">
-                    <span className="dcard-title">Project Milestones</span>
-                  </div>
-                  {milestones.length === 0 ? (
-                    <p className="empty-inline">Your project milestones will appear here once our team sets them up.</p>
-                  ) : (
-                    <div className="ms-row">
-                      {milestones.map((m) => {
-                        const isDone = !!m.completed_at;
-                        const isCurrent = !isDone && currentMilestone?.id === m.id;
-                        return (
-                          <div className={`ms-step${isDone ? ' done' : ''}${isCurrent ? ' current' : ''}`} key={m.id}>
-                            <div className="ms-marker">
-                              <div className="ms-dot">{isDone ? '✓' : isCurrent ? '●' : '○'}</div>
-                              <div className="ms-line"></div>
-                            </div>
-                            <div className="ms-info">
-                              <div className="ms-title">{m.title}</div>
-                              <div className="ms-meta">{isDone ? `Completed${m.completed_at ? ` · ${formatDate(m.completed_at)}` : ''}` : isCurrent ? 'In Progress' : m.due_date ? formatDate(m.due_date) : 'Upcoming'}</div>
-                            </div>
+                  {/* ---- messages ---- */}
+                  <section className="dx-card">
+                    <div className="dx-card-head">
+                      <h2 className="dx-card-title">
+                        Messages {unreadFromTeam > 0 && <span className="dx-chip">{unreadFromTeam} new</span>}
+                      </h2>
+                      <Link href={`/client/project/${project.id}/messages`} className="dx-link">Open</Link>
+                    </div>
+                    {latestMessage ? (
+                      <div className="dx-msg">
+                        <div className="avatar dx-avatar" style={{ width: 34, height: 34, fontSize: 13 }}>
+                          {latestMessage.sender !== 'client' && manager?.avatar_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={manager.avatar_url} alt="" />
+                          ) : (
+                            (latestMessage.sender === 'client' ? (client.primary_contact ?? client.company_name) : (manager?.full_name ?? 'F')).charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div className="dx-msg-body">
+                          <div className="dx-msg-top">
+                            <span className="dx-msg-sender">{latestMessage.sender === 'client' ? 'You' : (manager?.full_name ?? 'FLOW 53 Team')}</span>
+                            <span className="dx-row-sub">{relativeTime(latestMessage.created_at)}</span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </section>
-
-                {/* ---- SOW / Payments ---- */}
-                <section className="block content-2col">
-                  <div className="dcard">
-                    <div className="dcard-head">
-                      <span className="dcard-title">Statement of Work</span>
-                    </div>
-                    {!sow ? (
-                      <p className="empty-inline">SOW is being prepared.</p>
-                    ) : sow.status === 'signed' ? (
-                      <>
-                        <div className="status-badge b-done" style={{ marginBottom: 10 }}>
-                          <span className="dot"></span>Signed ✓
+                          <div className="dx-msg-text">{latestMessage.message}</div>
                         </div>
-                        <p className="empty-inline" style={{ marginBottom: 12 }}>
-                          {sow.signed_at ? `Signed ${formatDate(sow.signed_at)}` : ''}
-                        </p>
-                        <Link href={`/client/project/${project.id}/sow`} className="btn btn-ghost btn-sm">
-                          View SOW
-                        </Link>
-                      </>
+                      </div>
                     ) : (
-                      <>
-                        <div className="status-badge b-hold" style={{ marginBottom: 10 }}>
-                          <span className="dot"></span>Action Required
-                        </div>
-                        <p className="empty-inline" style={{ marginBottom: 12 }}>
-                          Your Statement of Work is ready for review.
-                        </p>
-                        <Link href={`/client/project/${project.id}/sow`} className="btn btn-accent btn-sm">
-                          Review SOW
-                        </Link>
-                      </>
+                      <p className="dx-empty">No messages yet. Say hello to your team.</p>
                     )}
-                  </div>
-                  <div className="dcard">
-                    <div className="dcard-head">
-                      <span className="dcard-title">Payments</span>
-                    </div>
-                    {!project.budget ? (
-                      <p className="empty-inline">Payment information will appear here once available.</p>
-                    ) : (
-                      <>
-                        <div className="detail-row">
-                          <span>Project Value</span>
-                          <span>{formatMoney(project.budget, currency)}</span>
-                        </div>
-                        <div className="detail-row">
-                          <span>Paid</span>
-                          <span>{formatMoney(totalPaid, currency)}</span>
-                        </div>
-                        <div className="detail-row">
-                          <span>Remaining</span>
-                          <span>{formatMoney(Math.max(0, project.budget - totalPaid), currency)}</span>
-                        </div>
-                        <div className="payment-bar">
-                          <div className="payment-fill" style={{ width: `${paymentPct}%` }}></div>
-                        </div>
-                        <div className="payment-caption">{paymentPct}% Paid</div>
-                        {hasPendingPayment ? (
-                          <Link href={`/client/project/${project.id}/payments`} className="btn btn-accent btn-sm">
-                            View Payment
-                          </Link>
-                        ) : (
-                          <div className="status-badge b-done">
-                            <span className="dot"></span>Payments up to date ✓
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </section>
+                  </section>
 
-                {/* ---- Latest Update / Messages ---- */}
-                <section className="block content-2col">
-                  <div className="dcard">
-                    <div className="dcard-head">
-                      <span className="dcard-title">Latest Update</span>
-                      {updates.length > 0 && (
-                        <Link href={`/client/project/${project.id}/updates`} className="btn btn-ghost btn-sm">
-                          View All Updates
-                        </Link>
+                  {/* ---- files ---- */}
+                  <section className="dx-card">
+                    <div className="dx-card-head">
+                      <h2 className="dx-card-title">{isCompleted ? 'Final files' : 'Recent files'}</h2>
+                      {files.length > 0 && (
+                        <Link href={`/client/project/${project.id}/files`} className="dx-link">View all</Link>
                       )}
                     </div>
-                    {!latestUpdate ? (
-                      <p className="empty-inline">Your project updates will appear here as work progresses.</p>
-                    ) : (
-                      <>
-                        <div className="update-title">{latestUpdate.title}</div>
-                        <div className="update-meta">
-                          {formatDate(latestUpdate.created_at)} · Posted by {toOne(latestUpdate.author)?.full_name ?? 'FLOW 53 Team'}
-                        </div>
-                        {latestUpdate.description && <RichText text={latestUpdate.description} className="update-body" />}
-                        {latestUpdate.attachment_url && (
-                          <a className="update-attachment" href={latestUpdate.attachment_url} target="_blank" rel="noopener noreferrer">
-                            <Icon name="paperclip" size={12} /> View Attachment
-                          </a>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <div className="dcard">
-                    <div className="dcard-head">
-                      <span className="dcard-title">
-                        Messages{unreadFromTeam > 0 && <span className="unread-dot"></span>}
-                      </span>
-                      <Link href={`/client/project/${project.id}/messages`} className="btn btn-ghost btn-sm">
-                        Open Messages
-                      </Link>
-                    </div>
-                    {!latestMessage ? (
-                      <p className="empty-inline">No messages yet.</p>
-                    ) : (
-                      <div className="msg-preview">
-                        <div className="msg-sender">{latestMessage.sender === 'client' ? 'You' : manager?.full_name ?? 'FLOW 53 Team'}</div>
-                        <div className="msg-text">{latestMessage.message}</div>
-                        <div className="msg-time">{relativeTime(latestMessage.created_at)}</div>
-                      </div>
-                    )}
-                  </div>
-                </section>
-
-                {/* ---- Files / Manager ---- */}
-                <section className="block content-2col">
-                  <div className="dcard">
-                    <div className="dcard-head">
-                      <span className="dcard-title">Recent Files</span>
-                      <Link href={`/client/project/${project.id}/files`} className="btn btn-ghost btn-sm">
-                        View All Files
-                      </Link>
-                    </div>
                     {files.length === 0 ? (
-                      <p className="empty-inline">No files shared yet.</p>
+                      <p className="dx-empty">No files shared yet.</p>
                     ) : (
-                      files.map((f) => (
-                        <div className="file-row" key={f.id}>
-                          <div className="file-icon">
-                            <Icon name="file" size={14} />
-                          </div>
-                          <div className="file-row-main">
-                            <div className="file-row-name">{f.name}</div>
-                            <div className="file-row-meta">
-                              {formatBytes(f.size_bytes)} · {formatDate(f.created_at)}
-                            </div>
-                          </div>
-                          <div className="file-actions">
-                            <a className="icon-btn" style={{ width: 28, height: 28 }} href={driveThumbnailUrl(f.drive_url)} target="_blank" rel="noopener noreferrer">
-                              <Icon name="eye" size={13} />
+                      <ul className="dx-list">
+                        {files.map((f) => (
+                          <li className="dx-row" key={f.id}>
+                            <span className={`dx-row-icon${f.file_type === 'pdf' ? ' pdf' : ''}`}><Icon name="file" size={13} /></span>
+                            <span className="dx-row-body">
+                              <span className="dx-row-title">{f.name}</span>
+                              <span className="dx-row-sub">{formatBytes(f.size_bytes)}{f.size_bytes ? ' · ' : ''}{formatDate(f.created_at)}</span>
+                            </span>
+                            <a href={driveThumbnailUrl(f.drive_url)} target="_blank" rel="noopener noreferrer" className="dx-icon-btn" aria-label={`Open ${f.name}`}>
+                              <Icon name="eye" size={14} />
                             </a>
-                            <a className="icon-btn" style={{ width: 28, height: 28 }} href={f.drive_url} target="_blank" rel="noopener noreferrer">
-                              <Icon name="download" size={13} />
-                            </a>
-                          </div>
-                        </div>
-                      ))
+                          </li>
+                        ))}
+                      </ul>
                     )}
-                  </div>
-                  <div className="dcard">
-                    <div className="dcard-head">
-                      <span className="dcard-title">Your Project Manager</span>
+                  </section>
+
+                  {/* ---- manager ---- */}
+                  <section className="dx-card">
+                    <div className="dx-card-head">
+                      <h2 className="dx-card-title">Your project manager</h2>
                     </div>
                     {manager ? (
-                      <>
-                        <div className="manager-row">
-                          <div className="avatar" style={{ width: 44, height: 44, fontSize: 15 }}>
-                            {manager.full_name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <div className="manager-name">{manager.full_name}</div>
-                            <div className="manager-role">{manager.role ?? 'Project Manager'}</div>
-                          </div>
+                      <div className="dx-manager">
+                        <div className="avatar dx-avatar" style={{ width: 56, height: 56, fontSize: 20 }}>
+                          {manager.avatar_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={manager.avatar_url} alt={manager.full_name} />
+                          ) : (
+                            manager.full_name.charAt(0).toUpperCase()
+                          )}
                         </div>
-                        <p className="manager-sub">Your main contact for this project.</p>
-                        <Link href={`/client/project/${project.id}/messages`} className="btn btn-ghost btn-sm">
-                          <Icon name="message" size={12} /> Message
+                        <div className="dx-manager-body">
+                          <div className="dx-row-title">{manager.full_name}</div>
+                          <div className="dx-row-sub">{manager.role ?? 'Project Manager'}</div>
+                        </div>
+                        <Link href={`/client/project/${project.id}/messages`} className="btn btn-accent btn-sm">
+                          <Icon name="send" size={12} /> Message
                         </Link>
-                      </>
-                    ) : (
-                      <p className="empty-inline">No project manager assigned yet.</p>
-                    )}
-                  </div>
-                </section>
-
-                {/* ---- Recent Activity ---- */}
-                <section className="block dcard">
-                  <div className="dcard-head">
-                    <span className="dcard-title">Recent Activity</span>
-                  </div>
-                  {recentActivity.length === 0 ? (
-                    <p className="empty-inline">No activity yet.</p>
-                  ) : (
-                    recentActivity.map((a, i) => (
-                      <div className="timeline-item" key={a.key}>
-                        <div className="timeline-dot-wrap">
-                          <div className="timeline-dot">
-                            <Icon name="check" size={10} />
-                          </div>
-                          {i < recentActivity.length - 1 && <div className="timeline-line"></div>}
-                        </div>
-                        <div>
-                          <div className="timeline-text">{a.text}</div>
-                          <div className="timeline-time">{relativeTime(a.time)}</div>
-                        </div>
                       </div>
-                    ))
-                  )}
-                </section>
-              </>
-            )}
+                    ) : (
+                      <p className="dx-empty">No project manager assigned yet.</p>
+                    )}
+                  </section>
+                </div>
+              </div>
+            </div>
           </main>
         </div>
       </div>
+      <ClientBottomNav projectId={project.id} active="project" unread={unreadFromTeam} />
 
       {approvalsModalOpen && (
         <div className="cp-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setApprovalsModalOpen(false); setRespondingApprovalId(null); } }}>

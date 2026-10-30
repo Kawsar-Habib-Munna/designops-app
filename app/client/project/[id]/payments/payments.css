@@ -174,7 +174,7 @@
 
 /* ---- receipt modal (native-PDF-viewer style chrome, matches the team dashboard) ---- */
 .client-payments-root .receipt-modal-overlay { position: fixed; inset: 0; background: rgba(14,14,18,0.72); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 200; }
-.client-payments-root .receipt-modal-box { width: 100%; max-width: 780px; height: 86vh; max-height: 86vh; background: #202124; border-radius: 10px; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden; }
+.client-payments-root .receipt-modal-box { width: 100%; max-width: 980px; height: 86vh; max-height: 86vh; background: #202124; border-radius: 10px; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden; }
 
 .client-payments-root .receipt-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; background: #202124; flex-shrink: 0; }
 .client-payments-root .receipt-modal-filename { font-size: 13.5px; font-weight: 600; color: #F1F1F3; }

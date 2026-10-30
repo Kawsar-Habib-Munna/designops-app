@@ -1,0 +1,81 @@
+/* Client SOW page redesign: hero, review card with a signing timeline, roomy mobile layout. The document itself (SowDocument) is unchanged. */
+
+.client-sow-root .sw-doc-wrap { max-width: 1180px; margin: 0 auto; }
+
+/* ---- hero ---- */
+.client-sow-root .sx-hero { display: block; padding: 30px 34px; margin-bottom: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-lg); }
+.client-sow-root .sx-hero-text { min-width: 0; }
+.client-sow-root .sx-title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.client-sow-root .sx-title-row .sx-status { flex-shrink: 0; }
+.client-sow-root .sx-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px; }
+.client-sow-root .sx-title { margin: 0; font-size: 28px; line-height: 1.15; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); overflow-wrap: anywhere; }
+.client-sow-root .sx-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.client-sow-root .sx-chip { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.client-sow-root .sx-chip + .sx-chip::before { content: "·"; margin-right: 10px; color: var(--ink-faint); }
+.client-sow-root .sx-status { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; }
+.client-sow-root .sx-status-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.client-sow-root .sx-status.ok { color: var(--positive); }
+.client-sow-root .sx-status.wait { color: var(--warning); }
+.client-sow-root .sx-sub { margin: 14px 0 0; font-size: 14px; line-height: 1.6; color: var(--ink-soft); }
+.client-sow-root .sx-hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+
+/* ---- layout: document + review card ---- */
+.client-sow-root .sw-layout { grid-template-columns: minmax(0, 1fr) 340px; gap: 28px; }
+.client-sow-root .sw-sidebar { top: 76px; }
+
+/* ---- review card ---- */
+.client-sow-root .sx-review { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow-lg); padding: 26px; display: flex; flex-direction: column; gap: 22px; }
+.client-sow-root .sx-review-head { display: flex; align-items: center; gap: 14px; }
+.client-sow-root .sx-review-icon { flex-shrink: 0; width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+.client-sow-root .sx-review-icon.wait { background: var(--warning-soft); color: var(--warning); }
+.client-sow-root .sx-review-icon.ok { background: var(--positive-soft); color: var(--positive); }
+.client-sow-root .sx-review-title { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.client-sow-root .sx-review-sub { margin-top: 3px; font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
+
+.client-sow-root .sx-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.client-sow-root .sx-steps li { position: relative; display: flex; align-items: flex-start; gap: 14px; padding-bottom: 18px; }
+.client-sow-root .sx-steps li:last-child { padding-bottom: 0; }
+.client-sow-root .sx-steps li::before { content: ''; position: absolute; left: 10px; top: 24px; bottom: 2px; width: 2px; background: var(--border); }
+.client-sow-root .sx-steps li:last-child::before { display: none; }
+.client-sow-root .sx-steps li.done::before { background: var(--positive); }
+.client-sow-root .sx-step-dot { position: relative; z-index: 1; flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--surface); border: 2px solid var(--border); color: #fff; }
+.client-sow-root .sx-steps li.done .sx-step-dot { background: var(--positive); border-color: var(--positive); }
+.client-sow-root .sx-steps li.current .sx-step-dot { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.client-sow-root .sx-step-text { display: flex; flex-direction: column; gap: 2px; padding-top: 1px; }
+.client-sow-root .sx-step-text strong { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.client-sow-root .sx-step-text span { font-size: 12.5px; color: var(--ink-faint); }
+.client-sow-root .sx-steps li:not(.done):not(.current) .sx-step-text strong { color: var(--ink-faint); }
+
+.client-sow-root .sx-facts { margin: 0; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.client-sow-root .sx-facts > div { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 12px 16px; border-top: 1px solid var(--border); }
+.client-sow-root .sx-facts > div:first-child { border-top: none; }
+.client-sow-root .sx-facts dt { font-size: 12.5px; color: var(--ink-faint); }
+.client-sow-root .sx-facts dd { margin: 0; font-size: 13px; font-weight: 700; color: var(--ink); text-align: right; overflow-wrap: anywhere; }
+
+.client-sow-root .sx-review .sw-review-btn { width: 100%; margin: 0; min-height: 46px; }
+.client-sow-root .sx-review .request-changes-box { margin-top: 0; }
+.client-sow-root .sx-download { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: none; border: none; padding: 0; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+.client-sow-root .sx-download:hover { color: var(--accent); }
+
+/* ---- title above the document preview ---- */
+.client-sow-root .sx-doc-head { margin: 0 0 14px; padding: 0 4px; }
+.client-sow-root .sx-doc-title { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.client-sow-root .sx-doc-sub { margin: 4px 0 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
+@media print { .client-sow-root .sx-doc-head { display: none !important; } }
+
+/* ---- tablet / phone ---- */
+@media (max-width: 860px) {
+  .client-sow-root .content { padding: 20px 16px calc(96px + env(safe-area-inset-bottom)); }
+  .client-sow-root .sx-hero { padding: 24px 22px; border-radius: 18px; margin-bottom: 18px; }
+  .client-sow-root .sx-title-row { flex-wrap: wrap; gap: 8px 16px; }
+  .client-sow-root .sx-title { font-size: 24px; }
+  .client-sow-root .sx-hero-actions { width: 100%; }
+  .client-sow-root .sx-hero-actions .btn { flex: 1; justify-content: center; min-height: 44px; }
+  .client-sow-root .sw-layout { grid-template-columns: 1fr; gap: 18px; }
+  /* the signing card comes first on small screens, so the client does not have to scroll the whole document to find it */
+  .client-sow-root .sw-sidebar { order: -1; }
+  .client-sow-root .sx-review { padding: 22px 20px; }
+}
+@media print {
+  .client-sow-root .sx-hero, .client-sow-root .cbn { display: none !important; }
+}

@@ -159,3 +159,6 @@
   .sow-document .sd-card { box-shadow: none; border: none; }
   .sow-document .sd-attachments { display: none !important; }
 }
+
+/* the "Parties" heading sits right under the letterhead rule, so it needs less top space and no section number */
+.sow-document .sd-section-first .sd-section-head { margin-top: 0; margin-bottom: 14px; }

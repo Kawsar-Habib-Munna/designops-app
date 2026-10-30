@@ -318,16 +318,6 @@ export default function ClientFilesPage() {
               </Link>
             </nav>
           </div>
-          <button type="button" className="profile-card" onClick={handleSignOut} title="Sign out">
-            <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
-            </div>
-            <div className="profile-meta">
-              <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
-              <div className="profile-role">{client.company_name}</div>
-            </div>
-            <Icon name="logout" />
-          </button>
         </aside>
 
         <div className="main">
@@ -336,7 +326,10 @@ export default function ClientFilesPage() {
               <Icon name="menu" />
             </button>
             <span className="topbar-title">Files</span>
-          </header>
+                      <button type="button" className="topbar-avatar" aria-label="Sign out" onClick={() => { if (window.confirm('Sign out of your account?')) (handleSignOut)(); }}>
+              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            </button>
+</header>
 
           <header className="page-topbar">
             <div className="breadcrumb">
@@ -350,7 +343,16 @@ export default function ClientFilesPage() {
             >
               <Icon name="help" size={13} /> Need help?
             </a>
-          </header>
+          <button type="button" className="profile-card topbar-profile" onClick={handleSignOut} title="Sign out">
+            <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
+              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            </div>
+            <div className="profile-meta">
+              <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
+              <div className="profile-role">{client.company_name}</div>
+            </div>
+          </button>
+</header>
 
           <main className="content">
             <div className="files-top-row">

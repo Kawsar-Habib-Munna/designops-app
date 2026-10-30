@@ -23,6 +23,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClientProject, type ClientRecord } from '@/lib/clientPortal';
 import { uploadFileToDrive, guessFileType, driveThumbnailUrl } from '@/lib/driveUpload';
 import { formatDateLong } from '@/lib/format';
+import ClientBottomNav from '@/app/components/ClientBottomNav';
 import '../../../client-shared.css';
 import './messages.css';
 
@@ -44,6 +45,7 @@ const ICONS: Record<string, string> = {
   send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>',
   check: '<path d="M20 6L9 17l-5-5"/>',
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
+  back: '<path d="M15 18l-6-6 6-6"/>',
   smile: '<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17h.01"/>',
 };
@@ -108,7 +110,7 @@ export default function ClientMessagesPage() {
   const projectId = params.id as string;
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(true);
@@ -218,6 +220,9 @@ export default function ClientMessagesPage() {
     return list.filter((c) => c.lastMessage).sort((a, b) => b.lastMessage.created_at.localeCompare(a.lastMessage.created_at));
   }, [messages, profilesById]);
 
+  // with a single conversation there is nothing to choose, so phones open straight into the chat
+  const threadOpen = showThreadOnMobile || conversations.length <= 1;
+
   useEffect(() => {
     if (conversations.length === 0) return;
     if (!selectedKey || !conversations.some((c) => c.key === selectedKey)) {
@@ -242,8 +247,9 @@ export default function ClientMessagesPage() {
   }, [selectedKey, messages.length]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [selectedKey, messages.length]);
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  }, [selectedKey, messages.length, threadOpen]);
 
   const activeMessages = useMemo(() => {
     if (!selectedKey) return [];
@@ -370,11 +376,13 @@ export default function ClientMessagesPage() {
     );
   }
 
-  const selected = conversations.find((c) => c.key === selectedKey) ?? null;
+  const selected: Conversation | null =
+    conversations.find((c) => c.key === selectedKey) ??
+    (conversations.length === 0 ? { key: GENERAL_KEY, name: 'FLOW 53 Team', role: 'Your project team', avatarUrl: null, unreadCount: 0, lastMessage: null as unknown as MessageRow } : null);
   const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
 
   return (
-    <div className="client-portal msg-root">
+    <div className={`client-portal msg-root${threadOpen ? ' in-thread' : ''}`}>
       <div className="shell">
         <div className={`mobile-backdrop${mobileNavOpen ? ' open' : ''}`} onClick={() => setMobileNavOpen(false)}></div>
         <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
@@ -409,24 +417,6 @@ export default function ClientMessagesPage() {
               </Link>
             </nav>
           </div>
-          <button
-            type="button"
-            className="profile-card"
-            onClick={async () => {
-              await supabase.auth.signOut();
-              router.push('/client');
-            }}
-            title="Sign out"
-          >
-            <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
-            </div>
-            <div className="profile-meta">
-              <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
-              <div className="profile-role">{client.company_name}</div>
-            </div>
-            <Icon name="logout" />
-          </button>
         </aside>
 
         <div className="main">
@@ -435,7 +425,13 @@ export default function ClientMessagesPage() {
               <Icon name="menu" />
             </button>
             <span className="topbar-title">Messages</span>
-          </header>
+                      <button type="button" className="topbar-avatar" aria-label="Sign out" onClick={() => { if (window.confirm('Sign out of your account?')) (async () => {
+              await supabase.auth.signOut();
+              router.push('/client');
+            })(); }}>
+              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            </button>
+</header>
 
           <header className="page-topbar">
             <div className="breadcrumb">
@@ -449,7 +445,24 @@ export default function ClientMessagesPage() {
             >
               <Icon name="help" size={13} /> Need help?
             </a>
-          </header>
+          <button
+            type="button"
+            className="profile-card topbar-profile"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              router.push('/client');
+            }}
+            title="Sign out"
+          >
+            <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
+              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            </div>
+            <div className="profile-meta">
+              <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
+              <div className="profile-role">{client.company_name}</div>
+            </div>
+          </button>
+</header>
 
           <main className="content msg-content">
             <div className="msg-top-row">
@@ -462,7 +475,7 @@ export default function ClientMessagesPage() {
               </button>
             </div>
 
-            <div className={`msg-panels${showThreadOnMobile ? ' show-thread' : ''}`}>
+            <div className={`msg-panels${threadOpen ? ' show-thread' : ''}`}>
               {/* ---- conversation list ---- */}
               <div className="msg-list-panel">
                 <div className="msg-list-search">
@@ -545,8 +558,13 @@ export default function ClientMessagesPage() {
                 {selected ? (
                   <>
                     <div className="msg-thread-header">
-                      <button type="button" className="msg-thread-back" onClick={() => setShowThreadOnMobile(false)} aria-label="Back to conversations">
-                        ←
+                      <button
+                        type="button"
+                        className="msg-thread-back"
+                        onClick={() => (conversations.length > 1 ? setShowThreadOnMobile(false) : router.push(`/client/project/${project.id}`))}
+                        aria-label={conversations.length > 1 ? 'Back to conversations' : 'Back to project'}
+                      >
+                        <Icon name="back" size={18} />
                       </button>
                       <div className="msg-thread-avatar" style={{ background: selected.avatarUrl ? undefined : colorForKey(selected.key) }}>
                         {selected.avatarUrl ? (
@@ -577,11 +595,15 @@ export default function ClientMessagesPage() {
                       </div>
                     )}
 
-                    <div className="msg-thread-scroll">
+                    <div className="msg-thread-scroll" ref={scrollRef}>
                       {activeMessages.length === 0 ? (
-                        <p className="empty-inline" style={{ padding: 20 }}>
-                          {threadSearch ? 'No messages match your search.' : 'No messages yet. Send the first one below.'}
-                        </p>
+                        <div className="msg-start">
+                          <span className="msg-start-icon">
+                            <Icon name="message" size={26} />
+                          </span>
+                          <div className="msg-start-title">{threadSearch ? 'No matches' : 'Start the conversation'}</div>
+                          <p className="msg-start-sub">{threadSearch ? 'No messages match your search.' : 'Say hello to your project team. Your first message will appear here.'}</p>
+                        </div>
                       ) : (
                         activeMessages.map((m, i) => {
                           const prev = activeMessages[i - 1];
@@ -634,7 +656,6 @@ export default function ClientMessagesPage() {
                           );
                         })
                       )}
-                      <div ref={bottomRef} />
                     </div>
 
                     <form className="msg-composer" onSubmit={handleSend}>
@@ -659,6 +680,7 @@ export default function ClientMessagesPage() {
           </main>
         </div>
       </div>
+      <ClientBottomNav projectId={project.id} active="messages" unread={totalUnread} />
     </div>
   );
 }

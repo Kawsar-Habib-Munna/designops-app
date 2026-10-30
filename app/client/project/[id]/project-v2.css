@@ -1,0 +1,330 @@
+/* Client Overview redesign (has-project state). Everything is scoped to .dx so it cannot touch the other dashboard states.
+   Layout: hero, one action banner, four key numbers, then two columns that collapse to one on tablets/phones. */
+
+.client-projectdash-root .dx { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+.client-projectdash-root .dx a { text-decoration: none; }
+
+/* ---- hero ---- */
+.client-projectdash-root .dx-hero { display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 32px 36px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-lg); }
+.client-projectdash-root .dx-hero-text { min-width: 0; flex: 1; }
+.client-projectdash-root .dx-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px; }
+.client-projectdash-root .dx-title { margin: 0; font-size: 28px; line-height: 1.15; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+.client-projectdash-root .dx-sub { margin: 8px 0 0; font-size: 14.5px; color: var(--ink-soft); }
+.client-projectdash-root .dx-hero-project { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.client-projectdash-root .dx-hero-project-name { font-size: 15px; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.client-projectdash-root .dx-hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+.client-projectdash-root .dx-hero-progress { display: flex; align-items: center; gap: 28px; flex-shrink: 0; min-width: 0; }
+.client-projectdash-root .dx-hero-stats { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.client-projectdash-root .dx-hero-stats li { display: flex; flex-direction: column; gap: 2px; padding-left: 14px; border-left: 3px solid var(--accent-soft); }
+.client-projectdash-root .dx-hero-stat-label { font-size: 11.5px; font-weight: 600; color: var(--ink-faint); }
+.client-projectdash-root .dx-hero-stats strong { font-size: 14.5px; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.client-projectdash-root .dx-hero-ring { position: relative; flex-shrink: 0; width: 132px; height: 132px; }
+.client-projectdash-root .dx-ring { display: block; }
+.client-projectdash-root .dx-ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
+.client-projectdash-root .dx-ring-center strong { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+.client-projectdash-root .dx-ring-center span { margin-top: 2px; font-size: 11.5px; color: var(--ink-faint); }
+.client-projectdash-root .dx-ring-small strong { font-size: 17px; }
+
+/* ---- action banner ---- */
+.client-projectdash-root .dx-action { display: flex; align-items: center; gap: 18px; padding: 20px 24px; background: var(--warning-soft); border: 1px solid var(--warning); border-radius: 16px; }
+.client-projectdash-root .dx-action-icon { flex-shrink: 0; width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: var(--surface); color: var(--warning); }
+.client-projectdash-root .dx-action-body { flex: 1; min-width: 0; }
+.client-projectdash-root .dx-action-label { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--warning); }
+.client-projectdash-root .dx-action-title { margin-top: 3px; font-size: 16.5px; font-weight: 700; color: var(--ink); }
+.client-projectdash-root .dx-action-desc { margin: 3px 0 0; font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.client-projectdash-root .dx-action-cta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.client-projectdash-root .dx-action-more { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+
+/* ---- key numbers ---- */
+.client-projectdash-root .dx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+.client-projectdash-root .dx-kpi { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 22px 22px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow-lg); color: var(--ink); transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease; }
+.client-projectdash-root .dx-kpi::before { content: ''; position: absolute; left: 22px; right: 22px; top: 0; height: 3px; border-radius: 0 0 4px 4px; background: currentColor; opacity: 0.9; color: var(--kpi-tone, var(--accent)); }
+.client-projectdash-root .dx-kpi:nth-child(1) { --kpi-tone: var(--accent); }
+.client-projectdash-root .dx-kpi:nth-child(2) { --kpi-tone: #2f6fdb; }
+.client-projectdash-root .dx-kpi:nth-child(3) { --kpi-tone: var(--positive); }
+.client-projectdash-root .dx-kpi:nth-child(4) { --kpi-tone: var(--warning); }
+.client-projectdash-root .dx-kpi:hover { border-color: var(--kpi-tone); transform: translateY(-2px); }
+.client-projectdash-root .dx-kpi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.client-projectdash-root .dx-kpi-icon { width: 44px; height: 44px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.client-projectdash-root .dx-kpi-top .dx-kpi-icon { margin-bottom: 0; }
+.client-projectdash-root .dx-ap-top .dx-kpi-icon { width: 38px; height: 38px; border-radius: 12px; }
+/* the ring sits beside the text block (label, value, caption), centred on it vertically */
+.client-projectdash-root .dx-kpi:has(.dx-kpi-mini) { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; row-gap: 6px; align-content: start; }
+.client-projectdash-root .dx-kpi:has(.dx-kpi-mini) .dx-kpi-top { display: contents; }
+.client-projectdash-root .dx-kpi:has(.dx-kpi-mini) .dx-kpi-icon { grid-column: 1; grid-row: 1; margin-bottom: 8px; justify-self: start; }
+.client-projectdash-root .dx-kpi:has(.dx-kpi-mini) .dx-kpi-go { grid-column: 2; grid-row: 1; justify-self: end; align-self: start; }
+.client-projectdash-root .dx-kpi:has(.dx-kpi-mini) .dx-kpi-label, .client-projectdash-root .dx-kpi:has(.dx-kpi-mini) .dx-kpi-value, .client-projectdash-root .dx-kpi:has(.dx-kpi-mini) .dx-kpi-sub { grid-column: 1; }
+.client-projectdash-root .dx-kpi-mini { grid-column: 2; grid-row: 2 / span 3; align-self: center; position: relative; width: 46px; height: 46px; display: inline-flex; align-items: center; justify-content: center; }
+.client-projectdash-root .dx-kpi-mini .dx-ring { position: absolute; inset: 0; }
+.client-projectdash-root .dx-kpi-mini .dx-kpi-mini-num { z-index: 1; }
+.client-projectdash-root .dx-kpi-mini-num { position: relative; font-size: 10.5px; font-weight: 800; color: var(--ink); }
+.client-projectdash-root .dx-kpi-go { width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: var(--ink-faint); background: var(--bg); transition: background 0.15s ease, color 0.15s ease; }
+.client-projectdash-root .dx-kpi:hover .dx-kpi-go { background: var(--kpi-tone); color: #fff; }
+.client-projectdash-root .dx-tone-accent { background: var(--accent-soft); color: var(--accent); }
+.client-projectdash-root .dx-tone-blue { background: rgba(47, 111, 219, 0.12); color: #2f6fdb; }
+.client-projectdash-root .dx-tone-green { background: var(--positive-soft); color: var(--positive); }
+.client-projectdash-root .dx-tone-amber { background: var(--warning-soft); color: var(--warning); }
+.client-projectdash-root .dx-kpi-label { font-size: 12.5px; font-weight: 600; color: var(--ink-faint); }
+.client-projectdash-root .dx-kpi-value { font-size: 22px; line-height: 1.2; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+.client-projectdash-root .dx-kpi-text { font-size: 17px; overflow-wrap: anywhere; }
+.client-projectdash-root .dx-kpi-sub { font-size: 12.5px; color: var(--ink-soft); }
+.client-projectdash-root .dx-warn { color: var(--danger); font-weight: 600; }
+
+/* ---- columns & cards ---- */
+.client-projectdash-root .dx-cols { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.client-projectdash-root .dx-col { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+.client-projectdash-root .dx-card { padding: 26px 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-lg); }
+.client-projectdash-root .dx-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.client-projectdash-root .dx-card-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 10px; }
+.client-projectdash-root .dx-link { font-size: 13px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+.client-projectdash-root .dx-link:hover { text-decoration: underline; }
+.client-projectdash-root .dx-empty { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink-faint); }
+.client-projectdash-root .dx-chip { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+
+/* ---- journey: horizontal on desktop, a vertical timeline on small screens ---- */
+.client-projectdash-root .dx-journey { list-style: none; margin: 0; padding: 0; display: flex; }
+.client-projectdash-root .dx-step { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 0 6px; }
+.client-projectdash-root .dx-step::before { content: ''; position: absolute; top: 13px; right: 50%; width: 100%; height: 2px; background: var(--border); }
+.client-projectdash-root .dx-step:first-child::before { display: none; }
+.client-projectdash-root .dx-step.done::before, .client-projectdash-root .dx-step.current::before { background: var(--positive); }
+.client-projectdash-root .dx-step-dot { position: relative; z-index: 1; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--surface); border: 2px solid var(--border); color: #fff; }
+.client-projectdash-root .dx-step.done .dx-step-dot { background: var(--positive); border-color: var(--positive); }
+.client-projectdash-root .dx-step.current .dx-step-dot { border-color: var(--accent); box-shadow: 0 0 0 5px var(--accent-soft); background: var(--surface); }
+.client-projectdash-root .dx-step.current .dx-step-dot::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+.client-projectdash-root .dx-step-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.client-projectdash-root .dx-step-label { font-size: 13px; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.client-projectdash-root .dx-step.current .dx-step-label { color: var(--accent); }
+.client-projectdash-root .dx-step-sub { font-size: 11.5px; color: var(--ink-faint); }
+
+/* ---- agreement & payment ---- */
+.client-projectdash-root .dx-ap-top { display: flex; align-items: center; gap: 12px; }
+.client-projectdash-root .dx-ap-top .dx-kpi-icon { margin-bottom: 0; }
+.client-projectdash-root .dx-ap-title { font-size: 14.5px; font-weight: 700; color: var(--ink); }
+.client-projectdash-root .dx-ap-sub { font-size: 12.5px; color: var(--ink-faint); margin-top: 2px; }
+.client-projectdash-root .dx-pill { display: inline-flex; align-items: center; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--ink-soft); }
+.client-projectdash-root .dx-pill-green { background: var(--positive-soft); border-color: transparent; color: var(--positive); }
+.client-projectdash-root .dx-pill-amber { background: var(--warning-soft); border-color: transparent; color: var(--warning); }
+.client-projectdash-root .dx-pay { display: flex; align-items: center; gap: 18px; width: 100%; }
+.client-projectdash-root .dx-pay-ring { position: relative; flex-shrink: 0; width: 84px; height: 84px; }
+.client-projectdash-root .dx-pay-legend { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.client-projectdash-root .dx-pay-legend > div { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-soft); }
+.client-projectdash-root .dx-pay-legend strong { margin-left: auto; font-size: 13.5px; color: var(--ink); }
+.client-projectdash-root .dx-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.client-projectdash-root .dx-swatch-green { background: var(--positive); }
+.client-projectdash-root .dx-swatch-grey { background: var(--border); }
+
+/* ---- agreement & payment: two cards side by side ---- */
+.client-projectdash-root .dx-ap2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.client-projectdash-root .dx-doc { display: flex; flex-direction: column; align-items: stretch; gap: 20px; }
+.client-projectdash-root .dx-doc > .btn { margin-top: auto; justify-content: center; }
+.client-projectdash-root .dx-doc-head { display: flex; align-items: center; gap: 14px; }
+.client-projectdash-root .dx-doc-head .dx-kpi-icon { margin: 0; }
+.client-projectdash-root .dx-doc-status { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 14px; background: var(--bg); border: 1px solid var(--border); }
+.client-projectdash-root .dx-doc-status > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.client-projectdash-root .dx-doc-status strong { font-size: 14px; font-weight: 700; color: var(--ink); }
+.client-projectdash-root .dx-doc-status span { font-size: 12.5px; color: var(--ink-soft); }
+.client-projectdash-root .dx-doc-status-icon { flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--surface); color: var(--ink-faint); }
+.client-projectdash-root .dx-doc-status.ok { background: var(--positive-soft); border-color: transparent; }
+.client-projectdash-root .dx-doc-status.ok .dx-doc-status-icon { background: var(--positive); color: #fff; }
+.client-projectdash-root .dx-doc-status.wait { background: var(--warning-soft); border-color: transparent; }
+.client-projectdash-root .dx-doc-status.wait .dx-doc-status-icon { background: var(--warning); color: #fff; }
+.client-projectdash-root .dx-mini-steps { list-style: none; margin: 0; padding: 0; display: flex; }
+.client-projectdash-root .dx-mini-steps li { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.client-projectdash-root .dx-mini-steps li::before { content: ''; position: absolute; top: 9px; right: 50%; width: 100%; height: 2px; background: var(--border); }
+.client-projectdash-root .dx-mini-steps li:first-child::before { display: none; }
+.client-projectdash-root .dx-mini-steps li.done::before { background: var(--positive); }
+.client-projectdash-root .dx-mini-dot { position: relative; z-index: 1; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--surface); border: 2px solid var(--border); color: #fff; }
+.client-projectdash-root .dx-mini-steps li.done .dx-mini-dot { background: var(--positive); border-color: var(--positive); }
+.client-projectdash-root .dx-mini-steps li.current .dx-mini-dot { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.client-projectdash-root .dx-mini-label { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+.client-projectdash-root .dx-pay2 { display: flex; align-items: center; gap: 22px; }
+.client-projectdash-root .dx-pay2 .dx-pay-ring { width: 96px; height: 96px; }
+.client-projectdash-root .dx-next-pay { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 14px 18px; border-radius: 14px; background: var(--warning-soft); }
+.client-projectdash-root .dx-next-pay-label { width: 100%; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--warning); }
+.client-projectdash-root .dx-next-pay strong { font-size: 18px; font-weight: 800; color: var(--ink); }
+.client-projectdash-root .dx-next-pay span:last-child { font-size: 12.5px; color: var(--ink-soft); }
+
+/* ---- statement of work card ---- */
+.client-projectdash-root .dx-sow { display: flex; flex-direction: column; gap: 24px; padding: 26px; }
+.client-projectdash-root .dx-sow > .btn { margin-top: auto; justify-content: center; }
+.client-projectdash-root .dx-sow-banner { display: flex; align-items: flex-start; gap: 14px; }
+.client-projectdash-root .dx-sow-banner .dx-kpi-icon { margin: 0; }
+.client-projectdash-root .dx-sow-about { display: flex; flex-direction: column; gap: 14px; margin-top: -8px; }
+.client-projectdash-root .dx-sow-intro { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
+.client-projectdash-root .dx-sow-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0; }
+.client-projectdash-root .dx-sow-facts > div { min-width: 0; }
+.client-projectdash-root .dx-sow-facts dt { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint); }
+.client-projectdash-root .dx-sow-facts dd { margin: 4px 0 0; font-size: 14px; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.client-projectdash-root .dx-sow-banner-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.client-projectdash-root .dx-sow-state { display: inline-flex; align-items: center; line-height: 21px; gap: 7px; font-size: 12.5px; font-weight: 700; color: var(--ink-faint); white-space: nowrap; }
+.client-projectdash-root .dx-sow-state-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.client-projectdash-root .dx-sow-state.ok { color: var(--positive); }
+.client-projectdash-root .dx-sow-state.wait { color: var(--warning); }
+.client-projectdash-root .dx-sow-timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.client-projectdash-root .dx-sow-timeline li { position: relative; display: flex; align-items: flex-start; gap: 14px; padding-bottom: 20px; }
+.client-projectdash-root .dx-sow-timeline li:last-child { padding-bottom: 0; }
+.client-projectdash-root .dx-sow-timeline li::before { content: ''; position: absolute; left: 10px; top: 24px; bottom: 2px; width: 2px; background: var(--border); }
+.client-projectdash-root .dx-sow-timeline li:last-child::before { display: none; }
+.client-projectdash-root .dx-sow-timeline li.done::before { background: var(--positive); }
+.client-projectdash-root .dx-sow-dot { position: relative; z-index: 1; flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--surface); border: 2px solid var(--border); color: #fff; }
+.client-projectdash-root .dx-sow-timeline li.done .dx-sow-dot { background: var(--positive); border-color: var(--positive); }
+.client-projectdash-root .dx-sow-timeline li.current .dx-sow-dot { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.client-projectdash-root .dx-sow-step { display: flex; flex-direction: column; gap: 2px; padding-top: 1px; }
+.client-projectdash-root .dx-sow-step strong { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.client-projectdash-root .dx-sow-step span { font-size: 12.5px; color: var(--ink-faint); }
+.client-projectdash-root .dx-sow-timeline li:not(.done):not(.current) .dx-sow-step strong { color: var(--ink-faint); }
+
+/* ---- lists (updates, upcoming, files) ---- */
+.client-projectdash-root .dx-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.client-projectdash-root .dx-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid var(--border); }
+.client-projectdash-root .dx-row:first-child { border-top: none; padding-top: 0; }
+.client-projectdash-root .dx-row:last-child { padding-bottom: 0; }
+.client-projectdash-root .dx-row-icon { width: 36px; height: 36px; border-radius: 11px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent); }
+.client-projectdash-root .dx-row-icon.pdf { background: var(--danger-soft); color: var(--danger); }
+.client-projectdash-root .dx-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.client-projectdash-root .dx-row-title { font-size: 14px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.client-projectdash-root .dx-row-sub { font-size: 12px; color: var(--ink-faint); }
+.client-projectdash-root .dx-date { width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: var(--bg); border: 1px solid var(--border); line-height: 1; }
+.client-projectdash-root .dx-date strong { font-size: 16px; font-weight: 800; color: var(--ink); }
+.client-projectdash-root .dx-date span { font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em; color: var(--ink-faint); }
+.client-projectdash-root .dx-icon-btn { width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); border: 1px solid var(--border); }
+.client-projectdash-root .dx-icon-btn:hover { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+
+/* ---- coming up: one card, one table ---- */
+.client-projectdash-root .dx-card:has(.dx-table) { padding: 22px 26px 26px; }
+.client-projectdash-root .dx-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 14px; }
+.client-projectdash-root .dx-table { width: 100%; border-collapse: collapse; }
+.client-projectdash-root .dx-table th { padding: 12px 16px; background: var(--bg); text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint); border-bottom: 1px solid var(--border); }
+.client-projectdash-root .dx-table td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 13.5px; color: var(--ink-soft); vertical-align: middle; }
+.client-projectdash-root .dx-table tbody tr:last-child td { border-bottom: none; }
+.client-projectdash-root .dx-table th:last-child, .client-projectdash-root .dx-table td:last-child { text-align: right; }
+.client-projectdash-root .dx-td-date { white-space: nowrap; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: var(--ink-faint); width: 88px; }
+.client-projectdash-root .dx-td-weekday { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 500; letter-spacing: 0; color: var(--ink-faint); }
+.client-projectdash-root .dx-td-date strong { display: block; line-height: 1.15; font-size: 14px; font-weight: 700; letter-spacing: 0; color: var(--ink); }
+.client-projectdash-root .dx-td-title { font-weight: 700; color: var(--ink); }
+.client-projectdash-root .dx-td-sub { display: block; margin-top: 2px; font-size: 12px; font-weight: 500; color: var(--ink-faint); }
+.client-projectdash-root .dx-td-type { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; }
+.client-projectdash-root .dx-up-when { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 4px 11px; border-radius: 999px; background: var(--bg); color: var(--ink-soft); white-space: nowrap; }
+.client-projectdash-root .dx-table tr.soon .dx-up-when { background: var(--warning); color: #fff; }
+
+/* ---- message preview & manager ---- */
+.client-projectdash-root .dx-avatar { overflow: hidden; flex-shrink: 0; }
+.client-projectdash-root .dx-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.client-projectdash-root .dx-msg { display: flex; align-items: flex-start; gap: 12px; }
+.client-projectdash-root .dx-msg-body { flex: 1; min-width: 0; }
+.client-projectdash-root .dx-msg-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.client-projectdash-root .dx-msg-sender { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.client-projectdash-root .dx-msg-text { margin-top: 4px; font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.client-projectdash-root .dx-manager { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.client-projectdash-root .dx-manager-body { flex: 1; min-width: 120px; }
+
+/* ---- tablet ---- */
+@media (max-width: 1100px) {
+  .client-projectdash-root .dx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .client-projectdash-root .dx-cols { grid-template-columns: 1fr; }
+}
+
+/* ---- phone: one column, bigger touch targets, room for the bottom tab bar ---- */
+@media (max-width: 860px) {
+  .client-projectdash-root .content { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+  .client-projectdash-root .dx { gap: 18px; }
+  .client-projectdash-root .dx-hero { flex-direction: column; align-items: stretch; gap: 0; padding: 24px 22px; border-radius: 18px; }
+  /* title, project, then the ring, then the buttons */
+  .client-projectdash-root .dx-hero-text { display: contents; }
+  .client-projectdash-root .dx-eyebrow, .client-projectdash-root .dx-title, .client-projectdash-root .dx-sub, .client-projectdash-root .dx-hero-project { order: 1; }
+  .client-projectdash-root .dx-hero-progress { order: 2; margin: 22px 0 4px; gap: 0; justify-content: space-between; width: 100%; }
+  .client-projectdash-root .dx-hero-stats { gap: 12px; margin-left: auto; min-width: 140px; }
+  .client-projectdash-root .dx-hero-actions { order: 3; }
+  .client-projectdash-root .dx-hero-ring { width: 108px; height: 108px; }
+  .client-projectdash-root .dx-hero-ring svg { width: 108px; height: 108px; }
+  .client-projectdash-root .dx-ring-center strong { font-size: 23px; }
+  .client-projectdash-root .dx-title { font-size: 24px; }
+  .client-projectdash-root .dx-hero-actions .btn { flex: 1; justify-content: center; min-height: 44px; }
+  .client-projectdash-root .dx-action { flex-wrap: wrap; align-items: flex-start; padding: 18px; gap: 14px; }
+  .client-projectdash-root .dx-action-cta { width: 100%; flex-direction: row; align-items: center; justify-content: space-between; }
+  .client-projectdash-root .dx-action-cta .btn { flex: 1; justify-content: center; min-height: 44px; }
+  .client-projectdash-root .dx-kpis { gap: 12px; }
+  .client-projectdash-root .dx-kpi { padding: 16px; border-radius: 14px; }
+  .client-projectdash-root .dx-kpi-icon { width: 38px; height: 38px; }
+  .client-projectdash-root .dx-kpi-top { margin-bottom: 10px; }
+  .client-projectdash-root .dx-kpi-go { width: 26px; height: 26px; }
+  .client-projectdash-root .dx-kpi-mini { width: 40px; height: 40px; }
+  .client-projectdash-root .dx-kpi-mini .dx-ring { width: 40px; height: 40px; }
+  .client-projectdash-root .dx-kpi-value { font-size: 18px; }
+  .client-projectdash-root .dx-kpi-text { font-size: 15px; }
+  .client-projectdash-root .dx-col { gap: 18px; }
+  .client-projectdash-root .dx-card { padding: 22px 20px; border-radius: 14px; }
+  .client-projectdash-root .dx-card-head { margin-bottom: 16px; }
+  .client-projectdash-root .dx-journey { flex-direction: column; gap: 0; }
+  .client-projectdash-root .dx-step { flex-direction: row; align-items: flex-start; text-align: left; gap: 14px; padding: 0 0 22px; }
+  .client-projectdash-root .dx-step:last-child { padding-bottom: 0; }
+  .client-projectdash-root .dx-step::before { top: 28px; bottom: 0; left: 13px; right: auto; width: 2px; height: auto; }
+  .client-projectdash-root .dx-step:first-child::before { display: block; }
+  .client-projectdash-root .dx-step:last-child::before { display: none; }
+  .client-projectdash-root .dx-step.done::before { background: var(--positive); }
+  .client-projectdash-root .dx-step.current::before { background: var(--border); }
+  .client-projectdash-root .dx-step:first-child.current::before { background: var(--border); }
+  .client-projectdash-root .dx-step-text { padding-top: 3px; }
+  .client-projectdash-root .dx-ap2 { grid-template-columns: 1fr; gap: 18px; }
+  .client-projectdash-root .dx-doc > .btn, .client-projectdash-root .dx-sow > .btn { min-height: 44px; }
+  .client-projectdash-root .dx-sow { padding: 22px 20px; }
+  .client-projectdash-root .dx-sow-banner { flex-wrap: wrap; }
+  .client-projectdash-root .dx-manager .btn { width: 100%; justify-content: center; min-height: 42px; }
+}
+@media (max-width: 860px) {
+  .client-projectdash-root .dx-card:has(.dx-table) { padding: 18px 16px 16px; }
+  .client-projectdash-root .dx-table th, .client-projectdash-root .dx-table td { padding-left: 12px; padding-right: 12px; }
+  .client-projectdash-root .dx-col-type { display: none; }
+  .client-projectdash-root .dx-td-date { width: 66px; }
+}
+@media (max-width: 380px) {
+  .client-projectdash-root .dx-kpis { grid-template-columns: 1fr; }
+}
+
+/* ---- extras used by the My Project page ---- */
+.client-projectdash-root .dx-hero-chip { font-size: 12px; font-weight: 600; padding: 4px 11px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); color: var(--ink-soft); }
+.client-projectdash-root .dx-action.ok { background: var(--positive-soft); border-color: var(--positive); }
+.client-projectdash-root .dx-action.ok .dx-action-icon, .client-projectdash-root .dx-action.ok .dx-action-label { color: var(--positive); }
+.client-projectdash-root .dx-wrap { white-space: normal; overflow: visible; text-overflow: clip; }
+.client-projectdash-root div.dx-kpi:hover { transform: none; border-color: var(--border); }
+.client-projectdash-root .dx-phase { display: flex; align-items: center; gap: 22px; }
+.client-projectdash-root .dx-phase-ring { position: relative; flex-shrink: 0; width: 84px; height: 84px; }
+.client-projectdash-root .dx-phase-body { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.client-projectdash-root .dx-phase-name { font-size: 17px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); overflow-wrap: anywhere; }
+.client-projectdash-root .dx-phase-desc { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink-soft); }
+.client-projectdash-root .dx-update { display: flex; flex-direction: column; gap: 6px; }
+.client-projectdash-root .dx-update-title { font-size: 15px; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.client-projectdash-root .dx-update-body { margin-top: 6px; font-size: 13.5px; line-height: 1.7; color: var(--ink-soft); }
+.client-projectdash-root .dx-update-file { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--accent); }
+.client-projectdash-root .dx-details { margin: 0; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.client-projectdash-root .dx-details > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 14px 18px; border-top: 1px solid var(--border); }
+.client-projectdash-root .dx-details > div:first-child { border-top: none; }
+.client-projectdash-root .dx-details dt { font-size: 13px; color: var(--ink-faint); }
+.client-projectdash-root .dx-details dd { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--ink); text-align: right; overflow-wrap: anywhere; }
+@media (max-width: 860px) {
+  .client-projectdash-root .dx-phase { gap: 16px; }
+}
+
+/* ---- all caught up ---- */
+.client-projectdash-root .dx-clear-body { flex: 1; min-width: 0; }
+.client-projectdash-root .dx-clear-title { font-size: 16px; font-weight: 700; letter-spacing: 0; color: var(--ink); }
+.client-projectdash-root .dx-clear-desc { margin: 4px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); }
+.client-projectdash-root .dx-clear-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.client-projectdash-root .dx-clear-pill { flex-shrink: 0; display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700; color: var(--positive); }
+.client-projectdash-root .dx-clear-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+@media (max-width: 860px) {
+  .client-projectdash-root .dx-clear { flex-wrap: wrap; align-items: center; gap: 14px; padding: 22px 18px; }
+  .client-projectdash-root .dx-clear-icon { width: 44px; height: 44px; margin: 0 4px; box-shadow: 0 0 0 5px var(--positive-soft); }
+  .client-projectdash-root .dx-clear-body { flex-basis: calc(100% - 80px); }
+}
+
+/* "all caught up" card: same card treatment as the Overview cards (radius 16, 26/28 padding, shadow) with a rounded-square icon tile */
+.client-projectdash-root .dx-clear { position: relative; display: flex; align-items: center; gap: 18px; padding: 26px 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-lg); }
+.client-projectdash-root .dx-clear-icon { flex-shrink: 0; width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--positive-soft); color: var(--positive); border: 2px solid var(--positive); box-sizing: border-box; margin: 0; box-shadow: none; }
+@media (max-width: 860px) {
+  .client-projectdash-root .dx-clear { padding: 22px 20px; border-radius: 14px; }
+  .client-projectdash-root .dx-clear-icon { width: 42px; height: 42px; margin: 0; box-shadow: none; }
+}
+
+/* icon tiles of the four key-number cards get a border in their own colour */
+.client-projectdash-root .dx-kpis .dx-kpi-icon { border: 1.5px solid currentColor; box-sizing: border-box; border-radius: 50%; }

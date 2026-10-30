@@ -143,6 +143,12 @@ export default function SowDocument({
         </div>
         <hr className="sd-hr" />
 
+        <div className="sd-section sd-section-first" id="sec-parties">
+          <div className="sd-section-head">
+            <span className="sd-section-title">Parties</span>
+          </div>
+        </div>
+
         <div className="sd-parties-row">
           <div>
             <div className="sd-eyebrow">Service Provider</div>

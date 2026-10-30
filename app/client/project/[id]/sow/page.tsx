@@ -34,9 +34,12 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
-import { todayISO } from '@/lib/format';
+import { todayISO, formatDate } from '@/lib/format';
+import { formatMoney } from '@/lib/currency';
+import ClientBottomNav from '@/app/components/ClientBottomNav';
 import '../../../client-shared.css';
 import './sow.css';
+import './sow-v2.css';
 import SowDocument from '@/app/components/SowDocument';
 
 const ICONS: Record<string, string> = {
@@ -49,6 +52,8 @@ const ICONS: Record<string, string> = {
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
   menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
   close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  check: '<path d="M20 6L9 17l-5-5"/>',
+  history: '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/>',
   download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17h.01"/>',
 };
@@ -79,6 +84,7 @@ type Sow = {
   revision_policy: string | null;
   terms: string | null;
   document_url: string | null;
+  sent_at: string | null;
   signed_at: string | null;
   signed_by_name: string | null;
   signature_method: string | null;
@@ -147,16 +153,6 @@ function SowShell({
             </Link>
           </nav>
         </div>
-        <button type="button" className="profile-card" onClick={onSignOut} title="Sign out">
-          <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
-          </div>
-          <div className="profile-meta">
-            <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
-            <div className="profile-role">{client.company_name}</div>
-          </div>
-          <Icon name="logout" />
-        </button>
       </aside>
 
       <div className="main">
@@ -165,7 +161,10 @@ function SowShell({
             <Icon name="menu" />
           </button>
           <span className="topbar-title">Statement of Work</span>
-        </header>
+                  <button type="button" className="topbar-avatar" aria-label="Sign out" onClick={() => { if (window.confirm('Sign out of your account?')) (onSignOut)(); }}>
+            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+          </button>
+</header>
 
         <header className="page-topbar">
           <div className="breadcrumb">
@@ -179,12 +178,22 @@ function SowShell({
           >
             <Icon name="help" size={13} /> Need help?
           </a>
-        </header>
+        <button type="button" className="profile-card topbar-profile" onClick={onSignOut} title="Sign out">
+          <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
+            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+          </div>
+          <div className="profile-meta">
+            <div className="profile-name">{client.primary_contact ?? client.company_name}</div>
+            <div className="profile-role">{client.company_name}</div>
+          </div>
+        </button>
+</header>
 
         <main className="content">
           {children}
         </main>
       </div>
+      <ClientBottomNav projectId={project.id} active="sow" />
     </div>
   );
 }
@@ -397,27 +406,31 @@ export default function ClientSowPage() {
     <div className="client-portal client-sow-root">
       <SowShell project={project} client={client} mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} onSignOut={handleSignOut}>
         <div className="sw-doc-wrap">
-          <div className="ph-row block">
-            <div>
-              <div className="ph-title-row">
-                <h1 className="ph-title">Statement of Work</h1>
-                <span className={`status-badge ${isSigned ? 'b-done' : 'b-hold'}`}>
-                  <span className="dot"></span>
-                  {isSigned ? 'Signed ✓' : 'Awaiting Your Signature'}
+          <section className="sx-hero">
+            <div className="sx-hero-text">
+              <div className="sx-eyebrow">Statement of Work</div>
+              <div className="sx-title-row">
+                <h1 className="sx-title">{project.name}</h1>
+                <span className={`sx-status ${isSigned ? 'ok' : 'wait'}`}>
+                  <span className="sx-status-dot" />
+                  {isSigned ? 'Signed' : 'Awaiting your signature'}
                 </span>
               </div>
-              <div className="ph-company">
-                {sow.sow_number ?? `v${sow.version}`} · {project.name} ·{' '}
-                <Link href={`/client/project/${project.id}/sow/history`} className="sw-history-link">
-                  Version History
-                </Link>
+              <div className="sx-meta">
+                <span className="sx-chip">{sow.sow_number ?? `v${sow.version}`}</span>
+                <span className="sx-chip">Version {sow.version}.0</span>
+              </div>
+              <p className="sx-sub">{isSigned ? 'This agreement has been signed by both parties.' : 'Please review the document below and sign to begin your project.'}</p>
+              <div className="sx-hero-actions">
+              <button type="button" className="btn btn-ghost" onClick={() => window.print()}>
+                <Icon name="download" size={14} /> {isSigned ? 'Download signed PDF' : 'Download PDF'}
+              </button>
+              <Link href={`/client/project/${project.id}/sow/history`} className="btn btn-ghost">
+                <Icon name="history" size={14} /> Version history
+              </Link>
               </div>
             </div>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => window.print()}>
-              <Icon name="download" size={13} /> {isSigned ? 'Download Signed PDF' : 'Download PDF'}
-            </button>
-          </div>
-          <p className="welcome-sub">{isSigned ? 'This agreement has been signed.' : 'Please review and sign to begin your project.'}</p>
+          </section>
 
           {viewVersion && (
             <div className="sw-history-banner">
@@ -430,6 +443,10 @@ export default function ClientSowPage() {
 
           <div className="sw-layout">
           <div className="sw-main">
+          <div className="sx-doc-head">
+            <h2 className="sx-doc-title">Agreement document</h2>
+            <p className="sx-doc-sub">The full Statement of Work. Take your time to read it before signing.</p>
+          </div>
           <SowDocument
             sow={sow}
             clientContact={client.primary_contact}
@@ -441,26 +458,35 @@ export default function ClientSowPage() {
           </div>
 
           <aside className="sw-sidebar">
-            <div className="sw-review-card">
-              <div className="sw-review-title">Review your agreement</div>
-              <span className={`status-badge ${isSigned ? 'b-done' : 'b-hold'}`}>
-                <span className="dot"></span>
-                {isSigned ? 'Signed ✓' : 'Awaiting your signature'}
-              </span>
-              <p className="sw-review-desc">
-                {isSigned ? 'This agreement has been signed. A copy is available below for your records.' : 'Review the scope, timeline and terms before signing.'}
-              </p>
-
-              <div className="sw-review-meta">
-                <div className="sw-review-meta-row">
-                  <span>Reference</span>
-                  <span>{sow.sow_number ?? `v${sow.version}`}</span>
-                </div>
-                <div className="sw-review-meta-row">
-                  <span>Version</span>
-                  <span>{sow.version}.0</span>
+            <div className="sx-review">
+              <div className="sx-review-head">
+                <div>
+                  <div className="sx-review-title">{isSigned ? 'Agreement signed' : 'Review your agreement'}</div>
+                  <div className="sx-review-sub">{isSigned ? 'A copy is available for your records.' : 'Check the scope, timeline and terms before signing.'}</div>
                 </div>
               </div>
+
+              <ol className="sx-steps">
+                <li className="done">
+                  <span className="sx-step-dot"><Icon name="check" size={10} /></span>
+                  <span className="sx-step-text"><strong>Prepared by FLOW 53</strong><span>Ready for review</span></span>
+                </li>
+                <li className={sow.status === 'sent' || isSigned ? 'done' : ''}>
+                  <span className="sx-step-dot">{sow.status === 'sent' || isSigned ? <Icon name="check" size={10} /> : null}</span>
+                  <span className="sx-step-text"><strong>Sent to you</strong><span>{formatDate(sow.sent_at) || 'Shared with you'}</span></span>
+                </li>
+                <li className={isSigned ? 'done' : 'current'}>
+                  <span className="sx-step-dot">{isSigned ? <Icon name="check" size={10} /> : null}</span>
+                  <span className="sx-step-text"><strong>Signed by you</strong><span>{isSigned ? formatDate(sow.signed_at) || 'Complete' : 'Waiting for your signature'}</span></span>
+                </li>
+              </ol>
+
+              <dl className="sx-facts">
+                <div><dt>Reference</dt><dd>{sow.sow_number ?? `v${sow.version}`}</dd></div>
+                <div><dt>Version</dt><dd>{sow.version}.0</dd></div>
+                {sow.project_value != null && <div><dt>Project value</dt><dd>{formatMoney(sow.project_value, sow.currency ?? 'BDT')}</dd></div>}
+                {sow.valid_until && !isSigned && <div><dt>Valid until</dt><dd>{formatDate(sow.valid_until)}</dd></div>}
+              </dl>
 
               {!viewVersion && !isSigned && sow.status === 'sent' && (
                 <>
@@ -489,9 +515,8 @@ export default function ClientSowPage() {
                 </>
               )}
 
-              <hr className="sw-review-hr" />
-              <button type="button" className="sw-review-download" onClick={() => window.print()}>
-                <Icon name="download" size={13} /> You can download a copy for your records.
+              <button type="button" className="sx-download" onClick={() => window.print()}>
+                <Icon name="download" size={14} /> Download a copy for your records
               </button>
             </div>
           </aside>

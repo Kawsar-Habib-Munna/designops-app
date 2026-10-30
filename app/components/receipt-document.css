@@ -51,14 +51,10 @@
 .receipt-document .rd-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 40px 38px 32px; overflow: hidden; }
 
 /* letterhead — same as the SOW */
-.receipt-document .rd-letterhead-row { display: table; width: 100%; margin-bottom: 20px; }
-.receipt-document .rd-letterhead-left { display: table-cell; vertical-align: middle; }
-.receipt-document .rd-brand-cell { display: inline-block; vertical-align: top; width: 40px; height: 40px; margin-right: 12px; }
-.receipt-document .rd-brand-mark { display: block; width: 40px; height: 40px; object-fit: contain; }
-.receipt-document .rd-brand-text { display: inline-block; vertical-align: top; }
-.receipt-document .rd-letterhead { display: block; font-size: 19px; font-weight: 800; color: var(--accent); line-height: 1.1; }
-.receipt-document .rd-letterhead-sub { display: block; font-size: 11px; color: var(--ink-faint); margin-top: 1px; line-height: 1.3; }
-.receipt-document .rd-letterhead-right { display: table-cell; vertical-align: middle; text-align: right; white-space: nowrap; }
+.receipt-document .rd-letterhead-row { display: flex; align-items: flex-start; justify-content: space-between; width: 100%; margin-bottom: 20px; }
+.receipt-document .rd-letterhead-left { display: flex; align-items: center; }
+.receipt-document .rd-logo { display: block; width: 150px; height: auto; }
+.receipt-document .rd-letterhead-right { flex-shrink: 0; text-align: right; white-space: nowrap; }
 .receipt-document .rd-doctype { font-size: 15px; font-weight: 800; letter-spacing: 0.02em; color: var(--ink); }
 .receipt-document .rd-ref { font-size: 11.5px; color: var(--ink-faint); margin-top: 3px; }
 .receipt-document .rd-hr { border: none; border-top: 1px solid var(--border); margin: 0 0 24px; }
@@ -109,7 +105,8 @@
 
 @media (max-width: 640px) {
   .receipt-document:not(.rd-fixed) .rd-card { padding: 26px 20px 22px; }
-  .receipt-document:not(.rd-fixed) .rd-letterhead-row, .receipt-document:not(.rd-fixed) .rd-letterhead-left, .receipt-document:not(.rd-fixed) .rd-letterhead-right { display: block; text-align: left; }
+  .receipt-document:not(.rd-fixed) .rd-letterhead-row { flex-direction: column; }
+  .receipt-document:not(.rd-fixed) .rd-letterhead-right { text-align: left; }
   .receipt-document:not(.rd-fixed) .rd-letterhead-right { margin-top: 14px; }
   .receipt-document:not(.rd-fixed) .rd-hero, .receipt-document:not(.rd-fixed) .rd-hero-main, .receipt-document:not(.rd-fixed) .rd-hero-meta { display: block; width: auto; }
   .receipt-document:not(.rd-fixed) .rd-hero-meta { border-left: none; border-top: 1px solid var(--border); }

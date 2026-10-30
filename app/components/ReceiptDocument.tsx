@@ -33,14 +33,8 @@ export default function ReceiptDocument({ data, theme = 'light', docRef }: { dat
       <div className="rd-card">
         <div className="rd-letterhead-row">
           <div className="rd-letterhead-left">
-            <span className="rd-brand-cell">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/flow53-logo.svg" alt="" className="rd-brand-mark" />
-            </span>
-            <span className="rd-brand-text">
-              <span className="rd-letterhead">FLOW 53</span>
-              <span className="rd-letterhead-sub">Innovate-Design-Elevate</span>
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/New%20Logo.png" alt="FLOW 53 - Innovate-Design-Elevate" className="rd-logo" />
           </div>
           <div className="rd-letterhead-right">
             <div className="rd-doctype">PAYMENT RECEIPT</div>
