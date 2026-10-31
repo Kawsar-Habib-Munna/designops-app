@@ -21,6 +21,14 @@ function DownloadIcon() {
     </svg>
   );
 }
+function FileIcon() {
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+      <path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+    </svg>
+  );
+}
 function CloseIcon() {
   return (
     <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -34,7 +42,7 @@ function CloseIcon() {
 function PreviewImage({ url, name }: { url: string; name: string }) {
   const sources = [driveFullImageUrl(url), driveThumbnailUrl(url), url].filter((v, i, arr) => arr.indexOf(v) === i);
   const [index, setIndex] = useState(0);
-  if (index >= sources.length) return <div className="mpm-fallback">This image could not be loaded. Use Download to open it.</div>;
+  if (index >= sources.length) return <div className="mpm-fallback"><strong>This image could not be loaded</strong><span>Use Download to open it instead.</span></div>;
   // eslint-disable-next-line @next/next/no-img-element
   return <img className="mpm-image" src={sources[index]} alt={name} referrerPolicy="no-referrer" onError={() => setIndex((i) => i + 1)} />;
 }
@@ -47,27 +55,40 @@ export default function MediaPreviewModal({ item, onClose }: { item: MediaPrevie
   const embedUrl = !isImage && isPreviewable ? driveEmbedUrl(item.url) : null;
   const downloadHref = driveDownloadUrl(item.url);
 
+  const ext = (item.name.split('.').pop() ?? '').toUpperCase();
+  const kindLabel = isImage ? `${ext || 'Image'} image` : item.fileType === 'pdf' ? 'PDF document' : ext && ext.length <= 5 && item.name.includes('.') ? `${ext} file` : 'File';
+
   return (
     <div className="mpm-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="mpm-box">
+      <div className="mpm-box" role="dialog" aria-modal="true" aria-label={item.name}>
         <div className="mpm-head">
-          <div className="mpm-title" title={item.name}>{item.name}</div>
+          <span className="mpm-icon"><FileIcon /></span>
+          <div className="mpm-who">
+            <div className="mpm-title" title={item.name}>{item.name}</div>
+            <div className="mpm-sub">{kindLabel}</div>
+          </div>
           <div className="mpm-actions">
             <a className="mpm-download" href={downloadHref} target="_blank" rel="noopener noreferrer">
-              <DownloadIcon /> Download
+              <DownloadIcon /> <span>Download</span>
             </a>
             <button type="button" className="mpm-close" aria-label="Close" onClick={onClose}>
               <CloseIcon />
             </button>
           </div>
         </div>
-        <div className="mpm-body">
+        <div className={`mpm-body${embedUrl ? ' mpm-body-frame' : ''}`}>
           {isImage ? (
             <PreviewImage key={item.url} url={item.url} name={item.name} />
           ) : embedUrl ? (
             <iframe src={embedUrl} className="mpm-frame" title={item.name} />
           ) : (
-            <div className="mpm-fallback">এই ফাইলের ইন-অ্যাপ প্রিভিউ নেই — ডাউনলোড করে দেখুন।</div>
+            <div className="mpm-fallback">
+              <strong>No preview for this file</strong>
+              <span>Download it to open it on your device.</span>
+              <a className="mpm-download" href={downloadHref} target="_blank" rel="noopener noreferrer">
+                <DownloadIcon /> <span>Download</span>
+              </a>
+            </div>
           )}
         </div>
       </div>
