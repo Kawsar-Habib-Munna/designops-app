@@ -328,3 +328,7 @@
 
 /* icon tiles of the four key-number cards get a border in their own colour */
 .client-projectdash-root .dx-kpis .dx-kpi-icon { border: 1.5px solid currentColor; box-sizing: border-box; border-radius: 50%; }
+
+/* hero status and type labels: text only, no filled background */
+.client-projectdash-root .dx-hero-project .status-badge { background: none; padding-left: 0; padding-right: 0; }
+.client-projectdash-root .dx-hero-project .dx-hero-chip { background: none; }

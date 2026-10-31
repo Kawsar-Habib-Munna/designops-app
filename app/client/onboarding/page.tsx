@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, hasSubmittedRequirements, type ClientRecord } from '@/lib/clientPortal';
 import { uploadFileToDrive, guessFileType } from '@/lib/driveUpload';
 import PhoneInput from '@/app/components/PhoneInput';
+import ClientSelect from '@/app/components/ClientSelect';
 import '../client-shared.css';
 import './onboarding.css';
 
@@ -524,21 +525,13 @@ export default function ClientOnboarding() {
                       <label className="field-label" htmlFor="preferredContact">
                         Preferred contact method
                       </label>
-                      <select className="field-select" id="preferredContact" value={form.preferredContact} onChange={(e) => setField('preferredContact', e.target.value)}>
-                        {CONTACT_METHODS.map((m) => (
-                          <option key={m}>{m}</option>
-                        ))}
-                      </select>
+                      <ClientSelect className="cs-block" id="preferredContact" value={form.preferredContact} onChange={(v) => setField('preferredContact', v)} options={CONTACT_METHODS.map((x) => ({ value: x, label: x }))} />
                     </div>
                     <div className="field">
                       <label className="field-label" htmlFor="country">
                         Country
                       </label>
-                      <select className="field-select" id="country" value={form.country} onChange={(e) => setField('country', e.target.value)}>
-                        {COUNTRIES.map((c) => (
-                          <option key={c}>{c}</option>
-                        ))}
-                      </select>
+                      <ClientSelect className="cs-block" id="country" value={form.country} onChange={(v) => setField('country', v)} options={COUNTRIES.map((x) => ({ value: x, label: x }))} />
                     </div>
                   </div>
                 )}
@@ -588,23 +581,13 @@ export default function ClientOnboarding() {
                             <label className="field-label" htmlFor="businessType">
                               Business type
                             </label>
-                            <select className="field-select" id="businessType" value={form.businessType} onChange={(e) => setField('businessType', e.target.value)}>
-                              <option value="">Select…</option>
-                              {BUSINESS_TYPES.map((b) => (
-                                <option key={b}>{b}</option>
-                              ))}
-                            </select>
+                            <ClientSelect className="cs-block" id="businessType" value={form.businessType} onChange={(v) => setField('businessType', v)} options={[{ value: '', label: 'Select…' }, ...BUSINESS_TYPES.map((x) => ({ value: x, label: x }))]} />
                           </div>
                           <div className="field">
                             <label className="field-label" htmlFor="companySize">
                               Company size
                             </label>
-                            <select className="field-select" id="companySize" value={form.companySize} onChange={(e) => setField('companySize', e.target.value)}>
-                              <option value="">Select…</option>
-                              {COMPANY_SIZES.map((s) => (
-                                <option key={s}>{s}</option>
-                              ))}
-                            </select>
+                            <ClientSelect className="cs-block" id="companySize" value={form.companySize} onChange={(v) => setField('companySize', v)} options={[{ value: '', label: 'Select…' }, ...COMPANY_SIZES.map((x) => ({ value: x, label: x }))]} />
                           </div>
                         </div>
                       </>
@@ -624,12 +607,7 @@ export default function ClientOnboarding() {
                         <label className="field-label" htmlFor="clientRole">
                           Your role
                         </label>
-                        <select className="field-select" id="clientRole" value={form.designation} onChange={(e) => setField('designation', e.target.value)}>
-                          <option value="">Select…</option>
-                          {ROLES.map((r) => (
-                            <option key={r}>{r}</option>
-                          ))}
-                        </select>
+                        <ClientSelect className="cs-block" id="clientRole" value={form.designation} onChange={(v) => setField('designation', v)} options={[{ value: '', label: 'Select…' }, ...ROLES.map((x) => ({ value: x, label: x }))]} />
                       </div>
                     )}
                   </div>

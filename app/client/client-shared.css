@@ -699,3 +699,23 @@ body .client-portal .cp-brand-sidebar .sidebar-close-btn:hover { background: var
 @media (min-width: 861px) {
   body .client-portal .cp-brand-sidebar .cp-brand-logo-combined { width: 112px; }
 }
+
+/* ---- dropdowns: the arrow gets its own space on the right instead of sitting against the edge ---- */
+body .client-portal.client-portal select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 42px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a8790' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+  cursor: pointer;
+}
+
+/* ---- desktop: less empty space around the page content ----
+   (the content used to be centred in a 1180-1240px column with 40px side padding, which left wide gaps on large screens) */
+@media (min-width: 861px) {
+  body .client-portal .content { max-width: 1600px; padding: 24px 24px 56px; }
+  body .client-portal .dx { max-width: none; }
+  body .client-portal .page-topbar { padding-left: 24px; padding-right: 24px; }
+}

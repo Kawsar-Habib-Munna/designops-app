@@ -6,8 +6,9 @@
 // ভিউয়ারের ধাঁচে)। যেকোনো পেজ থেকে import করে ব্যবহার করা যায় — নিজের CSS
 // এখানেই বান্ডলড, তাই কোনো host page-এর scoped stylesheet-এর উপর নির্ভর করে না।
 
+import { useState } from 'react';
 import './MediaPreviewModal.css';
-import { driveFullImageUrl, driveEmbedUrl, driveDownloadUrl, canPreviewInline } from '@/lib/driveUpload';
+import { driveFullImageUrl, driveThumbnailUrl, driveEmbedUrl, driveDownloadUrl, canPreviewInline } from '@/lib/driveUpload';
 
 export type MediaPreviewItem = { name: string; url: string; fileType: string | null };
 
@@ -27,6 +28,15 @@ function CloseIcon() {
       <path d="m6 6 12 12" />
     </svg>
   );
+}
+
+// the big image: Google's resized copy first, then the plain thumbnail, then the stored address; if all of them fail, a message
+function PreviewImage({ url, name }: { url: string; name: string }) {
+  const sources = [driveFullImageUrl(url), driveThumbnailUrl(url), url].filter((v, i, arr) => arr.indexOf(v) === i);
+  const [index, setIndex] = useState(0);
+  if (index >= sources.length) return <div className="mpm-fallback">This image could not be loaded. Use Download to open it.</div>;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img className="mpm-image" src={sources[index]} alt={name} referrerPolicy="no-referrer" onError={() => setIndex((i) => i + 1)} />;
 }
 
 export default function MediaPreviewModal({ item, onClose }: { item: MediaPreviewItem | null; onClose: () => void }) {
@@ -53,8 +63,7 @@ export default function MediaPreviewModal({ item, onClose }: { item: MediaPrevie
         </div>
         <div className="mpm-body">
           {isImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img className="mpm-image" src={driveFullImageUrl(item.url)} alt={item.name} />
+            <PreviewImage key={item.url} url={item.url} name={item.name} />
           ) : embedUrl ? (
             <iframe src={embedUrl} className="mpm-frame" title={item.name} />
           ) : (

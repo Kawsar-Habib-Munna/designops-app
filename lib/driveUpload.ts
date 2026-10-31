@@ -57,7 +57,8 @@ export function driveDownloadUrl(url: string): string {
 // সরাসরি ইমেজ লিংক ব্যতিক্রম, কারণ raw ইমেজ URL এমনিতেই <img src>-এ কাজ করে।
 export function canPreviewInline(fileType: string | null, url: string): boolean {
   if (fileType === 'image') return true;
-  if (fileType === 'video' || fileType === 'pdf') return driveFileId(url) !== null;
+  // Drive's own viewer opens PDFs, videos, audio, Office documents and plain text
+  if (['video', 'pdf', 'audio', 'doc', 'sheet', 'slides', 'text'].includes(fileType ?? '')) return driveFileId(url) !== null;
   return false;
 }
 
@@ -67,7 +68,12 @@ export function guessFileType(file: File): string {
   if (ext === 'pdf') return 'pdf';
   if (file.type.startsWith('image/')) return 'image';
   if (file.type.startsWith('video/')) return 'video';
-  if (ext === 'zip' || ext === 'rar' || ext === '7z') return 'zip';
+  if (file.type.startsWith('audio/')) return 'audio';
+  if (ext === 'zip' || ext === 'rar' || ext === '7z' || ext === 'tar' || ext === 'gz') return 'zip';
+  if (['doc', 'docx', 'odt', 'rtf', 'pages'].includes(ext)) return 'doc';
+  if (['xls', 'xlsx', 'csv', 'ods', 'numbers'].includes(ext)) return 'sheet';
+  if (['ppt', 'pptx', 'odp', 'key'].includes(ext)) return 'slides';
+  if (['txt', 'md', 'json', 'xml', 'log'].includes(ext) || file.type.startsWith('text/')) return 'text';
   return 'other';
 }
 

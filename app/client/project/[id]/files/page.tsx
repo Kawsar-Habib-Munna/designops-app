@@ -9,16 +9,20 @@
 // (ফেজ ১৭, Messages-এর sender_id-এর same প্যাটার্ন) থেকে টিম মেম্বারের real
 // নাম/role/avatar দেখায়, কোনো ID না থাকলে (পুরনো রো) জেনেরিক "FLOW 53 Team"।
 
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClientProject, type ClientRecord } from '@/lib/clientPortal';
-import { uploadFileToDrive, guessFileType, driveDownloadUrl } from '@/lib/driveUpload';
+import { uploadFileToDrive, guessFileType, driveDownloadUrl, driveThumbnailUrl } from '@/lib/driveUpload';
 import MediaPreviewModal, { type MediaPreviewItem } from '@/app/components/MediaPreviewModal';
 import { formatDateLong } from '@/lib/format';
+import ClientBottomNav from '@/app/components/ClientBottomNav';
+import ClientSelect from '@/app/components/ClientSelect';
+import AvatarImage from '@/app/components/AvatarImage';
 import '../../../client-shared.css';
 import './files.css';
+import './files-v2.css';
 
 const ICONS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -41,6 +45,15 @@ const ICONS: Record<string, string> = {
   chevronLeft: '<path d="M15 18l-6-6 6-6"/>',
   chevronRight: '<path d="M9 18l6-6-6-6"/>',
   eye: '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>',
+  arrow: '<path d="M7 17 17 7"/><path d="M8 7h9v9"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  external: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  move: '<path d="M2 9V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1"/><path d="M2 13h10"/><path d="m9 16 3-3-3-3"/>',
+  copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17h.01"/>',
 };
 function Icon({ name, size = 14 }: { name: string; size?: number }) {
@@ -62,8 +75,11 @@ type FileRow = {
   category: string;
   uploaded_by: string;
   uploaded_by_id: string | null;
+  folder_id?: string | null;
   created_at: string;
 };
+type CustomFolder = { id: string; name: string; created_at: string };
+type FolderTile = { id: string; label: string; count: number; latest: FileRow | null; custom: boolean };
 
 const CATEGORY_LABEL: Record<string, string> = {
   requirements: 'Project Requirements',
@@ -77,6 +93,72 @@ const CATEGORY_LABEL: Record<string, string> = {
 const CATEGORY_ORDER = ['requirements', 'sow', 'invoice', 'receipt', 'design', 'deliverable', 'other'];
 const PAGE_SIZE = 5;
 
+// one colour per folder, shared by the ring and the little dots on the folder tiles
+const FOLDER_COLORS = ['var(--accent)', 'var(--positive)', 'var(--warning)', '#2f6fdb', 'var(--danger)', '#0ea5a4', '#ec4899'];
+
+// donut of how the files are split across folders, with the total in the middle
+function FilesRing({ segments, total }: { segments: { key: string; label: string; value: number; color: string }[]; total: number }) {
+  const size = 132;
+  const stroke = 10;
+  const r = (size - stroke) / 2;
+  const innerR = r - stroke / 2 - 11; // the thin circle inside the thick ring
+  const circ = 2 * Math.PI * r;
+  const sum = segments.reduce((n, seg) => n + seg.value, 0);
+  const gap = segments.length > 1 ? stroke + 4 : 0; // round caps stick out by half the stroke at each end
+  return (
+    <div className="ff-ring" role="img" aria-label={`${total} files in ${segments.length} folders`}>
+      <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--bg)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={innerR} fill="none" stroke="var(--accent)" strokeWidth="1" opacity="0.7" />
+        <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+          {segments.map((seg, i) => {
+            const before = segments.slice(0, i).reduce((n, v) => n + v.value, 0);
+            const len = sum > 0 ? (seg.value / sum) * circ : 0;
+            const dash = Math.max(len - gap, 0.1);
+            const start = (before / sum) * circ + gap / 2;
+            return <circle key={seg.key} cx={size / 2} cy={size / 2} r={r} fill="none" stroke={seg.color} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${dash} ${circ - dash}`} strokeDashoffset={-start} />;
+          })}
+        </g>
+      </svg>
+      <div className="ff-ring-center">
+        <strong>{total}</strong>
+        <span>{total === 1 ? 'file' : 'files'}</span>
+      </div>
+    </div>
+  );
+}
+
+// small donut for the key-number cards
+function MiniRing({ pct, color }: { pct: number; color: string }) {
+  const size = 46;
+  const stroke = 5;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const p = Math.max(0, Math.min(100, pct));
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="dx-ring" aria-hidden="true">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={`${(c * p) / 100} ${c}`} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+    </svg>
+  );
+}
+
+// tiny column chart (values 0..1) for the key-number cards
+function MiniBars({ values, color }: { values: number[]; color: string }) {
+  const w = 46;
+  const h = 34;
+  const gap = 3;
+  const bw = (w - gap * (values.length - 1)) / values.length;
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
+      {values.map((v, i) => {
+        const bh = Math.max(3, v * h);
+        return <rect key={i} x={i * (bw + gap)} y={h - bh} width={bw} height={bh} rx={Math.min(2, bw / 2)} fill={color} opacity={v > 0 ? 1 : 0.25} />;
+      })}
+    </svg>
+  );
+}
+
 function formatBytes(bytes: number | null): string {
   if (!bytes) return '0 B';
   if (bytes < 1024) return `${bytes} B`;
@@ -88,6 +170,65 @@ function fileExtension(name: string): string {
   const parts = name.split('.');
   return parts.length > 1 ? (parts.pop() as string).toUpperCase() : 'FILE';
 }
+// accepts "figma.com/file/x", "https://…", etc. and returns a clean http(s) address, or null when it is not a link
+function normalizeUrl(input: string): string | null {
+  const raw = input.trim();
+  if (!raw || /\s/.test(raw)) return null;
+  try {
+    const u = new URL(/^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    if (!u.hostname.includes('.')) return null;
+    return u.href;
+  } catch {
+    return null;
+  }
+}
+function domainOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
+type Kind = 'pdf' | 'image' | 'doc' | 'sheet' | 'slides' | 'zip' | 'video' | 'audio' | 'figma' | 'text' | 'other';
+const KIND_LABEL: Record<Kind, string> = { pdf: 'PDF', image: 'Images', doc: 'Documents', sheet: 'Spreadsheets', slides: 'Presentations', zip: 'Archives', video: 'Videos', audio: 'Audio', figma: 'Figma', text: 'Text', other: 'Other' };
+const EXT_KIND: Record<string, Kind> = {
+  pdf: 'pdf', png: 'image', jpg: 'image', jpeg: 'image', gif: 'image', webp: 'image', svg: 'image', heic: 'image', bmp: 'image',
+  doc: 'doc', docx: 'doc', odt: 'doc', rtf: 'doc', pages: 'doc', xls: 'sheet', xlsx: 'sheet', csv: 'sheet', ods: 'sheet', numbers: 'sheet',
+  ppt: 'slides', pptx: 'slides', odp: 'slides', key: 'slides', zip: 'zip', rar: 'zip', '7z': 'zip', tar: 'zip', gz: 'zip',
+  mp4: 'video', mov: 'video', avi: 'video', mkv: 'video', webm: 'video', mp3: 'audio', wav: 'audio', m4a: 'audio', aac: 'audio',
+  fig: 'figma', txt: 'text', md: 'text', json: 'text', xml: 'text', log: 'text',
+};
+function typeKind(f: { name: string; file_type: string | null }): Kind {
+  const fromExt = EXT_KIND[(f.name.split('.').pop() ?? '').toLowerCase()];
+  if (fromExt) return fromExt;
+  const t = f.file_type ?? '';
+  return (['pdf', 'image', 'doc', 'sheet', 'slides', 'zip', 'video', 'audio', 'figma', 'text'] as string[]).includes(t) ? (t as Kind) : 'other';
+}
+// small picture of an image file; if Google cannot serve it, the coloured type tile is shown instead
+function FileThumb({ f, kind, className }: { f: { name: string; drive_url: string }; kind: string; className: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <span className={`ff-type ff-type-${kind}`}>{(f.name.split('.').pop() ?? 'IMG').toUpperCase().slice(0, 4)}</span>;
+  return (
+    <span className={className}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={driveThumbnailUrl(f.drive_url)} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+    </span>
+  );
+}
+
+// what the preview window should treat this file as: decided by the extension first, so images and documents open
+// even when the stored type is just "other"
+function previewType(f: { name: string; file_type: string | null }): string | null {
+  const ext = (f.name.split('.').pop() ?? '').toLowerCase();
+  const map: Record<string, string> = {
+    png: 'image', jpg: 'image', jpeg: 'image', gif: 'image', webp: 'image', svg: 'image', bmp: 'image', heic: 'image',
+    pdf: 'pdf', mp4: 'video', mov: 'video', webm: 'video', mkv: 'video', mp3: 'audio', wav: 'audio', m4a: 'audio',
+    doc: 'doc', docx: 'doc', rtf: 'doc', odt: 'doc', xls: 'sheet', xlsx: 'sheet', csv: 'sheet', ods: 'sheet', ppt: 'slides', pptx: 'slides', odp: 'slides', txt: 'text',
+  };
+  return map[ext] ?? f.file_type;
+}
+
 function isSameDay(a: string, b: string): boolean {
   const da = new Date(a);
   const db = new Date(b);
@@ -109,19 +250,34 @@ export default function ClientFilesPage() {
   const projectId = params.id as string;
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [project, setProject] = useState<ProjectInfo | null>(null);
   const [client, setClient] = useState<ClientRecord | null>(null);
-  const [files, setFiles] = useState<FileRow[]>([]);
+  const [allRows, setFiles] = useState<FileRow[]>([]);
+  const [showAllLinks, setShowAllLinks] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [menuId, setMenuId] = useState<string | null>(null); // the row whose actions menu is open (phones)
+  const [linkToDelete, setLinkToDelete] = useState<FileRow | null>(null);
+  const [deletingLink, setDeletingLink] = useState(false);
+  const [deleteLinkError, setDeleteLinkError] = useState<string | null>(null);
   const [uploaders, setUploaders] = useState<Record<string, UploaderProfile>>({});
   const [nowIso, setNowIso] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadInfo, setUploadInfo] = useState<{ index: number; total: number } | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkTitle, setLinkTitle] = useState('');
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [savingLink, setSavingLink] = useState(false);
 
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -129,8 +285,22 @@ export default function ClientFilesPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [showAllFolders, setShowAllFolders] = useState(false);
+  const [customFolders, setCustomFolders] = useState<CustomFolder[]>([]);
+  // the step shown when "Upload files" is pressed: pick the folder first (or create the very first one)
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerFiles, setPickerFiles] = useState<File[] | null>(null); // files dropped onto the card, waiting for a folder
+  const [pickerChoice, setPickerChoice] = useState(''); // '' = no folder, otherwise a folder id
+  const [pickerNewName, setPickerNewName] = useState('');
+  const [pickerCreating, setPickerCreating] = useState(false); // the "new folder" field is open
+  const [pickerError, setPickerError] = useState<string | null>(null);
+  const [pickerSaving, setPickerSaving] = useState(false);
+  const pendingFolderRef = useRef<string | null>(null);
+  const [foldersReady, setFoldersReady] = useState(true); // false until the folders table exists in the database
+  const [folderModal, setFolderModal] = useState<{ mode: 'new' | 'rename' | 'delete' | 'move'; folder?: CustomFolder; file?: FileRow } | null>(null);
+  const [folderName, setFolderName] = useState('');
+  const [folderError, setFolderError] = useState<string | null>(null);
+  const [savingFolder, setSavingFolder] = useState(false);
   const [page, setPage] = useState(1);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [previewItem, setPreviewItem] = useState<MediaPreviewItem | null>(null);
 
   useEffect(() => {
@@ -145,13 +315,19 @@ export default function ClientFilesPage() {
         setClient(own.client);
         setNowIso(new Date().toISOString());
 
-        const { data } = await supabase
-          .from('client_files')
-          .select('id, name, file_type, size_bytes, drive_url, category, uploaded_by, uploaded_by_id, created_at')
-          .eq('client_id', own.client.id)
-          .order('created_at', { ascending: false });
-        const rows = (data as FileRow[]) ?? [];
+        const baseCols = 'id, name, file_type, size_bytes, drive_url, category, uploaded_by, uploaded_by_id, created_at';
+        let filesRes: { data: unknown; error: unknown } = await supabase.from('client_files').select(`${baseCols}, folder_id`).eq('client_id', own.client.id).order('created_at', { ascending: false });
+        let hasFolderColumn = true;
+        if (filesRes.error) {
+          // the folder_id column is not in the database yet: load the files without it
+          hasFolderColumn = false;
+          filesRes = await supabase.from('client_files').select(baseCols).eq('client_id', own.client.id).order('created_at', { ascending: false });
+        }
+        const rows = (filesRes.data as unknown as FileRow[]) ?? [];
         setFiles(rows);
+        const foldersRes = hasFolderColumn ? await supabase.from('client_folders').select('id, name, created_at').eq('client_id', own.client.id).order('created_at', { ascending: true }) : null;
+        setFoldersReady(!!foldersRes && !foldersRes.error);
+        setCustomFolders(foldersRes && !foldersRes.error ? ((foldersRes.data as CustomFolder[]) ?? []) : []);
 
         const uploaderIds = Array.from(new Set(rows.filter((f) => f.uploaded_by_id).map((f) => f.uploaded_by_id as string)));
         if (uploaderIds.length > 0) {
@@ -171,55 +347,284 @@ export default function ClientFilesPage() {
     })();
   }, [router, projectId, reloadKey]);
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+      e.preventDefault();
+      searchRef.current?.focus();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   async function handleSignOut() {
     await supabase.auth.signOut();
     router.push('/client');
   }
 
-  async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file || !client) return;
+  // any number of files, of any type: documents, images, spreadsheets, videos, archives, design files …
+  async function uploadFiles(list: File[], folderId: string | null) {
+    if (list.length === 0 || !client) return;
     const { data: sessionData } = await supabase.auth.getSession();
     const accessToken = sessionData.session?.access_token;
-    if (!accessToken) return;
-    setUploading(true);
-    setUploadProgress(0);
-    try {
-      const result = await uploadFileToDrive(file, accessToken, setUploadProgress);
-      await supabase.from('client_files').insert({
-        client_id: client.id,
-        project_id: project?.id,
-        name: file.name,
-        file_type: guessFileType(file),
-        size_bytes: file.size,
-        drive_url: result.webViewLink,
-        category: 'other',
-        uploaded_by: 'client',
-      });
-      setReloadKey((k) => k + 1);
-    } catch {
-      // no-op — বাটন আবার সক্রিয় হয়ে যাবে
+    if (!accessToken) {
+      setUploadError('Your session has expired. Please sign in again.');
+      return;
     }
+    setUploading(true);
+    setUploadError(null);
+    const failed: string[] = [];
+    for (let i = 0; i < list.length; i++) {
+      const file = list[i];
+      setUploadInfo({ index: i + 1, total: list.length });
+      setUploadProgress(0);
+      try {
+        const result = await uploadFileToDrive(file, accessToken, setUploadProgress);
+        const { error } = await supabase.from('client_files').insert({
+          client_id: client.id,
+          project_id: project?.id,
+          name: file.name,
+          file_type: guessFileType(file),
+          size_bytes: file.size,
+          drive_url: result.webViewLink,
+          category: 'other',
+          uploaded_by: 'client',
+          ...(folderId ? { folder_id: folderId } : {}),
+        });
+        if (error) throw new Error(error.message);
+      } catch (err) {
+        failed.push(`${file.name}${err instanceof Error && err.message ? ` (${err.message})` : ''}`);
+      }
+    }
+    if (failed.length > 0) setUploadError(`Couldn't upload: ${failed.join(', ')}`);
+    setUploadInfo(null);
     setUploading(false);
+    setReloadKey((k) => k + 1);
   }
 
-  const typeOptions = useMemo(() => Array.from(new Set(files.map((f) => fileExtension(f.name)))).sort(), [files]);
+  // a link of any kind (Figma, Google Docs, a website, a video …) is stored as a "link" entry instead of a file
+  async function saveLink(e: FormEvent) {
+    e.preventDefault();
+    if (!client) return;
+    const href = normalizeUrl(linkUrl);
+    if (!href) {
+      setLinkError('Please enter a valid link, for example https://figma.com/file/…');
+      return;
+    }
+    setSavingLink(true);
+    setLinkError(null);
+    const { error } = await supabase.from('client_files').insert({
+      client_id: client.id,
+      project_id: project?.id,
+      name: linkTitle.trim() || domainOf(href),
+      file_type: 'link',
+      size_bytes: null,
+      drive_url: href,
+      category: 'other',
+      uploaded_by: 'client',
+    });
+    setSavingLink(false);
+    if (error) {
+      setLinkError(error.message);
+      return;
+    }
+    setLinkOpen(false);
+    setLinkUrl('');
+    setLinkTitle('');
+    setReloadKey((k) => k + 1);
+  }
 
-  const folders = useMemo(() => {
-    return CATEGORY_ORDER.map((cat) => {
-      const items = files.filter((f) => f.category === cat);
-      if (items.length === 0) return null;
-      const latest = items[0]; // files already ordered desc by created_at
-      return { cat, label: CATEGORY_LABEL[cat] ?? cat, count: items.length, latest };
-    }).filter((f): f is { cat: string; label: string; count: number; latest: FileRow } => f !== null);
+  function openFolderModal(mode: 'new' | 'rename' | 'delete' | 'move', folder?: CustomFolder, file?: FileRow) {
+    setFolderModal({ mode, folder, file });
+    setFolderName(mode === 'rename' && folder ? folder.name : '');
+    setFolderError(null);
+  }
+
+  async function saveFolder(e: FormEvent) {
+    e.preventDefault();
+    if (!client || !folderModal) return;
+    const name = folderName.trim();
+    if (!name) {
+      setFolderError('Please give the folder a name.');
+      return;
+    }
+    if (name.length > 40) {
+      setFolderError('Keep the name under 40 characters.');
+      return;
+    }
+    if (customFolders.some((cf) => cf.name.toLowerCase() === name.toLowerCase() && cf.id !== folderModal.folder?.id)) {
+      setFolderError('You already have a folder with this name.');
+      return;
+    }
+    setSavingFolder(true);
+    setFolderError(null);
+    const res =
+      folderModal.mode === 'rename' && folderModal.folder
+        ? await supabase.from('client_folders').update({ name }).eq('id', folderModal.folder.id)
+        : await supabase.from('client_folders').insert({ client_id: client.id, name });
+    setSavingFolder(false);
+    if (res.error) {
+      setFolderError(foldersReady ? res.error.message : 'Folders are not set up yet. Please ask your project team to enable them.');
+      return;
+    }
+    setFolderModal(null);
+    setReloadKey((k) => k + 1);
+  }
+
+  async function deleteFolder() {
+    if (!folderModal?.folder) return;
+    setSavingFolder(true);
+    const { error } = await supabase.from('client_folders').delete().eq('id', folderModal.folder.id);
+    setSavingFolder(false);
+    if (error) {
+      setFolderError(error.message);
+      return;
+    }
+    if (categoryFilter === `f:${folderModal.folder.id}`) setCategoryFilter(null);
+    setFolderModal(null);
+    setReloadKey((k) => k + 1);
+  }
+
+  async function moveFile(file: FileRow, folderId: string | null) {
+    setSavingFolder(true);
+    const { error } = await supabase.rpc('move_client_file', { p_file_id: file.id, p_folder_id: folderId });
+    setSavingFolder(false);
+    if (error) {
+      setFolderError(error.message);
+      return;
+    }
+    setFolderModal(null);
+    setReloadKey((k) => k + 1);
+  }
+
+  function openUploadPicker(dropped?: File[]) {
+    setPickerFiles(dropped && dropped.length > 0 ? dropped : null);
+    setPickerChoice(openFolderId ?? customFolders[0]?.id ?? '');
+    setPickerNewName('');
+    setPickerCreating(false);
+    setPickerError(null);
+    setPickerOpen(true);
+  }
+
+  // creates a folder from the picker and selects it straight away
+  async function createPickerFolder() {
+    if (!client) return;
+    const name = pickerNewName.trim();
+    if (!name) {
+      setPickerError('Please give the folder a name.');
+      return;
+    }
+    if (name.length > 40) {
+      setPickerError('Keep the name under 40 characters.');
+      return;
+    }
+    if (customFolders.some((cf) => cf.name.toLowerCase() === name.toLowerCase())) {
+      setPickerError('You already have a folder with this name.');
+      return;
+    }
+    setPickerSaving(true);
+    setPickerError(null);
+    const { data, error } = await supabase.from('client_folders').insert({ client_id: client.id, name }).select('id, name, created_at').single();
+    setPickerSaving(false);
+    if (error || !data) {
+      setPickerError(foldersReady ? (error?.message ?? 'Could not create the folder.') : 'Folders are not set up yet. Please ask your project team to enable them.');
+      return;
+    }
+    setCustomFolders((prev) => [...prev, data as CustomFolder]);
+    setPickerChoice((data as CustomFolder).id);
+    setPickerNewName('');
+    setPickerCreating(false);
+  }
+
+  function confirmPicker() {
+    const folderId = pickerChoice;
+    if (!folderId || !customFolders.some((cf) => cf.id === folderId)) return;
+    pendingFolderRef.current = folderId;
+    setPickerOpen(false);
+    if (pickerFiles) {
+      const list = pickerFiles;
+      setPickerFiles(null);
+      void uploadFiles(list, folderId);
+    } else {
+      fileInputRef.current?.click();
+    }
+  }
+
+  function handleUpload(e: ChangeEvent<HTMLInputElement>) {
+    const list = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    void uploadFiles(list, pendingFolderRef.current);
+  }
+
+  // files and links are shown separately: links have their own card
+  const files = useMemo(() => allRows.filter((x) => x.file_type !== 'link'), [allRows]);
+  const linkRows = useMemo(() => allRows.filter((x) => x.file_type === 'link'), [allRows]);
+  const visibleLinks = showAllLinks ? linkRows : linkRows.slice(0, 5);
+
+  async function removeLink() {
+    if (!linkToDelete) return;
+    setDeletingLink(true);
+    setDeleteLinkError(null);
+    const { data, error } = await supabase.from('client_files').delete().eq('id', linkToDelete.id).eq('file_type', 'link').select('id');
+    setDeletingLink(false);
+    if (error) {
+      setDeleteLinkError(error.message);
+      return;
+    }
+    if (!data || data.length === 0) {
+      // nothing was deleted: the database rule that allows it has not been added yet
+      setDeleteLinkError('This link could not be deleted. Please ask your project team to enable it.');
+      return;
+    }
+    setLinkToDelete(null);
+    setReloadKey((k) => k + 1);
+  }
+
+  async function copyLink(row: FileRow) {
+    try {
+      await navigator.clipboard.writeText(row.drive_url);
+      setCopiedId(row.id);
+      setTimeout(() => setCopiedId((id) => (id === row.id ? null : id)), 1600);
+    } catch {
+      // clipboard not available: the Open button still works
+    }
+  }
+
+  const kindOptions = useMemo(() => {
+    const counts = new Map<Kind, number>();
+    files.forEach((f) => counts.set(typeKind(f), (counts.get(typeKind(f)) ?? 0) + 1));
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
   }, [files]);
+
+  // where a file lives, for the small label on each row
+  function folderOf(f: FileRow): string {
+    if (f.folder_id) return customFolders.find((cf) => cf.id === f.folder_id)?.name ?? 'Folder';
+    return CATEGORY_LABEL[f.category] ?? 'Other';
+  }
+
+  // custom folders first (always shown, even empty), then the built-in categories that actually have files
+  const folders = useMemo<FolderTile[]>(() => {
+    const tiles: FolderTile[] = [];
+    customFolders.forEach((cf) => {
+      const items = files.filter((x) => x.folder_id === cf.id);
+      tiles.push({ id: `f:${cf.id}`, label: cf.name, count: items.length, latest: items[0] ?? null, custom: true });
+    });
+    CATEGORY_ORDER.forEach((cat) => {
+      const items = files.filter((x) => !x.folder_id && x.category === cat);
+      if (items.length > 0) tiles.push({ id: cat, label: CATEGORY_LABEL[cat] ?? cat, count: items.length, latest: items[0], custom: false });
+    });
+    return tiles;
+  }, [files, customFolders]);
+  const activeFolder = categoryFilter ? folders.find((x) => x.id === categoryFilter) ?? null : null;
+  const openFolderId = categoryFilter && categoryFilter.startsWith('f:') ? categoryFilter.slice(2) : null;
   const visibleFolders = showAllFolders ? folders : folders.slice(0, 4);
 
   const filteredFiles = useMemo(() => {
     let list = files;
-    if (categoryFilter) list = list.filter((f) => f.category === categoryFilter);
-    if (typeFilter !== 'all') list = list.filter((f) => fileExtension(f.name) === typeFilter);
+    if (categoryFilter) list = list.filter((f) => (f.folder_id ? `f:${f.folder_id}` : f.category) === categoryFilter);
+    if (typeFilter !== 'all') list = list.filter((f) => typeKind(f) === typeFilter);
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       list = list.filter((f) => f.name.toLowerCase().includes(q));
@@ -282,6 +687,18 @@ export default function ClientFilesPage() {
   const totalSize = files.reduce((sum, f) => sum + (f.size_bytes ?? 0), 0);
   const distinctTeamUploaders = new Set(files.filter((f) => f.uploaded_by === 'team' && f.uploaded_by_id).map((f) => f.uploaded_by_id)).size;
   const lastFile = files[0] ?? null;
+  const teamFileCount = files.filter((x) => x.uploaded_by === 'team').length;
+  const teamPct = files.length > 0 ? Math.round((teamFileCount / files.length) * 100) : 0;
+  const biggest = [...files].sort((a, b) => (b.size_bytes ?? 0) - (a.size_bytes ?? 0)).slice(0, 5);
+  const biggestMax = Math.max(...biggest.map((x) => x.size_bytes ?? 0), 1);
+  const sizeBars = biggest.length > 0 ? biggest.map((x) => (x.size_bytes ?? 0) / biggestMax) : [0, 0, 0, 0, 0];
+  // uploads per day over the last 7 days
+  const dayMs = 24 * 3600 * 1000;
+  const nowMs = nowIso ? new Date(nowIso).getTime() : 0;
+  const weekCounts = Array.from({ length: 7 }, (_, i) => files.filter((x) => nowMs > 0 && Math.floor((nowMs - new Date(x.created_at).getTime()) / dayMs) === 6 - i).length);
+  const weekMax = Math.max(...weekCounts, 1);
+  const weekBars = weekCounts.map((n) => n / weekMax);
+  const teamAvatars = Array.from(new Set(files.filter((x) => x.uploaded_by === 'team' && x.uploaded_by_id).map((x) => x.uploaded_by_id as string))).slice(0, 3);
 
   return (
     <div className="client-portal files-root">
@@ -355,286 +772,626 @@ export default function ClientFilesPage() {
 </header>
 
           <main className="content">
-            <div className="files-top-row">
-              <div>
-                <h1 className="files-title">Files</h1>
-                <p className="files-page-sub">Access and download project files, documents and resources.</p>
-              </div>
-              <div className="files-top-actions">
-                <input ref={fileInputRef} type="file" hidden onChange={handleUpload} />
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                  <Icon name="upload" size={13} /> {uploading ? `${uploadProgress}%` : 'Upload File'}
-                </button>
-              </div>
-            </div>
-
-            {/* ---- stat strip ---- */}
-            <div className="files-stat-strip">
-              <div className="files-stat">
-                <div className="files-stat-icon">
-                  <Icon name="folder" size={16} />
-                </div>
-                <div>
-                  <div className="files-stat-label">Total Files</div>
-                  <div className="files-stat-value">{files.length}</div>
-                  <div className="files-stat-caption">Across all folders</div>
-                </div>
-              </div>
-              <div className="files-stat">
-                <div className="files-stat-icon positive">
-                  <Icon name="file" size={16} />
-                </div>
-                <div>
-                  <div className="files-stat-label">Total Size</div>
-                  <div className="files-stat-value">{formatBytes(totalSize)}</div>
-                  <div className="files-stat-caption">Used storage</div>
-                </div>
-              </div>
-              <div className="files-stat">
-                <div className="files-stat-icon warning">
-                  <Icon name="users" size={16} />
-                </div>
-                <div>
-                  <div className="files-stat-label">Shared By Team</div>
-                  <div className="files-stat-value">{distinctTeamUploaders}</div>
-                  <div className="files-stat-caption">Team members</div>
-                </div>
-              </div>
-              <div className="files-stat">
-                <div className="files-stat-icon accent">
-                  <Icon name="clock" size={16} />
-                </div>
-                <div>
-                  <div className="files-stat-label">Last Updated</div>
-                  <div className="files-stat-value">{lastFile && nowIso ? dayLabel(lastFile.created_at, nowIso) : '—'}</div>
-                  <div className="files-stat-caption files-stat-caption-trunc">{lastFile?.name ?? 'No files yet'}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* ---- toolbar ---- */}
-            <div className="files-toolbar">
-              <div className="files-search">
-                <Icon name="search" size={14} />
-                <input
-                  type="text"
-                  placeholder="Search files and folders…"
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    resetToPage1();
-                  }}
-                />
-              </div>
-              <select
-                className="files-select"
-                value={typeFilter}
-                onChange={(e) => {
-                  setTypeFilter(e.target.value);
-                  resetToPage1();
-                }}
+            <div className="dx">
+              {/* ---- hero ---- */}
+              <section
+                className={`dx-hero${dragging ? ' ff-dragging' : ''}`}
+                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={(e) => { if (e.currentTarget === e.target) setDragging(false); }}
+                onDrop={(e) => { e.preventDefault(); setDragging(false); const dropped = Array.from(e.dataTransfer.files); if (dropped.length > 0) openUploadPicker(dropped); }}
               >
-                <option value="all">All Types</option>
-                {typeOptions.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-              <select className="files-select" value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)}>
-                <option value="recent">Recently Updated</option>
-                <option value="oldest">Oldest First</option>
-                <option value="name">Name (A–Z)</option>
-                <option value="size">Largest First</option>
-              </select>
-              <div className="files-view-toggle">
-                <button type="button" className={viewMode === 'list' ? 'active' : ''} onClick={() => setViewMode('list')} aria-label="List view">
-                  <Icon name="list" size={15} />
-                </button>
-                <button type="button" className={viewMode === 'grid' ? 'active' : ''} onClick={() => setViewMode('grid')} aria-label="Grid view">
-                  <Icon name="grid2" size={15} />
-                </button>
-              </div>
-            </div>
-
-            {/* ---- folders ---- */}
-            {folders.length > 0 && (
-              <div className="files-section">
-                <div className="files-section-head">
-                  <span className="files-section-title">Folders</span>
-                  {folders.length > 4 && (
-                    <button type="button" className="files-view-all" onClick={() => setShowAllFolders((v) => !v)}>
-                      {showAllFolders ? 'Show less' : 'View all folders'} →
+                <div className="dx-hero-text">
+                  <h1 className="dx-title">Project files</h1>
+                  <p className="dx-sub">Everything shared for your project in one place. View it, download it, or add your own.</p>
+                  <div className="dx-hero-project">
+                    <span className="dx-hero-project-name">{project.name}</span>
+                  </div>
+                  <div className="dx-hero-actions">
+                    <input ref={fileInputRef} type="file" multiple hidden onChange={handleUpload} />
+                    <button type="button" className="btn btn-ghost" onClick={() => { setLinkError(null); setLinkOpen(true); }}>
+                      <Icon name="link" size={14} /> Add a link
                     </button>
-                  )}
-                </div>
-                <div className="files-folder-grid">
-                  {visibleFolders.map((f) => (
-                    <button
-                      key={f.cat}
-                      type="button"
-                      className={`files-folder-card${categoryFilter === f.cat ? ' active' : ''}`}
-                      onClick={() => {
-                        setCategoryFilter((prev) => (prev === f.cat ? null : f.cat));
-                        resetToPage1();
-                      }}
-                    >
-                      <div className="files-folder-icon">
-                        <Icon name="folder" size={18} />
-                      </div>
-                      <div className="files-folder-body">
-                        <div className="files-folder-name">{f.label}</div>
-                        <div className="files-folder-meta">{f.count} file{f.count === 1 ? '' : 's'}</div>
-                        <div className="files-folder-meta">Updated {nowIso ? dayLabel(f.latest.created_at, nowIso) : ''}</div>
-                      </div>
+                    <button type="button" className="btn btn-accent" onClick={() => openUploadPicker()} disabled={uploading}>
+                      <Icon name="upload" size={14} /> {uploading ? (uploadInfo && uploadInfo.total > 1 ? `Uploading ${uploadInfo.index} of ${uploadInfo.total} · ${uploadProgress}%` : `Uploading ${uploadProgress}%`) : 'Upload files'}
                     </button>
-                  ))}
+                  </div>
+                  {uploadError && <p className="ff-upload-error">{uploadError}</p>}
                 </div>
-              </div>
-            )}
+                <div className="dx-hero-progress">
+                  <FilesRing segments={folders.filter((fo) => fo.count > 0).map((fo, i) => ({ key: fo.id, label: fo.label, value: fo.count, color: FOLDER_COLORS[i % FOLDER_COLORS.length] }))} total={files.length} />
+                  <ul className="ff-legend">
+                    {folders.filter((fo) => fo.count > 0).slice(0, 4).map((fo, i) => (
+                      <li key={fo.id}>
+                        <span className="ff-legend-dot" style={{ background: FOLDER_COLORS[i % FOLDER_COLORS.length] }} />
+                        <span className="ff-legend-label">{fo.label}</span>
+                        <span className="ff-legend-leader" aria-hidden="true" />
+                        <b>{fo.count}</b>
+                      </li>
+                    ))}
+                    {folders.filter((fo) => fo.count > 0).length > 4 && <li className="ff-legend-more">+{folders.filter((fo) => fo.count > 0).length - 4} more</li>}
+                    {folders.filter((fo) => fo.count > 0).length === 0 && <li className="ff-legend-more">No files yet</li>}
+                  </ul>
+                </div>
+              </section>
 
-            {/* ---- files ---- */}
-            <div className="files-section">
-              <div className="files-section-head">
-                <span className="files-section-title">
-                  Files
-                  {categoryFilter && (
-                    <button type="button" className="files-clear-filter" onClick={() => setCategoryFilter(null)}>
-                      {CATEGORY_LABEL[categoryFilter]} <Icon name="close" size={11} />
-                    </button>
-                  )}
-                </span>
-              </div>
-
-              {filteredFiles.length === 0 ? (
-                <div className="cp-dash-card">
-                  <p className="cp-page-empty">{files.length === 0 ? 'No files have been shared yet.' : 'No files match your search.'}</p>
-                </div>
-              ) : viewMode === 'list' ? (
-                <div className="files-table-wrap">
-                  <table className="files-table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Size</th>
-                        <th>Shared By</th>
-                        <th>Updated</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pagedFiles.map((f) => {
-                        const uploader = f.uploaded_by_id ? uploaders[f.uploaded_by_id] : null;
-                        const isNew = nowIso ? new Date(nowIso).getTime() - new Date(f.created_at).getTime() < 24 * 3600 * 1000 : false;
-                        const ext = fileExtension(f.name);
-                        return (
-                          <tr key={f.id}>
-                            <td>
-                              <div className="files-row-name">
-                                <div className={`files-row-icon ${fileExtension(f.name).toLowerCase()}`}>
-                                  <Icon name="file" size={14} />
-                                </div>
-                                <span className="files-row-name-text">{f.name}</span>
-                                {isNew && <span className="files-new-badge">New</span>}
-                              </div>
-                            </td>
-                            <td>{ext}</td>
-                            <td className="tabular">{formatBytes(f.size_bytes)}</td>
-                            <td>
-                              <div className="files-shared-by">
-                                <div className="files-shared-avatar">
-                                  {uploader?.avatar_url ? (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={uploader.avatar_url} alt="" />
-                                  ) : (
-                                    (uploader?.full_name ?? (f.uploaded_by === 'client' ? (client.primary_contact ?? client.company_name) : 'FLOW 53')).charAt(0).toUpperCase()
-                                  )}
-                                </div>
-                                <div>
-                                  <div className="files-shared-name">{uploader?.full_name ?? (f.uploaded_by === 'client' ? 'You' : 'FLOW 53 Team')}</div>
-                                  <div className="files-shared-role">{uploader?.role ?? (f.uploaded_by === 'client' ? client.company_name : 'Team Member')}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td>
-                              {nowIso ? dayLabel(f.created_at, nowIso) : ''}, {formatClockTime(f.created_at)}
-                            </td>
-                            <td>
-                              <div className="files-actions">
-                                <a href={driveDownloadUrl(f.drive_url)} target="_blank" rel="noopener noreferrer" className="icon-btn" aria-label="Download">
-                                  <Icon name="download" size={14} />
-                                </a>
-                                <div className="files-menu-wrap">
-                                  <button type="button" className="icon-btn" aria-label="More actions" onClick={() => setOpenMenuId((id) => (id === f.id ? null : f.id))}>
-                                    <Icon name="dots" size={14} />
-                                  </button>
-                                  {openMenuId === f.id && (
-                                    <div className="files-menu">
-                                      <button type="button" onClick={() => { setOpenMenuId(null); setPreviewItem({ name: f.name, url: f.drive_url, fileType: f.file_type }); }}>
-                                        <Icon name="eye" size={13} /> View
-                                      </button>
-                                      <a href={driveDownloadUrl(f.drive_url)} target="_blank" rel="noopener noreferrer" onClick={() => setOpenMenuId(null)}>
-                                        <Icon name="download" size={13} /> Download
-                                      </a>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="files-grid">
-                  {pagedFiles.map((f) => {
-                    const uploader = f.uploaded_by_id ? uploaders[f.uploaded_by_id] : null;
-                    return (
-                      <button type="button" key={f.id} className="files-grid-card" onClick={() => setPreviewItem({ name: f.name, url: f.drive_url, fileType: f.file_type })}>
-                        <div className={`files-row-icon ${fileExtension(f.name).toLowerCase()}`}>
-                          <Icon name="file" size={18} />
-                        </div>
-                        <div className="files-grid-name">{f.name}</div>
-                        <div className="files-grid-meta">
-                          {fileExtension(f.name)} · {formatBytes(f.size_bytes)}
-                        </div>
-                        <div className="files-grid-meta">{uploader?.full_name ?? (f.uploaded_by === 'client' ? 'You' : 'FLOW 53 Team')}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {filteredFiles.length > 0 && (
-                <div className="files-pagination">
-                  <span className="files-pagination-info">
-                    Showing {(pageSafe - 1) * PAGE_SIZE + 1} to {Math.min(pageSafe * PAGE_SIZE, filteredFiles.length)} of {filteredFiles.length} files
+              {/* ---- key numbers ---- */}
+              <section className="dx-kpis">
+                <a href="#all-files" className="dx-kpi">
+                  <span className="dx-kpi-top">
+                    <span className="dx-kpi-icon dx-tone-accent"><Icon name="folder" size={20} /></span>
+                    <span className="dx-kpi-go" aria-hidden="true"><Icon name="arrow" size={14} /></span>
+                    <span className="dx-kpi-mini" aria-hidden="true">
+                      <MiniRing pct={teamPct} color="var(--accent)" />
+                      <span className="dx-kpi-mini-num">{teamPct}%</span>
+                    </span>
                   </span>
-                  <div className="files-pagination-controls">
-                    <button type="button" disabled={pageSafe === 1} onClick={() => setPage((p) => Math.max(1, p - 1))} aria-label="Previous page">
-                      <Icon name="chevronLeft" size={13} />
-                    </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .slice(0, 5)
-                      .map((n) => (
-                        <button key={n} type="button" className={pageSafe === n ? 'active' : ''} onClick={() => setPage(n)}>
-                          {n}
-                        </button>
-                      ))}
-                    {totalPages > 5 && <span className="files-pagination-ellipsis">…</span>}
-                    <button type="button" disabled={pageSafe === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} aria-label="Next page">
-                      <Icon name="chevronRight" size={13} />
+                  <span className="dx-kpi-label">Total files</span>
+                  <strong className="dx-kpi-value">{files.length}</strong>
+                  <span className="dx-kpi-sub">{folders.length} folder{folders.length === 1 ? '' : 's'} · {teamPct}% from the team</span>
+                </a>
+                <a href="#all-files" className="dx-kpi" onClick={() => { setSortBy('size'); resetToPage1(); }}>
+                  <span className="dx-kpi-top">
+                    <span className="dx-kpi-icon dx-tone-green"><Icon name="file" size={20} /></span>
+                    <span className="dx-kpi-go" aria-hidden="true"><Icon name="arrow" size={14} /></span>
+                    <span className="dx-kpi-mini" aria-hidden="true">
+                      <MiniBars values={sizeBars} color="var(--positive)" />
+                    </span>
+                  </span>
+                  <span className="dx-kpi-label">Total size</span>
+                  <strong className="dx-kpi-value">{formatBytes(totalSize)}</strong>
+                  <span className="dx-kpi-sub">Largest files first</span>
+                </a>
+                <a href="#all-files" className="dx-kpi">
+                  <span className="dx-kpi-top">
+                    <span className="dx-kpi-icon dx-tone-amber"><Icon name="users" size={20} /></span>
+                    <span className="dx-kpi-go" aria-hidden="true"><Icon name="arrow" size={14} /></span>
+                    <span className="dx-kpi-mini ff-avatars" aria-hidden="true">
+                      {teamAvatars.length === 0 ? (
+                        <span className="ff-avatar ff-avatar-empty">–</span>
+                      ) : (
+                        teamAvatars.map((id) => {
+                          const u = uploaders[id];
+                          return (
+                            <span className="ff-avatar" key={id}>
+                              {u?.avatar_url ? (
+                                <AvatarImage src={u.avatar_url} name={u.full_name ?? 'F'} />
+                              ) : (
+                                (u?.full_name ?? 'F').charAt(0).toUpperCase()
+                              )}
+                            </span>
+                          );
+                        })
+                      )}
+                    </span>
+                  </span>
+                  <span className="dx-kpi-label">Shared by team</span>
+                  <strong className="dx-kpi-value">{distinctTeamUploaders}</strong>
+                  <span className="dx-kpi-sub">Team member{distinctTeamUploaders === 1 ? '' : 's'}</span>
+                </a>
+                <a
+                  href="#all-files"
+                  className="dx-kpi"
+                  onClick={(e) => {
+                    if (lastFile) {
+                      e.preventDefault();
+                      if (lastFile.file_type === 'link') window.open(lastFile.drive_url, '_blank', 'noopener,noreferrer');
+                      else setPreviewItem({ name: lastFile.name, url: lastFile.drive_url, fileType: previewType(lastFile) });
+                    }
+                  }}
+                >
+                  <span className="dx-kpi-top">
+                    <span className="dx-kpi-icon dx-tone-blue"><Icon name="clock" size={20} /></span>
+                    <span className="dx-kpi-go" aria-hidden="true"><Icon name="arrow" size={14} /></span>
+                    <span className="dx-kpi-mini" aria-hidden="true">
+                      <MiniBars values={weekBars} color="#2f6fdb" />
+                    </span>
+                  </span>
+                  <span className="dx-kpi-label">Last updated</span>
+                  <strong className="dx-kpi-value">{lastFile && nowIso ? dayLabel(lastFile.created_at, nowIso) : '—'}</strong>
+                  <span className="dx-kpi-sub ff-trunc">{lastFile ? `Open ${lastFile.name}` : 'No files yet'}</span>
+                </a>
+              </section>
+
+              {/* ---- folders ---- */}
+              <section className="dx-card">
+                <div className="dx-card-head">
+                  <h2 className="dx-card-title">Folders</h2>
+                  <div className="ff-head-actions">
+                    {folders.length > 4 && (
+                      <button type="button" className="dx-link ff-link-btn" onClick={() => setShowAllFolders((v) => !v)}>
+                        {showAllFolders ? 'Show less' : 'View all'}
+                      </button>
+                    )}
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => openFolderModal('new')}>
+                      <Icon name="plus" size={13} /> New folder
                     </button>
                   </div>
                 </div>
-              )}
+                {customFolders.length === 0 && <p className="dx-empty ff-folders-hint">Create folders to keep your files organised, for example &ldquo;Brand assets&rdquo; or &ldquo;Contracts&rdquo;.</p>}
+                {folders.length > 0 && (
+                  <div className="ff-folders">
+                    {visibleFolders.map((f, idx) => {
+                      const cf = f.custom ? customFolders.find((x) => `f:${x.id}` === f.id) : undefined;
+                      return (
+                        <div className="ff-folder-cell" key={f.id}>
+                          <Link href={`/client/project/${project.id}/files/folders/${encodeURIComponent(f.custom ? f.id.slice(2) : f.id)}`} className="ff-folder">
+                            <span className="dx-kpi-icon dx-tone-accent"><Icon name="folder" size={18} /></span>
+                            <span className="ff-folder-dot" style={{ background: FOLDER_COLORS[idx % FOLDER_COLORS.length] }} />
+                            <span className="ff-folder-body">
+                              <span className="ff-folder-name">{f.label}</span>
+                              <span className="ff-folder-meta">
+                                {f.count} file{f.count === 1 ? '' : 's'}
+                                {f.latest && nowIso ? ` · ${dayLabel(f.latest.created_at, nowIso)}` : ''}
+                              </span>
+                            </span>
+                          </Link>
+                          {cf && (
+                            <span className="ff-folder-tools">
+                              <button type="button" className="ff-tool" aria-label={`Rename ${f.label}`} onClick={() => openFolderModal('rename', cf)}>
+                                <Icon name="edit" size={13} />
+                              </button>
+                              <button type="button" className="ff-tool" aria-label={`Delete ${f.label}`} onClick={() => openFolderModal('delete', cf)}>
+                                <Icon name="trash" size={13} />
+                              </button>
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+
+              {/* ---- links ---- */}
+              <section className="dx-card" id="links">
+                <div className="dx-card-head">
+                  <h2 className="dx-card-title">
+                    Links <span className="ff-count">{linkRows.length}</span>
+                  </h2>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setLinkError(null); setLinkOpen(true); }}>
+                    <Icon name="plus" size={13} /> Add a link
+                  </button>
+                </div>
+                {linkRows.length === 0 ? (
+                  <div className="ff-empty">
+                    <span className="dx-kpi-icon dx-tone-accent"><Icon name="link" size={20} /></span>
+                    <div className="ff-empty-title">No links yet</div>
+                    <p className="ff-empty-sub">Figma files, Google Docs, websites, videos&hellip; save any link here and it stays with your project.</p>
+                  </div>
+                ) : (
+                  <>
+                    <ul className="ff-list">
+                      {visibleLinks.map((l) => {
+                        const uploader = l.uploaded_by_id ? uploaders[l.uploaded_by_id] : null;
+                        const sharedBy = uploader?.full_name ?? (l.uploaded_by === 'client' ? 'You' : 'FLOW 53 Team');
+                        return (
+                          <li className="ff-item" key={l.id}>
+                            <span className="dx-row-icon"><Icon name="link" size={15} /></span>
+                            <div className="ff-item-body">
+                              <div className="ff-item-name">
+                                <a href={l.drive_url} target="_blank" rel="noopener noreferrer" className="ff-item-name-text ff-link-name">{l.name}</a>
+                                <span className="ff-name-who">{sharedBy} · {nowIso ? dayLabel(l.created_at, nowIso) : ''}</span>
+                              </div>
+                              <div className="ff-item-meta">
+                                <span className="ff-meta-group">
+                                  <span className="ff-ext">{domainOf(l.drive_url)}</span>
+                                </span>
+                                <span className="ff-meta-group">
+                                  <span>{sharedBy}</span>
+                                  <span>{nowIso ? dayLabel(l.created_at, nowIso) : ''}</span>
+                                </span>
+                              </div>
+                            </div>
+                            <div className={`ff-item-actions${menuId === l.id ? ' open' : ''}`}>
+                              <button type="button" className="ff-more-btn" aria-label="More actions" aria-expanded={menuId === l.id} onClick={() => setMenuId((id) => (id === l.id ? null : l.id))}>
+                                <Icon name="dots" size={16} />
+                              </button>
+                              <div className="ff-actions-pop" onClick={() => setMenuId(null)}>
+                                <button type="button" className="ff-icon-btn" aria-label={`Copy link to ${l.name}`} title={copiedId === l.id ? 'Copied' : 'Copy link'} onClick={() => copyLink(l)}>
+                                  <Icon name={copiedId === l.id ? 'check' : 'copy'} size={15} /><span className="ff-act-label">{copiedId === l.id ? 'Copied' : 'Copy link'}</span>
+                                </button>
+                                <a href={l.drive_url} target="_blank" rel="noopener noreferrer" className="ff-icon-btn" aria-label={`Open ${l.name}`} title="Open link">
+                                  <Icon name="external" size={15} /><span className="ff-act-label">Open link</span>
+                                </a>
+                                {l.uploaded_by === 'client' && (
+                                  <button type="button" className="ff-icon-btn ff-danger" aria-label={`Delete ${l.name}`} title="Delete link" onClick={() => { setDeleteLinkError(null); setLinkToDelete(l); }}>
+                                    <Icon name="trash" size={15} /><span className="ff-act-label">Delete</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {linkRows.length > 5 && (
+                      <button type="button" className="ff-more" onClick={() => setShowAllLinks((v) => !v)}>
+                        {showAllLinks ? 'Show fewer links' : `Show all ${linkRows.length} links`}
+                      </button>
+                    )}
+                  </>
+                )}
+              </section>
+
+              {/* ---- files ---- */}
+              <section className="dx-card ff-allfiles" id="all-files">
+                <div className="ff-all-head">
+                  <div className="ff-all-title">
+                    <h2 className="dx-card-title">
+                      All files <span className="ff-count">{filteredFiles.length}</span>
+                    </h2>
+                    {categoryFilter && (
+                      <button type="button" className="ff-chip" onClick={() => setCategoryFilter(null)}>
+                        {activeFolder?.label ?? CATEGORY_LABEL[categoryFilter] ?? 'Folder'} <Icon name="close" size={11} />
+                      </button>
+                    )}
+                  </div>
+                  <div className="ff-toggle">
+                    <button type="button" className={viewMode === 'list' ? 'active' : ''} onClick={() => setViewMode('list')} aria-label="List view" title="List">
+                      <Icon name="list" size={15} />
+                    </button>
+                    <button type="button" className={viewMode === 'grid' ? 'active' : ''} onClick={() => setViewMode('grid')} aria-label="Grid view" title="Grid">
+                      <Icon name="grid2" size={15} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="ff-toolbar">
+                  <label className={`ff-search${search ? ' has-value' : ''}`}>
+                    <span className="ff-search-icon"><Icon name="search" size={16} /></span>
+                    <input
+                      ref={searchRef}
+                      type="search"
+                      placeholder="Search files by name"
+                      value={search}
+                      aria-label="Search files by name"
+                      onChange={(e) => {
+                        setSearch(e.target.value);
+                        resetToPage1();
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          setSearch('');
+                          resetToPage1();
+                          e.currentTarget.blur();
+                        }
+                      }}
+                    />
+                    {search ? (
+                      <>
+                        <span className="ff-search-count">{filteredFiles.length} result{filteredFiles.length === 1 ? '' : 's'}</span>
+                        <button type="button" className="ff-search-clear" aria-label="Clear search" onClick={() => { setSearch(''); resetToPage1(); searchRef.current?.focus(); }}>
+                          <Icon name="close" size={12} />
+                        </button>
+                      </>
+                    ) : (
+                      <kbd className="ff-kbd" aria-hidden="true">/</kbd>
+                    )}
+                  </label>
+                  <ClientSelect className="ff-sort" ariaLabel="Sort files" value={sortBy} onChange={(v) => setSortBy(v as typeof sortBy)} options={[{ value: 'recent', label: 'Newest first' }, { value: 'oldest', label: 'Oldest first' }, { value: 'name', label: 'Name (A–Z)' }, { value: 'size', label: 'Largest first' }]} />
+                </div>
+
+                {kindOptions.length > 1 && (
+                  <div className="ff-kinds" role="tablist" aria-label="Filter by file type">
+                    <button type="button" role="tab" aria-selected={typeFilter === 'all'} className={`ff-kind${typeFilter === 'all' ? ' active' : ''}`} onClick={() => { setTypeFilter('all'); resetToPage1(); }}>
+                      All <span>{files.length}</span>
+                    </button>
+                    {kindOptions.map(([k, n]) => (
+                      <button key={k} type="button" role="tab" aria-selected={typeFilter === k} className={`ff-kind${typeFilter === k ? ' active' : ''}`} onClick={() => { setTypeFilter(k); resetToPage1(); }}>
+                        <i className={`ff-kind-dot ff-type-${k}`} />
+                        {KIND_LABEL[k]} <span>{n}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {filteredFiles.length === 0 ? (
+                  <div className="ff-empty">
+                    <span className="dx-kpi-icon dx-tone-accent"><Icon name="file" size={20} /></span>
+                    <div className="ff-empty-title">{files.length === 0 ? 'No files yet' : 'No files found'}</div>
+                    <p className="ff-empty-sub">{files.length === 0 ? 'Files shared with you will show up here. You can also upload your own.' : 'Try a different search, or clear the filters.'}</p>
+                  </div>
+                ) : viewMode === 'list' ? (
+                  <ul className="ff-rows">
+                    {pagedFiles.map((f) => {
+                      const uploader = f.uploaded_by_id ? uploaders[f.uploaded_by_id] : null;
+                      const isNew = nowIso ? new Date(nowIso).getTime() - new Date(f.created_at).getTime() < 24 * 3600 * 1000 : false;
+                      const sharedBy = uploader?.full_name ?? (f.uploaded_by === 'client' ? 'You' : 'FLOW 53 Team');
+                      const kind = typeKind(f);
+                      return (
+                        <li className="ff-row" key={f.id}>
+                          {kind === 'image' ? (
+                            <FileThumb f={f} kind={kind} className="ff-thumb" />
+                          ) : (
+                            <span className={`ff-type ff-type-${kind}`}>{fileExtension(f.name).slice(0, 4)}</span>
+                          )}
+                          <div className="ff-row-main">
+                            <div className="ff-item-name">
+                              <span className="ff-item-name-text">{f.name}</span>
+                              {isNew && <span className="ff-new">New</span>}
+                              <span className="ff-name-who">{sharedBy} · {nowIso ? dayLabel(f.created_at, nowIso) : ''}</span>
+                            </div>
+                            <div className="ff-item-meta">
+                              <span className="ff-meta-group">
+                                <span className="ff-ext">{KIND_LABEL[kind]}</span>
+                                <span>{formatBytes(f.size_bytes)}</span>
+                              </span>
+                              <span className="ff-meta-group">
+                                <span>{sharedBy}</span>
+                                <span>{nowIso ? dayLabel(f.created_at, nowIso) : ''}, {formatClockTime(f.created_at)}</span>
+                              </span>
+                            </div>
+                          </div>
+                          <span className="ff-where" title="Folder">
+                            <Icon name="folder" size={12} /> {folderOf(f)}
+                          </span>
+                          <div className={`ff-item-actions${menuId === f.id ? ' open' : ''}`}>
+                            <button type="button" className="ff-more-btn" aria-label="More actions" aria-expanded={menuId === f.id} onClick={() => setMenuId((id) => (id === f.id ? null : f.id))}>
+                              <Icon name="dots" size={16} />
+                            </button>
+                            <div className="ff-actions-pop" onClick={() => setMenuId(null)}>
+                              {customFolders.length > 0 && (
+                                <button type="button" className="ff-icon-btn" aria-label={`Move ${f.name} to a folder`} title="Move to a folder" onClick={() => openFolderModal('move', undefined, f)}>
+                                  <Icon name="move" size={15} /><span className="ff-act-label">Move</span>
+                                </button>
+                              )}
+                              <button type="button" className="ff-icon-btn" aria-label={`View ${f.name}`} title="View" onClick={() => setPreviewItem({ name: f.name, url: f.drive_url, fileType: previewType(f) })}>
+                                <Icon name="eye" size={15} /><span className="ff-act-label">View</span>
+                              </button>
+                              <a href={driveDownloadUrl(f.drive_url)} target="_blank" rel="noopener noreferrer" className="ff-icon-btn" aria-label={`Download ${f.name}`} title="Download">
+                                <Icon name="download" size={15} /><span className="ff-act-label">Download</span>
+                              </a>
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <div className="ff-tiles">
+                    {pagedFiles.map((f) => {
+                      const kind = typeKind(f);
+                      const uploader = f.uploaded_by_id ? uploaders[f.uploaded_by_id] : null;
+                      return (
+                        <button type="button" key={f.id} className="ff-tile" onClick={() => setPreviewItem({ name: f.name, url: f.drive_url, fileType: previewType(f) })}>
+                          <span className="ff-tile-art">
+                            {kind === 'image' ? (
+                              <FileThumb f={f} kind={kind} className="ff-thumb-fill" />
+                            ) : (
+                              <span className={`ff-type ff-type-lg ff-type-${kind}`}>{fileExtension(f.name).slice(0, 4)}</span>
+                            )}
+                          </span>
+                          <span className="ff-tile-name">{f.name}</span>
+                          <span className="ff-tile-meta">{KIND_LABEL[kind]} · {formatBytes(f.size_bytes)}</span>
+                          <span className="ff-tile-meta">{uploader?.full_name ?? (f.uploaded_by === 'client' ? 'You' : 'FLOW 53 Team')}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {filteredFiles.length > 0 && (
+                  <div className="ff-pager">
+                    <span className="ff-pager-info">
+                      {(pageSafe - 1) * PAGE_SIZE + 1}–{Math.min(pageSafe * PAGE_SIZE, filteredFiles.length)} of {filteredFiles.length} files
+                    </span>
+                    <div className="ff-pager-controls">
+                      <button type="button" disabled={pageSafe === 1} onClick={() => setPage((p) => Math.max(1, p - 1))} aria-label="Previous page">
+                        <Icon name="chevronLeft" size={14} />
+                      </button>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .slice(0, 5)
+                        .map((n) => (
+                          <button key={n} type="button" className={pageSafe === n ? 'active' : ''} onClick={() => setPage(n)}>
+                            {n}
+                          </button>
+                        ))}
+                      {totalPages > 5 && <span className="ff-pager-dots">…</span>}
+                      <button type="button" disabled={pageSafe === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} aria-label="Next page">
+                        <Icon name="chevronRight" size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </section>
             </div>
           </main>
         </div>
       </div>
+      <ClientBottomNav projectId={project.id} active="files" />
+
+      {linkOpen && (
+        <div className="ff-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setLinkOpen(false); }}>
+          <form className="ff-modal" onSubmit={saveLink}>
+            <div className="ff-modal-head">
+              <span className="dx-kpi-icon dx-tone-accent"><Icon name="link" size={20} /></span>
+              <div>
+                <h2 className="ff-modal-title">Add a link</h2>
+                <p className="ff-modal-sub">Figma, Google Docs, a website, a video … any link is saved with your project files.</p>
+              </div>
+              <button type="button" className="ff-icon-btn" aria-label="Close" onClick={() => setLinkOpen(false)}>
+                <Icon name="close" size={15} />
+              </button>
+            </div>
+            <label className="ff-field">
+              <span>Link</span>
+              <input type="text" inputMode="url" autoFocus placeholder="https://" value={linkUrl} onChange={(e) => { setLinkUrl(e.target.value); setLinkError(null); }} />
+            </label>
+            <label className="ff-field">
+              <span>Name <em>(optional)</em></span>
+              <input type="text" placeholder="e.g. Homepage design in Figma" value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)} />
+            </label>
+            <p className="ff-link-note"><Icon name="link" size={13} /> Saved in the <strong>Links</strong> card on this page.</p>
+            {linkError && <p className="ff-upload-error">{linkError}</p>}
+            <div className="ff-modal-actions">
+              <button type="button" className="btn btn-ghost" onClick={() => setLinkOpen(false)}>Cancel</button>
+              <button type="submit" className="btn btn-accent" disabled={savingLink || !linkUrl.trim()}>{savingLink ? 'Saving…' : 'Save link'}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {menuId && <div className="ff-menu-backdrop" onClick={() => setMenuId(null)} />}
+
+      {linkToDelete && (
+        <div className="ff-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget && !deletingLink) setLinkToDelete(null); }}>
+          <div className="ff-modal" role="dialog" aria-modal="true">
+            <div className="ff-modal-head">
+              <span className="dx-kpi-icon dx-tone-accent"><Icon name="trash" size={20} /></span>
+              <div>
+                <h2 className="ff-modal-title">Delete this link?</h2>
+                <p className="ff-modal-sub ff-trunc">{linkToDelete.name}</p>
+              </div>
+            </div>
+            <p className="ff-modal-sub">It will be removed from your project. The website itself is not affected.</p>
+            {deleteLinkError && <p className="ff-upload-error">{deleteLinkError}</p>}
+            <div className="ff-modal-actions">
+              <button type="button" className="btn btn-ghost" disabled={deletingLink} onClick={() => setLinkToDelete(null)}>Cancel</button>
+              <button type="button" className="btn btn-accent" disabled={deletingLink} onClick={removeLink}>{deletingLink ? 'Deleting…' : 'Delete link'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pickerOpen && (
+        <div className="ff-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setPickerOpen(false); }}>
+          <div className="ff-modal ff-picker" role="dialog" aria-modal="true" aria-labelledby="ff-picker-title">
+            <div className="ff-picker-head">
+              <div>
+                <h2 className="ff-picker-title" id="ff-picker-title">
+                  {customFolders.length === 0 ? 'Create your first folder' : pickerFiles ? `Choose a folder for ${pickerFiles.length} file${pickerFiles.length === 1 ? '' : 's'}` : 'Choose a folder'}
+                </h2>
+                <p className="ff-picker-sub">
+                  {customFolders.length === 0 ? 'Your files are kept in folders, so start by naming one.' : 'Your files will be saved inside the folder you pick.'}
+                </p>
+              </div>
+              <button type="button" className="ff-icon-btn" aria-label="Close" onClick={() => setPickerOpen(false)}>
+                <Icon name="close" size={15} />
+              </button>
+            </div>
+
+            {customFolders.length > 0 && (
+              <ul className="ff-pick-list" role="radiogroup" aria-label="Folders">
+                {customFolders.map((cf) => {
+                  const count = files.filter((x) => x.folder_id === cf.id).length;
+                  const selected = pickerChoice === cf.id;
+                  return (
+                    <li key={cf.id}>
+                      <button type="button" role="radio" aria-checked={selected} className={`ff-pick-item${selected ? ' selected' : ''}`} onClick={() => setPickerChoice(cf.id)}>
+                        <span className="ff-pick-icon"><Icon name="folder" size={18} /></span>
+                        <span className="ff-pick-body">
+                          <span className="ff-pick-name">{cf.name}</span>
+                          <span className="ff-pick-meta">{count} item{count === 1 ? '' : 's'}</span>
+                        </span>
+                        <span className="ff-pick-radio" aria-hidden="true" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {customFolders.length === 0 || pickerCreating ? (
+              <form
+                className="ff-newfolder"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void createPickerFolder();
+                }}
+              >
+                <input type="text" maxLength={40} autoFocus placeholder="Folder name, e.g. Brand assets" value={pickerNewName} onChange={(e) => { setPickerNewName(e.target.value); setPickerError(null); }} aria-label="New folder name" />
+                <button type="submit" className="btn btn-ghost btn-sm" disabled={pickerSaving || !pickerNewName.trim()}>
+                  {pickerSaving ? 'Creating…' : 'Create'}
+                </button>
+                {customFolders.length > 0 && (
+                  <button type="button" className="ff-text-btn" onClick={() => { setPickerCreating(false); setPickerError(null); }}>
+                    Cancel
+                  </button>
+                )}
+              </form>
+            ) : (
+              <button type="button" className="ff-newfolder-open" onClick={() => setPickerCreating(true)}>
+                <Icon name="plus" size={15} /> New folder
+              </button>
+            )}
+            {pickerError && <p className="ff-upload-error">{pickerError}</p>}
+
+            <div className="ff-picker-actions">
+              <button type="button" className="btn btn-ghost" onClick={() => setPickerOpen(false)}>Cancel</button>
+              <button type="button" className="btn btn-accent" disabled={!pickerChoice || !customFolders.some((cf) => cf.id === pickerChoice)} onClick={confirmPicker}>
+                <Icon name="upload" size={14} /> {pickerFiles ? `Upload ${pickerFiles.length} file${pickerFiles.length === 1 ? '' : 's'}` : 'Choose files'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {folderModal && (
+        <div className="ff-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setFolderModal(null); }}>
+          {folderModal.mode === 'new' || folderModal.mode === 'rename' ? (
+            <form className="ff-modal" onSubmit={saveFolder}>
+              <div className="ff-modal-head">
+                <span className="dx-kpi-icon dx-tone-accent"><Icon name="folder" size={20} /></span>
+                <div>
+                  <h2 className="ff-modal-title">{folderModal.mode === 'new' ? 'New folder' : 'Rename folder'}</h2>
+                  <p className="ff-modal-sub">{folderModal.mode === 'new' ? 'Give it a name you will recognise.' : 'The files inside stay where they are.'}</p>
+                </div>
+                <button type="button" className="ff-icon-btn" aria-label="Close" onClick={() => setFolderModal(null)}>
+                  <Icon name="close" size={15} />
+                </button>
+              </div>
+              <label className="ff-field">
+                <span>Folder name</span>
+                <input type="text" autoFocus maxLength={40} placeholder="e.g. Brand assets" value={folderName} onChange={(e) => { setFolderName(e.target.value); setFolderError(null); }} />
+              </label>
+              {folderError && <p className="ff-upload-error">{folderError}</p>}
+              <div className="ff-modal-actions">
+                <button type="button" className="btn btn-ghost" onClick={() => setFolderModal(null)}>Cancel</button>
+                <button type="submit" className="btn btn-accent" disabled={savingFolder || !folderName.trim()}>{savingFolder ? 'Saving…' : folderModal.mode === 'new' ? 'Create folder' : 'Save'}</button>
+              </div>
+            </form>
+          ) : folderModal.mode === 'delete' && folderModal.folder ? (
+            <div className="ff-modal">
+              <div className="ff-modal-head">
+                <span className="dx-kpi-icon dx-tone-accent"><Icon name="trash" size={20} /></span>
+                <div>
+                  <h2 className="ff-modal-title">Delete &ldquo;{folderModal.folder.name}&rdquo;?</h2>
+                  <p className="ff-modal-sub">Only the folder is removed. Its files and links are kept and go back to where they were before.</p>
+                </div>
+              </div>
+              {folderError && <p className="ff-upload-error">{folderError}</p>}
+              <div className="ff-modal-actions">
+                <button type="button" className="btn btn-ghost" onClick={() => setFolderModal(null)}>Cancel</button>
+                <button type="button" className="btn btn-accent" disabled={savingFolder} onClick={deleteFolder}>{savingFolder ? 'Deleting…' : 'Delete folder'}</button>
+              </div>
+            </div>
+          ) : folderModal.mode === 'move' && folderModal.file ? (
+            <div className="ff-modal">
+              <div className="ff-modal-head">
+                <span className="dx-kpi-icon dx-tone-accent"><Icon name="move" size={20} /></span>
+                <div>
+                  <h2 className="ff-modal-title">Move to a folder</h2>
+                  <p className="ff-modal-sub ff-trunc">{folderModal.file.name}</p>
+                </div>
+                <button type="button" className="ff-icon-btn" aria-label="Close" onClick={() => setFolderModal(null)}>
+                  <Icon name="close" size={15} />
+                </button>
+              </div>
+              <div className="ff-move-list">
+                {customFolders.map((cf) => (
+                  <button key={cf.id} type="button" className={`ff-move-item${folderModal.file?.folder_id === cf.id ? ' current' : ''}`} disabled={savingFolder} onClick={() => folderModal.file && moveFile(folderModal.file, cf.id)}>
+                    <Icon name="folder" size={16} /> <span>{cf.name}</span>
+                  </button>
+                ))}
+                <button type="button" className={`ff-move-item${!folderModal.file.folder_id ? ' current' : ''}`} disabled={savingFolder} onClick={() => folderModal.file && moveFile(folderModal.file, null)}>
+                  <Icon name="file" size={16} /> <span>No folder</span>
+                </button>
+              </div>
+              {folderError && <p className="ff-upload-error">{folderError}</p>}
+            </div>
+          ) : null}
+        </div>
+      )}
 
       <MediaPreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />
     </div>

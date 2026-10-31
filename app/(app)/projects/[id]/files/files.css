@@ -1,0 +1,64 @@
+/* Client files (team side): the drop area, the list rows and the add / message windows. Scoped to the project pages' root. */
+.projdetail-root .tf-notice { margin-bottom: 14px; padding: 11px 14px; border-radius: var(--radius-sm); background: var(--positive-soft, #e7f8f2); color: var(--positive, #0b835c); font-size: 13px; font-weight: 600; }
+
+.projdetail-root .tf-drop { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; padding: 20px 22px; border: 1.5px dashed var(--border); border-radius: var(--radius-lg); background: var(--surface); transition: border-color 0.15s ease, background 0.15s ease; }
+.projdetail-root .tf-drop.dragging { border-color: var(--accent); background: var(--accent-soft, #f2ebfd); }
+.projdetail-root .tf-drop-icon { width: 46px; height: 46px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1.5px solid var(--accent); background: var(--accent-soft, #f2ebfd); color: var(--accent); }
+.projdetail-root .tf-drop-text { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 3px; }
+.projdetail-root .tf-drop-text strong { font-size: 14px; font-weight: 700; color: var(--ink); }
+.projdetail-root .tf-drop-text span { font-size: 12.5px; color: var(--ink-soft); }
+.projdetail-root .tf-drop-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.projdetail-root .tf-row { display: flex; align-items: center; gap: 12px; padding: 12px 10px; border-bottom: 1px solid var(--border-soft, var(--border)); }
+.projdetail-root .tf-row:last-child { border-bottom: none; }
+.projdetail-root .tf-row-icon { width: 34px; height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1.5px solid var(--accent); background: var(--accent-soft, #f2ebfd); color: var(--accent); }
+.projdetail-root .tf-row-main { flex: 1; min-width: 0; text-decoration: none; }
+.projdetail-root .tf-row-name { font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projdetail-root .tf-row-meta { font-size: 11px; color: var(--ink-faint); margin-top: 2px; }
+.projdetail-root .tf-tag { flex-shrink: 0; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.projdetail-root .tf-tag.hidden { background: var(--surface-muted, #fbfbfc); border: 1px solid var(--border); color: var(--ink-soft); }
+.projdetail-root .tf-tag.expires { background: var(--warning-soft, #fdf3e1); color: var(--warning, #f5a524); }
+.projdetail-root .tf-tag.expired { background: var(--danger-soft); color: var(--danger); }
+
+.projdetail-root .tf-overlay { align-items: center; padding: 20px; overflow-y: auto; }
+.projdetail-root .tf-modal { max-width: 520px; display: flex; flex-direction: column; gap: 4px; margin: auto; }
+.projdetail-root .tf-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.projdetail-root .tf-modal-title { margin: 0; font-size: 16px; font-weight: 700; }
+.projdetail-root .tf-filelist { list-style: none; margin: 0 0 10px; padding: 0; max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.projdetail-root .tf-filelist li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-size: 12.5px; border-bottom: 1px solid var(--border-soft, var(--border)); }
+.projdetail-root .tf-filelist li:last-child { border-bottom: none; }
+.projdetail-root .tf-filelist span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projdetail-root .tf-filelist em { font-style: normal; color: var(--ink-faint); font-size: 11.5px; }
+.projdetail-root .tf-select { margin-bottom: 10px; }
+.projdetail-root .tf-select .cs-trigger { height: 40px; border-radius: var(--radius-sm); font-size: 13px; }
+.projdetail-root .tf-options { display: flex; flex-direction: column; gap: 12px; margin: 8px 0 6px; padding-top: 12px; border-top: 1px solid var(--border-soft, var(--border)); }
+.projdetail-root .tf-check { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+.projdetail-root .tf-check input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); flex-shrink: 0; }
+.projdetail-root .tf-check span { display: flex; flex-direction: column; gap: 2px; }
+.projdetail-root .tf-check strong { font-size: 13px; font-weight: 600; color: var(--ink); }
+.projdetail-root .tf-check small { font-size: 12px; color: var(--ink-soft); line-height: 1.45; }
+.projdetail-root .tf-check.disabled { opacity: 0.5; cursor: default; }
+.projdetail-root .tf-inline { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-left: 26px; font-size: 12.5px; color: var(--ink-soft); }
+.projdetail-root .tf-inline .field-input { width: auto; margin: 0; }
+.projdetail-root .tf-message { resize: vertical; margin: 0; font-size: 13px; line-height: 1.5; }
+.projdetail-root .tf-linkpreview { display: flex; align-items: center; gap: 6px; margin-top: 6px; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--surface-muted, #fbfbfc); border: 1px solid var(--border); font-size: 11.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.projdetail-root .tf-hint { margin: 4px 0 8px; font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+.projdetail-root .tf-error { margin: 8px 0 0; font-size: 12.5px; font-weight: 600; color: var(--danger); line-height: 1.5; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .projdetail-root .tf-row { flex-wrap: wrap; }
+  .projdetail-root .tf-inline { flex-direction: column; align-items: flex-start; padding-left: 26px; }
+}
+
+/* ---- "tell the client": three ways to reach them ---- */
+.projdetail-root .tf-channels { display: flex; flex-direction: column; gap: 10px; }
+.projdetail-root .tf-channels-title { font-size: 13px; font-weight: 700; color: var(--ink); }
+.projdetail-root .tf-channel-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.projdetail-root .tf-channel { position: relative; display: flex; align-items: flex-start; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink-soft); cursor: pointer; min-width: 0; }
+.projdetail-root .tf-channel input { position: absolute; opacity: 0; pointer-events: none; }
+.projdetail-root .tf-channel svg { flex-shrink: 0; margin-top: 2px; }
+.projdetail-root .tf-channel span { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.projdetail-root .tf-channel strong { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.projdetail-root .tf-channel small { font-size: 11px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projdetail-root .tf-channel.on { border-color: var(--accent); background: var(--accent-soft, #f2ebfd); color: var(--accent); }
+.projdetail-root .tf-channel.off { opacity: 0.5; cursor: default; }
+@media (max-width: 640px) { .projdetail-root .tf-channel-grid { grid-template-columns: 1fr; } }

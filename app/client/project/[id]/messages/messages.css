@@ -161,3 +161,6 @@
   .msg-root.in-thread .msg-content { padding: 0; height: calc(100vh - 56px); height: calc(100dvh - 56px); }
   .msg-root.in-thread .msg-thread-panel { border: none; border-radius: 0; box-shadow: none; }
 }
+
+/* links inside a message */
+.msg-root .msg-link { color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }

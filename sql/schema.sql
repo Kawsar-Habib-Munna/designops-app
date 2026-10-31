@@ -2323,3 +2323,83 @@ drop policy if exists "team can write client_requirements" on client_requirement
 drop policy if exists "team can update client_requirements" on client_requirements;
 create policy "team can write client_requirements" on client_requirements for insert with check (public.is_team_member());
 create policy "team can update client_requirements" on client_requirements for update using (public.is_team_member()) with check (public.is_team_member());
+
+-- CLIENT PORTAL — clients organise their own files: custom folders.
+-- A folder belongs to one client; a file may sit in one folder (client_files.folder_id).
+-- Deleting a folder does not delete its files, they just fall back to their normal category (on delete set null).
+create table if not exists client_folders (
+  id uuid default gen_random_uuid() primary key,
+  client_id uuid not null references clients(id) on delete cascade,
+  name text not null,
+  created_at timestamptz default now()
+);
+create index if not exists idx_client_folders_client_id on client_folders(client_id);
+alter table client_folders enable row level security;
+-- Ownership check as a function (security definer), so the folder rules do not depend on how the clients table itself is protected.
+create or replace function public.owns_client(p_client_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from clients where id = p_client_id and user_id = auth.uid());
+$$;
+grant execute on function public.owns_client(uuid) to authenticated;
+grant select, insert, update, delete on client_folders to authenticated;
+drop policy if exists "client can read own folders" on client_folders;
+drop policy if exists "client can create own folders" on client_folders;
+drop policy if exists "client can rename own folders" on client_folders;
+drop policy if exists "client can delete own folders" on client_folders;
+drop policy if exists "team can read client_folders" on client_folders;
+create policy "client can read own folders" on client_folders for select using (public.owns_client(client_id));
+create policy "client can create own folders" on client_folders for insert with check (public.owns_client(client_id));
+create policy "client can rename own folders" on client_folders for update using (public.owns_client(client_id)) with check (public.owns_client(client_id));
+create policy "client can delete own folders" on client_folders for delete using (public.owns_client(client_id));
+create policy "team can read client_folders" on client_folders for select using (public.is_team_member());
+
+alter table client_files add column if not exists folder_id uuid references client_folders(id) on delete set null;
+
+-- Moving a file between folders: a function that checks ownership of both the file and the folder, so clients never
+-- need a general UPDATE right on client_files.
+create or replace function public.move_client_file(p_file_id uuid, p_folder_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1 from client_files f join clients c on c.id = f.client_id
+    where f.id = p_file_id and c.user_id = auth.uid()
+  ) then
+    raise exception 'File not found';
+  end if;
+  if p_folder_id is not null and not exists (
+    select 1 from client_folders fo join clients c on c.id = fo.client_id
+    where fo.id = p_folder_id and c.user_id = auth.uid()
+  ) then
+    raise exception 'Folder not found';
+  end if;
+  update client_files set folder_id = p_folder_id where id = p_file_id;
+end;
+$$;
+grant execute on function public.move_client_file(uuid, uuid) to authenticated;
+
+-- CLIENT PORTAL — a client may delete the links they saved themselves (never files, never anything the team added).
+drop policy if exists "client can delete own links" on client_files;
+create policy "client can delete own links" on client_files for delete using (
+  file_type = 'link'
+  and uploaded_by = 'client'
+  and exists (select 1 from clients where clients.id = client_files.client_id and clients.user_id = auth.uid())
+);
+
+-- FILES — "visible until": the team can set a date after which a file or link is no longer visible to the client.
+-- Hidden files (hidden_from_client) and expired files are both filtered out by the client's read policy.
+alter table client_files add column if not exists expires_at timestamptz;
+drop policy if exists "client can read own files" on client_files;
+create policy "client can read own files" on client_files for select using (
+  not hidden_from_client
+  and (expires_at is null or expires_at > now())
+  and exists (select 1 from clients where clients.id = client_files.client_id and clients.user_id = auth.uid())
+);

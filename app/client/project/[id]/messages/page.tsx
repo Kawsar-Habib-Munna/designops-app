@@ -81,6 +81,19 @@ function colorForKey(key: string): string {
   for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
   return AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
 }
+// web addresses inside a message become links, so a link the team sends opens straight from the chat
+function linkify(text: string): React.ReactNode[] {
+  return text.split(/(https?:\/\/[^\s]+)/g).map((part, i) => {
+    if (!/^https?:\/\//.test(part)) return part;
+    // links back into this site open in the same tab, anything else in a new one
+    const sameSite = typeof window !== 'undefined' && part.startsWith(window.location.origin);
+    return (
+      <a key={i} href={part} className="msg-link" rel="noopener noreferrer" target={sameSite ? undefined : '_blank'}>
+        {part}
+      </a>
+    );
+  });
+}
 function formatClockTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
@@ -629,7 +642,7 @@ export default function ClientMessagesPage() {
                                   </div>
                                 )}
                                 <div className="msg-bubble">
-                                  {m.message && <div className="msg-text">{m.message}</div>}
+                                  {m.message && <div className="msg-text">{linkify(m.message)}</div>}
                                   {m.attachment_url && (
                                     <a href={m.attachment_url} target="_blank" rel="noopener noreferrer" className="msg-attachment-card">
                                       <span className="msg-attachment-icon">

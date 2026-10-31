@@ -29,6 +29,7 @@ import { relativeTime, formatDate, formatDateLong, todayISO } from '@/lib/format
 import { CURRENCY_SYMBOL } from '@/lib/currency';
 import '../client-shared.css';
 import ClientBottomNav from '@/app/components/ClientBottomNav';
+import AvatarImage from '@/app/components/AvatarImage';
 import './dashboard.css';
 import './dashboard-v2.css';
 
@@ -841,8 +842,7 @@ export default function ClientDashboard() {
                         <div className="dx-msg">
                           <div className="avatar dx-avatar" style={{ width: 34, height: 34, fontSize: 13 }}>
                             {latestMessage.sender !== 'client' && manager?.avatar_url ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={manager.avatar_url} alt="" />
+                              <AvatarImage src={manager.avatar_url} name={manager.full_name} />
                             ) : (
                               (latestMessage.sender === 'client' ? (client.primary_contact ?? client.company_name) : (manager?.full_name ?? 'F')).charAt(0).toUpperCase()
                             )}
@@ -897,8 +897,7 @@ export default function ClientDashboard() {
                         <div className="dx-manager">
                           <div className="avatar dx-avatar" style={{ width: 56, height: 56, fontSize: 20 }}>
                             {manager.avatar_url ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={manager.avatar_url} alt={manager.full_name} />
+                              <AvatarImage src={manager.avatar_url} name={manager.full_name} />
                             ) : (
                               manager.full_name.charAt(0).toUpperCase()
                             )}
