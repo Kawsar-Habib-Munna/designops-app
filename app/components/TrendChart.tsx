@@ -9,8 +9,8 @@ import './dash-charts.css';
 export type TrendPoint = { date: string; label: string; sub: string; value: number };
 
 const W = 560;
-const H = 210;
-const PAD = { l: 30, r: 14, t: 16, b: 28 };
+const H = 230;
+const PAD = { l: 30, r: 16, t: 22, b: 36 };
 const PLOT_W = W - PAD.l - PAD.r;
 const PLOT_H = H - PAD.t - PAD.b;
 
@@ -21,6 +21,44 @@ function niceStep(max: number): number {
     if (rough <= m * mag) return m * mag;
   }
   return 10 * mag;
+}
+
+// A smooth line through the points. Slopes are limited (monotone cubic) so the curve never overshoots below zero
+// or above a peak between two days.
+function smoothPath(pts: { x: number; y: number }[]): string {
+  const n = pts.length;
+  if (n === 0) return '';
+  if (n === 1) return `M${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+  const dx: number[] = [];
+  const m: number[] = [];
+  for (let i = 0; i < n - 1; i += 1) {
+    dx.push(pts[i + 1].x - pts[i].x);
+    m.push((pts[i + 1].y - pts[i].y) / dx[i]);
+  }
+  const t: number[] = [m[0]];
+  for (let i = 1; i < n - 1; i += 1) t.push(m[i - 1] * m[i] <= 0 ? 0 : (m[i - 1] + m[i]) / 2);
+  t.push(m[n - 2]);
+  for (let i = 0; i < n - 1; i += 1) {
+    if (m[i] === 0) {
+      t[i] = 0;
+      t[i + 1] = 0;
+    } else {
+      const a = t[i] / m[i];
+      const b = t[i + 1] / m[i];
+      const h = Math.hypot(a, b);
+      if (h > 3) {
+        t[i] = (3 * a * m[i]) / h;
+        t[i + 1] = (3 * b * m[i]) / h;
+      }
+    }
+  }
+  let d = `M${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+  for (let i = 0; i < n - 1; i += 1) {
+    const c1x = pts[i].x + dx[i] / 3;
+    const c2x = pts[i + 1].x - dx[i] / 3;
+    d += ` C${c1x.toFixed(1)} ${(pts[i].y + (t[i] * dx[i]) / 3).toFixed(1)} ${c2x.toFixed(1)} ${(pts[i + 1].y - (t[i + 1] * dx[i]) / 3).toFixed(1)} ${pts[i + 1].x.toFixed(1)} ${pts[i + 1].y.toFixed(1)}`;
+  }
+  return d;
 }
 
 export default function TrendChart({ points, noun = 'task' }: { points: TrendPoint[]; noun?: string }) {
@@ -39,7 +77,7 @@ export default function TrendChart({ points, noun = 'task' }: { points: TrendPoi
   const x = (i: number) => PAD.l + (n <= 1 ? PLOT_W / 2 : (i * PLOT_W) / (n - 1));
   const y = (v: number) => PAD.t + PLOT_H - (v / axisMax) * PLOT_H;
   const baseY = y(0);
-  const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)} ${y(p.value).toFixed(1)}`).join(' ');
+  const line = smoothPath(points.map((p, i) => ({ x: x(i), y: y(p.value) })));
   const area = `${line} L${x(n - 1).toFixed(1)} ${baseY} L${x(0).toFixed(1)} ${baseY} Z`;
   const best = points.reduce((b, p) => (p.value > b.value ? p : b), points[0]);
   const tip = idx !== null ? points[idx] : null;
@@ -87,6 +125,12 @@ export default function TrendChart({ points, noun = 'task' }: { points: TrendPoi
             onKeyDown={onKey}
             onBlur={() => setIdx(null)}
           >
+            <defs>
+              <linearGradient id="tc-grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.28" />
+                <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+              </linearGradient>
+            </defs>
             {ticks.map((t) => (
               <g key={t}>
                 <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} className={t === 0 ? 'tc-base' : 'tc-grid'} />
@@ -105,12 +149,17 @@ export default function TrendChart({ points, noun = 'task' }: { points: TrendPoi
               </text>
             ))}
 
-            {/* end dot (always) — 8px+ with a 2px ring in the surface colour */}
+            {/* a small marker on every day that had completions */}
+            {points.map((p, i) => (p.value > 0 && i !== n - 1 ? <circle key={p.date} cx={x(i)} cy={y(p.value)} r={3.5} className="tc-pt" /> : null))}
+
+            {/* end dot (always) with a soft halo */}
+            <circle cx={x(n - 1)} cy={y(points[n - 1].value)} r={10} className="tc-halo" />
             <circle cx={x(n - 1)} cy={y(points[n - 1].value)} r={5} className="tc-dot" />
 
             {idx !== null && (
               <g>
                 <line x1={x(idx)} x2={x(idx)} y1={PAD.t} y2={baseY} className="tc-cross" />
+                <circle cx={x(idx)} cy={y(points[idx].value)} r={10} className="tc-halo" />
                 <circle cx={x(idx)} cy={y(points[idx].value)} r={5} className="tc-dot" />
               </g>
             )}

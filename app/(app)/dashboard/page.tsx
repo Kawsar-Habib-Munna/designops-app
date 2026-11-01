@@ -9,16 +9,15 @@ import Link from "next/link";
 import "./dashboard.css";
 import { supabase } from "@/lib/supabaseClient";
 import { useSession } from "@/lib/useSession";
-import { formatBnDate, formatTimeBn, dueMeta, todayISO, relativeTimeBn } from "@/lib/format";
+import { formatTimeBn, todayISO } from "@/lib/format";
 import SignInScreen from "@/app/components/SignInScreen";
 import Avatar from "@/app/components/Avatar";
-import WorkloadChart from "@/app/components/WorkloadChart";
 import StatusBar from "@/app/components/StatusBar";
 import TrendChart from "@/app/components/TrendChart";
 import OutlookChart from "@/app/components/OutlookChart";
+import WorkloadChart from "@/app/components/WorkloadChart";
 import ProjectProgress from "@/app/components/ProjectProgress";
 import DonutChart from "@/app/components/DonutChart";
-import { useAppShell } from "@/app/components/appShellContext";
 import {
   completionsByDay,
   dueNextDays,
@@ -35,6 +34,13 @@ const ICON_PATHS: Record<string, string> = {
   folder:
     '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/>',
   check: '<path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/>',
+  'kpi-projects': '<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><path d="M8 10v4"/><path d="M12 10v2"/><path d="M16 10v6"/>',
+  'kpi-tasks': '<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+  'kpi-timer': '<path d="M10 2h4"/><path d="m12 14 3-3"/><circle cx="12" cy="14" r="8"/>',
+  'kpi-alert': '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  'kpi-team': '<path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"/>',
+  'kpi-chart': '<path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/>',
+  arrow: '<path d="M7 17 17 7"/><path d="M8 7h9v9"/>',
   checklist: '<path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M4 6l1 1 2-2"/><path d="M4 12l1 1 2-2"/><path d="M4 18l1 1 2-2"/>',
   calendar:
     '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M3 10h18"/>',
@@ -146,14 +152,14 @@ function Icon({
 
 
 const QUICK_ACTIONS: { icon: IconName; label: string; href?: string }[] = [
-  { icon: "folder-plus", label: "নতুন প্রজেক্ট" },
-  { icon: "plus", label: "টাস্ক তৈরি", href: "/tasks" },
+  { icon: "folder-plus", label: "New project" },
+  { icon: "plus", label: "Create task", href: "/tasks" },
   { icon: "dollar", label: "Budget", href: "/budget" },
   { icon: "whiteboard", label: "Whiteboard", href: "/whiteboard" },
-  { icon: "user-plus", label: "মেম্বার ইনভাইট" },
-  { icon: "upload", label: "ফাইল আপলোড" },
-  { icon: "video", label: "মিটিং শুরু" },
-  { icon: "bar", label: "রিপোর্ট বানান" },
+  { icon: "user-plus", label: "Invite member" },
+  { icon: "upload", label: "Upload file" },
+  { icon: "video", label: "Start meeting" },
+  { icon: "bar", label: "Build report" },
 ];
 
 const PRIORITY_COLOR: Record<string, string> = {
@@ -226,46 +232,69 @@ type MeetingRow = { id: string; title: string; meeting_time: string | null };
 
 type WorkloadEntry = { name: string; count: number };
 
-function greeting() {
+// the welcome card: a plain-English greeting and a one-line read of the day from the live numbers
+function greetingEn(): { text: string; night: boolean } {
   const h = new Date().getHours();
-  if (h < 12) return "Good Morning";
-  if (h < 16) return "Good Noon";
-  if (h < 19) return "Good Afternoon";
-  return "Good Evening";
+  if (h < 12) return { text: 'Good Morning', night: false };
+  if (h < 18) return { text: 'Good Afternoon', night: false };
+  return { text: 'Good Evening', night: h >= 20 };
+}
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+// "Today", "Tomorrow", "3 days left" or "2 days late" for the task rows
+function dueLabel(due: string | null): { text: string; cls: '' | 'soon' | 'overdue' } {
+  if (!due) return { text: 'No date', cls: '' };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(due);
+  d.setHours(0, 0, 0, 0);
+  const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+  if (diff < 0) return { text: `${plural(Math.abs(diff), 'day', 'days')} late`, cls: 'overdue' };
+  if (diff === 0) return { text: 'Today', cls: 'soon' };
+  if (diff === 1) return { text: 'Tomorrow', cls: '' };
+  return { text: `${diff} days left`, cls: '' };
 }
 
-function buildInsights(
-  overdue: number,
-  workload: WorkloadEntry[],
-  projects: ProjectRow[],
-) {
-  const list: string[] = [];
+// activity feed: "5 min ago" style times and the Today / Yesterday / Earlier grouping
+function agoEn(iso: string): string {
+  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 1) return 'Just now';
+  if (min < 60) return `${min} min ago`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr} hr ago`;
+  const day = Math.round(hr / 24);
+  if (day < 7) return `${day} ${day === 1 ? 'day' : 'days'} ago`;
+  return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+}
+function activityGroup(iso: string): 'Today' | 'Yesterday' | 'Earlier' {
+  const d = new Date(iso);
+  d.setHours(0, 0, 0, 0);
+  const t = new Date();
+  t.setHours(0, 0, 0, 0);
+  const diff = Math.round((t.getTime() - d.getTime()) / 86400000);
+  return diff <= 0 ? 'Today' : diff === 1 ? 'Yesterday' : 'Earlier';
+}
+
+type Insight = { tone: 'danger' | 'warning' | 'positive'; icon: IconName; title: string; text: string; href: string };
+
+function buildInsights(overdue: number, workload: WorkloadEntry[], projects: ProjectRow[]): Insight[] {
+  const list: Insight[] = [];
   if (overdue > 0)
-    list.push(`${overdue}টা টাস্ক ডেডলাইন মিস করেছে — এগুলো আগে দেখুন।`);
-  if (workload[0]) {
-    list.push(
-      `${workload[0].name}-এর workload টিমে সবচেয়ে বেশি (${workload[0].count}টা টাস্ক) — নতুন টাস্ক অন্য কাউকে দিন।`,
-    );
-  }
+    list.push({ tone: 'danger', icon: 'alert', title: 'Overdue tasks', text: `${plural(overdue, 'task has', 'tasks have')} missed the deadline. Review them first.`, href: '/tasks' });
+  if (workload[0])
+    list.push({ tone: 'warning', icon: 'users', title: 'Heaviest workload', text: `${workload[0].name} has the most open tasks (${workload[0].count}). Give new work to someone else.`, href: '/team' });
   const weekFromNow = Date.now() + 7 * 86400000;
-  const atRisk = projects.find(
-    (p) =>
-      p.status === "active" &&
-      (p.progress ?? 0) < 50 &&
-      p.due_date &&
-      new Date(p.due_date).getTime() < weekFromNow,
-  );
+  const atRisk = projects.find((p) => p.status === 'active' && (p.progress ?? 0) < 50 && p.due_date && new Date(p.due_date).getTime() < weekFromNow);
   if (atRisk)
-    list.push(`${atRisk.name} প্রজেক্ট বর্তমান গতিতে ডেডলাইন মিস করতে পারে।`);
+    list.push({ tone: 'warning', icon: 'clock', title: 'Project at risk', text: `${atRisk.name} may miss its deadline at the current pace.`, href: '/projects' });
   if (list.length === 0)
-    list.push("এই মুহূর্তে কোনো জরুরি সতর্কতা নেই — সব ট্র্যাকে আছে।");
+    list.push({ tone: 'positive', icon: 'check', title: 'All on track', text: 'No urgent alerts right now. Everything is moving as planned.', href: '/projects' });
   return list;
 }
 
 export default function DashboardPage() {
   const { user, loading: sessionLoading } = useSession();
 
-  const { dark } = useAppShell();
   const [cmdkOpen, setCmdkOpen] = useState(false);
   // the top bar's search box (in the shared shell) asks the dashboard to open its command palette
   useEffect(() => {
@@ -618,7 +647,13 @@ export default function DashboardPage() {
   if (!user) return <SignInScreen />;
 
   const displayName = profile?.full_name ?? user.email ?? "ব্যবহারকারী";
-  const firstName = displayName.split(" ")[0];
+  // the full name, each word capitalised; an email falls back to the part before the @ ("kawsar.edux@…" becomes "Kawsar Edux")
+  const firstName = displayName
+    .split("@")[0]
+    .split(/[\s._-]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ") || displayName;
   const insights = buildInsights(kpis.overdue, workload, projects);
   const statusSegs = statusCounts(chartTasks);
   const due = dueNextDays(chartTasks, todayISO());
@@ -634,47 +669,61 @@ export default function DashboardPage() {
     label: string;
     href: string;
     percent?: number;
+    hint: string;
+    hintTone: "good" | "warn" | "bad" | "neutral";
   }[] = [
     {
-      icon: "folder",
+      icon: "kpi-projects",
       value: String(kpis.activeProjects),
       label: "Active Projects",
       href: "/projects",
+      hint: kpis.activeProjects > 0 ? "In progress now" : "No active projects",
+      hintTone: "neutral",
     },
     {
-      icon: "check",
+      icon: "kpi-tasks",
       iconTone: "info",
       value: String(kpis.pendingTasks),
       label: "Pending Tasks",
       href: "/tasks",
+      hint: kpis.pendingTasks > 0 ? "Open and waiting" : "Nothing waiting",
+      hintTone: "neutral",
     },
     {
-      icon: "clock",
+      icon: "kpi-timer",
       iconTone: "warning",
       value: String(kpis.dueToday),
       label: "Due Today",
       href: "/tasks",
+      hint: kpis.dueToday > 0 ? "Finish before tonight" : "Nothing due today",
+      hintTone: kpis.dueToday > 0 ? "warn" : "good",
     },
     {
-      icon: "alert",
+      icon: "kpi-alert",
       iconTone: "danger",
       value: String(kpis.overdue),
       label: "Overdue Tasks",
       href: "/tasks",
+      hint: kpis.overdue > 0 ? "Needs attention" : "All on time",
+      hintTone: kpis.overdue > 0 ? "bad" : "good",
     },
     {
-      icon: "users",
+      icon: "kpi-team",
       iconTone: "positive",
       value: String(kpis.teamCount),
       label: "Team Members",
       href: "/team",
+      hint: "On the team",
+      hintTone: "neutral",
     },
     {
-      icon: "bar",
+      icon: "kpi-chart",
       value: `${kpis.completion}%`,
       label: "Completion Rate",
       href: "/tasks",
       percent: kpis.completion,
+      hint: kpis.completion >= 70 ? "Great pace" : kpis.completion >= 40 ? "Making progress" : "Just getting started",
+      hintTone: kpis.completion >= 70 ? "good" : "neutral",
     },
   ];
 
@@ -682,7 +731,7 @@ export default function DashboardPage() {
     danger: { bg: "var(--danger-soft)", fg: "var(--danger)" },
     positive: { bg: "var(--positive-soft)", fg: "var(--positive)" },
     warning: { bg: "var(--warning-soft)", fg: "var(--warning)" },
-    info: dark ? { bg: "#1E293B", fg: "#60A5FA" } : { bg: "#EFF6FF", fg: "#3B82F6" },
+    info: { bg: "color-mix(in srgb, #2189d9 12%, var(--surface))", fg: "#2189d9" },
   };
 
   const cmdkItems: { icon: IconName; label: string }[] = [
@@ -699,28 +748,61 @@ export default function DashboardPage() {
       {/* ---- TOPBAR ---- */}
       {/* ---- CONTENT ---- */}
       <main className="content">
-            <div className="welcome-card">
-              <div className="welcome-left">
-                <div className="welcome-greeting">{greeting()}</div>
-                <div className="welcome-name-row">
-                  <Avatar person={profile} size={26} />
-                  <span className="welcome-name">{firstName}</span>
-                </div>
-                <p className="welcome-sub">
-                  আজ টিমজুড়ে যা যা ঘটছে, তার সারসংক্ষেপ এখানে।
-                </p>
-                <span className="date-chip">
-                  <Icon name="calendar" size={12} />
-                  {new Date().toLocaleDateString("bn-BD", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </span>
-              </div>
-              <div className="welcome-banner" aria-hidden="true"></div>
-            </div>
+            {(() => {
+              const g = greetingEn();
+              const ringR = 40;
+              const ringC = 2 * Math.PI * ringR;
+              const pct = Math.max(0, Math.min(100, kpis.completion));
+              const focus = dataLoading
+                ? "Loading today's numbers…"
+                : kpis.overdue > 0
+                  ? `${plural(kpis.overdue, 'task is', 'tasks are')} overdue${kpis.dueToday > 0 ? ` and ${plural(kpis.dueToday, 'more is', 'more are')} due today` : ''}. Let's clear them first.`
+                  : kpis.dueToday > 0
+                    ? `${plural(kpis.dueToday, 'task is', 'tasks are')} due today. Nothing is overdue.`
+                    : 'Nothing is due today and nothing is overdue. A good day to plan ahead.';
+              return (
+                <section className="wc" aria-label="Welcome">
+                  <div className="wc-main">
+                    <div className="wc-date">
+                      <span className="wc-date-icon"><Icon name={g.night ? 'moon' : 'sun'} size={14} /></span>
+                      {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    </div>
+                    <div className="wc-title-row">
+                      <Avatar person={profile} size={56} />
+                      <h1 className="wc-title">
+                        {g.text},<br />
+                        <span>{firstName}</span>
+                      </h1>
+                    </div>
+                    <p className="wc-focus">{focus}</p>
+                    <div className="wc-actions">
+                      <Link className="btn btn-accent" href="/tasks"><Icon name="checklist" size={14} /> View tasks</Link>
+                      <Link className="btn btn-ghost" href="/projects"><Icon name="folder" size={14} /> Open projects</Link>
+                    </div>
+                  </div>
+
+                  <div className="wc-pulse">
+                    <div className="wc-ring" role="img" aria-label={`${pct}% of tasks completed`}>
+                      <svg viewBox="0 0 100 100" width="116" height="116">
+                        <circle cx="50" cy="50" r={ringR} fill="none" stroke="var(--border-soft)" strokeWidth="9" />
+                        {pct > 0 && (
+                          <circle cx="50" cy="50" r={ringR} fill="none" stroke="var(--accent)" strokeWidth="9" strokeLinecap="round" strokeDasharray={ringC} strokeDashoffset={ringC - (ringC * pct) / 100} transform="rotate(-90 50 50)" />
+                        )}
+                      </svg>
+                      <div className="wc-ring-center">
+                        <strong className="tabular">{dataLoading ? '—' : `${pct}%`}</strong>
+                        <span>complete</span>
+                      </div>
+                    </div>
+                    <ul className="wc-stats">
+                      <li><i style={{ background: 'var(--warning)' }} />Due today<b className="tabular">{dataLoading ? '—' : kpis.dueToday}</b></li>
+                      <li><i style={{ background: 'var(--danger)' }} />Overdue<b className="tabular">{dataLoading ? '—' : kpis.overdue}</b></li>
+                      <li><i style={{ background: 'var(--accent)' }} />Pending<b className="tabular">{dataLoading ? '—' : kpis.pendingTasks}</b></li>
+                    </ul>
+                  </div>
+                </section>
+              );
+            })()}
 
             {error && (
               <div
@@ -742,44 +824,54 @@ export default function DashboardPage() {
               {kpiCards.map((card) => {
                 const tone = card.iconTone ? KPI_TONE_STYLE[card.iconTone] : null;
                 return (
-                  <div className="kpi-card" key={card.label}>
+                  <div className="kpi-card" key={card.label} style={{ ["--kpi-tone" as string]: tone ? tone.fg : "var(--accent)" }}>
                     <div className="kpi-top">
-                      <div
-                        className="kpi-icon"
-                        style={tone ? { background: tone.bg, color: tone.fg } : undefined}
-                      >
-                        <Icon name={card.icon} />
+                      <div className="kpi-icon" style={tone ? { background: tone.bg, color: tone.fg } : undefined}>
+                        <Icon name={card.icon} size={18} />
                       </div>
-                      <Link className="kpi-menu-link" href={card.href} aria-label={`${card.label} বিস্তারিত`}>
-                        <Icon name="more-horizontal" size={15} />
+                      <Link className="kpi-menu-link" href={card.href} aria-label={`${card.label} details`}>
+                        <Icon name="arrow" size={14} />
                       </Link>
                     </div>
-                    <div className="kpi-value tabular" style={tone ? { color: tone.fg } : { color: "var(--accent)" }}>
-                      {dataLoading ? "—" : card.value}
+                    <div className="kpi-main">
+                      <div className="kpi-text">
+                        <div className="kpi-value tabular">{dataLoading ? "—" : card.value}</div>
+                        <div className="kpi-label">{card.label}</div>
+                      </div>
+                      {card.percent !== undefined && (
+                        <div className="kpi-ring-wrap" aria-hidden="true">
+                          <svg width={46} height={46} viewBox="0 0 64 64">
+                            <defs>
+                              <linearGradient id="kpi-ring-grad" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stopColor="var(--accent)" />
+                                <stop offset="100%" stopColor="#2189d9" />
+                              </linearGradient>
+                            </defs>
+                            <circle cx={32} cy={32} r={27} fill="none" stroke="var(--accent-soft)" strokeWidth={6} />
+                            {card.percent > 0 && (
+                              <circle
+                                cx={32}
+                                cy={32}
+                                r={27}
+                                fill="none"
+                                stroke="url(#kpi-ring-grad)"
+                                strokeWidth={6}
+                                strokeLinecap="round"
+                                strokeDasharray={169.65}
+                                strokeDashoffset={169.65 - (Math.min(card.percent, 100) / 100) * 169.65}
+                                transform="rotate(-90 32 32)"
+                              />
+                            )}
+                            <circle cx={32} cy={32} r={19} fill="var(--accent-soft)" />
+                          </svg>
+                          <span className="kpi-ring-icon"><Icon name="kpi-chart" size={12} /></span>
+                        </div>
+                      )}
                     </div>
-                    <div className="kpi-label">{card.label}</div>
-                    {card.percent !== undefined ? (
-                      <div className="kpi-ring-wrap">
-                        <svg width={48} height={48} viewBox="0 0 48 48">
-                          <circle cx={24} cy={24} r={20} fill="none" stroke="var(--border-soft)" strokeWidth={4} />
-                          <circle
-                            cx={24}
-                            cy={24}
-                            r={20}
-                            fill="none"
-                            stroke="var(--accent)"
-                            strokeWidth={4}
-                            strokeLinecap="round"
-                            strokeDasharray={125.66}
-                            strokeDashoffset={125.66 - (Math.min(card.percent, 100) / 100) * 125.66}
-                          />
-                        </svg>
-                      </div>
-                    ) : (
-                      <div className="kpi-deco" style={tone ? { color: tone.fg } : undefined}>
-                        <Icon name={card.icon} size={70} />
-                      </div>
-                    )}
+                    <div className={`kpi-foot hint-${card.hintTone}`}>
+                      <i />
+                      {dataLoading ? "Loading…" : card.hint}
+                    </div>
                   </div>
                 );
               })}
@@ -789,140 +881,117 @@ export default function DashboardPage() {
             <div className="grid-2col top-row">
               <div>
                 {/* My Tasks */}
-                <section className="panel">
-                  <div className="panel-head">
-                    <span className="panel-title">
-                      My Tasks{" "}
-                      <span className="count">· {tasks.length}টা বাকি</span>
-                    </span>
-                    <Link className="panel-link" href="/tasks">
-                      সব দেখুন <Icon name="chevron-right" />
+                <section className="panel mt">
+                  <div className="mt-head">
+                    <span className="mt-badge"><Icon name="checklist" size={16} /></span>
+                    <div className="mt-head-text">
+                      <div className="mt-title">My Tasks</div>
+                      <div className="mt-sub">{dataLoading ? 'Loading…' : tasks.length === 0 ? 'Nothing left to do' : `${plural(tasks.length, 'task', 'tasks')} to finish`}</div>
+                    </div>
+                    <Link className="mt-all" href="/tasks">
+                      View all <span className="mt-all-go"><Icon name="chevron-right" size={13} /></span>
                     </Link>
                   </div>
-                  <div className="panel-body">
+
+                  <div className="mt-body">
                     {dataLoading ? (
-                      <p
-                        style={{
-                          padding: 16,
-                          fontSize: 13,
-                          color: "var(--ink-faint)",
-                        }}
-                      >
-                        লোড হচ্ছে…
-                      </p>
+                      <p className="mt-empty">Loading…</p>
                     ) : tasks.length === 0 ? (
-                      <p
-                        style={{
-                          padding: 16,
-                          fontSize: 13,
-                          color: "var(--ink-faint)",
-                        }}
-                      >
-                        আপনার নামে কোনো বাকি টাস্ক নেই 🎉
-                      </p>
+                      <div className="mt-empty-card">
+                        <span className="mt-empty-icon"><Icon name="check" size={18} /></span>
+                        <strong>You&apos;re all caught up</strong>
+                        <span>No open tasks are assigned to you.</span>
+                      </div>
                     ) : (
-                      tasks.map((task) => {
-                        const due = dueMeta(task.due_date, task.status);
-                        const items = checklists[task.id] ?? [];
-                        const doneCount = items.filter((it) => it.is_done).length;
-                        return (
-                          <div className="task-item" key={task.id}>
-                          <div className="task-row">
-                            <button
-                              className="task-status-dot"
-                              aria-label="সম্পন্ন হিসেবে চিহ্নিত করুন"
-                              onClick={() => toggleTask(task.id, task.status)}
-                            ></button>
-                            <Link href={`/tasks?task=${task.id}`} className="task-main">
-                              <div className="task-title">{task.title}</div>
-                              <div className="task-meta">
-                                <span
-                                  className="priority-dot"
-                                  style={{
-                                    background: PRIORITY_COLOR[task.priority],
-                                  }}
-                                ></span>
-                                <span className="task-project-tag">
-                                  {task.projects?.name ?? "কোনো প্রজেক্ট নেই"}
-                                </span>
-                                {items.length > 0 && (
-                                  <span className="task-check-count tabular">
-                                    <Icon name="checklist" size={12} /> {doneCount}/{items.length}
+                      <ul className="mt-list">
+                        {tasks.map((task) => {
+                          const due = dueLabel(task.due_date);
+                          const items = checklists[task.id] ?? [];
+                          const doneCount = items.filter((it) => it.is_done).length;
+                          return (
+                            <li className="mt-item" key={task.id}>
+                              <div className="mt-row">
+                                <button className="mt-check" aria-label="Mark as done" onClick={() => toggleTask(task.id, task.status)}>
+                                  <Icon name="check" size={12} />
+                                </button>
+                                <Link href={`/tasks?task=${task.id}`} className="mt-main">
+                                  <span className="mt-task-title">{task.title}</span>
+                                  <span className="mt-meta">
+                                    <span className="mt-project">{task.projects?.name ?? 'No project'}</span>
+                                    <span className="mt-prio" style={{ ['--prio' as string]: PRIORITY_COLOR[task.priority] }}>
+                                      <i />{task.priority}
+                                    </span>
+                                    {items.length > 0 && (
+                                      <span className="mt-sub-count tabular">
+                                        <Icon name="checklist" size={12} /> {doneCount}/{items.length}
+                                      </span>
+                                    )}
                                   </span>
-                                )}
+                                </Link>
+                                <span className={`mt-due${due.cls ? ` ${due.cls}` : ''}`}>{due.text}</span>
                               </div>
-                            </Link>
-                            <div
-                              className={`task-due${due.cls ? ` ${due.cls}` : ""}`}
-                            >
-                              {due.text}
-                            </div>
-                          </div>
-                          {items.length > 0 && (
-                            <ul className="task-checklist">
-                              {items.slice(0, 5).map((it) => (
-                                <li key={it.id} className={it.is_done ? "is-done" : undefined}>
-                                  <button
-                                    type="button"
-                                    className={`task-check-box${it.is_done ? " done" : ""}`}
-                                    aria-label={it.is_done ? "অসম্পন্ন হিসেবে চিহ্নিত করুন" : "সম্পন্ন হিসেবে চিহ্নিত করুন"}
-                                    aria-pressed={it.is_done}
-                                    onClick={() => toggleChecklistItem(task.id, it.id, it.is_done)}
-                                  ></button>
-                                  <span>{it.label}</span>
-                                </li>
-                              ))}
-                              {items.length > 5 && (
-                                <li className="task-checklist-more">
-                                  <Link href={`/tasks?task=${task.id}`}>+{items.length - 5} আরও</Link>
-                                </li>
+                              {items.length > 0 && (
+                                <ul className="mt-subs">
+                                  {items.slice(0, 5).map((it) => (
+                                    <li key={it.id} className={it.is_done ? 'is-done' : undefined}>
+                                      <button
+                                        type="button"
+                                        className={`task-check-box${it.is_done ? ' done' : ''}`}
+                                        aria-label={it.is_done ? 'Mark as not done' : 'Mark as done'}
+                                        aria-pressed={it.is_done}
+                                        onClick={() => toggleChecklistItem(task.id, it.id, it.is_done)}
+                                      ></button>
+                                      <span>{it.label}</span>
+                                    </li>
+                                  ))}
+                                  {items.length > 5 && (
+                                    <li className="task-checklist-more">
+                                      <Link href={`/tasks?task=${task.id}`}>+{items.length - 5} more</Link>
+                                    </li>
+                                  )}
+                                </ul>
                               )}
-                            </ul>
-                          )}
-                          </div>
-                        );
-                      })
+                            </li>
+                          );
+                        })}
+                      </ul>
                     )}
 
-                    {/* Today's To-Do */}
-                    <div className="todo-block">
-                      <div className="todo-block-head">
-                        <span>
-                          Today&apos;s To-Do{" "}
-                          <span className="count">
-                            · {todos.filter((t) => t.status === "completed").length}/{todos.length} সম্পন্ন
-                          </span>
-                        </span>
-                        <Link className="panel-link" href="/todos">
-                          সব দেখুন <Icon name="chevron-right" />
+                    <div className="mt-todo">
+                      <div className="mt-todo-head">
+                        <span className="mt-todo-title">Today&apos;s To-Do</span>
+                        <span className="mt-todo-count tabular">{todos.filter((t) => t.status === 'completed').length}/{todos.length} done</span>
+                        <Link className="mt-all" href="/todos">
+                          View all <span className="mt-all-go"><Icon name="chevron-right" size={13} /></span>
                         </Link>
                       </div>
                       {!dataLoading && todos.length === 0 ? (
-                        <p className="todo-empty">আজকের জন্য কোনো টু-ডু নেই</p>
+                        <p className="mt-empty">No to-dos for today</p>
                       ) : (
-                        todos.map((todo) => {
-                          const done = todo.status === "completed";
-                          return (
-                            <div className="task-row" key={todo.id}>
-                              <button
-                                className={`task-status-dot${done ? " done" : ""}`}
-                                aria-label={done ? "অসম্পন্ন হিসেবে চিহ্নিত করুন" : "সম্পন্ন হিসেবে চিহ্নিত করুন"}
-                                onClick={() => toggleTodo(todo.id, todo.status)}
-                              ></button>
-                              <Link href="/todos" className="task-main">
-                                <div className={`task-title${done ? " done" : ""}`}>{todo.title}</div>
-                                <div className="task-meta">
-                                  <span
-                                    className="priority-dot"
-                                    style={{ background: PRIORITY_COLOR[todo.priority === "medium" ? "normal" : todo.priority] }}
-                                  ></span>
-                                  <span className="task-project-tag">{todo.projects?.name ?? "কোনো প্রজেক্ট নেই"}</span>
+                        <ul className="mt-list">
+                          {todos.map((todo) => {
+                            const done = todo.status === 'completed';
+                            return (
+                              <li className="mt-item" key={todo.id}>
+                                <div className="mt-row">
+                                  <button className={`mt-check${done ? ' done' : ''}`} aria-label={done ? 'Mark as not done' : 'Mark as done'} onClick={() => toggleTodo(todo.id, todo.status)}>
+                                    <Icon name="check" size={12} />
+                                  </button>
+                                  <Link href="/todos" className="mt-main">
+                                    <span className={`mt-task-title${done ? ' done' : ''}`}>{todo.title}</span>
+                                    <span className="mt-meta">
+                                      <span className="mt-project">{todo.projects?.name ?? 'No project'}</span>
+                                      <span className="mt-prio" style={{ ['--prio' as string]: PRIORITY_COLOR[todo.priority === 'medium' ? 'normal' : todo.priority] }}>
+                                        <i />{todo.priority === 'medium' ? 'normal' : todo.priority}
+                                      </span>
+                                    </span>
+                                  </Link>
+                                  <span className="mt-due">{todo.due_time ? formatTimeBn(todo.due_time) : 'Today'}</span>
                                 </div>
-                              </Link>
-                              <div className="task-due">{todo.due_time ? formatTimeBn(todo.due_time) : "আজ"}</div>
-                            </div>
-                          );
-                        })
+                              </li>
+                            );
+                          })}
+                        </ul>
                       )}
                     </div>
                   </div>
@@ -933,128 +1002,194 @@ export default function DashboardPage() {
                 <section className="ai-card">
                   <div className="ai-head">
                     <div className="ai-badge">
-                      <Icon name="spark" color="#fff" />
+                      <Icon name="spark" size={15} />
                     </div>
-                    <div className="ai-title">ইনসাইট</div>
+                    <div className="ai-head-text">
+                      <div className="ai-title">Insights</div>
+                      <div className="ai-sub">Based on your live tasks and projects</div>
+                    </div>
+                    <span className="ai-count tabular">{dataLoading ? '—' : insights.length}</span>
                   </div>
                   <div className="ai-list">
-                    {insights.map((text, i) => (
-                      <div className="ai-item" key={i}>
-                        <span className="dot"></span> {text}
-                      </div>
+                    {insights.map((it, i) => (
+                      <Link className={`ai-item tone-${it.tone}`} href={it.href} key={i}>
+                        <span className="ai-item-icon"><Icon name={it.icon} size={16} /></span>
+                        <span className="ai-item-body">
+                          <span className="ai-item-title">{it.title}</span>
+                          <span className="ai-item-text">{it.text}</span>
+                        </span>
+                        <span className="ai-item-go" aria-hidden="true"><Icon name="chevron-right" size={14} /></span>
+                      </Link>
                     ))}
                   </div>
                 </section>
               </div>
             </div>
 
-            {/* CHARTS */}
-            <h2 className="charts-heading">Task Analytics</h2>
-            <section className="charts-row" aria-label="চার্ট">
-              <div className="panel">
-                <div className="panel-head">
-                  <span className="panel-title">Task status</span>
-                </div>
-                <div className="panel-body chart-body">
-                  {dataLoading ? <p className="chart-loading">লোড হচ্ছে…</p> : <StatusBar segments={statusSegs} />}
-                </div>
-              </div>
-              <div className="panel">
-                <div className="panel-head">
-                  <span className="panel-title">Completed tasks</span>
-                </div>
-                <div className="panel-body chart-body">
-                  {dataLoading ? <p className="chart-loading">লোড হচ্ছে…</p> : <TrendChart points={completions} />}
-                </div>
-              </div>
-              <div className="panel">
-                <div className="panel-head">
-                  <span className="panel-title">Due in the next 7 days</span>
-                </div>
-                <div className="panel-body chart-body">
-                  {dataLoading ? (
-                    <p className="chart-loading">লোড হচ্ছে…</p>
-                  ) : (
-                    <OutlookChart buckets={due.buckets} undated={due.later} caption="Open tasks due per day · whole team" periodLabel="Day" showHours={false} />
-                  )}
-                </div>
-              </div>
-            </section>
+            {/* TASK ANALYTICS */}
+            {(() => {
+              const taskTotal = statusSegs.reduce((n, x) => n + x.count, 0);
+              const doneTotal = statusSegs.find((x) => x.key === 'done')?.count ?? 0;
+              const donePct = taskTotal > 0 ? Math.round((doneTotal / taskTotal) * 100) : 0;
+              const completedRecent = completions.reduce((n, x) => n + x.value, 0);
+              const dueTotal = due.buckets.reduce((n, x) => n + x.tasks, 0);
+              return (
+                <section className="an" aria-label="Task analytics">
+                  <div className="an-head">
+                    <span className="an-badge"><Icon name="kpi-chart" size={16} /></span>
+                    <div className="an-head-text">
+                      <h2 className="an-title">Task Analytics</h2>
+                      <div className="an-sub">How the team&apos;s work is moving, from live task data</div>
+                    </div>
+                    <div className="an-pills">
+                      <span className="an-pill"><b className="tabular">{dataLoading ? '—' : taskTotal}</b> tasks</span>
+                      <span className="an-pill good"><b className="tabular">{dataLoading ? '—' : `${donePct}%`}</b> done</span>
+                    </div>
+                  </div>
 
-            {/* PROJECT CHARTS */}
-            <h2 className="charts-heading">Project Analytics</h2>
-            <section className="charts-row" aria-label="প্রজেক্ট চার্ট">
-              <div className="panel">
-                <div className="panel-head">
-                  <span className="panel-title">Project status</span>
-                </div>
-                <div className="panel-body chart-body">
-                  {dataLoading ? <p className="chart-loading">লোড হচ্ছে…</p> : <DonutChart segments={projStatusSegs} noun="project" />}
-                </div>
-              </div>
-              <div className="panel">
-                <div className="panel-head">
-                  <span className="panel-title">Project progress</span>
-                </div>
-                <div className="panel-body chart-body">
-                  {dataLoading ? <p className="chart-loading">লোড হচ্ছে…</p> : <ProjectProgress rows={projProgress} />}
-                </div>
-              </div>
-              <div className="panel">
-                <div className="panel-head">
-                  <span className="panel-title">Project deadlines</span>
-                </div>
-                <div className="panel-body chart-body">
-                  {dataLoading ? (
-                    <p className="chart-loading">লোড হচ্ছে…</p>
-                  ) : (
-                    <OutlookChart buckets={projDue.buckets} undated={projDue.later} caption="Open projects due per week" periodLabel="Week" showHours={false} noun="project" />
-                  )}
-                </div>
-              </div>
-            </section>
+                  <div className="an-grid">
+                    <div className="an-card">
+                      <div className="an-card-head">
+                        <span className="an-icon"><Icon name="kpi-tasks" size={15} /></span>
+                        <div className="an-card-text">
+                          <div className="an-card-title">Task status</div>
+                          <div className="an-card-sub">Where every task stands</div>
+                        </div>
+                        <span className="an-stat tabular">{dataLoading ? '—' : taskTotal}</span>
+                      </div>
+                      <div className="an-card-body">
+                        {dataLoading ? <p className="chart-loading">Loading…</p> : <StatusBar segments={statusSegs} />}
+                      </div>
+                    </div>
+
+                    <div className="an-card">
+                      <div className="an-card-head">
+                        <span className="an-icon"><Icon name="check" size={15} /></span>
+                        <div className="an-card-text">
+                          <div className="an-card-title">Completed tasks</div>
+                          <div className="an-card-sub">Marked done each day, last 14 days</div>
+                        </div>
+                        <span className="an-stat tabular">{dataLoading ? '—' : completedRecent}</span>
+                      </div>
+                      <div className="an-card-body">
+                        {dataLoading ? <p className="chart-loading">Loading…</p> : <TrendChart points={completions} />}
+                      </div>
+                    </div>
+
+                    <div className="an-card">
+                      <div className="an-card-head">
+                        <span className="an-icon"><Icon name="calendar" size={15} /></span>
+                        <div className="an-card-text">
+                          <div className="an-card-title">Due in the next 7 days</div>
+                          <div className="an-card-sub">Open tasks due per day, whole team</div>
+                        </div>
+                        <span className="an-stat tabular">{dataLoading ? '—' : dueTotal}</span>
+                      </div>
+                      <div className="an-card-body">
+                        {dataLoading ? (
+                          <p className="chart-loading">Loading…</p>
+                        ) : (
+                          <OutlookChart buckets={due.buckets} undated={due.later} caption="Open tasks due per day · whole team" periodLabel="Day" showHours={false} />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              );
+            })()}
+
+            {/* PROJECT ANALYTICS */}
+            {(() => {
+              const projTotal = projStatusSegs.reduce((n, x) => n + x.count, 0);
+              const projDone = projStatusSegs.find((x) => x.key === 'completed')?.count ?? 0;
+              const projActive = projStatusSegs.find((x) => x.key === 'active')?.count ?? 0;
+              const projDueTotal = projDue.buckets.reduce((n, x) => n + x.tasks, 0);
+              return (
+                <section className="an" aria-label="Project analytics">
+                  <div className="an-head">
+                    <span className="an-badge"><Icon name="kpi-projects" size={16} /></span>
+                    <div className="an-head-text">
+                      <h2 className="an-title">Project Analytics</h2>
+                      <div className="an-sub">Where every project stands and what is due soon</div>
+                    </div>
+                    <div className="an-pills">
+                      <span className="an-pill"><b className="tabular">{dataLoading ? '—' : projTotal}</b> projects</span>
+                      <span className="an-pill good"><b className="tabular">{dataLoading ? '—' : projActive}</b> active</span>
+                    </div>
+                  </div>
+
+                  <div className="an-grid">
+                    <div className="an-card">
+                      <div className="an-card-head">
+                        <span className="an-icon"><Icon name="kpi-projects" size={15} /></span>
+                        <div className="an-card-text">
+                          <div className="an-card-title">Project status</div>
+                          <div className="an-card-sub">{dataLoading ? '' : `${projDone} of ${projTotal} completed`}</div>
+                        </div>
+                        <span className="an-stat tabular">{dataLoading ? '—' : projTotal}</span>
+                      </div>
+                      <div className="an-card-body">
+                        {dataLoading ? <p className="chart-loading">Loading…</p> : <DonutChart segments={projStatusSegs} noun="project" />}
+                      </div>
+                    </div>
+
+                    <div className="an-card">
+                      <div className="an-card-head">
+                        <span className="an-icon"><Icon name="kpi-tasks" size={15} /></span>
+                        <div className="an-card-text">
+                          <div className="an-card-title">Project progress</div>
+                          <div className="an-card-sub">Least finished first</div>
+                        </div>
+                        <span className="an-stat tabular">{dataLoading ? '—' : projProgress.length}</span>
+                      </div>
+                      <div className="an-card-body">
+                        {dataLoading ? <p className="chart-loading">Loading…</p> : <ProjectProgress rows={projProgress} />}
+                      </div>
+                    </div>
+
+                    <div className="an-card">
+                      <div className="an-card-head">
+                        <span className="an-icon"><Icon name="calendar" size={15} /></span>
+                        <div className="an-card-text">
+                          <div className="an-card-title">Project deadlines</div>
+                          <div className="an-card-sub">Open projects due per week</div>
+                        </div>
+                        <span className="an-stat tabular">{dataLoading ? '—' : projDueTotal}</span>
+                      </div>
+                      <div className="an-card-body">
+                        {dataLoading ? (
+                          <p className="chart-loading">Loading…</p>
+                        ) : (
+                          <OutlookChart buckets={projDue.buckets} undated={projDue.later} caption="Open projects due per week" periodLabel="Week" showHours={false} noun="project" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              );
+            })()}
 
             {/* TWO COLUMN LAYOUT */}
             <div className="grid-2col bottom-row">
               {/* LEFT COLUMN */}
               <div>
                 {/* Project Overview */}
-                <section className="panel">
-                  <div className="panel-head">
-                    <span className="panel-title-row">
-                      <span className="panel-icon">
-                        <Icon name="folder" size={14} />
-                      </span>
-                      <span className="panel-title">Project Overview</span>
-                      <span className="panel-count-pill tabular">
-                        {kpis.activeProjects} active
-                      </span>
-                    </span>
-                    <Link className="panel-link" href="/projects">
-                      View all <Icon name="chevron-right" />
+                <section className="panel mt">
+                  <div className="mt-head">
+                    <span className="mt-badge"><Icon name="kpi-projects" size={16} /></span>
+                    <div className="mt-head-text">
+                      <div className="mt-title">Project Overview</div>
+                      <div className="mt-sub">{dataLoading ? 'Loading…' : `${kpis.activeProjects} active of ${plural(projects.length, 'project', 'projects')}`}</div>
+                    </div>
+                    <Link className="mt-all" href="/projects">
+                      View all <span className="mt-all-go"><Icon name="chevron-right" size={13} /></span>
                     </Link>
                   </div>
                   <div className="panel-body pcard-list">
                     {dataLoading ? (
-                      <p
-                        style={{
-                          padding: 16,
-                          fontSize: 13,
-                          color: "var(--ink-faint)",
-                        }}
-                      >
-                        লোড হচ্ছে…
-                      </p>
+                      <p className="mt-empty">Loading…</p>
                     ) : projects.length === 0 ? (
-                      <p
-                        style={{
-                          padding: 16,
-                          fontSize: 13,
-                          color: "var(--ink-faint)",
-                        }}
-                      >
-                        কোনো প্রজেক্ট নেই।
-                      </p>
+                      <p className="mt-empty">No projects yet.</p>
                     ) : (
                       projects.map((p) => {
                         const chip = PROJECT_CHIP[p.status] ?? {
@@ -1083,21 +1218,50 @@ export default function DashboardPage() {
                                 {chip.label}
                               </span>
                             </div>
-                            <div className="pcard-progress">
-                              <div className="pcard-progress-row">
-                                <span className="pcard-progress-text tabular">
-                                  <b>{p.doneCount}</b> / {p.taskCount} tasks done
-                                </span>
-                                <span className="pcard-progress-pct tabular">{p.progress ?? 0}%</span>
+                            <div className="pcard-mid2">
+                              <div className="pcard-ring" aria-label={`${p.progress ?? 0}% complete`}>
+                                <svg width={64} height={64} viewBox="0 0 64 64">
+                                  <defs>
+                                    <linearGradient id="pcard-ring-grad" x1="0" y1="0" x2="1" y2="1">
+                                      <stop offset="0%" stopColor="var(--accent)" />
+                                      <stop offset="100%" stopColor="#2189d9" />
+                                    </linearGradient>
+                                  </defs>
+                                  <circle cx={32} cy={32} r={27} fill="none" stroke="var(--accent-soft)" strokeWidth={6} />
+                                  {(p.progress ?? 0) > 0 && (
+                                    <circle
+                                      cx={32}
+                                      cy={32}
+                                      r={27}
+                                      fill="none"
+                                      stroke={chip.cls === "chip-overdue" ? "var(--danger)" : chip.cls === "chip-done" ? "var(--positive)" : "url(#pcard-ring-grad)"}
+                                      strokeWidth={6}
+                                      strokeLinecap="round"
+                                      strokeDasharray={169.65}
+                                      strokeDashoffset={169.65 - (Math.min(p.progress ?? 0, 100) / 100) * 169.65}
+                                      transform="rotate(-90 32 32)"
+                                    />
+                                  )}
+                                  <circle cx={32} cy={32} r={19} fill="var(--accent-soft)" />
+                                </svg>
+                                <span className="pcard-ring-pct tabular">{p.progress ?? 0}%</span>
                               </div>
-                              <div className="progress-track">
-                                <div
-                                  className="progress-fill"
-                                  style={{
-                                    width: `${p.progress ?? 0}%`,
-                                    ...(chip.cls === "chip-overdue" ? { background: "var(--danger)" } : {}),
-                                  }}
-                                ></div>
+                              <div className="pcard-facts">
+                                <div className="pcard-fact">
+                                  <span className="pcard-fact-label">Tasks</span>
+                                  <span className="pcard-fact-value tabular"><b>{p.doneCount}</b> / {p.taskCount} done</span>
+                                </div>
+                                <div className="pcard-fact">
+                                  <span className="pcard-fact-label">Deadline</span>
+                                  {p.due_date ? (
+                                    <span className={`pcard-fact-value${p.status !== "completed" && p.due_date < todayISO() ? " is-overdue" : ""}`}>
+                                      {new Date(p.due_date).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
+                                      {p.status !== "completed" && p.due_date < todayISO() && " · Overdue"}
+                                    </span>
+                                  ) : (
+                                    <span className="pcard-fact-value muted">Not set</span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             <div className="pcard-bottom">
@@ -1116,15 +1280,6 @@ export default function DashboardPage() {
                                 <span></span>
                               )}
                               <div className="pcard-stats">
-                                {p.due_date && (
-                                  <span
-                                    className={`pcard-due${p.status !== "completed" && p.due_date < todayISO() ? " is-overdue" : ""}`}
-                                    title="Deadline"
-                                  >
-                                    <Icon name="calendar" size={13} /> {formatBnDate(p.due_date)}
-                                    {p.status !== "completed" && p.due_date < todayISO() && " · Overdue"}
-                                  </span>
-                                )}
                                 <span className="pcard-stat" title="Discussions">
                                   <Icon name="message" size={13} /> <b className="tabular">{p.discussionCount}</b>
                                 </span>
@@ -1141,56 +1296,50 @@ export default function DashboardPage() {
                 </section>
 
                 {/* Activity Feed */}
-                <section className="panel">
-                  <div className="panel-head">
-                    <span className="panel-title">Activity Feed</span>
+                <section className="panel mt">
+                  <div className="mt-head">
+                    <span className="mt-badge"><Icon name="clock" size={16} /></span>
+                    <div className="mt-head-text">
+                      <div className="mt-title">Activity Feed</div>
+                      <div className="mt-sub">Latest updates from the team</div>
+                    </div>
+                    {!dataLoading && activity.length > 0 && <span className="ai-count tabular">{activity.length}</span>}
                   </div>
-                  <div className="panel-body">
+                  <div className="act2-body">
                     {dataLoading ? (
-                      <p
-                        style={{
-                          padding: 16,
-                          fontSize: 13,
-                          color: "var(--ink-faint)",
-                        }}
-                      >
-                        লোড হচ্ছে…
-                      </p>
+                      <p className="mt-empty">Loading…</p>
                     ) : activity.length === 0 ? (
-                      <p
-                        style={{
-                          padding: 16,
-                          fontSize: 13,
-                          color: "var(--ink-faint)",
-                        }}
-                      >
-                        এখনো কোনো অ্যাক্টিভিটি নেই।
-                      </p>
+                      <p className="mt-empty">No activity yet.</p>
                     ) : (
-                      activity.map((a) => {
-                        const meta = activityMeta(a.action);
+                      (['Today', 'Yesterday', 'Earlier'] as const).map((group) => {
+                        const rows = activity.filter((a) => activityGroup(a.created_at) === group);
+                        if (rows.length === 0) return null;
                         return (
-                          <div className="activity-row" key={a.id}>
-                            <div className={`activity-icon ${meta.cls}`}>
-                              <Icon name={meta.icon} size={14} />
-                            </div>
-                            <div className="activity-body">
-                              <div className="activity-text">
-                                <b>{a.profiles?.full_name ?? "কেউ একজন"}</b>{" "}
-                                {a.detail}
-                              </div>
-                              <div className="activity-time">{relativeTimeBn(a.created_at)}</div>
-                            </div>
-                            {profile?.is_admin && (
-                              <button
-                                className="activity-delete"
-                                onClick={() => handleDeleteActivity(a.id)}
-                                aria-label="ডিলিট করুন"
-                                title="ডিলিট করুন"
-                              >
-                                <Icon name="trash" size={13} />
-                              </button>
-                            )}
+                          <div className="act2-group" key={group}>
+                            <div className="act2-group-label">{group}</div>
+                            <ul className="act2-list">
+                              {rows.map((a) => {
+                                const meta = activityMeta(a.action);
+                                return (
+                                  <li className="act2-row" key={a.id}>
+                                    <span className={`act2-icon ${meta.cls}`}>
+                                      <Icon name={meta.icon} size={14} />
+                                    </span>
+                                    <div className="act2-body-text">
+                                      <div className="act2-text">
+                                        <b>{a.profiles?.full_name ?? "Someone"}</b> {a.detail}
+                                      </div>
+                                      <div className="act2-time">{agoEn(a.created_at)}</div>
+                                    </div>
+                                    {profile?.is_admin && (
+                                      <button className="act2-delete" onClick={() => handleDeleteActivity(a.id)} aria-label="Delete" title="Delete">
+                                        <Icon name="trash" size={13} />
+                                      </button>
+                                    )}
+                                  </li>
+                                );
+                              })}
+                            </ul>
                           </div>
                         );
                       })
@@ -1202,31 +1351,22 @@ export default function DashboardPage() {
               {/* RIGHT COLUMN */}
               <div>
                 {/* Team Workload */}
-                <section className="panel">
-                  <div className="panel-head">
-                    <span className="panel-title">Team Workload</span>
+                <section className="panel mt">
+                  <div className="mt-head">
+                    <span className="mt-badge"><Icon name="kpi-team" size={16} /></span>
+                    <div className="mt-head-text">
+                      <div className="mt-title">Team Workload</div>
+                      <div className="mt-sub">Open tasks per person · 5 is a full load</div>
+                    </div>
+                    <Link className="mt-all" href="/team">
+                      View team <span className="mt-all-go"><Icon name="chevron-right" size={13} /></span>
+                    </Link>
                   </div>
-                  <div className="panel-body wl-body">
+                  <div className="wl2-body">
                     {dataLoading ? (
-                      <p
-                        style={{
-                          padding: 16,
-                          fontSize: 13,
-                          color: "var(--ink-faint)",
-                        }}
-                      >
-                        লোড হচ্ছে…
-                      </p>
+                      <p className="mt-empty">Loading…</p>
                     ) : workload.length === 0 ? (
-                      <p
-                        style={{
-                          padding: 16,
-                          fontSize: 13,
-                          color: "var(--ink-faint)",
-                        }}
-                      >
-                        কোনো টাস্ক অ্যাসাইন করা নেই।
-                      </p>
+                      <p className="mt-empty">No tasks are assigned yet.</p>
                     ) : (
                       <WorkloadChart data={workload} />
                     )}
@@ -1274,28 +1414,31 @@ export default function DashboardPage() {
                 </section>
 
                 {/* Quick Actions */}
-                <section className="panel">
-                  <div className="panel-head">
-                    <span className="panel-title">Quick Actions</span>
+                <section className="panel mt">
+                  <div className="mt-head">
+                    <span className="mt-badge"><Icon name="spark" size={16} /></span>
+                    <div className="mt-head-text">
+                      <div className="mt-title">Quick Actions</div>
+                      <div className="mt-sub">Jump straight to common tasks</div>
+                    </div>
                   </div>
                   <div className="qa-grid">
-                    {QUICK_ACTIONS.map((qa) =>
-                      qa.href ? (
-                        <a className="qa-btn" key={qa.label} href={qa.href}>
-                          <div className="qa-icon">
-                            <Icon name={qa.icon} size={14} />
-                          </div>
+                    {QUICK_ACTIONS.map((qa) => {
+                      const inner = (
+                        <>
+                          <span className="qa-icon">
+                            <Icon name={qa.icon} size={16} />
+                          </span>
                           <span className="qa-label">{qa.label}</span>
-                        </a>
+                          <span className="qa-go" aria-hidden="true"><Icon name="arrow" size={12} /></span>
+                        </>
+                      );
+                      return qa.href ? (
+                        <a className="qa-btn" key={qa.label} href={qa.href}>{inner}</a>
                       ) : (
-                        <button className="qa-btn" key={qa.label} type="button">
-                          <div className="qa-icon">
-                            <Icon name={qa.icon} size={14} />
-                          </div>
-                          <span className="qa-label">{qa.label}</span>
-                        </button>
-                      ),
-                    )}
+                        <button className="qa-btn" key={qa.label} type="button">{inner}</button>
+                      );
+                    })}
                   </div>
                 </section>
               </div>

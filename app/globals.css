@@ -172,3 +172,23 @@ div.brand.brand-topbar {
 @media (max-width: 860px) {
   div.client-portal .sidebar { width: min(176px, 62vw); }
 }
+
+/* Team dashboard on phones: a slightly wider slide-in menu so the close (X) button has room, and the X gets a border */
+@media (max-width: 860px) {
+  [class*="-root"]:not(.client-portal) .sidebar { width: 232px; }
+  [class*="-root"]:not(.client-portal) .sidebar-close-btn {
+    width: 32px;
+    height: 32px;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    border: 1px solid var(--border, #d5d4d7);
+    border-radius: 50%;
+    background: var(--surface, #fff);
+    color: var(--ink-soft, #6d6a72);
+  }
+  [class*="-root"]:not(.client-portal) .sidebar-close-btn:hover {
+    background: var(--surface-muted, #fbfbfc);
+    color: var(--ink, #323135);
+  }
+}

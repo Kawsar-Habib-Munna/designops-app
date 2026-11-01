@@ -16,7 +16,7 @@ import Link from 'next/link';
 import './team.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
-import { formatBnDate, relativeTimeBn, todayISO } from '@/lib/format';
+import { formatBnDate, relativeTimeBn, todayISO, formatDate, relativeTime } from '@/lib/format';
 import { STAGE_LABEL, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
 import { uploadFileToDrive } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
@@ -55,6 +55,11 @@ const ICON_PATHS: Record<string, string> = {
   upload: '<path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
   message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
   layers: '<path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>',
+  mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+  copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
   more: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
 };
 
@@ -161,6 +166,22 @@ type MemberStat = {
   lastActivityAt: string | null;
   capacityPercent: number;
 };
+
+type MemberTask = {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  workflow_stage: string;
+  due_date: string | null;
+  estimated_hours: number | null;
+  projects: { id: string; name: string } | null;
+};
+type MemberActivity = { id: string; action: string; detail: string | null; created_at: string };
+type MemberDetail = { tasks: MemberTask[]; doneThisWeek: number; doneTotal: number; activity: MemberActivity[]; email: string | null; whatsapp: string | null };
+
+const TASK_STATUS_EN: Record<string, string> = { todo: 'To do', in_progress: 'In progress', review: 'In review', done: 'Done' };
+const TASK_PRIORITY_EN: Record<string, string> = { low: 'Low', normal: 'Normal', high: 'High', urgent: 'Urgent' };
 
 type AllocProject = {
   id: string;
@@ -351,6 +372,47 @@ async function fetchTeamData() {
   };
 }
 
+// everything the member panel shows besides what the card already has
+async function fetchMemberDetail(memberId: string): Promise<MemberDetail> {
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+  const contactPromise = (async () => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const res = await fetch('/api/team/member-contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionData.session?.access_token ?? ''}` },
+        body: JSON.stringify({ userId: memberId }),
+      });
+      if (!res.ok) return { email: null, whatsapp: null };
+      const json = (await res.json()) as { email?: string | null; whatsapp?: string | null };
+      return { email: json.email ?? null, whatsapp: json.whatsapp ?? null };
+    } catch {
+      return { email: null, whatsapp: null };
+    }
+  })();
+  const [openRes, weekRes, totalRes, actRes, contact] = await Promise.all([
+    supabase
+      .from('tasks')
+      .select('id, title, status, priority, workflow_stage, due_date, estimated_hours, projects(id, name)')
+      .eq('assignee_id', memberId)
+      .neq('status', 'done')
+      .order('due_date', { ascending: true, nullsFirst: false })
+      .limit(40),
+    supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('assignee_id', memberId).eq('status', 'done').gte('updated_at', weekAgo),
+    supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('assignee_id', memberId).eq('status', 'done'),
+    supabase.from('activity_log').select('id, action, detail, created_at').eq('actor_id', memberId).order('created_at', { ascending: false }).limit(6),
+    contactPromise,
+  ]);
+  return {
+    tasks: (openRes.data as unknown as MemberTask[]) ?? [],
+    doneThisWeek: weekRes.count ?? 0,
+    doneTotal: totalRes.count ?? 0,
+    activity: (actRes.data as MemberActivity[]) ?? [],
+    email: contact.email,
+    whatsapp: contact.whatsapp,
+  };
+}
+
 export default function TeamWorkloadPage() {
   const { user, loading: sessionLoading } = useSession();
 
@@ -394,6 +456,39 @@ export default function TeamWorkloadPage() {
   const [resetError, setResetError] = useState<string | null>(null);
 
   const [busyMemberId, setBusyMemberId] = useState<string | null>(null);
+
+  // the member whose details are open in the side panel, and what is loaded for them
+  const [detailMember, setDetailMember] = useState<MemberStat | null>(null);
+  const [detail, setDetail] = useState<MemberDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  async function copyText(key: string, text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(key);
+      setTimeout(() => setCopied((c) => (c === key ? null : c)), 1500);
+    } catch {
+      // clipboard not available: the address is still a mailto link
+    }
+  }
+
+  async function openDetail(m: MemberStat) {
+    setDetailMember(m);
+    setDetail(null);
+    setDetailLoading(true);
+    setDetail(await fetchMemberDetail(m.id));
+    setDetailLoading(false);
+  }
+
+  useEffect(() => {
+    if (!detailMember) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDetailMember(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [detailMember]);
 
   // অ্যাডমিন যেকোনো মেম্বারের প্রোফাইল কার্ড (নাম/রোল/বায়ো/সোশ্যাল লিংক/ছবি)
   // সরাসরি এখান থেকে এডিট করতে পারে - আগে শুধু প্রত্যেকে নিজেরটাই ProfileMenu
@@ -704,7 +799,20 @@ export default function TeamWorkloadPage() {
                     const state = capacityState(m.capacityPercent);
                     const availableHours = Math.max(0, WEEKLY_CAPACITY_HOURS - m.estHours);
                     return (
-                      <article className="member-card" key={m.id}>
+                      <article
+                        className="member-card clickable"
+                        key={m.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`${m.name}: view details`}
+                        onClick={() => openDetail(m)}
+                        onKeyDown={(e) => {
+                          if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
+                            e.preventDefault();
+                            openDetail(m);
+                          }
+                        }}
+                      >
                         <header className="mc-head">
                           <Avatar person={{ full_name: m.name, avatar_color: m.avatar_color, avatar_url: m.avatar_url }} size={48} />
                           <div className="mc-id">
@@ -715,7 +823,7 @@ export default function TeamWorkloadPage() {
                             <div className="mc-role">{m.role ?? 'Team Member'}</div>
                           </div>
                           {profile?.is_admin && (
-                            <div className="mc-menu-wrap">
+                            <div className="mc-menu-wrap" onClick={(e) => e.stopPropagation()}>
                               <button
                                 type="button"
                                 className="mc-menu-btn"
@@ -834,7 +942,7 @@ export default function TeamWorkloadPage() {
 
                         <footer className="mc-foot">
                           <span className="mc-foot-text">{m.primaryProjectName ? `${m.primaryProjectName} · ${STAGE_LABEL[m.currentStage ?? ''] ?? m.currentStage ?? '—'}` : 'কোনো অ্যাক্টিভ প্রজেক্ট নেই'}</span>
-                          <Link href={`/tasks?assignee=${m.id}`} className="mc-foot-link">টাস্ক দিন</Link>
+                          <Link href={`/tasks?assignee=${m.id}`} className="mc-foot-link" onClick={(e) => e.stopPropagation()}>টাস্ক দিন</Link>
                         </footer>
                       </article>
                     );
@@ -1027,6 +1135,199 @@ export default function TeamWorkloadPage() {
               </div>
             </div>
           </main>
+      {detailMember && (() => {
+        const m = detailMember;
+        const state = capacityState(m.capacityPercent);
+        const availableHours = Math.max(0, WEEKLY_CAPACITY_HOURS - m.estHours);
+        const today0 = todayISO();
+        const socials = [
+          { label: 'Behance', url: m.behance_url },
+          { label: 'LinkedIn', url: m.linkedin_url },
+          { label: 'Facebook', url: m.facebook_url },
+          { label: 'Instagram', url: m.instagram_url },
+        ].filter((x): x is { label: string; url: string } => !!x.url);
+        const projects = detail ? Array.from(new Map(detail.tasks.filter((t) => t.projects).map((t) => [t.projects!.id, t.projects!.name])).entries()) : [];
+        return (
+          <div className="md-overlay" onClick={(e) => { if (e.target === e.currentTarget) setDetailMember(null); }}>
+            <aside className="md-drawer" role="dialog" aria-modal="true" aria-label={`${m.name} details`}>
+              <div className="md-top">
+                <button type="button" className="md-close" aria-label="Close" onClick={() => setDetailMember(null)}>
+                  <Icon name="close" size={16} />
+                </button>
+              </div>
+
+              <div className="md-hero">
+                <Avatar person={{ full_name: m.name, avatar_color: m.avatar_color, avatar_url: m.avatar_url }} size={72} />
+                <div className="md-hero-text">
+                  <h2 className="md-name">{m.name}</h2>
+                  <div className="md-role">{m.role ?? 'Team Member'}</div>
+                  <div className="md-chips">
+                    {m.is_admin && <span className="state-chip st-balanced">Admin</span>}
+                    <span className={`state-chip ${state.cls}`}>{state.label}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="md-actions">
+                <Link href={`/tasks?assignee=${m.id}`} className="btn btn-accent btn-sm">
+                  <Icon name="plus" size={13} /> Give a task
+                </Link>
+                {profile?.is_admin && (
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setDetailMember(null); openEditMember(m); }}>
+                    <Icon name="edit" size={13} /> Edit profile
+                  </button>
+                )}
+              </div>
+
+              <section className="md-section">
+                <h3 className="md-h">Contact</h3>
+                <ul className="md-contact">
+                  <li>
+                    <span className="md-contact-icon"><Icon name="mail" size={15} /></span>
+                    <span className="md-contact-body">
+                      <span className="md-contact-label">Email</span>
+                      {detailLoading ? (
+                        <span className="md-contact-value muted">Loading…</span>
+                      ) : detail?.email ? (
+                        <a className="md-contact-value" href={`mailto:${detail.email}`}>{detail.email}</a>
+                      ) : (
+                        <span className="md-contact-value muted">Not available</span>
+                      )}
+                    </span>
+                    {detail?.email && (
+                      <button type="button" className="md-copy" aria-label="Copy email" title={copied === 'email' ? 'Copied' : 'Copy email'} onClick={() => copyText('email', detail.email as string)}>
+                        <Icon name={copied === 'email' ? 'check' : 'copy'} size={14} />
+                      </button>
+                    )}
+                  </li>
+                  {(detailLoading || detail?.whatsapp) && (
+                    <li>
+                      <span className="md-contact-icon"><Icon name="phone" size={15} /></span>
+                      <span className="md-contact-body">
+                        <span className="md-contact-label">WhatsApp</span>
+                        {detail?.whatsapp ? (
+                          <a className="md-contact-value" href={`https://wa.me/${detail.whatsapp.replace(/[^\d]/g, '')}`} target="_blank" rel="noopener noreferrer">{detail.whatsapp}</a>
+                        ) : (
+                          <span className="md-contact-value muted">Loading…</span>
+                        )}
+                      </span>
+                      {detail?.whatsapp && (
+                        <button type="button" className="md-copy" aria-label="Copy number" title={copied === 'phone' ? 'Copied' : 'Copy number'} onClick={() => copyText('phone', detail.whatsapp as string)}>
+                          <Icon name={copied === 'phone' ? 'check' : 'copy'} size={14} />
+                        </button>
+                      )}
+                    </li>
+                  )}
+                </ul>
+              </section>
+
+              {m.bio && (
+                <section className="md-section">
+                  <h3 className="md-h">About</h3>
+                  <p className="md-bio">{m.bio}</p>
+                </section>
+              )}
+
+              {socials.length > 0 && (
+                <section className="md-section">
+                  <h3 className="md-h">Links</h3>
+                  <div className="md-socials">
+                    {socials.map((x) => (
+                      <a key={x.label} href={x.url} target="_blank" rel="noopener noreferrer" className="md-social">
+                        <Icon name="link" size={13} /> {x.label}
+                      </a>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <section className="md-section">
+                <h3 className="md-h">Workload this week</h3>
+                <div className="md-capacity">
+                  <svg width="76" height="76" viewBox="0 0 76 76" role="img" aria-label={`${m.capacityPercent}% of weekly capacity`}>
+                    <circle cx="38" cy="38" r={RING_R} fill="none" stroke="var(--border-soft)" strokeWidth="8" />
+                    {m.capacityPercent > 0 && (
+                      <circle cx="38" cy="38" r={RING_R} fill="none" stroke={state.color} strokeWidth="8" strokeLinecap="round" strokeDasharray={RING_C} strokeDashoffset={RING_C - (RING_C * Math.min(100, m.capacityPercent)) / 100} transform="rotate(-90 38 38)" />
+                    )}
+                    <text x="38" y="43" textAnchor="middle" fontSize="16" fontWeight="700" fill="var(--ink)">{m.capacityPercent}%</text>
+                  </svg>
+                  <div className="md-capacity-text">
+                    <div><b className="tabular">{m.estHours}h</b> estimated of {WEEKLY_CAPACITY_HOURS}h</div>
+                    <div><b className="tabular">{availableHours}h</b> still available</div>
+                    {m.nextDeadline && <div>Next deadline <b>{formatDate(m.nextDeadline)}</b></div>}
+                  </div>
+                </div>
+              </section>
+
+              <section className="md-stats">
+                <div><b className="tabular">{m.activeTasks}</b><span>Open tasks</span></div>
+                <div><b className="tabular">{m.projectIds.length}</b><span>Projects</span></div>
+                <div><b className="tabular">{detail ? detail.doneThisWeek : '—'}</b><span>Done this week</span></div>
+                <div><b className="tabular">{detail ? detail.doneTotal : '—'}</b><span>Done in total</span></div>
+              </section>
+
+              <section className="md-section">
+                <h3 className="md-h">Open tasks {detail && <span className="md-count">{detail.tasks.length}</span>}</h3>
+                {detailLoading ? (
+                  <p className="md-empty">Loading…</p>
+                ) : !detail || detail.tasks.length === 0 ? (
+                  <p className="md-empty">No open tasks. {m.name.split(' ')[0]} is free.</p>
+                ) : (
+                  <ul className="md-tasks">
+                    {detail.tasks.map((t) => {
+                      const overdue = !!t.due_date && t.due_date < today0;
+                      return (
+                        <li key={t.id}>
+                          <div className="md-task-main">
+                            <span className="md-task-title">{t.title}</span>
+                            <span className="md-task-meta">
+                              {t.projects?.name ?? 'No project'} · {TASK_STATUS_EN[t.status] ?? t.status} · {STAGE_LABEL[t.workflow_stage] ?? t.workflow_stage}
+                            </span>
+                          </div>
+                          <div className="md-task-side">
+                            {t.due_date && <span className={`md-due${overdue ? ' overdue' : ''}`}>{overdue ? 'Overdue · ' : ''}{formatDate(t.due_date)}</span>}
+                            <span className={`md-prio md-prio-${t.priority}`}>{TASK_PRIORITY_EN[t.priority] ?? t.priority}</span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+
+              {projects.length > 0 && (
+                <section className="md-section">
+                  <h3 className="md-h">Projects</h3>
+                  <div className="md-socials">
+                    {projects.map(([id, name]) => (
+                      <Link key={id} href={`/projects/${id}`} className="md-social">{name}</Link>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <section className="md-section">
+                <h3 className="md-h">Recent activity</h3>
+                {detailLoading ? (
+                  <p className="md-empty">Loading…</p>
+                ) : !detail || detail.activity.length === 0 ? (
+                  <p className="md-empty">No activity yet.</p>
+                ) : (
+                  <ul className="md-activity">
+                    {detail.activity.map((a) => (
+                      <li key={a.id}>
+                        <span className="md-activity-text">{a.detail ?? a.action.replace(/_/g, ' ')}</span>
+                        <span className="md-activity-time">{relativeTime(a.created_at)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </aside>
+          </div>
+        );
+      })()}
+
       {showAddMember && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowAddMember(false); }}>
           <div className="modal-box">

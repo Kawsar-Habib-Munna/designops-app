@@ -77,3 +77,13 @@
 .pp-bar { transition: opacity .15s ease; }
 .pp-list:has(.pp-row:hover) .pp-row:not(:hover) .pp-bar, .pp-list:has(.pp-row:focus-visible) .pp-row:not(:focus-visible) .pp-bar { opacity: .35; }
 .pp-row:hover .pp-name, .pp-row:focus-visible .pp-name { font-weight: 600; }
+
+/* ---------- TrendChart: modern look (smooth curve, gradient fill, dashed grid, halo dots) ---------- */
+.tc-grid { stroke: var(--border, #e8e8ec); stroke-dasharray: 3 5; stroke-opacity: 0.8; }
+.tc-base { stroke: var(--border, #e8e8ec); }
+.tc-area { fill: url(#tc-grad); fill-opacity: 1; }
+.tc-line { stroke-width: 3; }
+.tc-pt { fill: var(--surface, #fff); stroke: var(--accent, #5b4fe8); stroke-width: 2; }
+.tc-halo { fill: var(--accent, #5b4fe8); fill-opacity: 0.16; }
+.tc-cross { stroke-dasharray: 3 4; }
+.tc-ytick, .tc-xtick { font-size: 11.5px; font-weight: 500; }
