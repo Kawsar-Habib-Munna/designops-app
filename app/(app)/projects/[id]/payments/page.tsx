@@ -11,19 +11,25 @@
 // "Confirm Payment" রিভিউ) অপরিবর্তিত রাখা হয়েছে — এটা পরবর্তী স্ক্রিন, এখানে শুধু
 // রিইউজ করা হলো যাতে পুরনো ফ্লো ভেঙে না যায়।
 
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { Fragment, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import '../project.css';
 import './payments.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
-import { formatBnDate, todayISO, formatDateLong } from '@/lib/format';
+import { todayISO, formatDateLong } from '@/lib/format';
+import { shortReceiptNo } from '@/lib/receiptNumber';
+
+// "29 Oct 2026"
+function formatBnDate(d: string | null | undefined): string {
+  return d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+}
+import { currencySymbol } from '@/lib/currency';
 import { uploadFileToDrive } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import RichTextField from '@/app/components/RichTextField';
-import ReceiptDocument from '@/app/components/ReceiptDocument';
-import { renderReceiptPdf } from '@/lib/receiptPdf';
+import ReceiptPreviewModal from '@/app/components/ReceiptPreviewModal';
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -39,6 +45,12 @@ const ICON_PATHS: Record<string, string> = {
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
   plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+  lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+  'file-check': '<path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m3 15 2 2 4-4"/>',
+  receipt: '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+  'chevron-down': '<path d="M6 9l6 6 6-6"/>',
+  back: '<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
   menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
@@ -120,6 +132,7 @@ type Payment = {
   correction_reason: string | null;
   receipt_number: string | null;
   created_at: string;
+  confirmed_by?: string | null;
 };
 
 function paymentStatusMeta(p: Payment): { label: string; cls: string } {
@@ -142,23 +155,12 @@ function statusMeta(inv: Invoice): { label: string; cls: string } {
   return { label: 'Pending Payment', cls: 's-review' };
 }
 
-// icon + tint of a request's leading tile, so the list can be scanned by colour as well as by the status chip
-function invoiceTone(inv: Invoice): { icon: IconName; tone: 'done' | 'wait' | 'late' | 'muted' | 'bad' } {
-  if (inv.status === 'paid') return { icon: 'check', tone: 'done' };
-  if (inv.status === 'draft') return { icon: 'file', tone: 'muted' };
-  if (inv.status === 'cancelled') return { icon: 'close', tone: 'muted' };
-  if (inv.status === 'failed' || inv.status === 'refunded') return { icon: 'close', tone: 'bad' };
-  if (inv.status === 'processing') return { icon: 'upload', tone: 'wait' };
-  if (inv.due_date && inv.due_date < todayISO()) return { icon: 'clock', tone: 'late' };
-  return { icon: 'clock', tone: 'wait' };
-}
-
 // Ring of the project value: paid / awaiting / not yet requested, with the paid share in the centre. Three arcs with
 // small gaps on a track; the legend next to it names every segment, so colour is never the only cue.
 function PaymentRing({ paid, awaiting, rest }: { paid: number; awaiting: number; rest: number }) {
-  const size = 132;
-  const stroke = 16;
-  const radius = (size - stroke) / 2;
+  const size = 156;
+  const stroke = 15;
+  const radius = (size - stroke) / 2 - 2;
   const circ = 2 * Math.PI * radius;
   const total = paid + awaiting + rest;
   const parts = [
@@ -166,20 +168,21 @@ function PaymentRing({ paid, awaiting, rest }: { paid: number; awaiting: number;
     { key: 'wait', value: awaiting, color: 'var(--warning)' },
     { key: 'rest', value: rest, color: 'var(--border)' },
   ].filter((p) => p.value > 0);
-  const gap = parts.length > 1 ? 3 : 0;
+  const multi = parts.length > 1;
   const pct = total > 0 ? Math.round((paid / total) * 100) : 0;
-  let before = 0;
   return (
     <div className="pay-ring" role="img" aria-label={`${pct}% of the project value collected`}>
       <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
+        <circle cx={size / 2} cy={size / 2} r={radius - stroke / 2 - 8} fill="none" stroke="var(--border)" strokeWidth={1} />
+        <circle cx={size / 2} cy={size / 2} r={radius - stroke / 2 - 14} fill="none" stroke="var(--border-soft)" strokeWidth={1} strokeDasharray="2 4" />
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--border-soft)" strokeWidth={stroke} />
         <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
-          {parts.map((p) => {
+          {parts.map((p, i) => {
+            const before = parts.slice(0, i).reduce((n, q) => n + q.value, 0);
             const len = (p.value / total) * circ;
-            const dash = Math.max(len - gap, 0.5);
-            const offset = before;
-            before += len;
-            return <circle key={p.key} cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={p.color} strokeWidth={stroke} strokeDasharray={`${dash} ${circ - dash}`} strokeDashoffset={-offset} />;
+            const dash = multi ? Math.max(len - stroke - 4, 0.1) : circ;
+            const offset = (before / total) * circ + (multi ? (stroke + 4) / 2 : 0);
+            return <circle key={p.key} cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={p.color} strokeWidth={stroke} strokeLinecap={multi ? 'round' : 'butt'} strokeDasharray={`${dash} ${circ - dash}`} strokeDashoffset={-offset} />;
           })}
         </g>
       </svg>
@@ -196,12 +199,32 @@ export default function AdminPaymentsPage() {
   const projectId = params.id as string;
   const { user, loading: sessionLoading } = useSession();
   const [profile, setProfile] = useState<ProfileRow | null>(null);
+  // which requests are opened (click a request to open or close it, like an FAQ); one waiting for review opens by itself
+  const [reqOpen, setReqOpen] = useState<Record<string, boolean>>({});
 
   const [project, setProject] = useState<ProjectBrief | null>(null);
   const [signedSow, setSignedSow] = useState<SowBrief | null>(null);
   const [milestones, setMilestones] = useState<MilestoneRow[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  // who confirmed receiving each payment (the team member), looked up by name
+  const [receivers, setReceivers] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const ids = Array.from(new Set(payments.map((p) => p.confirmed_by).filter((x): x is string => !!x))).filter((id) => !(id in receivers));
+    if (ids.length === 0) return;
+    let off = false;
+    supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', ids)
+      .then(({ data }) => {
+        if (off || !data) return;
+        setReceivers((prev) => ({ ...prev, ...Object.fromEntries((data as { id: string; full_name: string }[]).map((r) => [r.id, r.full_name])) }));
+      });
+    return () => {
+      off = true;
+    };
+  }, [payments, receivers]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -232,11 +255,6 @@ export default function AdminPaymentsPage() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState<{ inv: Invoice; submission: Payment } | null>(null);
-  const [receiptPdfUrl, setReceiptPdfUrl] = useState<string | null>(null);
-  const [receiptPages, setReceiptPages] = useState<string[]>([]);
-  const [generatingPreview, setGeneratingPreview] = useState(false);
-  const [downloadError, setDownloadError] = useState<string | null>(null);
-  const receiptDocRef = useRef<HTMLDivElement>(null);
   const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
@@ -398,7 +416,7 @@ export default function AdminPaymentsPage() {
     const payment = payments.find((p) => p.invoice_id === invoiceId && p.status !== 'confirmed');
     setConfirmingId(invoiceId);
     if (payment) {
-      const receiptNumber = `RCPT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${payment.id.slice(0, 6).toUpperCase()}`;
+      const receiptNumber = `F53-${payment.id.slice(0, 6).toUpperCase()}`;
       await supabase.from('payments').update({ confirmed_by: user!.id, confirmed_at: new Date().toISOString(), receipt_number: receiptNumber, status: 'confirmed' }).eq('id', payment.id);
     }
     await supabase.from('invoices').update({ status: 'paid' }).eq('id', invoiceId);
@@ -442,38 +460,6 @@ export default function AdminPaymentsPage() {
     setReloadKey((k) => k + 1);
   }
 
-  useEffect(() => {
-    if (!viewingReceipt) return;
-    let cancelled = false;
-    let objectUrl: string | null = null;
-
-    (async () => {
-      setGeneratingPreview(true);
-      setDownloadError(null);
-      setReceiptPdfUrl(null);
-      setReceiptPages([]);
-      try {
-        const node = receiptDocRef.current;
-        if (!node) throw new Error('Document not ready');
-        const { blob, pages } = await renderReceiptPdf(node);
-        if (!cancelled) setReceiptPages(pages);
-        if (cancelled) return;
-        objectUrl = URL.createObjectURL(blob);
-        setReceiptPdfUrl(objectUrl);
-      } catch (err) {
-        console.error(err);
-        if (!cancelled) setDownloadError('PDF প্রিভিউ তৈরি করা যায়নি।');
-      } finally {
-        if (!cancelled) setGeneratingPreview(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [viewingReceipt]);
-
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
 
@@ -484,14 +470,24 @@ export default function AdminPaymentsPage() {
               <p style={{ padding: 24, fontSize: 13, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
             ) : (
               <>
-                <div className="breadcrumb">
-                  <Link href="/clients">Clients</Link>
-                  <span className="sep">/</span>
-                  {client && <Link href={`/projects/${project.id}`}>{client.company_name}</Link>}
-                  <span className="sep">/</span>
-                  <Link href={`/projects/${project.id}`}>{project.name}</Link>
-                  <span className="sep">/</span>
-                  <span className="current">{mode === 'editor' ? 'Payment Request' : mode === 'verify' ? 'Payment Verification' : 'Payments'}</span>
+                <div className="pay-topbar">
+                  <div className="pay-topbar-text">
+                    <h1 className="pay-topbar-title">{mode === 'editor' ? (editingId ? 'Edit Payment Request' : 'Create Payment Request') : mode === 'verify' ? 'Payment Verification' : 'Payments'}</h1>
+                    <p className="pay-topbar-sub">
+                      {project.name}{client ? ` · ${client.company_name}` : ''}
+                    </p>
+                  </div>
+                  {mode === 'list' ? (
+                    <Link href={`/projects/${project.id}`} className="pay-back">
+                      <span className="pay-back-icon"><Icon name="back" size={14} /></span>
+                      Back to project
+                    </Link>
+                  ) : (
+                    <button type="button" className="pay-back" onClick={() => setMode('list')} disabled={saving !== null}>
+                      <span className="pay-back-icon"><Icon name="back" size={14} /></span>
+                      Back to payments
+                    </button>
+                  )}
                 </div>
 
                 {error && <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: 13 }}>{error}</div>}
@@ -518,26 +514,6 @@ export default function AdminPaymentsPage() {
 
                     return (
                       <>
-                        <div className="proj-header">
-                          <div>
-                            <span className="proj-title">Payment Verification</span>
-                            <div className="proj-sub-row">
-                              {client && (
-                                <>
-                                  <span>{client.primary_contact ?? client.company_name}</span>
-                                  <span className="dividerdot"></span>
-                                </>
-                              )}
-                              <span>{client?.company_name}</span>
-                            </div>
-                          </div>
-                          <div className="header-actions">
-                            <button className="btn btn-ghost btn-sm" onClick={() => setMode('list')}>
-                              Back to Payments
-                            </button>
-                          </div>
-                        </div>
-
                         {duplicateReference && (
                           <div className="pay-warning-box" style={{ marginBottom: 16 }}>
                             Possible duplicate transaction — reference &quot;{verifyPayment?.transaction_id}&quot; already matches a confirmed payment on this project.
@@ -645,92 +621,95 @@ export default function AdminPaymentsPage() {
                   })()
                 ) : mode === 'list' ? (
                   <>
-                    <div className="proj-header">
-                      <div>
-                        <span className="proj-title">Payments</span>
-                        <div className="proj-sub-row">
-                          {client && (
-                            <>
-                              <span>{client.company_name}</span>
-                              <span className="dividerdot"></span>
-                            </>
-                          )}
-                          <span>{project.name}</span>
+                    <div className="pay-split">
+                    <div className="pay-split-left">
+                    <section className="pyo" aria-label="Payment overview">
+                      <div className="pyo-head">
+                        <span className="pyo-badge"><Icon name="wallet" size={16} /></span>
+                        <div className="pyo-head-text">
+                          <div className="pyo-title">Payment overview</div>
+                          <div className="pyo-sub">{projectValue != null ? `Project value ${money(projectValue)}` : 'No project value set yet'}</div>
                         </div>
                       </div>
-                      {signedSow && (
-                        <div className="header-actions">
-                          <button className="btn btn-accent btn-sm" onClick={() => openEditor(null)}>
-                            <Icon name="plus" size={14} /> Create Payment Request
-                          </button>
-                        </div>
-                      )}
-                    </div>
 
-                    <section className="pay-overview" aria-label="Payment overview">
-                      <div className="pay-ov-main">
-                        <span className="pay-ov-label">Collected</span>
-                        <div className="pay-ov-amount tabular">
-                          {money(paidTotal)}
-                          {projectValue != null && <span className="pay-ov-of"> of {money(projectValue)}</span>}
-                        </div>
-                        {projectValue != null && projectValue > 0 ? (
-                          <div className="pay-ov-viz">
+                      {projectValue != null && projectValue > 0 ? (
+                        <div className="pyo-body">
+                          <div className="pyo-viz">
                             <PaymentRing paid={paidTotal} awaiting={awaitingTotal} rest={notRequested ?? 0} />
-                            <ul className="pay-ov-legend">
-                              <li>
-                                <span className="pay-ov-dot is-paid" /> Paid <b className="tabular">{money(paidTotal)}</b>
-                              </li>
-                              <li>
-                                <span className="pay-ov-dot is-wait" /> Awaiting payment <b className="tabular">{money(awaitingTotal)}</b>
-                              </li>
-                              <li>
-                                <span className="pay-ov-dot is-rest" /> Not yet requested <b className="tabular">{money(notRequested ?? 0)}</b>
-                              </li>
-                            </ul>
                           </div>
-                        ) : (
-                          <p className="pay-hint">Set a project value (a signed SOW) to track progress against it.</p>
-                        )}
-                      </div>
-                      <div className="pay-ov-side">
-                        <div className="pay-ov-stat">
-                          <span className="pay-ov-label">Client</span>
-                          <span className="pay-ov-value">{client?.primary_contact ?? client?.company_name ?? '—'}</span>
+                          <ul className="pyo-rows">
+                            {[
+                              { key: 'paid', label: 'Collected', value: paidTotal },
+                              { key: 'wait', label: 'Awaiting payment', value: awaitingTotal },
+                              { key: 'rest', label: 'Not yet requested', value: notRequested ?? 0 },
+                            ].map((r) => (
+                              <li className="pyo-row" key={r.key}>
+                                <i className={`is-${r.key}`} />
+                                <span className="pyo-row-label">{r.label}</span>
+                                <em className="pyo-leader" aria-hidden="true" />
+                                <b className="pyo-row-value tabular"><span className="pyo-cur" aria-hidden="true">{currencySymbol(currency)}</span>{r.value.toLocaleString('en-US')}</b>
+                                <span className="pyo-row-pct tabular">{Math.round((r.value / projectValue) * 100)}%</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                        <div className="pay-ov-stat">
-                          <span className="pay-ov-label">SOW</span>
-                          <span className={`status-pill ${signedSow ? 's-done' : 's-todo'}`}>{signedSow ? 'Signed ✓' : 'Not signed'}</span>
+                      ) : (
+                        <p className="pay-hint pyo-empty">Set a project value (a signed SOW) to track payments against it.</p>
+                      )}
+
+                      <div className="pyo-strip">
+                        <div className="pyo-item">
+                          <span className="pyo-item-icon"><Icon name="users" size={15} /></span>
+                          <span className="pyo-item-label">Client</span>
+                          <span className="pyo-item-value">{client?.primary_contact ?? client?.company_name ?? '—'}</span>
                         </div>
-                        <div className="pay-ov-stat">
-                          <span className="pay-ov-label">Needs attention</span>
-                          <span className="pay-ov-value">
-                            {toReviewCount + overdueCount === 0 ? (
-                              'All clear'
-                            ) : (
-                              <>
-                                {toReviewCount > 0 && <span className="pay-ov-flag is-review">{toReviewCount} to review</span>}
-                                {overdueCount > 0 && <span className="pay-ov-flag is-late">{overdueCount} overdue</span>}
-                              </>
-                            )}
-                          </span>
+                        <div className="pyo-item">
+                          <span className="pyo-item-icon"><Icon name="file-check" size={15} /></span>
+                          <span className="pyo-item-label">SOW</span>
+                          <span className={`pyo-sow${signedSow ? ' signed' : ''}`}><i />{signedSow ? 'Signed' : 'Not signed'}</span>
+                        </div>
+                        <div className="pyo-item">
+                          <span className="pyo-item-icon"><Icon name="bell" size={15} /></span>
+                          <span className="pyo-item-label">Needs attention</span>
+                          {toReviewCount + overdueCount === 0 ? (
+                            <span className="pyo-sow signed"><i />All clear</span>
+                          ) : (
+                            <span className="pyo-flags">
+                              {toReviewCount > 0 && <span className="pyo-flag is-review"><i />{toReviewCount} to review</span>}
+                              {overdueCount > 0 && <span className="pyo-flag is-late"><i />{overdueCount} overdue</span>}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </section>
 
                     {!signedSow && (
-                      <div className="summary-card pay-gate-card">
-                        <div className="pay-gate-title">SOW signature required</div>
-                        <p className="pay-gate-sub">The client must sign the Statement of Work before a payment request can be sent.</p>
+                      <div className="pay-gate">
+                        <span className="pay-gate-icon"><Icon name="lock" size={16} /></span>
+                        <div className="pay-gate-text">
+                          <div className="pay-gate-title">SOW signature required</div>
+                          <p className="pay-gate-sub">The client must sign the Statement of Work before a payment request can be sent.</p>
+                        </div>
                         <Link href={`/projects/${project.id}/sow`} className="btn btn-accent btn-sm">
                           View SOW
                         </Link>
                       </div>
                     )}
 
-                    <div className="pay-list-head">
-                      <span className="pay-list-title">Payment requests</span>
-                      <span className="pay-list-count tabular">{invoices.length}</span>
+                    </div>
+                    <div className="pay-split-right">
+                    <section className="pyr" aria-label="Payment requests">
+                    <div className="pyr-head">
+                      <span className="pyr-badge"><Icon name="receipt" size={16} /></span>
+                      <div className="pyr-head-text">
+                        <div className="pyr-title">Payment requests <span className="pyr-count tabular">{invoices.length}</span></div>
+                        <div className="pyr-sub">{invoices.length === 0 ? 'Requests you send to the client appear here' : 'Everything requested from the client on this project'}</div>
+                      </div>
+                      {signedSow && (
+                        <button className="btn btn-accent btn-sm pyr-create" onClick={() => openEditor(null)}>
+                          <Icon name="plus" size={14} /> New request
+                        </button>
+                      )}
                     </div>
 
                     {invoices.length === 0 ? (
@@ -742,113 +721,129 @@ export default function AdminPaymentsPage() {
                         <p className="pay-empty-sub">{signedSow ? 'Create the first request to start collecting payments for this project.' : 'Requests appear here once the SOW is signed.'}</p>
                       </div>
                     ) : (
-                      <div className="invoice-list">
-                        {invoices.map((inv) => {
-                          const meta = statusMeta(inv);
-                          const tone = invoiceTone(inv);
-                          const submission = payments.find((p) => p.invoice_id === inv.id);
-                          const canCancel = !['paid', 'cancelled', 'failed', 'refunded'].includes(inv.status);
-                          const late = inv.status === 'pending' && !!inv.due_date && inv.due_date < todayISO();
-                          const hasActions = inv.status === 'draft' || inv.status === 'processing' || (inv.status === 'paid' && !!submission) || canCancel;
-                          return (
-                            <article className={`invoice-card tone-${tone.tone}`} key={inv.id}>
-                              <div className="invoice-card-top">
-                                <span className={`pay-tile tone-${tone.tone}`} aria-hidden="true">
-                                  <Icon name={tone.icon} size={18} />
-                                </span>
-                                <div className="pay-card-title">
-                                  <div className="invoice-type">
-                                    <span className="pay-type-name">{humanizeType(inv.payment_type)}</span>
-                                    {inv.request_number && <span className="pay-req-number">{inv.request_number}</span>}
-                                  </div>
-                                  {inv.description && <p className="invoice-desc">{inv.description}</p>}
-                                </div>
-                                <div className="pay-card-figure">
-                                  <div className="invoice-amount tabular">{money(inv.amount)}</div>
-                                  <div className="pay-figure-sub">
-                                    {inv.percentage != null && <span className="pay-pct tabular">{inv.percentage}% of project</span>}
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="invoice-meta-row">
-                                <span className={`status-pill ${meta.cls}`}>{meta.label}</span>
-                                {inv.due_date && (
-                                  <span className={`pay-meta-item${late ? ' is-late' : ''}`}>
-                                    <Icon name="calendar" size={13} /> Due {formatBnDate(inv.due_date)}
-                                  </span>
-                                )}
-                                {inv.payment_method && <span className="pay-meta-item">{inv.payment_method}</span>}
-                              </div>
-
-                              {submission && (
-                                <div className="invoice-submission">
-                                  <div className="invoice-submission-title">
-                                    Client submitted <span className={`status-pill ${paymentStatusMeta(submission).cls}`}>{paymentStatusMeta(submission).label}</span>
-                                  </div>
-                                  <dl className="invoice-submission-grid">
-                                    <div>
-                                      <dt>Method</dt>
-                                      <dd>{submission.payment_method ?? '—'}</dd>
-                                    </div>
-                                    <div>
-                                      <dt>Transaction ID</dt>
-                                      <dd>{submission.transaction_id ?? '—'}</dd>
-                                    </div>
-                                    <div>
-                                      <dt>Date</dt>
-                                      <dd>{formatBnDate(submission.payment_date)}</dd>
-                                    </div>
-                                  </dl>
-                                  {submission.notes && <p className="invoice-submission-notes">{submission.notes}</p>}
-                                </div>
-                              )}
-
-                              {hasActions && (
-                                <div className="pay-card-actions">
-                                  {inv.status === 'draft' && (
-                                    <button className="btn btn-ghost btn-sm" onClick={() => openEditor(inv)}>
-                                      Edit Draft
-                                    </button>
+                      <div className="pyx-wrap">
+                        <table className="pyx">
+                          <thead>
+                            <tr>
+                              <th>Request</th>
+                              <th className="num">Amount</th>
+                              <th>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {invoices.map((inv) => {
+                              const meta = statusMeta(inv);
+                              const submission = payments.find((p) => p.invoice_id === inv.id);
+                              const canCancel = !['paid', 'cancelled', 'failed', 'refunded'].includes(inv.status);
+                              const late = inv.status === 'pending' && !!inv.due_date && inv.due_date < todayISO();
+                              const hasActions = inv.status === 'draft' || inv.status === 'processing' || (inv.status === 'paid' && !!submission) || canCancel;
+                              const showMore = !!submission || hasActions;
+                              const isOpen = showMore && (reqOpen[inv.id] ?? inv.status === 'processing');
+                              const toggle = () => setReqOpen((m) => ({ ...m, [inv.id]: !isOpen }));
+                              const sub = [inv.request_number ?? 'Draft', inv.due_date ? `Due ${formatBnDate(inv.due_date)}` : null].filter(Boolean).join(' · ');
+                              return (
+                                <Fragment key={inv.id}>
+                                  <tr
+                                    className={`${showMore ? 'has-more is-clickable' : ''}${isOpen ? ' is-open' : ''}`.trim() || undefined}
+                                    onClick={showMore ? toggle : undefined}
+                                    onKeyDown={showMore ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } } : undefined}
+                                    tabIndex={showMore ? 0 : undefined}
+                                    aria-expanded={showMore ? isOpen : undefined}
+                                  >
+                                    <td>
+                                      <div className="pyx-req">
+                                        <div className="pyx-req-text">
+                                          <div className="pyx-title">{humanizeType(inv.payment_type)}</div>
+                                          <div className={`pyx-sub${late ? ' is-late' : ''}`}>{sub}</div>
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="num">
+                                      <div className="pyx-amount tabular"><span className="pyx-cur">{currencySymbol(currency)}</span>{inv.amount.toLocaleString('en-US')}</div>
+                                      {inv.percentage != null && <div className="pyx-pct tabular">{inv.percentage}%</div>}
+                                    </td>
+                                    <td>
+                                      <span className={`pyx-status ${meta.cls}${late ? ' is-late' : ''}`}><i />{meta.label.replace(/\s*✓$/, '').replace(/ · .*$/, '')}</span>
+                                      {showMore && <span className="pyx-chev" aria-hidden="true"><Icon name="chevron-down" size={14} /></span>}
+                                    </td>
+                                  </tr>
+                                  {isOpen && (
+                                    <tr className="pyx-more">
+                                      <td colSpan={3}>
+                                        <div className="pyx-more-inner">
+                                          {submission && (
+                                            <table className="pyx-subtable">
+                                              <caption>Client submitted</caption>
+                                              <thead>
+                                                <tr>
+                                                  <th>Method</th>
+                                                  <th>Transaction ID</th>
+                                                  <th>Date</th>
+                                                  <th>Received by</th>
+                                                  <th>Status</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                <tr>
+                                                  <td>{submission.payment_method ?? '—'}</td>
+                                                  <td className="pyx-mono">{submission.transaction_id ?? '—'}</td>
+                                                  <td>{formatBnDate(submission.payment_date)}</td>
+                                                  <td>{submission.confirmed_by ? (receivers[submission.confirmed_by] ?? '…') : <span className="pyx-muted">Not yet</span>}</td>
+                                                  <td><span className={`pyx-sstatus ${paymentStatusMeta(submission).cls}`}><i />{paymentStatusMeta(submission).label}</span></td>
+                                                </tr>
+                                              </tbody>
+                                            </table>
+                                          )}
+                                          {hasActions && (
+                                            <div className="pay-card-actions">
+                                              {inv.status === 'draft' && (
+                                                <button className="btn btn-ghost btn-sm" onClick={() => openEditor(inv)}>
+                                                  Edit Draft
+                                                </button>
+                                              )}
+                                              {inv.status === 'processing' && (
+                                                <button
+                                                  className="btn btn-accent btn-sm"
+                                                  onClick={() => {
+                                                    setVerifyTargetId(inv.id);
+                                                    setMode('verify');
+                                                  }}
+                                                >
+                                                  Review Submission
+                                                </button>
+                                              )}
+                                              {inv.status === 'paid' && submission && (
+                                                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setViewingReceipt({ inv, submission })}>
+                                                  View Receipt
+                                                </button>
+                                              )}
+                                              {canCancel && (
+                                                <button className="btn btn-danger-ghost btn-sm" onClick={() => setCancelTargetId(inv.id)}>
+                                                  Cancel
+                                                </button>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                        {submission?.notes && submission.notes.trim() !== (submission.transaction_id ?? '').trim() && <p className="pyx-note">{submission.notes}</p>}
+                                      </td>
+                                    </tr>
                                   )}
-                                  {inv.status === 'processing' && (
-                                    <button
-                                      className="btn btn-accent btn-sm"
-                                      onClick={() => {
-                                        setVerifyTargetId(inv.id);
-                                        setMode('verify');
-                                      }}
-                                    >
-                                      Review Submission
-                                    </button>
-                                  )}
-                                  {inv.status === 'paid' && submission && (
-                                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setViewingReceipt({ inv, submission })}>
-                                      View Receipt
-                                    </button>
-                                  )}
-                                  {canCancel && (
-                                    <button className="btn btn-danger-ghost btn-sm" onClick={() => setCancelTargetId(inv.id)}>
-                                      Cancel Request
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-                            </article>
-                          );
-                        })}
+                                </Fragment>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     )}
+                    </section>
+                    </div>
+                    </div>
                   </>
                 ) : (
                   <>
-                    <div className="proj-header">
-                      <div>
-                        <span className="proj-title">{editingId ? 'Edit Payment Request' : 'Create Payment Request'}</span>
-                        <div className="proj-sub-row">
-                          <span>Request the next project payment from this client.</span>
-                        </div>
-                      </div>
+                    <div className="proj-header pay-actions-row">
+                      <p className="pay-actions-hint">Request the next project payment from this client.</p>
                       <div className="header-actions">
                         <button className="btn btn-ghost btn-sm" onClick={() => setMode('list')} disabled={saving !== null}>
                           Cancel
@@ -1179,68 +1174,27 @@ export default function AdminPaymentsPage() {
         </div>
       )}
       {viewingReceipt && project && (
-        <div className="receipt-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setViewingReceipt(null); }}>
-          <div className="receipt-modal-box">
-            <div className="receipt-modal-head receipt-modal-noprint">
-              <div>
-                <div className="receipt-modal-filename">{viewingReceipt.submission.receipt_number ?? viewingReceipt.inv.request_number ?? 'Receipt'}.pdf</div>
-                <div className="receipt-modal-eyebrow">{downloadError ?? 'Payment Receipt'}</div>
-              </div>
-              <div className="receipt-modal-head-actions">
-                <a
-                  className={`receipt-modal-download${receiptPdfUrl ? '' : ' receipt-modal-download-disabled'}`}
-                  href={receiptPdfUrl ?? undefined}
-                  download={`${viewingReceipt.submission.receipt_number ?? viewingReceipt.inv.request_number ?? 'receipt'}.pdf`}
-                  onClick={(e) => { if (!receiptPdfUrl) e.preventDefault(); }}
-                >
-                  <Icon name="download" size={16} /> {generatingPreview ? 'তৈরি হচ্ছে…' : 'Download'}
-                </a>
-                <button type="button" className="receipt-modal-close" aria-label="Close" onClick={() => setViewingReceipt(null)}>
-                  <Icon name="close" size={18} />
-                </button>
-              </div>
-            </div>
-
-            <div className="receipt-modal-body">
-              {receiptPdfUrl ? (
-                typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches ? (
-                  <div className="receipt-pages">
-                    {receiptPages.map((src, i) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img key={i} src={src} alt={`Receipt page ${i + 1}`} className="receipt-page-img" />
-                    ))}
-                  </div>
-                ) : (
-                  <iframe src={receiptPdfUrl} className="receipt-pdf-frame" title="Payment Receipt PDF" />
-                )
-              ) : (
-                <div className="receipt-modal-loading">{downloadError ?? 'PDF প্রিভিউ তৈরি হচ্ছে…'}</div>
-              )}
-
-              <div className="receipt-doc-offscreen" aria-hidden="true">
-              <ReceiptDocument
-                docRef={receiptDocRef}
-                data={{
-                  receiptNumber: viewingReceipt.submission.receipt_number,
-                  requestNumber: viewingReceipt.inv.request_number,
-                  dateText: formatDateLong(viewingReceipt.submission.payment_date),
-                  confirmedText: viewingReceipt.submission.confirmed_at ? formatDateLong(viewingReceipt.submission.confirmed_at) : null,
-                  clientName: client?.primary_contact ?? client?.company_name ?? '—',
-                  company: client?.primary_contact ? client.company_name : null,
-                  projectName: project.name,
-                  description: viewingReceipt.inv.description || humanizeType(viewingReceipt.inv.payment_type),
-                  currency: viewingReceipt.inv.currency,
-                  amount: viewingReceipt.submission.amount ?? viewingReceipt.inv.amount,
-                  method: viewingReceipt.submission.payment_method,
-                  transactionId: viewingReceipt.submission.transaction_id,
-                  senderName: viewingReceipt.submission.sender_name,
-                  notes: viewingReceipt.submission.notes,
-                }}
-              />
-              </div>
-            </div>
-          </div>
-        </div>
+        <ReceiptPreviewModal
+          title={`${shortReceiptNo(viewingReceipt.submission.receipt_number) ?? viewingReceipt.inv.request_number ?? 'Receipt'}.pdf`}
+          subtitle="Payment Receipt"
+          onClose={() => setViewingReceipt(null)}
+          data={{
+            receiptNumber: viewingReceipt.submission.receipt_number,
+            requestNumber: viewingReceipt.inv.request_number,
+            dateText: formatDateLong(viewingReceipt.submission.payment_date),
+            confirmedText: viewingReceipt.submission.confirmed_at ? formatDateLong(viewingReceipt.submission.confirmed_at) : null,
+            clientName: client?.primary_contact ?? client?.company_name ?? '—',
+            company: client?.primary_contact ? client.company_name : null,
+            projectName: project.name,
+            description: viewingReceipt.inv.description || humanizeType(viewingReceipt.inv.payment_type),
+            currency: viewingReceipt.inv.currency,
+            amount: viewingReceipt.submission.amount ?? viewingReceipt.inv.amount,
+            method: viewingReceipt.submission.payment_method,
+            transactionId: viewingReceipt.submission.transaction_id,
+            senderName: viewingReceipt.submission.sender_name,
+            notes: viewingReceipt.submission.notes,
+          }}
+        />
       )}
     </>
   );

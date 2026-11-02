@@ -14,6 +14,7 @@ const RULES: { test: RegExp; route: ShellRoute | null }[] = [
   { test: /^\/files\/?$/, route: { root: 'files-root', active: 'Files' } },
   { test: /^\/notifications\/?$/, route: { root: 'notif-root', active: 'Notifications' } },
   { test: /^\/portfolio\/?$/, route: { root: 'portfolio-root', active: 'Portfolio' } },
+  { test: /^\/prompts\/?$/, route: { root: 'todos-root prompts-root', active: 'AI Prompts' } },
   { test: /^\/projects\/[^/]+\/payments\/[^/]+\/receipt\/?$/, route: null },
   { test: /^\/projects\/[^/]+\/messages\/?$/, route: { root: 'projdetail-root admin-msg-root', active: 'Projects' } },
   { test: /^\/projects\/[^/]+\/payments\/?$/, route: { root: 'projdetail-root payments-admin-root', active: 'Projects' } },

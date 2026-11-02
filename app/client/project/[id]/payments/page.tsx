@@ -13,6 +13,7 @@
 // দেখায়/লিংক করে, কোনো ডুপ্লিকেট ফর্ম না। internal_note কলাম এখানে কখনো select
 // করা হয় না — client-safe কলাম লিস্টই একমাত্র সুরক্ষা।
 
+import { shortReceiptNo } from '@/lib/receiptNumber';
 import ClientAvatar from '@/app/components/ClientAvatar';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -21,7 +22,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, type ClientRecord } from '@/lib/clientPortal';
 import { formatDateLong, todayISO } from '@/lib/format';
 import { CURRENCY_SYMBOL, formatMoney } from '@/lib/currency';
-import ReceiptDocument from '@/app/components/ReceiptDocument';
+import ReceiptPreviewModal from '@/app/components/ReceiptPreviewModal';
 import PaymentStatement from '@/app/components/PaymentStatement';
 import { renderReceiptPdf, renderDocumentImage } from '@/lib/receiptPdf';
 import ClientBottomNav from '@/app/components/ClientBottomNav';
@@ -274,11 +275,6 @@ export default function ClientPaymentsPage() {
   const [filterTab, setFilterTab] = useState<TabKey>('all');
 
   const [viewingReceipt, setViewingReceipt] = useState<{ inv: Invoice; pay: Payment } | null>(null);
-  const [receiptPdfUrl, setReceiptPdfUrl] = useState<string | null>(null);
-  const [receiptPages, setReceiptPages] = useState<string[]>([]);
-  const [generatingReceiptPdf, setGeneratingReceiptPdf] = useState(false);
-  const [receiptPdfError, setReceiptPdfError] = useState<string | null>(null);
-  const receiptDocRef = useRef<HTMLDivElement>(null);
   const statementRef = useRef<HTMLDivElement>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [exporting, setExporting] = useState<'pdf' | 'image' | null>(null);
@@ -329,38 +325,6 @@ export default function ClientPaymentsPage() {
 
     load();
   }, [router, projectId]);
-
-  useEffect(() => {
-    if (!viewingReceipt) return;
-    let cancelled = false;
-    let objectUrl: string | null = null;
-
-    (async () => {
-      setGeneratingReceiptPdf(true);
-      setReceiptPdfError(null);
-      setReceiptPdfUrl(null);
-      setReceiptPages([]);
-      try {
-        const node = receiptDocRef.current;
-        if (!node) throw new Error('Document not ready');
-        const { blob, pages } = await renderReceiptPdf(node);
-        if (!cancelled) setReceiptPages(pages);
-        if (cancelled) return;
-        objectUrl = URL.createObjectURL(blob);
-        setReceiptPdfUrl(objectUrl);
-      } catch (err) {
-        console.error(err);
-        if (!cancelled) setReceiptPdfError("Couldn't generate PDF preview.");
-      } finally {
-        if (!cancelled) setGeneratingReceiptPdf(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [viewingReceipt]);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -824,7 +788,7 @@ export default function ClientPaymentsPage() {
                             )}
                             {pay?.receipt_number && (
                               <button type="button" className="ps-link" onClick={() => setViewingReceipt({ inv, pay })}>
-                                <Icon name="doc" size={13} /> Receipt {pay.receipt_number}
+                                <Icon name="doc" size={13} /> Receipt {shortReceiptNo(pay.receipt_number)}
                               </button>
                             )}
                           </div>
@@ -887,65 +851,25 @@ export default function ClientPaymentsPage() {
       </div>
 
       {viewingReceipt && project && client && (
-        <div className="receipt-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setViewingReceipt(null); }}>
-          <div className="receipt-modal-box">
-            <div className="receipt-modal-head">
-              <div className="receipt-modal-who">
-                <span className="receipt-modal-icon"><Icon name="doc" size={18} /></span>
-                <div>
-                  <div className="receipt-modal-title">Payment receipt</div>
-                  <div className={`receipt-modal-sub${receiptPdfError ? ' error' : ''}`}>{receiptPdfError ?? viewingReceipt.pay.receipt_number ?? viewingReceipt.inv.request_number ?? 'Receipt'}</div>
-                </div>
-              </div>
-              <div className="receipt-modal-head-actions">
-                <a
-                  className={`receipt-modal-download${receiptPdfUrl ? '' : ' receipt-modal-download-disabled'}`}
-                  href={receiptPdfUrl ?? undefined}
-                  download={`${viewingReceipt.pay.receipt_number ?? viewingReceipt.inv.request_number ?? 'receipt'}.pdf`}
-                  onClick={(e) => { if (!receiptPdfUrl) e.preventDefault(); }}
-                >
-                  <Icon name="download" size={13} /> {generatingReceiptPdf ? 'Generating…' : 'Download'}
-                </a>
-                <button type="button" className="receipt-modal-close" aria-label="Close" onClick={() => setViewingReceipt(null)}>
-                  <Icon name="close" size={16} />
-                </button>
-              </div>
-            </div>
-
-            <div className="receipt-modal-body">
-              {receiptPdfUrl ? (
-                <div className="receipt-pages">
-                  {receiptPages.map((src, i) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img key={i} src={src} alt={`Receipt page ${i + 1}`} className="receipt-page-img" />
-                  ))}
-                </div>
-              ) : (
-                <div className="receipt-modal-loading">{receiptPdfError ?? (<><span className="cp-spinner" /> Preparing your receipt…</>)}</div>
-              )}
-
-              <div className="receipt-doc-offscreen" aria-hidden="true">
-                <ReceiptDocument
-                  docRef={receiptDocRef}
-                  data={{
-                    receiptNumber: viewingReceipt.pay.receipt_number,
-                    requestNumber: viewingReceipt.inv.request_number,
-                    dateText: formatDateLong(viewingReceipt.pay.payment_date),
-                    confirmedText: viewingReceipt.pay.confirmed_at ? formatDateLong(viewingReceipt.pay.confirmed_at) : null,
-                    clientName: client.primary_contact ?? client.company_name,
-                    company: client.primary_contact ? client.company_name : null,
-                    projectName: project.name,
-                    description: viewingReceipt.inv.description || humanizeType(viewingReceipt.inv.payment_type),
-                    currency: viewingReceipt.inv.currency,
-                    amount: viewingReceipt.inv.amount,
-                    method: viewingReceipt.pay.payment_method,
-                    transactionId: viewingReceipt.pay.transaction_id,
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        <ReceiptPreviewModal
+          title={`${shortReceiptNo(viewingReceipt.pay.receipt_number) ?? viewingReceipt.inv.request_number ?? 'Receipt'}.pdf`}
+          subtitle="Payment receipt"
+          onClose={() => setViewingReceipt(null)}
+          data={{
+            receiptNumber: viewingReceipt.pay.receipt_number,
+            requestNumber: viewingReceipt.inv.request_number,
+            dateText: formatDateLong(viewingReceipt.pay.payment_date),
+            confirmedText: viewingReceipt.pay.confirmed_at ? formatDateLong(viewingReceipt.pay.confirmed_at) : null,
+            clientName: client.primary_contact ?? client.company_name,
+            company: client.primary_contact ? client.company_name : null,
+            projectName: project.name,
+            description: viewingReceipt.inv.description || humanizeType(viewingReceipt.inv.payment_type),
+            currency: viewingReceipt.inv.currency,
+            amount: viewingReceipt.inv.amount,
+            method: viewingReceipt.pay.payment_method,
+            transactionId: viewingReceipt.pay.transaction_id,
+          }}
+        />
       )}
     </div>
   );

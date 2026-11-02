@@ -336,3 +336,236 @@
 /* jump links: more air above, a bit more room between them */
 .sow-admin-root .sow-toc { gap: 8px; margin-top: 20px; padding-top: 20px; }
 .sow-admin-root .sow-toc-tab { padding: 8px 14px; }
+
+/* ---- page title on the left and a Back button on the right (replaces the breadcrumb) ---- */
+.sow-admin-root .sow-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.sow-admin-root .sow-topbar-text { min-width: 0; }
+.sow-admin-root .sow-topbar-title { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.25; color: var(--ink); }
+.sow-admin-root .sow-topbar-sub { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sow-admin-root .sow-back { display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; padding: 5px 16px 5px 5px; font-size: 13px; font-weight: 700; color: var(--ink-soft); background: transparent; border: 1px solid transparent; border-radius: 999px; transition: color 0.15s ease; }
+.sow-admin-root .sow-back-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); background: var(--surface-muted); border: 1px solid var(--border); border-radius: 50%; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.sow-admin-root .sow-back:hover { color: var(--accent); }
+.sow-admin-root .sow-back:hover .sow-back-icon { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* each mode's actions (All SOWs, the status, the draft chip) sit on the right, under the title row */
+.sow-admin-root .sow-actions-row { justify-content: flex-end; margin-bottom: 18px; }
+@media (max-width: 600px) {
+  .sow-admin-root .sow-topbar-title { font-size: 19px; }
+  .sow-admin-root .sow-topbar-sub { white-space: normal; }
+}
+
+/* ==========================================================================
+   SOW tools card (redesign): the version picker, New Version and the client theme in one row, then the section links
+   ========================================================================== */
+.sow-admin-root .sow-nav-card { padding: 20px 22px; border-radius: 16px; }
+.sow-admin-root .sow-version-tabs { gap: 12px; padding-bottom: 18px; border-bottom: 1px dashed var(--border); }
+.sow-admin-root .sow-version-dropdown-btn { min-height: 46px; padding: 0 14px 0 6px; gap: 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); }
+.sow-admin-root .sow-version-icon { width: 34px; height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.sow-admin-root .sow-version-static-label { color: var(--ink-faint); font-size: 12.5px; font-weight: 500; }
+.sow-admin-root .sow-version-num { font-size: 14px; font-weight: 800; }
+/* the status inside the picker is plain coloured text, no background */
+.sow-admin-root .sow-version-dropdown-btn .status-pill, .sow-admin-root .sow-version-menu .status-pill { background: transparent; border-color: transparent; padding-left: 0; padding-right: 0; box-shadow: none; }
+.sow-admin-root .sow-version-menu { border-radius: 14px; padding: 8px; box-shadow: var(--shadow-md); }
+.sow-admin-root .sow-version-menu-item { border-radius: 10px; }
+.sow-admin-root .sow-version-menu-main { border-radius: 10px; }
+.sow-admin-root .sow-version-tabs .btn { min-height: 46px; border-radius: 999px; font-weight: 700; }
+.sow-admin-root .sow-version-tabs .sv-theme-seg { margin-left: auto; padding: 4px; border-radius: 999px; }
+.sow-admin-root .sow-version-tabs .sv-theme-seg button { min-height: 36px; padding: 0 18px; border-radius: 999px; }
+.sow-admin-root .sow-version-tabs .sv-theme-seg button.active { color: #fff; background: var(--accent); box-shadow: none; }
+
+/* a quiet notice for a signed SOW */
+.sow-admin-root .sow-locked-banner { display: flex; align-items: flex-start; gap: 12px; margin-top: 16px; padding: 12px 14px; font-size: 13px; line-height: 1.5; color: var(--ink-soft); background: var(--warning-soft); border: 1px solid color-mix(in srgb, var(--warning) 28%, transparent); border-radius: 12px; }
+.sow-admin-root .sow-locked-icon { width: 28px; height: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--warning); background: var(--surface); border: 1.5px solid color-mix(in srgb, var(--warning) 30%, transparent); border-radius: 50%; }
+
+/* the section links as round-iconed pills */
+.sow-admin-root .sow-toc { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; padding-top: 0; border-top: none; }
+.sow-admin-root .sow-toc-tab { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px 6px 6px; font-size: 13px; font-weight: 600; color: var(--ink-soft); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease; }
+.sow-admin-root .sow-toc-tab svg { box-sizing: content-box; width: 13px; height: 13px; padding: 7px; color: var(--accent); background: var(--accent-soft); border-radius: 50%; }
+.sow-admin-root .sow-toc-tab:hover { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 4%, var(--surface)); }
+@media (max-width: 700px) {
+  .sow-admin-root .sow-nav-card { padding: 16px; }
+  .sow-admin-root .sow-version-tabs .sv-theme-seg { margin-left: 0; }
+}
+
+/* ---- SOW tools card, different layout: one toolbar row on top, then a tab bar with underlines ---- */
+.sow-admin-root .sow-nav-card { padding: 18px 22px 0; overflow: visible; }
+.sow-admin-root .sow-version-tabs { padding-bottom: 16px; border-bottom: none; }
+.sow-admin-root .sow-version-dropdown-btn { min-height: 42px; border-radius: 10px; padding: 0 12px 0 6px; }
+.sow-admin-root .sow-version-icon { width: 30px; height: 30px; }
+.sow-admin-root .sow-version-tabs .btn { min-height: 42px; border-radius: 10px; }
+.sow-admin-root .sow-version-tabs .sv-theme-seg { border-radius: 10px; }
+.sow-admin-root .sow-version-tabs .sv-theme-seg button { min-height: 32px; padding: 0 16px; border-radius: 7px; }
+.sow-admin-root .sow-locked-banner { margin: 0 0 16px; }
+/* the section links become a tab bar that runs the full width of the card */
+.sow-admin-root .sow-toc { gap: 26px; margin: 0 -22px; padding: 0 22px; border-top: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+.sow-admin-root .sow-toc::-webkit-scrollbar { display: none; }
+.sow-admin-root .sow-toc-tab { flex-shrink: 0; gap: 8px; padding: 14px 2px 12px; font-size: 13px; font-weight: 600; color: var(--ink-soft); background: none; border: none; border-bottom: 2px solid transparent; border-radius: 0; white-space: nowrap; }
+.sow-admin-root .sow-toc-tab svg { width: 15px; height: 15px; padding: 0; color: var(--ink-faint); background: none; border-radius: 0; box-sizing: content-box; }
+.sow-admin-root .sow-toc-tab:hover { color: var(--accent); background: none; border-color: transparent; border-bottom-color: var(--accent); }
+.sow-admin-root .sow-toc-tab:hover svg { color: var(--accent); }
+@media (max-width: 700px) {
+  .sow-admin-root .sow-nav-card { padding: 14px 16px 0; }
+  .sow-admin-root .sow-toc { margin: 0 -16px; padding: 0 16px; gap: 20px; }
+}
+
+/* ==========================================================================
+   SOW tools card, new layout: the version is the card's title (click it to switch), a signed note under it, the actions on
+   the right, and the section tabs along the bottom
+   ========================================================================== */
+.sow-admin-root .sn { padding: 22px 24px 0; }
+.sow-admin-root .sn-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding-bottom: 18px; }
+.sow-admin-root .sn-id { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.sow-admin-root .sn-pick { min-height: 0; padding: 4px 12px 4px 4px; gap: 14px; background: transparent; border: 1px solid transparent; border-radius: 14px; text-align: left; }
+.sow-admin-root .sn-pick:hover { background: color-mix(in srgb, var(--accent) 4%, var(--surface)); border-color: var(--border); }
+.sow-admin-root .sn-pick:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 2px; }
+.sow-admin-root .sn-pick .sow-version-icon { width: 46px; height: 46px; }
+.sow-admin-root .sn-pick-text { display: flex; flex-direction: column; gap: 3px; }
+.sow-admin-root .sn-pick-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; color: var(--ink); }
+.sow-admin-root .sn-pick .status-pill { align-self: flex-start; margin: 0; font-size: 13px; background: transparent; border-color: transparent; padding: 0; box-shadow: none; }
+.sow-admin-root .sn-pick > svg { color: var(--ink-faint); }
+.sow-admin-root .sn-note { display: flex; align-items: center; gap: 8px; margin: 0 0 0 4px; font-size: 12.5px; line-height: 1.5; color: var(--ink-faint); }
+.sow-admin-root .sn-note svg { flex-shrink: 0; color: var(--warning); }
+.sow-admin-root .sn-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sow-admin-root .sn-actions .sv-theme-seg { margin-left: 0; }
+.sow-admin-root .sn .sow-toc { margin: 0 -24px; padding: 0 24px; }
+@media (max-width: 700px) {
+  .sow-admin-root .sn { padding: 16px 16px 0; }
+  .sow-admin-root .sn .sow-toc { margin: 0 -16px; padding: 0 16px; }
+  .sow-admin-root .sn-pick-title { font-size: 18px; }
+}
+
+/* ---- the version picker, minimal: one quiet line, "Version 1.0 · Signed", with a small chevron ---- */
+.sow-admin-root .sn-pick { padding: 6px 10px 6px 0; gap: 10px; border-radius: 10px; }
+.sow-admin-root .sn-pick:hover { padding-left: 10px; margin-left: -10px; }
+.sow-admin-root .sn-pick-text { flex-direction: row; align-items: center; gap: 12px; }
+.sow-admin-root .sn-pick-title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.sow-admin-root .sn-pick-status { --s: var(--ink-faint); display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--s); }
+.sow-admin-root .sn-pick-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--s); }
+.sow-admin-root .sn-pick-status.sp-signed { --s: var(--positive); background: none; }
+.sow-admin-root .sn-pick-status.sp-sent { --s: var(--warning); background: none; }
+.sow-admin-root .sn-pick-status.sp-declined { --s: var(--danger); background: none; }
+.sow-admin-root .sn-pick-status.sp-draft { --s: var(--ink-faint); background: none; }
+.sow-admin-root .sn-note { margin-left: 0; }
+
+/* ---- the "All SOWs" link and the status next to it: minimal, plain text ---- */
+.sow-admin-root .sow-actions-row .header-actions { display: flex; align-items: center; gap: 22px; }
+.sow-admin-root .sow-all-link { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink-soft); text-decoration: none; transition: color 0.15s ease; }
+.sow-admin-root .sow-all-link svg { color: var(--ink-faint); transition: color 0.15s ease; }
+.sow-admin-root .sow-all-link:hover, .sow-admin-root .sow-all-link:hover svg { color: var(--accent); }
+.sow-admin-root .sow-status-plain { --s: var(--ink-faint); display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--s); }
+.sow-admin-root .sow-status-plain i { width: 7px; height: 7px; border-radius: 50%; background: var(--s); }
+.sow-admin-root .sow-status-plain.sp-signed { --s: var(--positive); }
+.sow-admin-root .sow-status-plain.sp-sent { --s: var(--warning); }
+.sow-admin-root .sow-status-plain.sp-declined { --s: var(--danger); }
+.sow-admin-root .sow-status-plain.sp-draft { --s: var(--ink-faint); }
+
+/* All SOWs now lives inside the card, to the left of New Version */
+.sow-admin-root .sn-actions { gap: 20px; }
+
+/* ==========================================================================
+   SOW card in the style of the project details card: a status-coloured line on top, a round icon, the version as the
+   title (click to switch), chips, a signing-progress table, and the section tabs along the bottom
+   ========================================================================== */
+.sow-admin-root .sow-hero { grid-template-columns: minmax(0, 1fr); margin-bottom: 24px; }
+.sow-admin-root .pdh.st-cancelled { --band: var(--danger); }
+.sow-admin-root .sow-hero .pdh-left { padding: 32px 32px 0; }
+.sow-admin-root .sow-hero .pdh-title { font-size: 28px; }
+.sow-admin-root .sow-hero-pick { display: inline-flex; align-items: center; gap: 8px; padding: 2px 8px 2px 0; color: inherit; background: transparent; border: none; border-radius: 10px; cursor: pointer; font: inherit; }
+.sow-admin-root .sow-hero-pick > svg { color: var(--ink-faint); transition: color 0.15s ease; }
+.sow-admin-root .sow-hero-pick:hover > svg { color: var(--accent); }
+.sow-admin-root .sow-hero-pick:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 2px; }
+.sow-admin-root .sow-hero .sow-version-dropdown-wrap { position: relative; }
+.sow-admin-root .sow-hero .sow-version-menu { top: calc(100% + 8px); }
+.sow-admin-root .sow-hero-actions { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-left: auto; flex-shrink: 0; }
+.sow-admin-root .sow-hero-note { display: flex; align-items: center; gap: 8px; margin-top: 18px; font-size: 13px; color: var(--ink-faint); }
+.sow-admin-root .sow-hero-note svg { flex-shrink: 0; color: var(--warning); }
+.sow-admin-root .sow-hero .pdt { margin-top: 24px; }
+.sow-admin-root .sow-hero .pdt-value.muted { color: var(--ink-faint); font-weight: 500; }
+.sow-admin-root .sow-hero-sub { font-size: 12px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.sow-admin-root .sow-hero .sow-toc { margin: 24px -32px 0; padding: 0 32px; }
+@media (max-width: 1000px) {
+  .sow-admin-root .sow-hero .pdt { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sow-admin-root .sow-hero .pdt-col:nth-child(3) { border-left: none; }
+  .sow-admin-root .sow-hero .pdt-col:nth-child(n+3) { border-top: 1px solid var(--border); }
+}
+@media (max-width: 700px) {
+  .sow-admin-root .sow-hero .pdh-left { padding: 22px 18px 0; }
+  .sow-admin-root .sow-hero .pdh-title { font-size: 22px; }
+  .sow-admin-root .sow-hero-actions { margin-left: 0; width: 100%; }
+  .sow-admin-root .sow-hero .sow-toc { margin: 20px -18px 0; padding: 0 18px; }
+}
+@media (max-width: 480px) {
+  .sow-admin-root .sow-hero .pdt { grid-template-columns: 1fr; }
+  .sow-admin-root .sow-hero .pdt-col + .pdt-col { border-left: none; border-top: 1px solid var(--border); }
+}
+
+/* the frame around the SOW paper is a lighter colour */
+.sow-admin-root .sv-stage { border-color: var(--border-soft, #f2f1f2); }
+.sow-admin-root .sv-stage.light { background: #f9f9fc; }
+
+/* light theme: no fill behind the paper, only the border */
+.sow-admin-root .sv-stage.light { background: transparent; border-color: var(--border); }
+
+/* a green line along the top of the frame around the SOW */
+.sow-admin-root .sv-stage { border-top: 3px solid var(--positive); }
+@media (max-width: 700px) { .sow-admin-root .sv-stage { border-top: none; } }
+
+/* the frame around the SOW paper: no fill, a plain border, and a green line along the top. Written with a stronger selector so nothing else overrides it. */
+.projdetail-root.sow-admin-root .sv-stage.light,
+.projdetail-root.sow-admin-root .sv-stage.dark {
+  background: transparent !important;
+  box-shadow: none;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--positive);
+}
+.projdetail-root.sow-admin-root .sv-stage.dark { background: transparent !important; }
+@media (max-width: 700px) {
+  .projdetail-root.sow-admin-root .sv-stage.light, .projdetail-root.sow-admin-root .sv-stage.dark { border-top: 1px solid var(--border); }
+}
+
+/* the green line is a short inset line along the top edge, like on the project cards, not the full width */
+.projdetail-root.sow-admin-root .sv-stage.light, .projdetail-root.sow-admin-root .sv-stage.dark { position: relative; border-top: 1px solid var(--border); }
+.projdetail-root.sow-admin-root .sv-stage::before { content: ''; position: absolute; top: -1px; left: 28px; right: 28px; height: 3px; border-radius: 0 0 4px 4px; background: var(--positive); pointer-events: none; }
+@media (max-width: 700px) { .projdetail-root.sow-admin-root .sv-stage::before { display: none; } }
+
+/* nothing tinted inside the frame: the paper's soft drop shadow made the frame look filled, so it is removed here */
+.projdetail-root.sow-admin-root .sv-stage .sow-document .sd-card { box-shadow: none; }
+.projdetail-root.sow-admin-root .sv-stage { background-color: transparent; background-image: none; }
+
+/* ==========================================================================
+   "Download Signed PDF" (the browser's print dialog): print the whole SOW on A4 pages. The page layout is flex with 100vh
+   heights, which can cut a print after the first page, so everything between the page and the document is plain
+   block layout when printing. The title row and the tools card are hidden, and the document always prints in light colours.
+   ========================================================================== */
+@media print {
+  @page { size: A4; margin: 14mm; }
+  .sow-admin-root .sow-topbar,
+  .sow-admin-root .sow-hero,
+  .sow-admin-root .sow-actions-row,
+  .sow-admin-root .sow-nav-card { display: none !important; }
+  .sow-admin-root .shell,
+  .sow-admin-root .main,
+  .sow-admin-root .content,
+  .sow-admin-root .sow-preview-grid,
+  .sow-admin-root .sv-stage {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    width: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    background: none !important;
+    box-shadow: none !important;
+  }
+  .sow-admin-root .sv-stage::before { display: none !important; }
+  .sow-admin-root .sv-stage .sow-document { max-width: none !important; margin: 0 !important; }
+  .sow-document .sd-card { padding: 0 !important; border: none !important; box-shadow: none !important; }
+  /* always light on paper, even if the dark preview was chosen */
+  .sow-document.theme-dark { --bg: #f2f1f2; --surface: #ffffff; --border: #d5d4d7; --ink: #323135; --ink-soft: #6d6a72; --ink-faint: #939197; --accent: #7c3aed; --accent-soft: #f2ebfd; --positive: #10b981; --positive-soft: #e7f8f2; --warning: #f5a524; --warning-soft: #fdf3e1; }
+  /* keep a heading with its content, and do not split tables or signature blocks across pages */
+  .sow-document .sd-section-head { break-after: avoid; }
+  .sow-document .sd-table tr, .sow-document .sd-sig-grid, .sow-document .sd-sig { break-inside: avoid; }
+  .sow-document * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

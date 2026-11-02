@@ -118,3 +118,302 @@
 @media print {
   .receipt-document .rd-card { box-shadow: none; border: none; padding: 0; }
 }
+
+/* the receipt is a sheet of A4 paper: no border and no rounded corners around it (admin, client and the PDF) */
+.receipt-document .rd-card { border: none; border-radius: 0; }
+
+/* in the PDF render the page margins come from the PDF itself, so the document adds no padding of its own (it used to
+   add a second margin inside the first, which made the gaps too big) */
+.receipt-document.rd-fixed .rd-card { padding: 0; }
+
+/* ==========================================================================
+   The receipt as a plain document: black text on white, thin rules, labelled lines and one small table. No icons, boxes or stamps.
+   ========================================================================== */
+.receipt-document .rd2 { font-family: "Nunito Sans", "Inter", sans-serif; color: var(--ink); }
+.receipt-document .rd2 .rd-letterhead-row { margin-bottom: 18px; align-items: flex-start; }
+.receipt-document .rd2 .rd-doctype { font-size: 22px; font-weight: 800; letter-spacing: 0.08em; text-align: right; color: var(--ink); }
+.receipt-document .rd2 .rd-letterhead-right { white-space: normal; }
+.receipt-document .rd2-meta { margin: 8px 0 0 auto; border-collapse: collapse; }
+.receipt-document .rd2-meta th { padding: 2px 14px 2px 0; text-align: right; font-size: 11.5px; font-weight: 600; color: var(--ink-faint); white-space: nowrap; }
+.receipt-document .rd2-meta td { padding: 2px 0; text-align: right; font-size: 12px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.receipt-document .rd2 .rd-hr { margin: 0 0 22px; border-top: 2px solid var(--ink); }
+
+.receipt-document .rd2-two { width: 100%; border-collapse: collapse; }
+.receipt-document .rd2-two td { width: 50%; padding: 0 16px 0 0; vertical-align: top; font-size: 13px; line-height: 1.6; color: var(--ink-soft); }
+.receipt-document .rd2-label { margin-bottom: 4px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+.receipt-document .rd2-strong { font-size: 14px; font-weight: 700; color: var(--ink); }
+.receipt-document .rd2-muted { font-size: 12px; color: var(--ink-faint); }
+
+.receipt-document .rd2-heading { margin: 30px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); font-size: 11.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); }
+
+.receipt-document .rd2-lines { width: 100%; border-collapse: collapse; font-size: 13px; }
+.receipt-document .rd2-lines th { padding: 8px 0; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); border-bottom: 1px solid var(--border); }
+.receipt-document .rd2-lines td { padding: 12px 0; color: var(--ink); border-bottom: 1px solid var(--border); }
+.receipt-document .rd2-lines .rd2-r { text-align: right; width: 160px; white-space: nowrap; }
+.receipt-document .rd2-lines tfoot td { padding: 12px 0 0; border-bottom: none; font-size: 15px; font-weight: 800; color: var(--ink); }
+.receipt-document .rd2-status { margin: 12px 0 0; font-size: 12.5px; color: var(--ink-soft); }
+.receipt-document .rd2-status strong { color: var(--ink); }
+
+.receipt-document .rd2-details { width: 100%; border-collapse: collapse; font-size: 13px; }
+.receipt-document .rd2-details th { width: 160px; padding: 7px 0; text-align: left; font-weight: 500; color: var(--ink-faint); vertical-align: top; }
+.receipt-document .rd2-details td { padding: 7px 0; font-weight: 600; color: var(--ink); word-break: break-word; }
+
+.receipt-document .rd2-confirm { margin-top: 34px; font-size: 12.5px; line-height: 1.6; color: var(--ink-soft); }
+.receipt-document .rd2-confirm p { margin: 0; }
+.receipt-document .rd2-sign { margin-top: 30px; width: 220px; padding-top: 8px; border-top: 1px solid var(--ink); }
+.receipt-document .rd2-sign-name { font-size: 13px; font-weight: 700; color: var(--ink); }
+.receipt-document .rd2 .rd-footer { margin-top: 30px; }
+
+/* ---- cleaner and clearer: more air, a calm hierarchy, the same few sizes throughout ---- */
+.receipt-document .rd2 .rd-hr { margin-bottom: 26px; }
+.receipt-document .rd2 .rd-doctype { font-size: 24px; letter-spacing: 0.1em; }
+.receipt-document .rd2-meta { margin-top: 10px; }
+.receipt-document .rd2-meta th { padding: 3px 16px 3px 0; font-weight: 500; }
+.receipt-document .rd2-meta td { padding: 3px 0; font-weight: 600; }
+
+.receipt-document .rd2-two td { font-size: 13.5px; line-height: 1.7; }
+.receipt-document .rd2-label { margin-bottom: 6px; font-weight: 600; letter-spacing: 0.08em; }
+.receipt-document .rd2-strong { font-size: 15px; }
+
+.receipt-document .rd2-heading { margin: 36px 0 6px; padding-bottom: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--ink-faint); border-bottom: 1px solid var(--border); }
+.receipt-document .rd2-lines { font-size: 14px; }
+.receipt-document .rd2-lines th { padding: 12px 0 8px; font-weight: 600; border-bottom: 1px solid var(--border-soft); }
+.receipt-document .rd2-lines td { padding: 16px 0; border-bottom: 1px solid var(--border-soft); }
+.receipt-document .rd2-lines tfoot td { padding: 18px 0 0; font-size: 18px; font-weight: 800; border-top: 2px solid var(--ink); }
+.receipt-document .rd2-details { margin-top: 4px; font-size: 13.5px; }
+.receipt-document .rd2-details th { width: 170px; padding: 9px 0; }
+.receipt-document .rd2-details td { padding: 9px 0; }
+.receipt-document .rd2-details tr + tr th, .receipt-document .rd2-details tr + tr td { border-top: 1px solid var(--border-soft); }
+.receipt-document .rd2-confirm { margin-top: 40px; font-size: 13px; }
+.receipt-document .rd2-sign { margin-top: 36px; }
+.receipt-document .rd2-footer { margin-top: 36px; padding-top: 12px; border-top: 1px solid var(--border-soft); font-size: 11px; }
+
+/* ==========================================================================
+   The receipt as a printed receipt (rd3): brand left and the receipt number right on a heavy rule, two boxed label/value
+   tables, an items table with a total, and a centred thank-you. Tables, not grid or flex, so the PDF export draws it exactly.
+   ========================================================================== */
+.receipt-document .rd3 { font-family: "Nunito Sans", "Inter", sans-serif; color: var(--ink); }
+.receipt-document .rd3-head { display: table; width: 100%; }
+.receipt-document .rd3-brand { display: table-cell; vertical-align: top; }
+.receipt-document .rd3-logo { width: 190px; }
+.receipt-document .rd3-ref { display: table-cell; vertical-align: top; text-align: right; white-space: nowrap; }
+.receipt-document .rd3-ref-label { font-size: 11px; font-weight: 700; letter-spacing: 0.2em; color: var(--ink-faint); }
+.receipt-document .rd3-ref-number { margin-top: 2px; font-size: 26px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.15; color: var(--ink); }
+.receipt-document .rd3-ref-date { margin-top: 4px; font-size: 12.5px; color: var(--ink-faint); }
+.receipt-document .rd3-rule { margin: 22px 0 28px; border: none; border-top: 2px solid var(--ink); }
+
+.receipt-document .rd3-cap { margin-bottom: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); }
+.receipt-document .rd3-cap-items { margin-top: 30px; }
+.receipt-document .rd3-pair { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+.receipt-document .rd3-pair > tbody > tr > td { width: 50%; vertical-align: top; padding: 0; }
+.receipt-document .rd3-pair > tbody > tr > td:first-child { padding-right: 14px; }
+.receipt-document .rd3-pair > tbody > tr > td:last-child { padding-left: 14px; }
+.receipt-document .rd3-kv { width: 100%; border-collapse: collapse; border: 1px solid var(--border); font-size: 13.5px; }
+.receipt-document .rd3-kv th { width: 38%; padding: 11px 14px; text-align: left; font-weight: 600; color: var(--ink-soft); background: var(--bg); border: 1px solid var(--border); }
+.receipt-document .rd3-kv td { padding: 11px 14px; color: var(--ink); border: 1px solid var(--border); word-break: break-word; }
+
+.receipt-document .rd3-items { width: 100%; border-collapse: collapse; font-size: 13.5px; border-top: 1px solid var(--ink); }
+.receipt-document .rd3-items th { padding: 11px 0; text-align: left; font-size: 12.5px; font-weight: 600; color: var(--ink-faint); border-bottom: 1px solid var(--ink); }
+.receipt-document .rd3-items td { padding: 14px 0; color: var(--ink); border-bottom: 1px solid var(--border); }
+.receipt-document .rd3-items .rd3-n { width: 34px; color: var(--ink-faint); }
+.receipt-document .rd3-items .rd3-r { text-align: right; width: 150px; white-space: nowrap; }
+.receipt-document .rd3-items .rd3-desc { font-weight: 600; }
+.receipt-document .rd3-items .rd3-strong { font-weight: 800; }
+
+.receipt-document .rd3-totals { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.receipt-document .rd3-totals-spacer { width: 55%; }
+.receipt-document .rd3-totals > tbody > tr > td { vertical-align: top; padding: 0; }
+.receipt-document .rd3-totals-inner { width: 100%; border-collapse: collapse; }
+.receipt-document .rd3-totals-inner th { padding: 14px 0 6px; text-align: left; font-size: 15px; font-weight: 800; color: var(--ink); border-top: 2px solid var(--ink); }
+.receipt-document .rd3-totals-inner td { padding: 14px 0 6px; text-align: right; font-size: 18px; font-weight: 800; color: var(--accent); border-top: 2px solid var(--ink); white-space: nowrap; }
+.receipt-document .rd3-paid { text-align: right; font-size: 12px; color: var(--ink-faint); }
+
+.receipt-document .rd3-thanks { margin-top: 44px; padding-top: 22px; text-align: center; border-top: 1px solid var(--border); }
+.receipt-document .rd3-thanks-title { font-size: 15px; font-weight: 800; color: var(--ink); }
+.receipt-document .rd3-thanks-sub { margin-top: 4px; font-size: 12px; color: var(--ink-faint); }
+@media (max-width: 640px) {
+  .receipt-document:not(.rd-fixed) .rd3-logo { width: 150px; }
+  .receipt-document:not(.rd-fixed) .rd3-ref-number { font-size: 21px; }
+  .receipt-document:not(.rd-fixed) .rd3-pair, .receipt-document:not(.rd-fixed) .rd3-pair > tbody, .receipt-document:not(.rd-fixed) .rd3-pair > tbody > tr, .receipt-document:not(.rd-fixed) .rd3-pair > tbody > tr > td { display: block; width: auto; }
+  .receipt-document:not(.rd-fixed) .rd3-pair > tbody > tr > td:first-child { padding: 0 0 20px; }
+  .receipt-document:not(.rd-fixed) .rd3-pair > tbody > tr > td:last-child { padding: 0; }
+  .receipt-document:not(.rd-fixed) .rd3-totals-spacer { width: 20%; }
+}
+
+/* the PDF render: a little room under the last line (it was cut off at the bottom edge), and nothing clipped */
+.receipt-document.rd-fixed .rd-card { padding-bottom: 16px; overflow: visible; }
+.receipt-document.rd-fixed .rd3-thanks { padding-bottom: 4px; }
+.receipt-document.rd-fixed .rd3-thanks-sub { line-height: 1.6; padding-bottom: 2px; }
+
+/* ---- clean and clear: even spacing, fewer sizes ---- */
+.receipt-document .rd3-rule { margin: 20px 0 24px; }
+.receipt-document .rd3-logo { width: 170px; }
+.receipt-document .rd3-ref-number { font-size: 22px; letter-spacing: 0; }
+.receipt-document .rd3-ref-date { font-size: 12px; }
+.receipt-document .rd3-cap { margin-bottom: 8px; font-size: 10.5px; letter-spacing: 0.12em; }
+.receipt-document .rd3-cap-items { margin-top: 26px; }
+.receipt-document .rd3-kv { font-size: 13px; }
+.receipt-document .rd3-kv th, .receipt-document .rd3-kv td { padding: 9px 12px; }
+.receipt-document .rd3-kv th { width: 40%; font-weight: 600; }
+.receipt-document .rd3-items { font-size: 13px; }
+.receipt-document .rd3-items th { padding: 9px 0; font-size: 12px; }
+.receipt-document .rd3-items td { padding: 12px 0; }
+.receipt-document .rd3-items .rd3-r { width: 130px; }
+.receipt-document .rd3-totals { margin-top: 6px; }
+.receipt-document .rd3-totals-inner th { padding: 12px 0 4px; font-size: 14px; }
+.receipt-document .rd3-totals-inner td { padding: 12px 0 4px; font-size: 17px; }
+.receipt-document .rd3-paid { font-size: 11.5px; }
+.receipt-document .rd3-thanks { margin-top: 34px; padding-top: 18px; }
+.receipt-document .rd3-thanks-title { font-size: 14px; }
+.receipt-document .rd3-thanks-sub { font-size: 11.5px; }
+
+/* ==========================================================================
+   Matched to the reference receipt: same sizes, weights and colours. Heavier labels on a warm shaded column, taller table
+   rows, a large receipt number, an uppercase caption over the items, a numbered row, a subtotal and a total.
+   ========================================================================== */
+.receipt-document .rd3 { --rd-label: #6d6862; --rd-cap: #8a847e; --rd-shade: #f5f2ef; --rd-line: #dcd8d3; color: #1a1a1a; font-size: 14px; }
+.receipt-document .rd3-logo { width: 190px; }
+.receipt-document .rd3-ref-label { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; color: var(--rd-cap); }
+.receipt-document .rd3-ref-number { margin-top: 2px; font-size: 30px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.1; color: #111; }
+.receipt-document .rd3-ref-date { margin-top: 6px; font-size: 13px; color: var(--rd-cap); }
+.receipt-document .rd3-rule { margin: 22px 0 28px; border-top: 2px solid #1a1a1a; }
+
+.receipt-document .rd3-cap { margin-bottom: 10px; font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--rd-cap); }
+.receipt-document .rd3-cap-items { margin-top: 30px; }
+.receipt-document .rd3-kv { font-size: 14.5px; border: 1px solid var(--rd-line); }
+.receipt-document .rd3-kv th, .receipt-document .rd3-kv td { padding: 12px 14px; vertical-align: middle; line-height: 1.4; border: 1px solid var(--rd-line); }
+.receipt-document .rd3-kv th { width: 38%; font-weight: 700; color: var(--rd-label); background: var(--rd-shade); }
+.receipt-document .rd3-kv td { font-weight: 400; color: #1a1a1a; }
+
+.receipt-document .rd3-items { font-size: 14.5px; border-top: 1px solid #1a1a1a; }
+.receipt-document .rd3-items th { padding: 12px 0; font-size: 13px; font-weight: 700; color: var(--rd-label); border-bottom: 1px solid #1a1a1a; }
+.receipt-document .rd3-items td { padding: 16px 0; color: #1a1a1a; border-bottom: 1px solid var(--rd-line); }
+.receipt-document .rd3-items .rd3-n { width: 36px; font-weight: 600; color: var(--accent); }
+.receipt-document .rd3-items th.rd3-n { color: var(--rd-label); }
+.receipt-document .rd3-items .rd3-desc { font-weight: 500; }
+.receipt-document .rd3-items .rd3-strong { font-weight: 500; }
+
+.receipt-document .rd3-totals { margin-top: 10px; }
+.receipt-document .rd3-totals-spacer { width: 52%; }
+.receipt-document .rd3-totals-inner th, .receipt-document .rd3-totals-inner td { border-top: none; }
+.receipt-document .rd3-sub th { padding: 8px 0; text-align: left; font-size: 14.5px; font-weight: 400; color: var(--rd-cap); }
+.receipt-document .rd3-sub td { padding: 8px 0; text-align: right; font-size: 14.5px; font-weight: 400; color: var(--rd-label); }
+.receipt-document .rd3-grand th { padding: 14px 0 4px; font-size: 16px; font-weight: 700; color: #1a1a1a; border-top: 2px solid #1a1a1a; }
+.receipt-document .rd3-grand td { padding: 14px 0 4px; font-size: 19px; font-weight: 800; color: var(--accent); border-top: 2px solid #1a1a1a; }
+.receipt-document .rd3-paid { margin-top: 6px; font-size: 13px; color: var(--rd-cap); }
+
+.receipt-document .rd3-thanks { margin-top: 38px; padding-top: 22px; border-top: 1px solid var(--rd-line); }
+.receipt-document .rd3-thanks-title { font-size: 16px; font-weight: 700; color: #1a1a1a; }
+.receipt-document .rd3-thanks-sub { margin-top: 5px; font-size: 13px; color: var(--rd-cap); }
+
+/* text sits in the vertical centre of every cell: a fixed row height, no vertical padding, and the line height set exactly,
+   so the PDF render cannot push the text towards the bottom */
+.receipt-document .rd3-kv th, .receipt-document .rd3-kv td { height: 44px; padding: 0 14px; line-height: 20px; vertical-align: middle; }
+.receipt-document .rd3-items th { height: 40px; padding: 0; line-height: 20px; vertical-align: middle; }
+.receipt-document .rd3-items td { height: 52px; padding: 0; line-height: 20px; vertical-align: middle; }
+
+/* single-line cells: the line box is as tall as the row, so the text is centred without relying on vertical-align (html2canvas) */
+.receipt-document .rd3-kv th, .receipt-document .rd3-kv td { height: 44px; line-height: 44px; padding-top: 0; padding-bottom: 0; word-break: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.receipt-document .rd3-items th { height: 40px; line-height: 40px; padding: 0; }
+.receipt-document .rd3-items td { height: 52px; line-height: 52px; padding: 0; }
+
+/* ==========================================================================
+   The receipt as a designed page (rd4): soft hero with the amount, two soft cards, items table with a coloured total.
+   ========================================================================== */
+.receipt-document .rd4 { font-family: "Nunito Sans", "Inter", sans-serif; color: var(--ink); }
+.receipt-document .rd4 table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.receipt-document .rd4-head td { padding: 0; vertical-align: middle; }
+.receipt-document .rd4-logo { width: 170px; }
+.receipt-document .rd4-ref { text-align: right; white-space: nowrap; }
+.receipt-document .rd4-ref-label { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); }
+.receipt-document .rd4-ref-number { margin-top: 3px; font-size: 22px; font-weight: 800; color: var(--accent); }
+.receipt-document .rd4-ref-date { margin-top: 3px; font-size: 12px; color: var(--ink-faint); }
+
+.receipt-document .rd4-hero { margin-top: 26px; background: var(--accent-soft); border-radius: 14px; }
+.receipt-document .rd4-hero td { padding: 24px 26px; vertical-align: middle; }
+.receipt-document .rd4-hero-side { text-align: right; width: 170px; }
+.receipt-document .rd4-hero-label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
+.receipt-document .rd4-hero-amount { margin-top: 6px; font-size: 38px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; color: var(--ink); }
+.receipt-document .rd4-hero-sub { margin-top: 6px; font-size: 13px; color: var(--ink-soft); }
+.receipt-document .rd4-badge { display: inline-block; padding: 7px 16px; border-radius: 999px; background: var(--positive); font-size: 12.5px; font-weight: 800; color: #fff; }
+.receipt-document .rd4-hero-verified { margin-top: 8px; font-size: 11.5px; color: var(--ink-soft); }
+
+.receipt-document .rd4-pair { margin-top: 16px; table-layout: fixed; }
+.receipt-document .rd4-pair > tbody > tr > td { width: 50%; padding: 0; vertical-align: top; }
+.receipt-document .rd4-pair > tbody > tr > td:first-child { padding-right: 8px; }
+.receipt-document .rd4-pair > tbody > tr > td:last-child { padding-left: 8px; }
+.receipt-document .rd4-box { min-height: 150px; padding: 18px 20px; background: var(--bg); border-radius: 14px; }
+.receipt-document .rd4-cap { margin-bottom: 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); }
+.receipt-document .rd4-name { font-size: 16px; font-weight: 800; color: var(--ink); }
+.receipt-document .rd4-line { margin-top: 4px; font-size: 13px; color: var(--ink-soft); }
+.receipt-document .rd4-row { display: block; margin-top: 7px; font-size: 13px; color: var(--ink-soft); }
+.receipt-document .rd4-row span { display: inline-block; width: 44%; vertical-align: top; }
+.receipt-document .rd4-row b { display: inline-block; width: 54%; font-weight: 700; color: var(--ink); vertical-align: top; word-break: break-word; }
+
+.receipt-document .rd4-items { margin-top: 24px; font-size: 13.5px; }
+.receipt-document .rd4-items th { padding: 12px 18px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); background: var(--bg); }
+.receipt-document .rd4-items th:first-child { border-radius: 10px 0 0 10px; }
+.receipt-document .rd4-items th:last-child { border-radius: 0 10px 10px 0; }
+.receipt-document .rd4-items td { padding: 16px 18px; color: var(--ink); font-weight: 600; border-bottom: 1px solid var(--border); }
+.receipt-document .rd4-items .rd4-r { text-align: right; width: 170px; white-space: nowrap; }
+.receipt-document .rd4-items .rd4-total td { border-bottom: none; background: var(--accent); font-size: 15px; font-weight: 800; color: #fff; }
+.receipt-document .rd4-items .rd4-total td:first-child { border-radius: 10px 0 0 10px; }
+.receipt-document .rd4-items .rd4-total td:last-child { border-radius: 0 10px 10px 0; }
+.receipt-document .rd4-cap-note { margin-top: 24px; }
+
+.receipt-document .rd4-thanks { margin-top: 36px; padding-top: 20px; text-align: center; border-top: 1px solid var(--border); }
+.receipt-document .rd4-thanks-title { font-size: 15px; font-weight: 800; color: var(--ink); }
+.receipt-document .rd4-thanks-sub { margin-top: 4px; font-size: 12px; line-height: 1.6; color: var(--ink-faint); }
+
+/* smaller receipt number */
+.receipt-document .rd3-ref-number { font-size: 16px; }
+.receipt-document .rd3-ref-label { font-size: 10px; }
+.receipt-document .rd3-ref-date { font-size: 11.5px; }
+
+/* logo and receipt number sit on the same centre line */
+.receipt-document .rd3-brand, .receipt-document .rd3-ref { vertical-align: middle; }
+
+/* the date sits in the middle of the header, between the logo and the receipt number */
+.receipt-document .rd3-mid { display: table-cell; vertical-align: middle; text-align: center; font-size: 12px; font-weight: 600; color: var(--ink-faint); white-space: nowrap; }
+
+/* receipt number and date on one line */
+.receipt-document .rd3-ref-number, .receipt-document .rd3-ref-date { display: inline-block; vertical-align: baseline; }
+.receipt-document .rd3-ref-date { margin: 0 0 0 12px; }
+
+/* date first, then the receipt number */
+.receipt-document .rd3-ref-date { margin: 0 12px 0 0; }
+
+/* more space between the RECEIPT label and the date / receipt number line */
+.receipt-document .rd3-ref-label { margin-bottom: 8px; }
+
+/* light rule under the header */
+.receipt-document .rd3-rule { border-top: 1px solid var(--border); }
+
+/* the other dark lines are light too */
+.receipt-document .rd3-items { border-top: 1px solid var(--border); }
+.receipt-document .rd3-items th { border-bottom: 1px solid var(--border); }
+.receipt-document .rd3-totals-inner th, .receipt-document .rd3-totals-inner td { border-top: 1px solid var(--border); }
+
+/* the total paid amount is black */
+.receipt-document .rd3-totals-inner td { color: var(--ink); }
+
+/* smaller total paid line */
+.receipt-document .rd3-totals-inner td { font-size: 15px; }
+.receipt-document .rd3-totals-inner th { font-size: 13px; }
+
+/* notes list */
+.receipt-document .rd3-notes { margin: 0; padding: 0 0 0 18px; font-size: 12.5px; line-height: 1.7; color: var(--ink-soft); }
+.receipt-document .rd3-notes li { margin: 0 0 4px; white-space: pre-wrap; }
+
+/* all titles are in sentence case */
+.receipt-document .rd3-cap, .receipt-document .rd3-ref-label { text-transform: none; letter-spacing: 0; }
+.receipt-document .rd3-cap { font-size: 13px; }
+.receipt-document .rd3-ref-label { font-size: 12px; }
+
+/* titles and table headings: each word starts with a capital */
+.receipt-document .rd3-cap, .receipt-document .rd3-ref-label, .receipt-document .rd3-items th, .receipt-document .rd3-kv th, .receipt-document .rd3-totals-inner th { text-transform: capitalize; }
+
+/* notes as a visible list */
+.receipt-document .rd3-notes { list-style: disc outside; padding-left: 20px; }
+.receipt-document .rd3-notes li { display: list-item; list-style: disc outside; padding-left: 2px; }
+.receipt-document .rd3-notes li::marker { color: var(--ink-faint); }

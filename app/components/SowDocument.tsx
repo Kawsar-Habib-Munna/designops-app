@@ -152,7 +152,7 @@ export default function SowDocument({
         <div className="sd-parties-row">
           <div>
             <div className="sd-eyebrow">Service Provider</div>
-            <div className="sd-kv-value">FLOW 53 Design Studio</div>
+            <div className="sd-kv-value">FLOW 53 Design</div>
             <div className="sd-kv-sub">Dhaka, Bangladesh</div>
           </div>
           <table className="sd-table sd-parties-table">
@@ -234,11 +234,31 @@ export default function SowDocument({
             </>
           )}
           {(sow.start_date || sow.delivery_date) && (
-            <p className="sd-p">
-              {sow.start_date && `Start: ${formatDateLong(sow.start_date)}`}
-              {sow.start_date && sow.delivery_date && ' · '}
-              {sow.delivery_date && `Expected Delivery: ${formatDateLong(sow.delivery_date)}`}
-            </p>
+            <table className="sd-table sd-kv-table">
+              <tbody>
+                {sow.start_date && (
+                  <tr>
+                    <th>Start date</th>
+                    <td>{formatDateLong(sow.start_date)}</td>
+                  </tr>
+                )}
+                {sow.delivery_date && (
+                  <tr>
+                    <th>Expected delivery</th>
+                    <td>{formatDateLong(sow.delivery_date)}</td>
+                  </tr>
+                )}
+                {sow.start_date && sow.delivery_date && (() => {
+                  const days = Math.round((new Date(sow.delivery_date).getTime() - new Date(sow.start_date).getTime()) / 86400000);
+                  return days > 0 ? (
+                    <tr>
+                      <th>Duration</th>
+                      <td>{days} {days === 1 ? 'day' : 'days'}</td>
+                    </tr>
+                  ) : null;
+                })()}
+              </tbody>
+            </table>
           )}
         </div>
 
@@ -350,7 +370,6 @@ export default function SowDocument({
               )}
             </div>
           </div>
-          {isSigned && <p className="sd-version-line">SOW Version: v{sow.version}.0 · Status: Signed ✓</p>}
         </div>
 
         <div className="sd-footer">

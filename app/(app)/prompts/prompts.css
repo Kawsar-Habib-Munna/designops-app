@@ -1,0 +1,241 @@
+/* Scoped to .prompts-root so this stylesheet never leaks into other routes. */
+.prompts-root {
+  --bg: #F7F7F8;
+  --surface: #FFFFFF;
+  --surface-muted: #FBFBFC;
+  --border: #E8E8EC;
+  --border-soft: #F0F0F3;
+  --ink: #14141A;
+  --ink-soft: #6E6E7A;
+  --ink-faint: #A3A3AE;
+  --accent: #5B4FE8;
+  --accent-soft: #EFEDFE;
+  --positive: #17A34A;
+  --danger: #E5484D;
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Manrope', 'Google Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.prompts-root.dark {
+  --bg: #0E0E12;
+  --surface: #17171D;
+  --surface-muted: #1C1C23;
+  --border: #26262F;
+  --border-soft: #212129;
+  --ink: #F3F3F5;
+  --ink-soft: #9A9AA6;
+  --ink-faint: #5C5C68;
+  --accent: #8B82F2;
+  --accent-soft: #24213F;
+}
+
+/* ---- base page styles (each dashboard page ships its own copy, scoped to its root) ---- */
+.prompts-root, .prompts-root * { box-sizing: border-box; }
+.prompts-root a { color: inherit; text-decoration: none; }
+.prompts-root button, .prompts-root input, .prompts-root select, .prompts-root textarea { font-family: inherit; }
+.prompts-root button { cursor: pointer; }
+.prompts-root .tabular { font-variant-numeric: tabular-nums; }
+.prompts-root .content { padding: 24px 32px 64px; max-width: 1500px; width: 100%; margin: 0 auto; overflow-x: hidden; }
+.prompts-root .page-header-row { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 22px; }
+.prompts-root .page-title { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+.prompts-root .page-sub { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft); }
+.prompts-root .header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.prompts-root .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border: 1px solid transparent; border-radius: 10px; font-size: 13px; font-weight: 600; white-space: nowrap; transition: background 0.15s ease; }
+.prompts-root .btn-accent { background: var(--accent); color: #fff; }
+.prompts-root .btn-accent:hover { filter: brightness(0.92); }
+.prompts-root .btn-ghost { background: transparent; color: var(--ink); border-color: var(--border); }
+.prompts-root .btn-ghost:hover { background: var(--bg); }
+.prompts-root .btn-danger { background: var(--danger); color: #fff; }
+.prompts-root .btn:disabled { opacity: 0.5; cursor: default; }
+
+/* ---- summary numbers ---- */
+.prompts-root .pr-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+.prompts-root .pr-stat { display: flex; flex-direction: column; padding: 20px 20px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; }
+.prompts-root .pr-stat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.prompts-root .pr-stat-icon { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
+.prompts-root .pr-stat-arrow { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border); color: var(--ink-soft); }
+.prompts-root .pr-stat-value { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; color: var(--ink); }
+.prompts-root .pr-stat-label { margin-top: 10px; font-size: 14px; font-weight: 500; color: var(--ink-soft); }
+.prompts-root .pr-stat-foot { display: flex; align-items: center; gap: 8px; margin-top: 20px; padding-top: 14px; border-top: 1px dashed var(--border); font-size: 12.5px; font-weight: 600; color: var(--ink-faint); }
+.prompts-root .pr-stat-foot i { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-faint); }
+
+/* ---- one panel: search, tool tabs and the cards ---- */
+.prompts-root .pr-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; }
+.prompts-root .pr-toolbar { display: flex; align-items: center; gap: 12px; padding: 16px 18px 0; }
+.prompts-root .pr-search { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; height: 40px; padding: 0 12px; background: var(--surface-muted); border: 1px solid var(--border); border-radius: 10px; color: var(--ink-faint); }
+.prompts-root .pr-search:focus-within { border-color: var(--accent); background: var(--surface); }
+.prompts-root .pr-search input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-size: 14px; color: var(--ink); }
+.prompts-root .pr-select { height: 40px; padding: 0 12px; background: var(--surface-muted); border: 1px solid var(--border); border-radius: 10px; font-size: 13.5px; color: var(--ink); }
+.prompts-root .pr-tabs { display: flex; gap: 4px; padding: 14px 18px 0; overflow-x: auto; border-bottom: 1px solid var(--border-soft); scrollbar-width: none; }
+.prompts-root .pr-tabs::-webkit-scrollbar { display: none; }
+.prompts-root .pr-tab { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; padding: 10px 12px 12px; border: none; border-bottom: 2px solid transparent; background: transparent; font-size: 13.5px; font-weight: 600; color: var(--ink-soft); }
+.prompts-root .pr-tab:hover { color: var(--ink); }
+.prompts-root .pr-tab.on { color: var(--ink); border-bottom-color: var(--accent); }
+.prompts-root .pr-tab i { width: 8px; height: 8px; border-radius: 50%; }
+.prompts-root .pr-tab-n { padding: 1px 7px; border-radius: 999px; background: var(--bg); font-size: 11.5px; font-weight: 700; color: var(--ink-soft); }
+.prompts-root .pr-tab.on .pr-tab-n { background: var(--accent-soft); color: var(--accent); }
+
+.prompts-root .pr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; padding: 18px; }
+.prompts-root .pr-card { display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.prompts-root .pr-card:hover { border-color: color-mix(in srgb, var(--tc, var(--accent)) 40%, var(--border)); box-shadow: 0 8px 24px rgba(16, 16, 20, 0.06); }
+.prompts-root .pr-card-top { display: flex; align-items: center; gap: 10px; }
+.prompts-root .pr-mark { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px; background: var(--tc, var(--accent)); font-size: 15px; font-weight: 800; color: #fff; }
+.prompts-root .pr-tool-wrap { flex: 1; min-width: 0; }
+.prompts-root .pr-tool { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.prompts-root .pr-cat { margin-top: 1px; font-size: 12px; color: var(--ink-faint); }
+.prompts-root .pr-open { display: flex; flex-direction: column; gap: 6px; flex: 1; width: 100%; padding: 0; border: none; background: transparent; text-align: left; color: inherit; }
+.prompts-root .pr-title { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.prompts-root .pr-body { margin: 0; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; padding: 10px 12px; background: var(--surface-muted); border: 1px solid var(--border-soft); border-radius: 10px; font-size: 13px; line-height: 1.6; color: var(--ink-soft); white-space: pre-wrap; }
+.prompts-root .pr-foot { display: flex; align-items: center; gap: 2px; }
+.prompts-root .pr-by { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--ink-faint); }
+.prompts-root .pr-copy { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.prompts-root .pr-copy:hover { background: var(--bg); }
+.prompts-root .pr-copy.done { color: var(--positive); border-color: color-mix(in srgb, var(--positive) 35%, var(--border)); }
+.prompts-root .pr-copy.solid { background: var(--accent); border-color: var(--accent); color: #fff; }
+.prompts-root .pr-copy.solid:hover { filter: brightness(0.92); }
+.prompts-root .pr-copy.solid.done { background: var(--positive); border-color: var(--positive); color: #fff; }
+.prompts-root .pr-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: none; border-radius: 8px; background: transparent; color: var(--ink-faint); }
+.prompts-root .pr-icon-btn:hover { background: var(--bg); color: var(--ink); }
+.prompts-root .pr-icon-btn.on { color: var(--accent); }
+.prompts-root .pr-icon-btn.danger:hover { color: var(--danger); }
+
+.prompts-root .pr-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 64px 20px; text-align: center; font-size: 14px; color: var(--ink-soft); }
+.prompts-root .pr-empty b { font-size: 16px; color: var(--ink); }
+.prompts-root .pr-empty .btn { margin-top: 10px; }
+.prompts-root .pr-empty-icon { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; margin-bottom: 6px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); }
+
+/* ---- dialogs ---- */
+.prompts-root .pr-overlay { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(10, 10, 14, 0.55); }
+.prompts-root .pr-modal { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 560px; max-height: 100%; overflow-y: auto; padding: 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25); }
+.prompts-root .pr-modal-sm { max-width: 400px; }
+.prompts-root .pr-modal-read { max-width: 640px; }
+.prompts-root .pr-modal h2 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.prompts-root .pr-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.prompts-root .pr-full { margin: 0; padding: 14px 16px; background: var(--surface-muted); border: 1px solid var(--border-soft); border-radius: 12px; font: inherit; font-size: 14px; line-height: 1.7; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+.prompts-root .pr-field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.prompts-root .pr-field > span { font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
+.prompts-root .pr-field input, .prompts-root .pr-field textarea { width: 100%; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; font-size: 14px; color: var(--ink); outline: none; }
+.prompts-root .pr-field textarea { resize: vertical; line-height: 1.6; }
+.prompts-root .pr-field input:focus, .prompts-root .pr-field textarea:focus { border-color: var(--accent); }
+.prompts-root .pr-row { display: flex; gap: 12px; }
+.prompts-root .pr-check { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-soft); }
+.prompts-root .pr-error { padding: 9px 12px; border-radius: 10px; background: #FCEBEC; font-size: 13px; color: var(--danger); }
+.prompts-root .pr-confirm { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-soft); }
+.prompts-root .pr-modal-foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.prompts-root .pr-modal-foot .pr-by { margin-right: auto; }
+
+@media (max-width: 900px) {
+  .prompts-root .pr-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .prompts-root .content { padding: 20px 16px 48px; }
+  .prompts-root .pr-toolbar { flex-direction: column; align-items: stretch; padding: 14px 14px 0; }
+  .prompts-root .pr-tabs { padding: 12px 14px 0; }
+  .prompts-root .pr-grid { grid-template-columns: minmax(0, 1fr); padding: 14px; }
+  .prompts-root .pr-row { flex-direction: column; }
+}
+
+
+/* the category dropdown: its own arrow with space on the right */
+.prompts-root .pr-select { appearance: none; -webkit-appearance: none; padding: 0 40px 0 14px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236E6E7A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
+
+/* ---- prompt card, redesigned: chips on top, a quoted preview, author and actions below ---- */
+.prompts-root .pr-card { gap: 14px; padding: 18px; border-radius: 18px; }
+.prompts-root .pr-card-top { gap: 6px; }
+.prompts-root .pr-chip { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; border-radius: 999px; background: var(--bg); font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+.prompts-root .pr-chip-tool { background: color-mix(in srgb, var(--tc, var(--accent)) 12%, var(--surface)); color: var(--tc, var(--accent)); font-weight: 700; }
+.prompts-root .pr-chip-tool i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.prompts-root .pr-pin { margin-left: auto; }
+.prompts-root .pr-title { font-size: 17px; line-height: 1.3; }
+.prompts-root .pr-body { padding: 2px 0 2px 14px; background: transparent; border: none; border-left: 3px solid color-mix(in srgb, var(--tc, var(--accent)) 45%, var(--surface)); border-radius: 0; -webkit-line-clamp: 3; font-size: 13.5px; }
+.prompts-root .pr-foot { gap: 2px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
+.prompts-root .pr-avatar { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; flex-shrink: 0; margin-right: 10px; border-radius: 50%; background: var(--accent-soft); font-size: 12px; font-weight: 800; color: var(--accent); }
+.prompts-root .pr-by { display: flex; flex-direction: column; gap: 1px; line-height: 1.25; }
+.prompts-root .pr-by b { overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.prompts-root .pr-by em { font-style: normal; font-size: 11.5px; color: var(--ink-faint); }
+.prompts-root .pr-copy { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.prompts-root .pr-copy:hover { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+.prompts-root .pr-copy.done { background: color-mix(in srgb, var(--positive) 12%, var(--surface)); border-color: transparent; color: var(--positive); }
+.prompts-root .pr-modal-foot .pr-by { flex-direction: row; gap: 6px; }
+
+/* tool and category tag: a small tinted logo square, the tool name, then the category in quiet text */
+.prompts-root .pr-card-top { gap: 8px; }
+.prompts-root .pr-tag-mark { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; flex-shrink: 0; border-radius: 8px; background: color-mix(in srgb, var(--tc, var(--accent)) 14%, var(--surface)); font-size: 12.5px; font-weight: 800; color: var(--tc, var(--accent)); }
+.prompts-root .pr-tag-name { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.prompts-root .pr-tag-sep { width: 3px; height: 3px; border-radius: 50%; background: var(--ink-faint); }
+.prompts-root .pr-tag-cat { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 500; color: var(--ink-soft); }
+
+/* Copy has no background; the author shows their profile photo */
+.prompts-root .pr-copy:not(.solid), .prompts-root .pr-copy:not(.solid):hover, .prompts-root .pr-copy.done:not(.solid) { background: transparent; border-color: transparent; }
+.prompts-root .pr-copy:not(.solid):hover { color: var(--ink); }
+.prompts-root .pr-foot .avatar { margin-right: 10px; }
+
+/* smaller card title */
+.prompts-root .pr-title { font-size: 15px; font-weight: 700; }
+
+/* more breathing space in the cards and between them */
+.prompts-root .pr-grid { gap: 22px; padding: 24px; }
+.prompts-root .pr-card { gap: 20px; padding: 26px; }
+.prompts-root .pr-open { gap: 12px; }
+.prompts-root .pr-body { padding-top: 4px; padding-bottom: 4px; line-height: 1.7; }
+.prompts-root .pr-foot { padding-top: 20px; }
+.prompts-root .pr-toolbar { padding: 22px 24px 0; }
+.prompts-root .pr-tabs { padding: 18px 24px 0; }
+@media (max-width: 640px) {
+  .prompts-root .pr-grid { gap: 16px; padding: 16px; }
+  .prompts-root .pr-card { gap: 16px; padding: 20px; }
+  .prompts-root .pr-toolbar { padding: 16px 16px 0; }
+  .prompts-root .pr-tabs { padding: 14px 16px 0; }
+}
+
+/* ---- read dialog: minimal ---- */
+.prompts-root .pr-modal-read { gap: 0; max-width: 600px; padding: 28px 32px 24px; border-radius: 20px; }
+.prompts-root .pr-read-top { display: flex; align-items: center; gap: 8px; }
+.prompts-root .pr-read-close { margin-left: auto; }
+.prompts-root .pr-read-title { margin: 22px 0 0; font-size: 20px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.3; color: var(--ink); }
+.prompts-root .pr-read-body { margin: 16px 0 0; padding: 2px 0 2px 16px; border-left: 3px solid color-mix(in srgb, var(--tc, var(--accent)) 45%, var(--surface)); font-size: 14.5px; line-height: 1.8; color: var(--ink-soft); white-space: pre-wrap; overflow-wrap: anywhere; }
+.prompts-root .pr-read-foot { display: flex; align-items: center; gap: 10px; margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--border-soft); }
+.prompts-root .pr-read-foot .pr-by { flex: 1; }
+.prompts-root .pr-read-foot .pr-copy { margin-left: 0; }
+
+/* more space under the tool row in the dialog */
+.prompts-root .pr-read-title { margin-top: 34px; }
+
+/* more space under the tool row on the cards */
+.prompts-root .pr-card-top { margin-bottom: 14px; }
+
+/* the dialog title rule was beaten by the generic dialog h2 rule: be more specific */
+.prompts-root .pr-modal .pr-read-title { margin: 34px 0 0; }
+.prompts-root .pr-card-top { margin-bottom: 0; }
+
+/* ---- cards / list switch and the list view ---- */
+.prompts-root .pr-view { display: inline-flex; flex-shrink: 0; padding: 3px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; }
+.prompts-root .pr-view-btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: none; border-radius: 8px; background: transparent; font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.prompts-root .pr-view-btn.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(16, 16, 20, 0.08); }
+.prompts-root .pr-list { display: flex; flex-direction: column; padding: 8px 24px 16px; }
+.prompts-root .pr-row-item { display: flex; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border-soft); }
+.prompts-root .pr-row-item:last-child { border-bottom: none; }
+.prompts-root .pr-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 0; border: none; background: transparent; text-align: left; color: inherit; }
+.prompts-root .pr-row-title { font-size: 14.5px; font-weight: 700; color: var(--ink); }
+.prompts-root .pr-row-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--ink-soft); }
+.prompts-root .pr-row-tool { width: 96px; flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--tc, var(--ink)); }
+.prompts-root .pr-row-cat { width: 100px; flex-shrink: 0; font-size: 13px; color: var(--ink-soft); }
+.prompts-root .pr-row-by { display: flex; align-items: center; gap: 8px; width: 120px; flex-shrink: 0; }
+.prompts-root .pr-row-by em { font-style: normal; font-size: 12px; color: var(--ink-faint); white-space: nowrap; }
+.prompts-root .pr-row-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+@media (max-width: 1100px) { .prompts-root .pr-row-by, .prompts-root .pr-row-cat { display: none; } }
+@media (max-width: 760px) {
+  .prompts-root .pr-row-tool { display: none; }
+  .prompts-root .pr-list { padding: 4px 16px 12px; }
+  .prompts-root .pr-row-item { gap: 12px; }
+  .prompts-root .pr-row-actions .pr-icon-btn:not(.pr-pin) { display: none; }
+  .prompts-root .pr-view { align-self: flex-start; }
+}
+
+/* list view: the logo, tool and category sit together on the left */
+.prompts-root .pr-row-tag { display: flex; align-items: center; gap: 8px; width: 250px; flex-shrink: 0; min-width: 0; }
+@media (max-width: 1100px) { .prompts-root .pr-row-tag { width: 210px; } }
+@media (max-width: 760px) { .prompts-root .pr-row-tag { width: auto; } .prompts-root .pr-row-tag .pr-tag-name, .prompts-root .pr-row-tag .pr-tag-sep, .prompts-root .pr-row-tag .pr-tag-cat { display: none; } }

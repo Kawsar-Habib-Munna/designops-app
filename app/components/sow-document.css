@@ -162,3 +162,25 @@
 
 /* the "Parties" heading sits right under the letterhead rule, so it needs less top space and no section number */
 .sow-document .sd-section-first .sd-section-head { margin-top: 0; margin-bottom: 14px; }
+
+/* the Project Fee amount sits on the right-hand side of the row */
+.sow-document .sd-fee-table td { text-align: right; }
+
+/* the SOW is a sheet of paper (A4): square corners */
+.sow-document .sd-card { border-radius: 0; }
+
+/* the signature itself (typed name or drawn/uploaded image) has no border */
+.sow-document .sd-sig-typed { border-bottom: none; padding-bottom: 0; }
+.sow-document .sd-sig-image { border: none; border-radius: 0; padding: 0; background: transparent; }
+
+/* the timeline dates as a table, in the same style as the Project Fee table: label on the left, value on the right */
+.sow-document .sd-kv-table th { background: var(--bg); width: 160px; font-size: 12px; font-weight: 700; color: var(--ink-faint); }
+.sow-document .sd-kv-table td { font-size: 14px; font-weight: 700; color: var(--ink); text-align: right; }
+
+/* Timeline tables, minimal: no box, no shaded cells, just thin lines between the rows */
+.sow-document #sec-timeline .sd-table { border: none; }
+.sow-document #sec-timeline .sd-table th, .sow-document #sec-timeline .sd-table td { border: none; border-bottom: 1px solid var(--border); padding: 12px 4px; background: transparent; }
+.sow-document #sec-timeline .sd-table tr:last-child th, .sow-document #sec-timeline .sd-table tr:last-child td { border-bottom: none; }
+.sow-document #sec-timeline .sd-table thead th { font-size: 11px; font-weight: 700; color: var(--ink-faint); }
+.sow-document #sec-timeline .sd-kv-table th { width: auto; font-size: 13px; font-weight: 500; color: var(--ink-soft); background: transparent; }
+.sow-document #sec-timeline .sd-kv-table td { font-size: 14px; font-weight: 700; color: var(--ink); text-align: right; }

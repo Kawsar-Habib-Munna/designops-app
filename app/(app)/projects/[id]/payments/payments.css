@@ -204,3 +204,608 @@
 /* receipt preview as page images (phones cannot show a PDF inside an iframe) */
 .payments-admin-root .receipt-pages { position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
 .payments-admin-root .receipt-page-img { width: 100%; height: auto; display: block; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.35); }
+
+/* ---- page title on the left and a Back button on the right (replaces the breadcrumb) ---- */
+.payments-admin-root .pay-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.payments-admin-root .pay-topbar-text { min-width: 0; }
+.payments-admin-root .pay-topbar-title { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.25; color: var(--ink); }
+.payments-admin-root .pay-topbar-sub { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.payments-admin-root .pay-back { display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; padding: 5px 16px 5px 5px; font: inherit; font-size: 13px; font-weight: 700; color: var(--ink-soft); background: transparent; border: 1px solid transparent; border-radius: 999px; cursor: pointer; text-decoration: none; transition: color 0.15s ease; }
+.payments-admin-root .pay-back:disabled { opacity: 0.5; cursor: not-allowed; }
+.payments-admin-root .pay-back-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); background: var(--surface-muted); border: 1px solid var(--border); border-radius: 50%; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.payments-admin-root .pay-back:hover:not(:disabled) { color: var(--accent); }
+.payments-admin-root .pay-back:hover:not(:disabled) .pay-back-icon { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* each mode's own actions sit on the right, under the title row */
+.payments-admin-root .pay-actions-row { justify-content: flex-end; align-items: center; gap: 16px; margin-bottom: 18px; }
+.payments-admin-root .pay-actions-row:empty { display: none; }
+.payments-admin-root .pay-actions-hint { flex: 1; margin: 0; font-size: 13px; color: var(--ink-soft); }
+@media (max-width: 600px) {
+  .payments-admin-root .pay-topbar-title { font-size: 19px; }
+  .payments-admin-root .pay-topbar-sub { white-space: normal; }
+}
+
+/* ==========================================================================
+   Payments page (redesign): an overview card with a dial and a status table, a SOW notice, and request cards with a
+   round status icon, a plain status and a clear amount
+   ========================================================================== */
+.payments-admin-root .pyo { margin-bottom: 20px; padding: 26px 28px 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow-sm); }
+.payments-admin-root .pyo-top { display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
+.payments-admin-root .pyo-main { flex: 1; min-width: 280px; }
+.payments-admin-root .pyo-label { font-size: 13px; font-weight: 600; color: var(--ink-faint); }
+.payments-admin-root .pyo-amount { margin-top: 8px; font-size: 34px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; color: var(--ink); }
+.payments-admin-root .pyo-of { font-size: 15px; font-weight: 500; letter-spacing: 0; color: var(--ink-faint); }
+.payments-admin-root .pyo-legend { list-style: none; margin: 22px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-width: 460px; }
+.payments-admin-root .pyo-legend li { display: grid; grid-template-columns: 12px auto 1fr auto; align-items: center; column-gap: 10px; padding: 8px 0; font-size: 13.5px; color: var(--ink-soft); }
+.payments-admin-root .pyo-legend i { width: 12px; height: 12px; border-radius: 4px; }
+.payments-admin-root .pyo-legend i.is-paid { background: var(--positive); }
+.payments-admin-root .pyo-legend i.is-wait { background: var(--warning); }
+.payments-admin-root .pyo-legend i.is-rest { background: var(--border); }
+.payments-admin-root .pyo-legend em { align-self: end; height: 0; margin: 0 4px 6px; border-bottom: 2px dotted var(--border); }
+.payments-admin-root .pyo-legend b { font-weight: 800; color: var(--ink); }
+.payments-admin-root .pyo-viz { flex-shrink: 0; padding-right: 16px; }
+.payments-admin-root .pay-ring { position: relative; width: 156px; height: 156px; flex-shrink: 0; }
+.payments-admin-root .pay-ring-pct { font-size: 28px; font-weight: 800; }
+.payments-admin-root .pay-ring-sub { margin-top: 3px; font-size: 12px; }
+
+.payments-admin-root .pyo-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 26px; }
+.payments-admin-root .pyo-sow { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--warning); }
+.payments-admin-root .pyo-sow.signed { color: var(--positive); }
+.payments-admin-root .pyo-sow i, .payments-admin-root .pyo-flag i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.payments-admin-root .pyo-flags { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.payments-admin-root .pyo-flag { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+.payments-admin-root .pyo-flag.is-review { color: var(--warning); }
+.payments-admin-root .pyo-flag.is-late { color: var(--danger); }
+
+/* the notice when the SOW is not signed yet */
+.payments-admin-root .pay-gate { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; padding: 16px 20px; background: var(--warning-soft); border: 1px solid color-mix(in srgb, var(--warning) 28%, transparent); border-radius: 14px; }
+.payments-admin-root .pay-gate-icon { width: 38px; height: 38px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--warning); background: var(--surface); border: 1.5px solid color-mix(in srgb, var(--warning) 30%, transparent); border-radius: 50%; }
+.payments-admin-root .pay-gate-text { flex: 1; min-width: 200px; }
+.payments-admin-root .pay-gate-title { font-size: 14px; font-weight: 800; color: var(--ink); }
+.payments-admin-root .pay-gate-sub { margin: 3px 0 0; font-size: 12.5px; color: var(--ink-soft); }
+
+/* the list header: title, count, and the create button */
+.payments-admin-root .pay-list-head { gap: 10px; margin: 6px 2px 14px; }
+.payments-admin-root .pay-list-title { font-size: 17px; font-weight: 800; letter-spacing: -0.01em; }
+.payments-admin-root .pay-list-count { min-width: 24px; height: 24px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--surface-muted); border: 1px solid var(--border); font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+.payments-admin-root .pay-list-create { margin-left: auto; border-radius: 8px; }
+
+/* request cards */
+.payments-admin-root .invoice-list { gap: 14px; }
+.payments-admin-root .invoice-card { gap: 16px; padding: 20px 22px; border-radius: 16px; box-shadow: var(--shadow-sm); }
+.payments-admin-root .invoice-card:hover { border-color: color-mix(in srgb, var(--accent) 40%, transparent); box-shadow: var(--shadow-md); }
+.payments-admin-root .pay-tile { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid color-mix(in srgb, currentColor 22%, transparent); }
+.payments-admin-root .pay-type-name { font-size: 15.5px; font-weight: 800; letter-spacing: -0.01em; }
+.payments-admin-root .pay-req-number { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 1px 8px; }
+.payments-admin-root .invoice-desc { margin-top: 4px; font-size: 13px; color: var(--ink-soft); }
+.payments-admin-root .invoice-amount { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+.payments-admin-root .pay-pct { font-size: 12px; color: var(--ink-faint); }
+.payments-admin-root .invoice-meta-row { gap: 8px 22px; padding-top: 14px; border-top: 1px dashed var(--border); }
+/* the status is plain coloured text with a dot, no background */
+.payments-admin-root .invoice-card .status-pill, .payments-admin-root .invoice-submission .status-pill { background: transparent; border-color: transparent; padding-left: 0; padding-right: 0; box-shadow: none; font-size: 13px; font-weight: 700; }
+.payments-admin-root .pay-meta-item { font-size: 13px; }
+.payments-admin-root .pay-meta-item svg { color: var(--ink-faint); }
+.payments-admin-root .invoice-submission { background: color-mix(in srgb, var(--accent) 3%, var(--surface)); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+.payments-admin-root .invoice-submission-title { margin-bottom: 12px; font-size: 12.5px; font-weight: 700; }
+.payments-admin-root .invoice-submission-grid dt { font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.payments-admin-root .invoice-submission-grid dd { margin-top: 4px; font-size: 13.5px; }
+.payments-admin-root .pay-card-actions { padding-top: 4px; }
+.payments-admin-root .pay-card-actions .btn { border-radius: 8px; }
+
+.payments-admin-root .pay-empty { border-radius: 16px; }
+.payments-admin-root .pay-empty-icon { border-radius: 50%; border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); }
+
+@media (max-width: 760px) {
+  .payments-admin-root .pyo { padding: 20px 18px; }
+  .payments-admin-root .pyo-top { gap: 20px; }
+  .payments-admin-root .pyo-viz { padding-right: 0; margin: 0 auto; }
+  .payments-admin-root .pyo-amount { font-size: 28px; }
+  .payments-admin-root .pyo-facts { grid-template-columns: 1fr; }
+  .payments-admin-root .pyo-facts .pdt-col + .pdt-col { border-left: none; border-top: 1px solid var(--border); }
+  .payments-admin-root .pay-list-create { width: 100%; justify-content: center; margin-left: 0; min-height: 44px; }
+  .payments-admin-root .pay-list-head { flex-wrap: wrap; }
+  .payments-admin-root .pay-card-figure { padding-left: 0; }
+}
+
+/* the status table has three columns that share the full width (the shared table style defaults to four) */
+.projdetail-root.payments-admin-root .pdt.pyo-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.projdetail-root.payments-admin-root .pyo-legend { max-width: 560px; }
+@media (max-width: 760px) {
+  .projdetail-root.payments-admin-root .pdt.pyo-facts { grid-template-columns: 1fr; }
+}
+
+/* ==========================================================================
+   Request cards, cleaner: icon, title and amount on top; then, on one line, the status and dates on the left and the
+   actions on the right. A client submission is a quiet strip, not a boxed panel.
+   ========================================================================== */
+.payments-admin-root .pyc { gap: 0; padding: 22px 24px; }
+.payments-admin-root .pyc .invoice-card-top { align-items: center; gap: 16px; }
+.payments-admin-root .pyc .pay-tile { width: 46px; height: 46px; }
+.payments-admin-root .pyc .pay-card-title { display: flex; flex-direction: column; gap: 4px; }
+.payments-admin-root .pyc .invoice-desc { margin: 0; }
+.payments-admin-root .pyc .pay-card-figure { align-self: center; }
+.payments-admin-root .pyc .invoice-amount { font-size: 22px; }
+
+/* the submission strip */
+.payments-admin-root .pyc .pyc-sub { margin-top: 18px; padding: 16px 0 0; background: none; border: none; border-top: 1px solid var(--border-soft); border-radius: 0; }
+.payments-admin-root .pyc .pyc-sub .invoice-submission-title { margin-bottom: 12px; font-size: 13px; font-weight: 700; color: var(--ink); }
+.payments-admin-root .pyc .pyc-sub .invoice-submission-grid { gap: 16px 24px; }
+.payments-admin-root .pyc .pyc-sub .invoice-submission-grid dd { font-weight: 700; }
+
+/* the foot: status and dates on the left, actions on the right */
+.payments-admin-root .pyc .pyc-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-soft); }
+.payments-admin-root .pyc .invoice-meta-row { padding-top: 0; border-top: none; }
+.payments-admin-root .pyc .pay-card-actions { padding-top: 0; justify-content: flex-end; }
+@media (max-width: 760px) {
+  .payments-admin-root .pyc { padding: 18px; }
+  .payments-admin-root .pyc .pyc-foot { flex-direction: column; align-items: stretch; }
+  .payments-admin-root .pyc .pay-card-actions { justify-content: stretch; }
+  .payments-admin-root .pyc .pay-card-actions .btn { flex: 1; justify-content: center; min-height: 40px; }
+}
+
+/* ==========================================================================
+   Overview card v2: a header, the dial beside three clear rows (amount and share), and a quiet strip with the client,
+   the SOW and what needs attention
+   ========================================================================== */
+.payments-admin-root .pyo { padding: 0; overflow: hidden; }
+.payments-admin-root .pyo-head { display: flex; align-items: center; gap: 12px; padding: 20px 26px; border-bottom: 1px dashed var(--border); }
+.payments-admin-root .pyo-badge { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.payments-admin-root .pyo-title { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.payments-admin-root .pyo-sub { margin-top: 2px; font-size: 12.5px; color: var(--ink-faint); }
+.payments-admin-root .pyo-body { display: flex; align-items: center; gap: 44px; padding: 28px 26px 26px; flex-wrap: wrap; }
+.payments-admin-root .pyo-viz { flex-shrink: 0; padding: 0; }
+.payments-admin-root .pyo-rows { flex: 1; min-width: 300px; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.payments-admin-root .pyo-row { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto 52px; align-items: center; column-gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--border-soft); }
+.payments-admin-root .pyo-row:first-child { padding-top: 0; }
+.payments-admin-root .pyo-row:last-child { padding-bottom: 0; border-bottom: none; }
+.payments-admin-root .pyo-row i { width: 12px; height: 12px; border-radius: 4px; }
+.payments-admin-root .pyo-row i.is-paid { background: var(--positive); }
+.payments-admin-root .pyo-row i.is-wait { background: var(--warning); }
+.payments-admin-root .pyo-row i.is-rest { background: var(--border); }
+.payments-admin-root .pyo-row-label { font-size: 13.5px; font-weight: 600; color: var(--ink-soft); }
+.payments-admin-root .pyo-row-value { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+.payments-admin-root .pyo-row-pct { text-align: right; font-size: 12.5px; font-weight: 600; color: var(--ink-faint); }
+.payments-admin-root .pyo-empty { margin: 0; padding: 26px; }
+
+.payments-admin-root .pyo-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--border); background: color-mix(in srgb, var(--accent) 2.5%, var(--surface)); }
+.payments-admin-root .pyo-item { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 16px 26px; min-width: 0; }
+.payments-admin-root .pyo-item + .pyo-item { border-left: 1px solid var(--border); }
+.payments-admin-root .pyo-item-icon { display: flex; color: var(--ink-faint); }
+.payments-admin-root .pyo-item-label { font-size: 12.5px; font-weight: 600; color: var(--ink-faint); }
+.payments-admin-root .pyo-item-value { font-size: 14px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.payments-admin-root .pyo-item .pyo-sow, .payments-admin-root .pyo-item .pyo-flags { margin-left: auto; font-size: 13.5px; }
+@media (max-width: 760px) {
+  .payments-admin-root .pyo-head { padding: 16px 18px; }
+  .payments-admin-root .pyo-body { padding: 20px 18px; gap: 22px; justify-content: center; }
+  .payments-admin-root .pyo-rows { min-width: 100%; }
+  .payments-admin-root .pyo-strip { grid-template-columns: 1fr; }
+  .payments-admin-root .pyo-item { padding: 14px 18px; }
+  .payments-admin-root .pyo-item + .pyo-item { border-left: none; border-top: 1px solid var(--border); }
+}
+
+/* less space between each label and its amount: the amount follows the label closely and the share sits right after it */
+.payments-admin-root .pyo-rows { flex: 0 1 auto; min-width: 0; }
+.payments-admin-root .pyo-row { grid-template-columns: 12px 148px auto auto; justify-content: start; column-gap: 14px; }
+.payments-admin-root .pyo-row-pct { text-align: left; min-width: 40px; margin-left: 6px; }
+@media (max-width: 760px) {
+  .payments-admin-root .pyo-rows { width: 100%; }
+  .payments-admin-root .pyo-row { grid-template-columns: 12px minmax(0, 1fr) auto auto; }
+}
+
+/* the overview rows: a smaller, lighter amount and a quieter label */
+.payments-admin-root .pyo-row-label { font-size: 13px; font-weight: 500; color: var(--ink-faint); }
+.payments-admin-root .pyo-row-value { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink-soft); }
+.payments-admin-root .pyo-row-pct { font-size: 12px; font-weight: 500; color: var(--ink-faint); }
+
+/* the currency symbol sits in a small round badge before each amount */
+.payments-admin-root .pyo-row-value { display: inline-flex; align-items: center; gap: 8px; }
+.payments-admin-root .pyo-cur { min-width: 24px; height: 24px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; letter-spacing: 0; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 999px; }
+
+/* a dotted line joins each label to its amount */
+.payments-admin-root .pyo-rows { flex: 1 1 380px; width: auto; max-width: 520px; min-width: 300px; }
+.payments-admin-root .pyo-row { grid-template-columns: 12px auto minmax(24px, 1fr) auto 44px; justify-content: stretch; column-gap: 12px; }
+.payments-admin-root .pyo-leader { align-self: end; height: 0; margin-bottom: 7px; border-bottom: 2px dotted var(--border); }
+.payments-admin-root .pyo-row-pct { margin-left: 0; min-width: 0; text-align: right; }
+@media (max-width: 760px) {
+  .payments-admin-root .pyo-rows { max-width: none; width: 100%; min-width: 0; }
+  .payments-admin-root .pyo-row { grid-template-columns: 12px auto minmax(16px, 1fr) auto 40px; }
+}
+
+/* the rows use all the space to the right of the dial, so nothing is left empty */
+.payments-admin-root .pyo-body { gap: 56px; }
+.payments-admin-root .pyo-rows { flex: 1 1 380px; max-width: none; }
+
+/* ---- request progress: Sent, Under review, Paid. Finished steps are filled; the current one is ringed. ---- */
+.payments-admin-root .pyt { --t: var(--accent); list-style: none; margin: 18px 0 0; padding: 16px 0 0; border-top: 1px solid var(--border-soft); display: flex; align-items: flex-start; }
+.payments-admin-root .pyt.stage-2 { --t: var(--positive); }
+.payments-admin-root .pyt.is-late { --t: var(--danger); }
+.payments-admin-root .pyt li { position: relative; flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+.payments-admin-root .pyt li:last-child { flex: 0 0 auto; align-items: flex-end; }
+.payments-admin-root .pyt li:not(:last-child)::after { content: ''; position: absolute; top: 11px; left: 30px; right: 8px; border-top: 2px dotted var(--border); }
+.payments-admin-root .pyt-dot { width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: transparent; background: var(--surface); border: 2px solid var(--border); border-radius: 50%; }
+.payments-admin-root .pyt-label { font-size: 12.5px; font-weight: 600; color: var(--ink-faint); white-space: nowrap; }
+/* finished steps */
+.payments-admin-root .pyt.stage-0 li:nth-child(-n+1) .pyt-dot, .payments-admin-root .pyt.stage-1 li:nth-child(-n+2) .pyt-dot, .payments-admin-root .pyt.stage-2 li .pyt-dot { color: #fff; background: var(--t); border-color: var(--t); }
+.payments-admin-root .pyt.stage-0 li:nth-child(-n+1) .pyt-label, .payments-admin-root .pyt.stage-1 li:nth-child(-n+2) .pyt-label, .payments-admin-root .pyt.stage-2 li .pyt-label { color: var(--ink); }
+/* a connector after a finished step is solid */
+.payments-admin-root .pyt.stage-1 li:nth-child(1)::after, .payments-admin-root .pyt.stage-2 li:nth-child(-n+2)::after { border-top-style: solid; border-top-color: var(--t); }
+/* the current step gets a soft ring (not for a completed request) */
+.payments-admin-root .pyt:not(.stage-2).stage-0 li:nth-child(1) .pyt-dot, .payments-admin-root .pyt.stage-1 li:nth-child(2) .pyt-dot { box-shadow: 0 0 0 4px color-mix(in srgb, var(--t) 18%, transparent); }
+@media (max-width: 560px) { .payments-admin-root .pyt-label { font-size: 11.5px; } .payments-admin-root .pyt li:not(:last-child)::after { left: 28px; } }
+
+/* two request cards side by side; one per row on narrower screens */
+.payments-admin-root .invoice-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+.payments-admin-root .invoice-list .invoice-card { min-width: 0; height: 100%; }
+.payments-admin-root .invoice-list .pyc .pyc-foot { margin-top: auto; }
+.payments-admin-root .invoice-list .pyc { display: flex; flex-direction: column; }
+.payments-admin-root .invoice-list .pyc .invoice-card-top { flex-wrap: wrap; }
+@media (max-width: 1100px) { .payments-admin-root .invoice-list { grid-template-columns: minmax(0, 1fr); } }
+
+/* two request cards in a row (stronger selector, so nothing else can override it) */
+@media (min-width: 861px) {
+  .projdetail-root.payments-admin-root .invoice-list { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 16px; }
+  .projdetail-root.payments-admin-root .invoice-list > .invoice-card { width: auto; min-width: 0; }
+}
+@media (max-width: 860px) {
+  .projdetail-root.payments-admin-root .invoice-list { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* ---- the overview card and the payment requests sit side by side ---- */
+.payments-admin-root .pay-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.payments-admin-root .pay-split-left, .payments-admin-root .pay-split-right { min-width: 0; }
+.payments-admin-root .pay-split-left .pyo { margin-bottom: 20px; }
+.payments-admin-root .pay-split-right .pay-list-head { margin-top: 0; }
+/* the overview is half width now: the dial sits above the rows */
+.payments-admin-root .pay-split .pyo-body { flex-direction: column; align-items: stretch; gap: 26px; padding: 24px 24px 22px; }
+.payments-admin-root .pay-split .pyo-viz { align-self: center; }
+.payments-admin-root .pay-split .pyo-rows { flex: none; width: 100%; max-width: none; min-width: 0; }
+.payments-admin-root .pay-split .pyo-strip { grid-template-columns: 1fr; }
+.payments-admin-root .pay-split .pyo-item + .pyo-item { border-left: none; border-top: 1px solid var(--border); }
+.payments-admin-root .pay-split .pyo-head { padding: 18px 24px; }
+/* one request card per row inside the right column */
+.projdetail-root.payments-admin-root .pay-split .invoice-list { grid-template-columns: minmax(0, 1fr) !important; }
+@media (max-width: 1180px) {
+  .payments-admin-root .pay-split { grid-template-columns: minmax(0, 1fr); }
+  .projdetail-root.payments-admin-root .pay-split .invoice-list { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .payments-admin-root .pay-split .pyo-body { flex-direction: row; align-items: center; gap: 44px; }
+  .payments-admin-root .pay-split .pyo-rows { flex: 1 1 380px; width: auto; }
+  .payments-admin-root .pay-split .pyo-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .payments-admin-root .pay-split .pyo-item + .pyo-item { border-left: 1px solid var(--border); border-top: none; }
+}
+@media (max-width: 860px) {
+  .projdetail-root.payments-admin-root .pay-split .invoice-list { grid-template-columns: minmax(0, 1fr) !important; }
+  .payments-admin-root .pay-split .pyo-body { flex-direction: column; align-items: stretch; }
+  .payments-admin-root .pay-split .pyo-strip { grid-template-columns: 1fr; }
+  .payments-admin-root .pay-split .pyo-item + .pyo-item { border-left: none; border-top: 1px solid var(--border); }
+}
+
+/* Client, SOW and Needs attention stay in one line: three columns, the label (with its icon) above its value */
+.projdetail-root.payments-admin-root .pay-split .pyo-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.projdetail-root.payments-admin-root .pay-split .pyo-item { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 8px; row-gap: 8px; padding: 16px 18px; }
+.projdetail-root.payments-admin-root .pay-split .pyo-item + .pyo-item { border-left: 1px solid var(--border); border-top: none; }
+.projdetail-root.payments-admin-root .pay-split .pyo-item .pyo-item-value, .projdetail-root.payments-admin-root .pay-split .pyo-item .pyo-sow, .projdetail-root.payments-admin-root .pay-split .pyo-item .pyo-flags { grid-column: 1 / -1; margin-left: 0; }
+@media (max-width: 560px) {
+  .projdetail-root.payments-admin-root .pay-split .pyo-strip { grid-template-columns: 1fr; }
+  .projdetail-root.payments-admin-root .pay-split .pyo-item + .pyo-item { border-left: none; border-top: 1px solid var(--border); }
+}
+
+/* the status strip: one consistent text style. Labels are small and grey; every value has the same size and weight, and only its colour tells the state. */
+.projdetail-root.payments-admin-root .pyo-item-label { font-size: 12.5px; font-weight: 500; color: var(--ink-faint); }
+.projdetail-root.payments-admin-root .pyo-item-value { font-size: 14px; font-weight: 600; color: var(--ink-soft); }
+.projdetail-root.payments-admin-root .pyo-item .pyo-sow, .projdetail-root.payments-admin-root .pyo-item .pyo-flag { font-size: 14px; font-weight: 600; }
+.projdetail-root.payments-admin-root .pyo-item-icon { color: var(--ink-faint); }
+
+/* the dial and the three rows stay together in one row inside the half-width overview card */
+@media (min-width: 861px) {
+  .projdetail-root.payments-admin-root .pay-split .pyo-body { flex-direction: row; align-items: center; justify-content: flex-start; gap: 28px; }
+  .projdetail-root.payments-admin-root .pay-split .pyo-viz { align-self: center; flex-shrink: 0; }
+  .projdetail-root.payments-admin-root .pay-split .pyo-rows { flex: 1 1 0; width: auto; min-width: 0; }
+  .projdetail-root.payments-admin-root .pay-split .pay-ring { width: 140px; height: 140px; }
+  .projdetail-root.payments-admin-root .pay-split .pay-ring svg { width: 140px; height: 140px; }
+  .projdetail-root.payments-admin-root .pay-split .pyo-row { column-gap: 10px; padding: 14px 0; }
+  .projdetail-root.payments-admin-root .pay-split .pyo-row-value { font-size: 15px; }
+}
+/* the currency badge has no background fill */
+.payments-admin-root .pyo-cur { background: transparent; }
+
+/* ==========================================================================
+   Payment requests (redesign): ONE card. A header with a round icon, the title, a count and the New request button, then the
+   requests as flat rows separated by thin lines, each with its progress and actions.
+   ========================================================================== */
+.payments-admin-root .pyr { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow-sm); overflow: hidden; }
+.payments-admin-root .pyr-head { display: flex; align-items: center; gap: 12px; padding: 20px 24px; border-bottom: 1px dashed var(--border); }
+.payments-admin-root .pyr-badge { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.payments-admin-root .pyr-head-text { flex: 1; min-width: 0; }
+.payments-admin-root .pyr-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.payments-admin-root .pyr-count { min-width: 24px; height: 24px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--ink-soft); background: var(--surface-muted); border: 1px solid var(--border); border-radius: 999px; }
+.payments-admin-root .pyr-sub { margin-top: 2px; font-size: 12.5px; color: var(--ink-faint); }
+.payments-admin-root .pyr-create { flex-shrink: 0; border-radius: 8px; }
+
+/* inside the card the requests are flat rows */
+.payments-admin-root .pyr .invoice-list { display: flex !important; flex-direction: column; gap: 0; }
+.payments-admin-root .pyr .invoice-card { height: auto; background: transparent; border: none; border-bottom: 1px solid var(--border-soft); border-radius: 0; box-shadow: none; padding: 22px 24px; }
+.payments-admin-root .pyr .invoice-card:last-child { border-bottom: none; }
+.payments-admin-root .pyr .invoice-card:hover { background: color-mix(in srgb, var(--accent) 2.5%, var(--surface)); border-color: var(--border-soft); box-shadow: none; }
+.payments-admin-root .pyr .pay-empty { margin: 24px; border-radius: 14px; }
+@media (max-width: 600px) {
+  .payments-admin-root .pyr-head { flex-wrap: wrap; padding: 16px; }
+  .payments-admin-root .pyr-create { width: 100%; justify-content: center; min-height: 44px; }
+  .payments-admin-root .pyr .invoice-card { padding: 18px 16px; }
+}
+
+/* ==========================================================================
+   Request row, cleaner: a clear top (icon, title, amount), one quiet details block, and a foot with the status and actions.
+   Fewer lines and boxes, a stronger hierarchy of size and colour.
+   ========================================================================== */
+.payments-admin-root .pyr .invoice-card { padding: 26px 28px; }
+.payments-admin-root .pyr .invoice-card-top { gap: 18px; align-items: center; }
+.payments-admin-root .pyr .pay-tile { width: 48px; height: 48px; }
+.payments-admin-root .pyr .pay-type-name { font-size: 16px; font-weight: 800; }
+.payments-admin-root .pyr .pay-req-number { font-size: 11.5px; font-weight: 600; color: var(--ink-faint); background: var(--surface-muted); border-color: transparent; }
+.payments-admin-root .pyr .invoice-desc { font-size: 13px; color: var(--ink-faint); }
+.payments-admin-root .pyr .invoice-amount { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+.payments-admin-root .pyr .pay-pct { font-size: 12.5px; color: var(--ink-faint); }
+
+/* the tracker (requests still in progress) */
+.payments-admin-root .pyr .pyt { margin-top: 22px; padding-top: 0; border-top: none; }
+
+/* the client's submission: no panel, just a small heading and three labelled values on one line */
+.payments-admin-root .pyr .pyc-sub { margin-top: 22px; padding: 18px 0 0; border-top: 1px solid var(--border-soft); }
+.payments-admin-root .pyr .pyc-sub .invoice-submission-title { margin-bottom: 14px; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+.payments-admin-root .pyr .pyc-sub .invoice-submission-grid { gap: 12px 28px; }
+.payments-admin-root .pyr .pyc-sub .invoice-submission-grid dt { font-size: 12px; font-weight: 500; color: var(--ink-faint); }
+.payments-admin-root .pyr .pyc-sub .invoice-submission-grid dd { margin-top: 5px; font-size: 14px; font-weight: 700; color: var(--ink); }
+.payments-admin-root .pyr .pyc-sub .invoice-submission-notes { margin: 14px 0 0; font-size: 12.5px; color: var(--ink-faint); }
+
+/* the foot: status and due date on the left, the action on the right */
+.payments-admin-root .pyr .pyc-foot { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border-soft); }
+.payments-admin-root .pyr .invoice-meta-row { gap: 8px 20px; }
+.payments-admin-root .pyr .pay-meta-item { font-size: 13px; color: var(--ink-faint); }
+.payments-admin-root .pyr .invoice-card .status-pill { font-size: 13.5px; }
+@media (max-width: 600px) { .payments-admin-root .pyr .invoice-card { padding: 20px 16px; } .payments-admin-root .pyr .invoice-amount { font-size: 21px; } }
+
+/* ---- the top of a request: a small request number above the title, and the amount with its currency and share ring ---- */
+.payments-admin-root .pyr .pyh { align-items: center; gap: 18px; }
+.payments-admin-root .pyr .pyh-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.payments-admin-root .pyr .pyh-number { font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; color: var(--ink-faint); }
+.payments-admin-root .pyr .pyh-title { font-size: 18px; font-weight: 800; letter-spacing: -0.015em; line-height: 1.25; color: var(--ink); }
+.payments-admin-root .pyr .pyh-desc { margin: 2px 0 0; font-size: 13px; color: var(--ink-soft); }
+.payments-admin-root .pyr .pyh-amount { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.payments-admin-root .pyr .pyh-figure { display: flex; align-items: baseline; gap: 6px; font-size: 28px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; color: var(--ink); white-space: nowrap; }
+.payments-admin-root .pyr .pyh-cur { font-size: 17px; font-weight: 600; letter-spacing: 0; color: var(--ink-faint); }
+.payments-admin-root .pyr .pyh-share { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink-faint); }
+.payments-admin-root .pyr .pyh-share svg { flex-shrink: 0; }
+@media (max-width: 600px) {
+  .payments-admin-root .pyr .pyh { flex-wrap: wrap; }
+  .payments-admin-root .pyr .pyh-amount { width: 100%; flex-direction: row; align-items: baseline; justify-content: space-between; }
+  .payments-admin-root .pyr .pyh-figure { font-size: 24px; }
+}
+
+/* ==========================================================================
+   Payment requests, new layout: filter tabs with counts, then a compact list. Each request is one line (icon, title and
+   number, status, amount); click it to open the details underneath.
+   ========================================================================== */
+.payments-admin-root .pyr-tabs { display: flex; gap: 6px; padding: 14px 24px 0; overflow-x: auto; scrollbar-width: none; }
+.payments-admin-root .pyr-tabs::-webkit-scrollbar { display: none; }
+.payments-admin-root .pyr-tabs button { flex-shrink: 0; display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink-soft); background: transparent; border: 1px solid transparent; border-radius: 999px; cursor: pointer; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.payments-admin-root .pyr-tabs button:hover { color: var(--ink); border-color: var(--border); }
+.payments-admin-root .pyr-tabs button.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+.payments-admin-root .pyr-tabs button em { min-width: 20px; padding: 1px 6px; font-style: normal; font-size: 11px; font-weight: 700; text-align: center; color: var(--ink-faint); background: var(--surface-muted); border-radius: 999px; }
+.payments-admin-root .pyr-tabs button.active em { color: var(--accent); background: #fff; }
+
+.payments-admin-root .pyl { list-style: none; margin: 8px 0 0; padding: 0; }
+.payments-admin-root .pyl-none { margin: 0; padding: 36px 24px; text-align: center; font-size: 13px; color: var(--ink-faint); }
+.payments-admin-root .pyl-item { border-bottom: 1px solid var(--border-soft); }
+.payments-admin-root .pyl-item:last-child { border-bottom: none; }
+.payments-admin-root .pyl-row { width: 100%; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto auto 20px; align-items: center; column-gap: 16px; padding: 16px 24px; font: inherit; text-align: left; background: transparent; border: none; cursor: pointer; transition: background 0.15s ease; }
+.payments-admin-root .pyl-row:hover { background: color-mix(in srgb, var(--accent) 3%, var(--surface)); }
+.payments-admin-root .pyl-row:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: -2px; }
+.payments-admin-root .pyl-row .pay-tile { width: 44px; height: 44px; }
+.payments-admin-root .pyl-main { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.payments-admin-root .pyl-title { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.payments-admin-root .pyl-sub { font-size: 12.5px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.payments-admin-root .pyl-status { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; white-space: nowrap; color: var(--ink-faint); }
+.payments-admin-root .pyl-status i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.payments-admin-root .pyl-status.s-done { color: var(--positive); }
+.payments-admin-root .pyl-status.s-review { color: var(--warning); }
+.payments-admin-root .pyl-status.s-overdue, .payments-admin-root .pyl-status.s-danger, .payments-admin-root .pyl-status.is-late { color: var(--danger); }
+.payments-admin-root .pyl-amount { display: inline-flex; align-items: baseline; gap: 5px; min-width: 90px; justify-content: flex-end; font-size: 18px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; }
+.payments-admin-root .pyl-cur { font-size: 13px; font-weight: 600; letter-spacing: 0; color: var(--ink-faint); }
+.payments-admin-root .pyl-chev { display: flex; color: var(--ink-faint); transition: transform 0.2s ease; }
+.payments-admin-root .pyl-item.open .pyl-chev { transform: rotate(180deg); color: var(--accent); }
+.payments-admin-root .pyl-item.open { background: color-mix(in srgb, var(--accent) 2.5%, var(--surface)); }
+
+.payments-admin-root .pyl-detail { padding: 2px 24px 24px 84px; }
+.payments-admin-root .pyl-lead { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.payments-admin-root .pyl-lead p { margin: 0; font-size: 13px; color: var(--ink-soft); }
+.payments-admin-root .pyl-share { font-size: 12.5px; font-weight: 600; color: var(--ink-faint); }
+.payments-admin-root .pyl-detail .pyt { margin-top: 18px; padding-top: 0; border-top: none; }
+.payments-admin-root .pyl-detail .pyc-sub { margin-top: 18px; padding: 16px 0 0; border-top: 1px solid var(--border-soft); }
+.payments-admin-root .pyl-method { margin: 14px 0 0; font-size: 13px; color: var(--ink-soft); }
+.payments-admin-root .pyl-actions { margin-top: 18px; justify-content: flex-start; }
+@media (max-width: 700px) {
+  .payments-admin-root .pyr-tabs { padding: 12px 16px 0; }
+  .payments-admin-root .pyl-row { grid-template-columns: 40px minmax(0, 1fr) auto 18px; row-gap: 6px; padding: 14px 16px; column-gap: 12px; }
+  .payments-admin-root .pyl-row .pay-tile { width: 40px; height: 40px; grid-row: 1 / span 2; }
+  .payments-admin-root .pyl-status { grid-column: 2; grid-row: 2; }
+  .payments-admin-root .pyl-amount { grid-column: 3; grid-row: 1; font-size: 16px; min-width: 0; }
+  .payments-admin-root .pyl-chev { grid-column: 4; grid-row: 1; }
+  .payments-admin-root .pyl-main { grid-column: 2; grid-row: 1; }
+  .payments-admin-root .pyl-detail { padding: 0 16px 20px; }
+}
+
+/* ==========================================================================
+   Payment requests as a simple table: Request, Amount, Status, Due, and the actions. A client's submission is a quiet
+   row directly under its request.
+   ========================================================================== */
+.payments-admin-root .pyx-wrap { overflow-x: auto; }
+.payments-admin-root .pyx { width: 100%; min-width: 640px; border-collapse: collapse; }
+.payments-admin-root .pyx th { padding: 14px 20px; text-align: left; font-size: 12px; font-weight: 600; color: var(--ink-faint); background: color-mix(in srgb, var(--accent) 3%, var(--surface-muted)); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.payments-admin-root .pyx th.num, .payments-admin-root .pyx td.num { text-align: right; }
+.payments-admin-root .pyx td { padding: 16px 20px; vertical-align: middle; border-bottom: 1px solid var(--border-soft); font-size: 13px; color: var(--ink); }
+.payments-admin-root .pyx tbody tr:not(.pyx-submission):hover { background: color-mix(in srgb, var(--accent) 3%, var(--surface)); }
+.payments-admin-root .pyx tbody tr.has-sub td { border-bottom: none; }
+.payments-admin-root .pyx tbody tr:last-child td { border-bottom: none; }
+.payments-admin-root .pyx-req { display: flex; align-items: center; gap: 14px; min-width: 200px; }
+.payments-admin-root .pyx-req .pay-tile { width: 38px; height: 38px; }
+.payments-admin-root .pyx-req-text { min-width: 0; }
+.payments-admin-root .pyx-title { font-size: 14px; font-weight: 700; color: var(--ink); }
+.payments-admin-root .pyx-sub { margin-top: 3px; max-width: 280px; font-size: 12px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.payments-admin-root .pyx-amount { display: inline-flex; align-items: baseline; gap: 5px; font-size: 15px; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; }
+.payments-admin-root .pyx-cur { font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--ink-faint); }
+.payments-admin-root .pyx-pct { margin-top: 3px; font-size: 11.5px; color: var(--ink-faint); white-space: nowrap; }
+.payments-admin-root .pyx-status { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; white-space: nowrap; color: var(--ink-faint); }
+.payments-admin-root .pyx-status i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.payments-admin-root .pyx-status.s-done { color: var(--positive); }
+.payments-admin-root .pyx-status.s-review { color: var(--warning); }
+.payments-admin-root .pyx-status.s-overdue, .payments-admin-root .pyx-status.s-danger, .payments-admin-root .pyx-status.is-late { color: var(--danger); }
+.payments-admin-root .pyx-due { white-space: nowrap; color: var(--ink-soft); }
+.payments-admin-root .pyx-due.is-late { color: var(--danger); font-weight: 600; }
+.payments-admin-root .pyx-actions { text-align: right; }
+.payments-admin-root .pyx-actions .pay-card-actions { justify-content: flex-end; flex-wrap: nowrap; }
+.payments-admin-root .pyx-actions .btn { border-radius: 8px; white-space: nowrap; }
+/* the client's submission, under its request */
+.payments-admin-root .pyx-submission td { padding: 0 20px 18px 72px; background: transparent; border-bottom: 1px solid var(--border-soft); }
+.payments-admin-root .pyx-submission:last-child td { border-bottom: none; }
+.payments-admin-root .pyx-submission-inner { display: flex; align-items: center; gap: 12px 32px; flex-wrap: wrap; padding: 12px 16px; background: color-mix(in srgb, var(--accent) 3%, var(--surface)); border: 1px solid var(--border-soft); border-radius: 10px; }
+.payments-admin-root .pyx-submission-title { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
+.payments-admin-root .pyx-submission-grid { display: flex; gap: 8px 28px; flex-wrap: wrap; margin: 0; }
+.payments-admin-root .pyx-submission-grid dt { font-size: 11.5px; font-weight: 500; color: var(--ink-faint); }
+.payments-admin-root .pyx-submission-grid dd { margin: 2px 0 0; font-size: 13px; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.payments-admin-root .pyx-submission-notes { flex-basis: 100%; margin: 0; font-size: 12.5px; color: var(--ink-faint); }
+@media (max-width: 600px) { .payments-admin-root .pyx th, .payments-admin-root .pyx td { padding-left: 14px; padding-right: 14px; } .payments-admin-root .pyx-submission td { padding: 0 14px 16px; } }
+
+/* ==========================================================================
+   Requests table, cleaner: three columns that always fit the card (no sideways scrolling). Each request is one clear line;
+   under it, one quiet line holds the client's submission and the buttons.
+   ========================================================================== */
+.payments-admin-root .pyx-wrap { overflow-x: visible; }
+.payments-admin-root .pyx { min-width: 0; table-layout: fixed; }
+.payments-admin-root .pyx th { padding: 12px 24px; background: transparent; border-bottom: 1px solid var(--border-soft); }
+.payments-admin-root .pyx th:nth-child(1) { width: auto; }
+.payments-admin-root .pyx th:nth-child(2) { width: 130px; }
+.payments-admin-root .pyx th:nth-child(3) { width: 130px; }
+.payments-admin-root .pyx td { padding: 20px 24px; }
+.payments-admin-root .pyx tbody tr.has-more td { border-bottom: none; padding-bottom: 14px; }
+.payments-admin-root .pyx tbody tr.pyx-more td { padding: 0 24px 20px 78px; border-bottom: 1px solid var(--border-soft); }
+.payments-admin-root .pyx tbody tr:last-child td { border-bottom: none; }
+.payments-admin-root .pyx-req { min-width: 0; }
+.payments-admin-root .pyx-title { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
+.payments-admin-root .pyx-sub { max-width: none; font-size: 12.5px; }
+.payments-admin-root .pyx-sub.is-late { color: var(--danger); }
+.payments-admin-root .pyx-amount { font-size: 17px; }
+/* the status is plain text: the old pill background is switched off */
+.payments-admin-root .pyx-status, .payments-admin-root .pyx-sstatus { background: transparent !important; padding: 0 !important; border: none !important; }
+.payments-admin-root .pyx-status { font-size: 13.5px; font-weight: 700; }
+
+.payments-admin-root .pyx-more-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; }
+.payments-admin-root .pyx-line { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin: 0; font-size: 12.5px; color: var(--ink-soft); }
+.payments-admin-root .pyx-line-label { font-weight: 700; color: var(--ink-faint); margin-right: 2px; }
+.payments-admin-root .pyx-mono { font-weight: 600; color: var(--ink); letter-spacing: 0.02em; }
+.payments-admin-root .pyx-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--border); }
+.payments-admin-root .pyx-sstatus { display: inline-flex; align-items: center; gap: 6px; margin-left: 4px; font-size: 12.5px; font-weight: 700; color: var(--ink-faint); }
+.payments-admin-root .pyx-sstatus i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.payments-admin-root .pyx-sstatus.s-done { color: var(--positive); }
+.payments-admin-root .pyx-sstatus.s-review { color: var(--warning); }
+.payments-admin-root .pyx-sstatus.s-overdue, .payments-admin-root .pyx-sstatus.s-danger { color: var(--danger); }
+.payments-admin-root .pyx-more .pay-card-actions { flex-wrap: nowrap; justify-content: flex-end; margin-left: auto; }
+.payments-admin-root .pyx-note { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-faint); }
+@media (max-width: 600px) {
+  .payments-admin-root .pyx th, .payments-admin-root .pyx td { padding-left: 16px; padding-right: 16px; }
+  .payments-admin-root .pyx th:nth-child(2), .payments-admin-root .pyx th:nth-child(3) { width: 96px; }
+  .payments-admin-root .pyx tbody tr.pyx-more td { padding: 0 16px 18px; }
+}
+
+/* no icon in front of each request: the detail line lines up with the title */
+.payments-admin-root .pyx tbody tr.pyx-more td { padding-left: 24px; }
+@media (max-width: 600px) { .payments-admin-root .pyx tbody tr.pyx-more td { padding-left: 16px; } }
+
+/* click a request to open or close its details, like an FAQ */
+.payments-admin-root .pyx tbody tr.is-clickable { cursor: pointer; }
+.payments-admin-root .pyx tbody tr.is-clickable:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: -2px; }
+.payments-admin-root .pyx tbody tr.has-more:not(.is-open) td { border-bottom: 1px solid var(--border-soft); padding-bottom: 20px; }
+.payments-admin-root .pyx tbody tr:last-child.has-more:not(.is-open) td { border-bottom: none; }
+.payments-admin-root .pyx td:last-child { position: relative; padding-right: 48px; }
+.payments-admin-root .pyx-chev { position: absolute; right: 20px; top: 50%; display: flex; color: var(--ink-faint); transform: translateY(-50%); transition: transform 0.2s ease, color 0.2s ease; }
+.payments-admin-root .pyx tbody tr.is-open .pyx-chev { transform: translateY(-50%) rotate(180deg); color: var(--accent); }
+.payments-admin-root .pyx tbody tr.is-clickable:hover .pyx-chev { color: var(--accent); }
+.payments-admin-root .pyx tbody tr.is-open td { background: color-mix(in srgb, var(--accent) 2.5%, var(--surface)); }
+.payments-admin-root .pyx tbody tr.pyx-more td { background: color-mix(in srgb, var(--accent) 2.5%, var(--surface)); }
+@media (max-width: 600px) { .payments-admin-root .pyx-chev { right: 12px; } .payments-admin-root .pyx td:last-child { padding-right: 36px; } }
+
+/* the opened details: the client's submission as a small table, then the buttons underneath on the right */
+.payments-admin-root .pyx-more-inner { flex-direction: column; align-items: stretch; gap: 16px; }
+.payments-admin-root .pyx-subtable { width: 100%; table-layout: auto; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 10px; overflow: hidden; }
+.payments-admin-root .pyx-subtable caption { caption-side: top; padding: 0 0 8px; text-align: left; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
+.payments-admin-root .pyx-subtable th { padding: 9px 14px; text-align: left; font-size: 11.5px; font-weight: 600; color: var(--ink-faint); background: var(--surface-muted); border-bottom: 1px solid var(--border-soft); white-space: nowrap; width: auto; }
+.payments-admin-root .pyx-subtable td { padding: 11px 14px; font-size: 13px; font-weight: 600; color: var(--ink); border-bottom: none; word-break: break-word; }
+.payments-admin-root .pyx-subtable .pyx-mono { letter-spacing: 0.02em; }
+.payments-admin-root .pyx-more .pay-card-actions { justify-content: flex-end; margin-left: 0; }
+@media (max-width: 600px) { .payments-admin-root .pyx-subtable th, .payments-admin-root .pyx-subtable td { padding-left: 10px; padding-right: 10px; } }
+
+/* spacing of the opened details. The small table sits inside a table cell, so it was picking up that cell's padding and
+   background; these rules give its own cells their own spacing, and set one even rhythm for the whole block. */
+.payments-admin-root .pyx tbody tr.pyx-more > td { padding: 4px 24px 24px; }
+.payments-admin-root .pyx tbody tr.pyx-more .pyx-subtable th { padding: 10px 16px; background: var(--surface-muted); border-bottom: 1px solid var(--border-soft); }
+.payments-admin-root .pyx tbody tr.pyx-more .pyx-subtable td { padding: 14px 16px; background: transparent; border-bottom: none; }
+.payments-admin-root .pyx-more-inner { gap: 14px; }
+.payments-admin-root .pyx-subtable caption { padding: 0 0 10px; }
+.payments-admin-root .pyx-more .pay-card-actions { margin: 0; padding: 0; }
+.payments-admin-root .pyx-note { margin: 10px 0 0; }
+@media (max-width: 600px) {
+  .payments-admin-root .pyx tbody tr.pyx-more > td { padding: 4px 16px 20px; }
+  .payments-admin-root .pyx tbody tr.pyx-more .pyx-subtable th, .payments-admin-root .pyx tbody tr.pyx-more .pyx-subtable td { padding-left: 10px; padding-right: 10px; }
+}
+
+.payments-admin-root .pyx-muted { font-weight: 500; color: var(--ink-faint); }
+
+/* a gap above and to the left of the "Client submitted" heading */
+.payments-admin-root .pyx-subtable caption { padding: 16px 0 12px 4px; }
+
+/* the request line: lighter weights and softer colours */
+.payments-admin-root .pyx-title { font-size: 15px; font-weight: 600; letter-spacing: 0; color: var(--ink); }
+.payments-admin-root .pyx-sub { font-size: 12.5px; font-weight: 400; color: var(--ink-faint); }
+.payments-admin-root .pyx-amount { font-size: 16px; font-weight: 600; letter-spacing: 0; color: var(--ink-soft); }
+.payments-admin-root .pyx-cur { font-size: 12.5px; font-weight: 500; color: var(--ink-faint); }
+.payments-admin-root .pyx-pct { font-size: 12px; font-weight: 400; color: var(--ink-faint); }
+.payments-admin-root .pyx-status { font-size: 13px; font-weight: 600; }
+
+/* the amount and the status line up with the top of the request title */
+.payments-admin-root .pyx tbody tr:not(.pyx-more) > td { vertical-align: top; }
+.payments-admin-root .pyx-status { margin-top: 2px; }
+.payments-admin-root .pyx-chev { top: 22px; transform: none; }
+.payments-admin-root .pyx tbody tr.is-open .pyx-chev { transform: rotate(180deg); }
+
+/* more space on the left of each item in the Client / SOW / Needs attention strip */
+.projdetail-root.payments-admin-root .pay-split .pyo-item { padding: 18px 20px 18px 30px; }
+@media (max-width: 560px) { .projdetail-root.payments-admin-root .pay-split .pyo-item { padding-left: 22px; } }
+/* a receipt page is a sheet of A4 paper: square corners, and the pages keep the A4 proportions */
+.payments-admin-root .receipt-page-img { border-radius: 0; aspect-ratio: 210 / 297; object-fit: contain; }
+/* no border on the receipt pages or around the receipt in the admin view */
+.payments-admin-root .receipt-page-img { border: none; }
+.payments-admin-root .receipt-doc, .payments-admin-root .receipt-doc-offscreen .receipt-document .rd-card { border: none; }
+.payments-admin-root .receipt-doc-offscreen { padding: 0; }
+
+/* mobile: the overview card stacks the dial above the rows. The rows' 380px flex-basis was meant for a row layout; in a column it
+   became a 380px height and left a big empty gap above the status strip. */
+@media (max-width: 860px) {
+  .projdetail-root.payments-admin-root .pay-split .pyo-rows,
+  .payments-admin-root .pay-split .pyo-rows { flex: 0 0 auto; width: 100%; min-width: 0; max-width: none; }
+}
+
+/* mobile: the submitted-payment table becomes a stacked list (label left, value right) so nothing is squeezed or broken mid-word */
+@media (max-width: 640px) {
+  .payments-admin-root .pyx-subtable, .payments-admin-root .pyx-subtable tbody, .payments-admin-root .pyx-subtable tbody tr, .payments-admin-root .pyx-subtable tbody td { display: block; width: 100%; }
+  .payments-admin-root .pyx-subtable thead { display: none; }
+  .payments-admin-root .pyx tbody tr.pyx-more .pyx-subtable tbody td { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; text-align: right; word-break: normal; overflow-wrap: anywhere; border-bottom: 1px solid var(--border-soft); }
+  .payments-admin-root .pyx tbody tr.pyx-more .pyx-subtable tbody td:last-child { border-bottom: none; }
+  .payments-admin-root .pyx-subtable tbody td::before { flex-shrink: 0; font-size: 12px; font-weight: 600; color: var(--ink-faint); text-align: left; }
+  .payments-admin-root .pyx-subtable tbody td:nth-child(1)::before { content: "Method"; }
+  .payments-admin-root .pyx-subtable tbody td:nth-child(2)::before { content: "Transaction ID"; }
+  .payments-admin-root .pyx-subtable tbody td:nth-child(3)::before { content: "Date"; }
+  .payments-admin-root .pyx-subtable tbody td:nth-child(4)::before { content: "Received by"; }
+  .payments-admin-root .pyx-subtable tbody td:nth-child(5)::before { content: "Status"; }
+  .payments-admin-root .pyx-subtable .pyx-sstatus { white-space: nowrap; }
+}
+@media (max-width: 640px) {
+  .payments-admin-root .pyx-subtable caption { display: block; width: 100%; white-space: nowrap; padding: 14px 16px 10px; }
+}

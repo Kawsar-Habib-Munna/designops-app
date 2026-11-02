@@ -60,6 +60,8 @@ const ICON_PATHS: Record<string, string> = {
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
   plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+  lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  back: '<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
   menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
@@ -535,7 +537,7 @@ export default function AdminSowPage() {
       return;
     }
     if (project?.client_id) {
-      await supabase.from('activity_log').insert({ actor_id: user.id, action: 'sow_sent', entity_type: 'client', entity_id: project.client_id, detail: `SOW ${selected.sow_number ?? `v${selected.version}`} ক্লায়েন্টকে পাঠানো হয়েছে` });
+      await supabase.from('activity_log').insert({ actor_id: user.id, action: 'sow_sent', entity_type: 'client', entity_id: project.client_id, detail: `SOW ${selected.sow_number ?? `Version ${selected.version}.0`} ক্লায়েন্টকে পাঠানো হয়েছে` });
     }
     setReloadKey((k) => k + 1);
   }
@@ -582,7 +584,7 @@ export default function AdminSowPage() {
   // শর্ত এনফোর্স করা আছে, শুধু UI-তে লুকানো না।
   async function handleDeleteVersion(v: Sow) {
     if (v.status === 'sent' || v.status === 'viewed' || v.status === 'signed') return;
-    if (!window.confirm(`v${v.version} ডিলিট করতে চান? এটা ফিরিয়ে আনা যাবে না।`)) return;
+    if (!window.confirm(`Version ${v.version}.0 ডিলিট করতে চান? এটা ফিরিয়ে আনা যাবে না।`)) return;
     setDeletingVersionId(v.id);
     const { error: deleteError } = await supabase.from('sows').delete().eq('id', v.id);
     setDeletingVersionId(null);
@@ -837,14 +839,17 @@ export default function AdminSowPage() {
               <p style={{ padding: 24, fontSize: 13, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
             ) : (
               <>
-                <div className="breadcrumb">
-                  <Link href="/clients">Clients</Link>
-                  <span className="sep">/</span>
-                  {client && <Link href={`/projects/${project.id}`}>{client.company_name}</Link>}
-                  <span className="sep">/</span>
-                  <Link href={`/projects/${project.id}`}>{project.name}</Link>
-                  <span className="sep">/</span>
-                  <span className="current">SOW</span>
+                <div className="sow-topbar">
+                  <div className="sow-topbar-text">
+                    <h1 className="sow-topbar-title">{mode === 'editor' && selected ? (versions.length > 1 || selected.sent_at ? 'Edit Statement of Work' : 'Create Statement of Work') : 'Statement of Work'}</h1>
+                    <p className="sow-topbar-sub">
+                      {project.name}{client ? ` · ${client.company_name}` : ''}{mode === 'preview' && selected ? ` · Version ${selected.version}.0` : ''}
+                    </p>
+                  </div>
+                  <Link href={`/projects/${project.id}`} className="sow-back">
+                    <span className="sow-back-icon"><Icon name="back" size={14} /></span>
+                    Back to project
+                  </Link>
                 </div>
 
                 {error && <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: 13 }}>{error}</div>}
@@ -852,13 +857,7 @@ export default function AdminSowPage() {
                 {/* ---- OVERVIEW (no SOW yet) ---- */}
                 {mode === 'overview' && (
                   <>
-                    <div className="page-header-row">
-                      <div>
-                        <h1 className="page-title">Statement of Work</h1>
-                        <p className="page-sub">
-                          {project.name} — {client?.company_name}
-                        </p>
-                      </div>
+                    <div className="page-header-row sow-actions-row">
                       <div className="header-actions">
                         <Link href="/sows" className="btn btn-ghost btn-sm">
                           All SOWs
@@ -895,16 +894,10 @@ export default function AdminSowPage() {
                 {/* ---- EDITOR (draft) ---- */}
                 {mode === 'editor' && selected && (
                   <>
-                    <div className="se-head">
-                      <div>
-                        <h1 className="page-title">{versions.length > 1 || selected.sent_at ? 'Edit Statement of Work' : 'Create Statement of Work'}</h1>
-                        <p className="page-sub">
-                          {project.name} — {client?.company_name} · {client?.primary_contact}
-                        </p>
-                      </div>
+                    <div className="se-head sow-actions-row">
                       <div className="se-head-actions">
                         <span className="se-chip">
-                          <span className="se-chip-dot"></span>Draft · v{selected.version}
+                          <span className="se-chip-dot"></span>Draft · Version {selected.version}.0
                         </span>
                         {versions.length > 0 && (
                           <button className="btn btn-ghost btn-sm" onClick={() => setMode('overview')}>
@@ -1165,42 +1158,27 @@ export default function AdminSowPage() {
                 {/* ---- PREVIEW & SIGNATURE STATUS ---- */}
                 {mode === 'preview' && selected && (
                   <>
-                    <div className="page-header-row">
-                      <div>
-                        <h1 className="page-title">Statement of Work</h1>
-                        <p className="page-sub">
-                          {project.name} — {client?.company_name} · v{selected.version}
-                        </p>
-                      </div>
-                      <div className="header-actions">
-                        <Link href="/sows" className="btn btn-ghost btn-sm">
-                          All SOWs
-                        </Link>
-                        <span className={`status-pill ${STATUS_META[selected.status]?.cls ?? 'sp-draft'}`}>
-                          <span className="dot" style={{ background: 'currentColor' }}></span>
-                          {STATUS_META[selected.status]?.label ?? selected.status}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="sow-nav-card">
-                      <div className="sow-version-tabs">
-                        <div className="sow-version-dropdown-wrap">
-                          <button
-                            type="button"
-                            className="sow-version-dropdown-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setVersionMenuOpen((open) => !open);
-                            }}
-                          >
-                            <span className="sow-version-static-label">Version</span>
-                            <span className="sow-version-num">v{selected.version}</span>
-                            <span className={`status-pill ${STATUS_META[selected.status]?.cls ?? 'sp-draft'}`}>{STATUS_META[selected.status]?.label ?? selected.status}</span>
-                            <Icon name="chevron-down" size={12} />
-                          </button>
-
-                          {versionMenuOpen && (
+                    <section className={`pdh sow-hero st-${selected.status === 'signed' ? 'completed' : selected.status === 'sent' ? 'review' : selected.status === 'cancelled' ? 'cancelled' : 'draft'}`}>
+                      <div className="pdh-left">
+                        <div className="pdh-id">
+                          <div className="pdh-icon"><Icon name="file" size={26} /></div>
+                          <div className="pdh-titles">
+                            <div className="pdh-title-row">
+                              <div className="sow-version-dropdown-wrap">
+                                <button
+                                  type="button"
+                                  className="sow-hero-pick"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setVersionMenuOpen((open) => !open);
+                                  }}
+                                  aria-haspopup="listbox"
+                                  aria-expanded={versionMenuOpen}
+                                >
+                                  <span className="pdh-title">Version {selected.version}.0</span>
+                                  <Icon name="chevron-down" size={15} />
+                                </button>
+                                {versionMenuOpen && (
                             <div className="sow-version-menu" onClick={(e) => e.stopPropagation()}>
                               {versions.map((v) => (
                                 <div key={v.id} className={`sow-version-menu-item${v.id === selectedId ? ' active' : ''}`}>
@@ -1212,7 +1190,7 @@ export default function AdminSowPage() {
                                       setVersionMenuOpen(false);
                                     }}
                                   >
-                                    <span className="sow-version-num">v{v.version}</span>
+                                    <span className="sow-version-num">Version {v.version}.0</span>
                                     <span className={`status-pill ${STATUS_META[v.status]?.cls ?? 'sp-draft'}`}>{STATUS_META[v.status]?.label ?? v.status}</span>
                                   </button>
                                   {v.status !== 'sent' && v.status !== 'signed' && v.status !== 'viewed' && (
@@ -1230,24 +1208,51 @@ export default function AdminSowPage() {
                               ))}
                             </div>
                           )}
-                        </div>
-
-                        {selected.status !== 'draft' && selected.status !== 'superseded' && selected.status !== 'cancelled' && (
-                          <button className="btn btn-ghost btn-sm" onClick={handleCreateNewVersion}>
-                            <Icon name="plus" size={12} /> New Version
-                          </button>
-                        )}
-                        <div className="pd-seg sv-theme-seg" role="group" aria-label="Client theme">
-                          <button type="button" className={previewTheme === 'light' ? 'active' : ''} onClick={() => setPreviewTheme('light')}>Light</button>
-                          <button type="button" className={previewTheme === 'dark' ? 'active' : ''} onClick={() => setPreviewTheme('dark')}>Dark</button>
-                        </div>
-                      </div>
-
-                      {selected.status === 'signed' && (
-                        <div className="sow-locked-banner">
-                          🔒 This SOW version is signed and locked — it can no longer be edited. To change scope, terms, or pricing, create a new version.
-                        </div>
+                              </div>
+                              <span className="pdh-status"><i />{(STATUS_META[selected.status]?.label ?? selected.status).replace(/\s*✓$/, '').replace(/ · .*$/, '')}</span>
+                            </div>
+                            <div className="pdh-chips">
+                              {selected.sow_number && <span className="pdh-chip">{selected.sow_number}</span>}
+                              <span className="pdh-chip"><Icon name="folder" size={13} />{project.name}</span>
+                              {client && <span className="pdh-chip"><Icon name="building" size={13} />{client.company_name}</span>}
+                            </div>
+                          </div>
+                          <div className="sow-hero-actions">
+                            <Link href="/sows" className="sow-all-link">
+                              <Icon name="file" size={14} /> All SOWs
+                            </Link>
+                      {selected.status !== 'draft' && selected.status !== 'superseded' && selected.status !== 'cancelled' && (
+                        <button className="btn btn-ghost btn-sm" onClick={handleCreateNewVersion}>
+                          <Icon name="plus" size={12} /> New Version
+                        </button>
                       )}
+                            <div className="pd-seg sv-theme-seg" role="group" aria-label="Client theme">
+                              <button type="button" className={previewTheme === 'light' ? 'active' : ''} onClick={() => setPreviewTheme('light')}>Light</button>
+                              <button type="button" className={previewTheme === 'dark' ? 'active' : ''} onClick={() => setPreviewTheme('dark')}>Dark</button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {selected.status === 'signed' && (
+                          <p className="pdh-desc sow-hero-note"><Icon name="lock" size={13} /> Signed and locked. To change scope, terms or pricing, create a new version.</p>
+                        )}
+
+                        <div className="pdt" role="table" aria-label="Signing progress">
+                          {[
+                            { icon: 'send' as IconName, label: 'Sent to client', value: selected.sent_at, sub: null as string | null },
+                            { icon: 'eye' as IconName, label: 'Viewed', value: selected.viewed_at, sub: null as string | null },
+                            { icon: 'edit' as IconName, label: 'Client signed', value: selected.signed_at, sub: selected.signed_by_name },
+                            { icon: 'check' as IconName, label: 'Countersigned', value: selected.agency_signed_at, sub: selected.agency_signer_name },
+                          ].map((c) => (
+                            <div className="pdt-col" role="rowgroup" key={c.label}>
+                              <div className="pdt-head" role="columnheader"><span className="pdt-icon"><Icon name={c.icon} size={15} /></span>{c.label}</div>
+                              <div className="pdt-cell" role="cell">
+                                <span className={`pdt-value${c.value ? '' : ' muted'}`}>{c.value ? new Date(c.value).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Not yet'}</span>
+                                {c.sub && <span className="sow-hero-sub">{c.sub}</span>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
 
                       <nav className="sow-toc" aria-label="Jump to section">
                         <a href="#sec-scope" className="sow-toc-tab"><Icon name="layers" size={13} /> Scope</a>
@@ -1256,7 +1261,8 @@ export default function AdminSowPage() {
                         <a href="#sec-terms" className="sow-toc-tab"><Icon name="check" size={13} /> Terms</a>
                         <a href="#sec-signatures" className="sow-toc-tab"><Icon name="edit" size={13} /> Signatures</a>
                       </nav>
-                    </div>
+                      </div>
+                    </section>
 
                     <div className="sow-preview-grid">
                       <div>
@@ -1325,7 +1331,7 @@ export default function AdminSowPage() {
                               </div>
                               <div className="sig-meta-row">
                                 <span>SOW Version</span>
-                                <span>v{selected.version}.0</span>
+                                <span>Version {selected.version}.0</span>
                               </div>
                               <div className="sig-meta-row">
                                 <span>Status</span>
@@ -1413,7 +1419,7 @@ export default function AdminSowPage() {
               </div>
               <div>
                 <span className="field-label">Version</span>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>v{selected.version}</p>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Version {selected.version}.0</p>
               </div>
             </div>
             <label className="sow-notify-row" style={{ margin: '16px 0' }}>

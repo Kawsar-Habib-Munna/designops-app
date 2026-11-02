@@ -2434,3 +2434,29 @@ create policy "author or admin can update project_notes" on project_notes for up
 drop policy if exists "author or admin can delete project_notes" on project_notes;
 create policy "author or admin can delete project_notes" on project_notes for delete
   using (public.is_team_member() and (author_id = auth.uid() or exists (select 1 from profiles p where p.id = auth.uid() and p.is_admin)));
+
+-- ============================================================
+-- AI Prompt library (team): prompts saved per AI tool and purpose
+-- ============================================================
+create table if not exists ai_prompts (
+  id uuid default gen_random_uuid() primary key,
+  title text not null,
+  body text not null,
+  ai_tool text not null default 'ChatGPT',
+  category text not null default 'General',
+  pinned boolean not null default false,
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+create index if not exists idx_ai_prompts_tool on ai_prompts(ai_tool, created_at desc);
+alter table ai_prompts enable row level security;
+drop policy if exists "team can read ai_prompts" on ai_prompts;
+create policy "team can read ai_prompts" on ai_prompts for select using (public.is_team_member());
+drop policy if exists "team can add ai_prompts" on ai_prompts;
+create policy "team can add ai_prompts" on ai_prompts for insert with check (public.is_team_member() and created_by = auth.uid());
+drop policy if exists "team can update ai_prompts" on ai_prompts;
+create policy "team can update ai_prompts" on ai_prompts for update using (public.is_team_member());
+drop policy if exists "author or admin can delete ai_prompts" on ai_prompts;
+create policy "author or admin can delete ai_prompts" on ai_prompts for delete
+  using (public.is_team_member() and (created_by = auth.uid() or exists (select 1 from profiles p where p.id = auth.uid() and p.is_admin)));

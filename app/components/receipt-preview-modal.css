@@ -1,0 +1,49 @@
+/* Receipt preview popup (ReceiptPreviewModal.tsx). On screen: a dark popup with the A4 sheet. In print: only the sheet. */
+.rpm-portal { position: fixed; inset: 0; z-index: 400; display: flex; align-items: center; justify-content: center; padding: 12px; background: rgba(0, 0, 0, 0.6); }
+.rpm-box { display: flex; flex-direction: column; width: 100%; max-width: 920px; height: 100%; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; background: #18191c; box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45); }
+.rpm-head { display: flex; align-items: center; gap: 8px; padding: 14px 22px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.rpm-who { flex: 1; min-width: 0; }
+.rpm-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 700; color: #fff; }
+.rpm-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: rgba(255, 255, 255, 0.6); }
+.rpm-btn { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: none; border-radius: 8px; background: transparent; font: inherit; font-size: 14px; font-weight: 500; color: #fff; cursor: pointer; }
+.rpm-btn:hover { background: rgba(255, 255, 255, 0.1); }
+.rpm-close { width: 36px; padding: 0; justify-content: center; }
+.rpm-body { flex: 1; overflow: auto; padding: 24px 16px 32px; background: #f3f0ee; }
+.rpm-sheet { width: 794px; max-width: 100%; margin: 0 auto; background: #fff; box-shadow: 0 8px 24px rgba(51, 45, 42, 0.12); }
+.rpm-sheet .receipt-document { max-width: none; }
+.rpm-sheet .receipt-document .rd-card { box-shadow: none; padding: 40px; }
+@media (max-width: 640px) {
+  .rpm-portal { padding: 0; }
+  .rpm-box { border-radius: 0; }
+  .rpm-body { padding: 12px 8px 24px; }
+  .rpm-sheet .receipt-document .rd-card { padding: 22px 16px; }
+}
+
+@media print {
+  @page { size: A4; margin: 20mm; }
+  html.rpm-printing, html.rpm-printing body { height: auto !important; overflow: visible !important; background: #fff !important; }
+  html.rpm-printing body > *:not(.rpm-portal) { display: none !important; }
+  html.rpm-printing .rpm-portal { position: static; display: block; padding: 0; background: none; }
+  html.rpm-printing .rpm-box { display: block; max-width: none; height: auto; overflow: visible; border: none; border-radius: 0; background: none; box-shadow: none; }
+  html.rpm-printing .rpm-head { display: none; }
+  html.rpm-printing .rpm-body { overflow: visible; padding: 0; background: #fff; }
+  html.rpm-printing .rpm-sheet { width: auto; max-width: none; margin: 0; box-shadow: none; }
+  html.rpm-printing .rpm-sheet .receipt-document .rd-card { padding: 0; }
+  /* always the two-column desktop layout in the PDF, even when saved from a phone */
+  html.rpm-printing .rd3-pair { display: table !important; width: 100% !important; }
+  html.rpm-printing .rd3-pair > tbody { display: table-row-group !important; }
+  html.rpm-printing .rd3-pair > tbody > tr { display: table-row !important; }
+  html.rpm-printing .rd3-pair > tbody > tr > td { display: table-cell !important; width: 50% !important; }
+  html.rpm-printing .rd3-pair > tbody > tr > td:first-child { padding: 0 14px 0 0 !important; }
+  html.rpm-printing .rd3-pair > tbody > tr > td:last-child { padding: 0 0 0 14px !important; }
+  html.rpm-printing .rd3, html.rpm-printing .rd3 * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* smaller receipt: a narrower sheet, a smaller logo and slightly smaller type (screen and PDF) */
+.rpm-sheet { width: 794px; }
+.rpm-sheet .receipt-document { zoom: 1; }
+.rpm-sheet .receipt-document .rd3-logo { width: 140px; }
+.rpm-sheet .receipt-document .rd-card { padding: 40px; }
+@media print {
+  html.rpm-printing .rpm-sheet .receipt-document { zoom: 1; }
+}

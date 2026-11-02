@@ -511,3 +511,8 @@
 .client-payments-root .dx-cols { align-items: stretch; }
 .client-payments-root .dx-cols > .dx-col > .dx-card { flex: 1; }
 .client-payments-root .dx-trust .btn { margin-top: auto; }
+
+/* a receipt page is a sheet of A4 paper: square corners */
+.client-payments-root .receipt-page-img { border-radius: 0; }
+/* no border around a receipt page */
+.client-payments-root .receipt-page-img { border: none; }
