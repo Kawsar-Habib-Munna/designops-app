@@ -156,7 +156,7 @@ div.brand.brand-topbar {
 }
 
 /* One narrow, consistent sidebar width (184px) for every dashboard page (pages used to differ: 224 / 230 / 248px) */
-[class*="-root"]:not(.client-portal) .sidebar { width: 184px; }
+[class*="-root"]:not(.client-portal) .sidebar { width: 216px; }
 
 /* Tall dashboard modals (e.g. Edit Project) used to run past the bottom of the screen with the buttons out of reach.
    The overlay now scrolls, and the box keeps some room below it. Only adds properties the pages do not set. */
@@ -192,3 +192,114 @@ div.brand.brand-topbar {
     color: var(--ink, #323135);
   }
 }
+
+/* ==========================================================================
+   Team sidebar navigation: premium, clean list. Section labels, circular icon chips, a soft active pill with an
+   accent marker, and a quiet hover. One definition for every team page (each page's own sidebar rules are weaker).
+   ========================================================================== */
+[class*="-root"]:not(.client-portal) .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding-bottom: 16px; }
+[class*="-root"]:not(.client-portal) .sidebar .nav-group { gap: 3px; }
+[class*="-root"]:not(.client-portal) .sidebar .nav-label {
+  margin: 14px 10px 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint, #939197);
+}
+[class*="-root"]:not(.client-portal) .sidebar .nav-label:first-child { margin-top: 6px; }
+[class*="-root"]:not(.client-portal) .sidebar .nav-group .nav-item {
+  position: relative;
+  gap: 12px;
+  padding: 6px 10px 6px 8px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-soft, #6d6a72);
+  background: transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+[class*="-root"]:not(.client-portal) .sidebar .nav-group .nav-item .n-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  color: var(--ink-faint, #939197);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+[class*="-root"]:not(.client-portal) .sidebar .nav-group .nav-item .n-icon svg { stroke-width: 1.75; }
+[class*="-root"]:not(.client-portal) .sidebar .nav-group .nav-item:hover { background: var(--surface-muted, #f2f1f2); color: var(--ink, #323135); }
+[class*="-root"]:not(.client-portal) .sidebar .nav-group .nav-item:hover .n-icon { color: var(--ink, #323135); border-color: var(--border, #d5d4d7); background: var(--surface, #fff); }
+[class*="-root"]:not(.client-portal) .sidebar .nav-group .nav-item.active { background: var(--accent-soft, #efedfe); color: var(--accent, #5b4fe8); font-weight: 700; }
+[class*="-root"]:not(.client-portal) .sidebar .nav-group .nav-item.active .n-icon { background: var(--accent, #5b4fe8); border-color: var(--accent, #5b4fe8); color: #fff; }
+/* the small marker on the left edge of the active item */
+[class*="-root"]:not(.client-portal) .sidebar .nav-group .nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  width: 4px;
+  height: 22px;
+  transform: translateY(-50%);
+  border-radius: 0 4px 4px 0;
+  background: var(--accent, #5b4fe8);
+}
+[class*="-root"]:not(.client-portal) .sidebar .nav-group .nav-item .badge { margin-left: auto; min-width: 20px; padding: 1px 7px; text-align: center; font-size: 10.5px; font-weight: 700; border-radius: 999px; background: var(--danger, #e5484d); color: #fff; }
+[class*="-root"]:not(.client-portal) .sidebar .nav-divider { height: 0; margin: 12px 8px 0; border-top: 1px dashed var(--border, #d5d4d7); background: none; }
+/* keep the icon exactly centred in its circle, whatever a page's own .n-icon rule says */
+[class*="-root"]:not(.client-portal) .sidebar .nav-group .nav-item .n-icon {
+  display: flex;
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  margin: 0;
+  line-height: 0;
+}
+[class*="-root"]:not(.client-portal) .sidebar .nav-group .nav-item .n-icon svg { display: block; width: 17px; height: 17px; margin: 0; flex: none; }
+
+/* the sidebar scrolls on short screens, with a slim scrollbar that stays out of the way */
+[class*="-root"]:not(.client-portal) .sidebar {
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border, #d5d4d7) transparent;
+}
+[class*="-root"]:not(.client-portal) .sidebar::-webkit-scrollbar { width: 6px; }
+[class*="-root"]:not(.client-portal) .sidebar::-webkit-scrollbar-track { background: transparent; }
+[class*="-root"]:not(.client-portal) .sidebar::-webkit-scrollbar-thumb { background: var(--border, #d5d4d7); border-radius: 999px; }
+[class*="-root"]:not(.client-portal) .sidebar::-webkit-scrollbar-thumb:hover { background: var(--ink-faint, #939197); }
+
+/* the logo strip stays pinned to the top of the sidebar while the menu scrolls under it */
+div.brand.brand-topbar { position: sticky; top: 0; z-index: 5; }
+
+/* the logo strip is fixed; only the menu below it scrolls, starting right under the strip's bottom border */
+[class*="-root"]:not(.client-portal) .sidebar { overflow: hidden; }
+[class*="-root"]:not(.client-portal) .sidebar > div { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+div.brand.brand-topbar { position: relative; flex-shrink: 0; }
+/* the menu list takes the rest of the height and scrolls; the side padding keeps the active marker from being clipped */
+[class*="-root"]:not(.client-portal) .sidebar .nav-group {
+  flex: 1;
+  min-height: 0;
+  margin: 0 -14px;
+  padding: 0 14px 4px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border, #d5d4d7) transparent;
+}
+[class*="-root"]:not(.client-portal) .sidebar .nav-group::-webkit-scrollbar { width: 6px; }
+[class*="-root"]:not(.client-portal) .sidebar .nav-group::-webkit-scrollbar-track { background: transparent; }
+[class*="-root"]:not(.client-portal) .sidebar .nav-group::-webkit-scrollbar-thumb { background: var(--border, #d5d4d7); border-radius: 999px; }
+[class*="-root"]:not(.client-portal) .sidebar .nav-group::-webkit-scrollbar-thumb:hover { background: var(--ink-faint, #939197); }
+/* no gap under the logo strip: the scrolling area begins at its bottom border */
+div.brand.brand-topbar { margin-bottom: 0; }
+[class*="-root"]:not(.client-portal) .sidebar .nav-group { padding-top: 8px; }
+/* menu buttons: a smaller corner radius */
+[class*="-root"]:not(.client-portal) .sidebar .nav-group .nav-item { border-radius: 8px; }

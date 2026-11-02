@@ -29,6 +29,7 @@
 //   Approvals/Updates-এর পূর্ণ UI আগে থেকেই বিদ্যমান নিজস্ব রুটে আছে (Screens
 //   10/12/17/18/19/20/22, এই সেশনের আগের অংশে তৈরি) — এখানে শুধু লিংক করা হলো।
 
+import ClientAvatar from '@/app/components/ClientAvatar';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -381,7 +382,7 @@ export default function ClientProjectDashboard() {
             </button>
             <span className="topbar-title">My Project</span>
                       <button type="button" className="topbar-avatar" aria-label="Sign out" onClick={() => { if (window.confirm('Sign out of your account?')) (async () => { await supabase.auth.signOut(); router.push('/client'); })(); }}>
-              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+              <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
             </button>
 </header>
 
@@ -399,7 +400,7 @@ export default function ClientProjectDashboard() {
             </a>
           <button type="button" className="profile-card topbar-profile" onClick={async () => { await supabase.auth.signOut(); router.push('/client'); }} title="Sign out">
             <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+              <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
             </div>
             <div className="profile-meta">
               <div className="profile-name">{client.primary_contact ?? client.company_name}</div>

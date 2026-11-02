@@ -782,3 +782,504 @@
 .projectslist-root .value-row { display: grid; grid-template-columns: minmax(140px, 210px) minmax(0, 1fr); gap: 8px; margin-bottom: 14px; }
 .projectslist-root .value-row .field-input { margin-bottom: 0; }
 @media (max-width: 480px) { .projectslist-root .value-row { grid-template-columns: 1fr; } }
+
+/* ==========================================================================
+   Projects list (redesign): header with the New project button, stat cards, a filter toolbar, and project cards with a
+   progress ring. Classes are new (pj-*), so the older proj-card rules above only supply the menu.
+   ========================================================================== */
+.projectslist-root .pj-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.projectslist-root .pj-head .page-sub { margin-bottom: 0; }
+.projectslist-root .pj-head .btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; }
+
+.projectslist-root .pj-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }
+.projectslist-root .pj-stat { --tone: var(--accent); display: flex; align-items: center; gap: 14px; padding: 16px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); }
+.projectslist-root .pj-stat.tone-blue { --tone: #2189d9; }
+.projectslist-root .pj-stat.tone-amber { --tone: var(--warning); }
+.projectslist-root .pj-stat.tone-green { --tone: var(--positive); }
+.projectslist-root .pj-stat-icon { width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--tone); background: color-mix(in srgb, var(--tone) 10%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--tone) 22%, transparent); }
+.projectslist-root .pj-stat-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.projectslist-root .pj-stat-text b { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; color: var(--ink); }
+.projectslist-root .pj-stat-text span { font-size: 12.5px; color: var(--ink-soft); }
+
+.projectslist-root .pj-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.projectslist-root .pj-toolbar .toolbar-search { flex: 1; min-width: 220px; max-width: 360px; padding: 9px 13px; border-radius: 10px; }
+.projectslist-root .pj-tabs { display: inline-flex; gap: 2px; padding: 3px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; max-width: 100%; }
+.projectslist-root .pj-tabs button { padding: 6px 14px; border: none; border-radius: 7px; background: transparent; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); white-space: nowrap; cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
+.projectslist-root .pj-tabs button:hover { color: var(--ink); }
+.projectslist-root .pj-tabs button.active { background: var(--accent); color: #fff; }
+.projectslist-root .pj-toolbar .filter-select { margin-left: auto; padding: 9px 12px; border-radius: 10px; }
+
+.projectslist-root .proj-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 16px; }
+.projectslist-root .proj-card.pj-card { display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow-sm); transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease; }
+.projectslist-root .proj-card.pj-card:hover { border-color: var(--accent); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.projectslist-root .proj-card-menu-btn { border-radius: 50%; border: 1px solid var(--border); background: var(--surface); width: 30px; height: 30px; top: 16px; right: 16px; }
+.projectslist-root .pj-top { display: flex; align-items: center; gap: 14px; padding-right: 40px; }
+.projectslist-root .pj-icon { width: 46px; height: 46px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.projectslist-root .pj-title { min-width: 0; }
+.projectslist-root .pj-name { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projectslist-root .pj-client { margin-top: 2px; font-size: 12.5px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projectslist-root .pj-card .status-pill { align-self: flex-start; }
+.projectslist-root .pj-card .proj-card-desc { margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12.5px; line-height: 1.55; color: var(--ink-soft); }
+
+.projectslist-root .pj-mid { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; background: color-mix(in srgb, var(--accent) 4%, var(--surface)); border: 1px solid var(--border); border-radius: 12px; }
+.projectslist-root .pj-ring { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+.projectslist-root .pj-ring svg { display: block; width: 100%; height: 100%; }
+.projectslist-root .pj-ring-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; color: var(--ink); }
+.projectslist-root .pj-facts { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.projectslist-root .pj-fact { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.projectslist-root .pj-fact-label { font-size: 12px; font-weight: 600; color: var(--ink-faint); }
+.projectslist-root .pj-fact-value { font-size: 13.5px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.projectslist-root .pj-fact-value b { font-weight: 800; }
+.projectslist-root .pj-fact-value.is-late { color: var(--danger); }
+.projectslist-root .pj-fact-value.muted { color: var(--ink-faint); font-weight: 500; }
+
+.projectslist-root .pj-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 14px; margin-top: auto; border-top: 1px dashed var(--border); }
+.projectslist-root .pj-counts { display: flex; align-items: center; gap: 14px; }
+.projectslist-root .pj-counts span { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--ink-faint); }
+.projectslist-root .pj-counts b { font-weight: 700; color: var(--ink-soft); }
+
+@media (max-width: 900px) {
+  .projectslist-root .pj-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .projectslist-root .pj-head .btn { width: 100%; justify-content: center; min-height: 44px; }
+  .projectslist-root .pj-stat { padding: 14px; gap: 12px; }
+  .projectslist-root .pj-toolbar .toolbar-search { max-width: none; flex-basis: 100%; }
+  .projectslist-root .pj-toolbar .filter-select { margin-left: 0; flex: 1; }
+  .projectslist-root .proj-card.pj-card { padding: 16px; }
+}
+
+/* ---- projects list: more visual pass ---- */
+.projectslist-root .pj-stat-ring { position: relative; width: 48px; height: 48px; flex-shrink: 0; }
+.projectslist-root .pj-stat-ring svg { display: block; width: 100%; height: 100%; }
+.projectslist-root .pj-stat-glyph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--tone); }
+
+.projectslist-root .pj-health { margin-bottom: 20px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); }
+.projectslist-root .pj-health-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.projectslist-root .pj-health-title { font-size: 13.5px; font-weight: 800; color: var(--ink); }
+.projectslist-root .pj-health-legend { list-style: none; margin: 0; padding: 0; display: flex; gap: 16px; flex-wrap: wrap; }
+.projectslist-root .pj-health-legend li { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-soft); }
+.projectslist-root .pj-health-legend b { font-weight: 800; color: var(--ink); }
+.projectslist-root .pj-health-legend i { width: 9px; height: 9px; border-radius: 50%; }
+.projectslist-root .pj-health-bar { display: flex; gap: 3px; height: 12px; border-radius: 999px; overflow: hidden; background: var(--border-soft); }
+.projectslist-root .pj-health-bar span { min-width: 6px; border-radius: 3px; }
+.projectslist-root .st-active { background: var(--accent); }
+.projectslist-root .st-review { background: var(--warning); }
+.projectslist-root .st-on_hold { background: var(--ink-faint); }
+.projectslist-root .st-completed { background: var(--positive); }
+
+/* cards: a coloured banner on top, the icon overlapping its edge */
+.projectslist-root .proj-card.pj-card { padding: 0; gap: 0; overflow: visible; }
+.projectslist-root .pj-banner { position: relative; height: 68px; display: flex; align-items: flex-start; padding: 14px 16px; border-radius: 15px 15px 0 0; overflow: hidden; }
+.projectslist-root .pj-banner::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, color-mix(in srgb, var(--band, var(--accent)) 28%, var(--surface)) 0%, color-mix(in srgb, var(--band, var(--accent)) 8%, var(--surface)) 100%); }
+.projectslist-root .pj-banner::after { content: ''; position: absolute; inset: 0; background-image: radial-gradient(color-mix(in srgb, var(--band, var(--accent)) 35%, transparent) 1px, transparent 1.3px); background-size: 14px 14px; -webkit-mask-image: linear-gradient(to left, #000, transparent 75%); mask-image: linear-gradient(to left, #000, transparent 75%); opacity: 0.6; }
+.projectslist-root .pj-banner > * { position: relative; z-index: 1; }
+.projectslist-root .pj-banner.st-active { --band: var(--accent); background: none; }
+.projectslist-root .pj-banner.st-review { --band: var(--warning); background: none; }
+.projectslist-root .pj-banner.st-on_hold { --band: var(--ink-faint); background: none; }
+.projectslist-root .pj-banner.st-completed { --band: var(--positive); background: none; }
+.projectslist-root .pj-body { display: flex; flex-direction: column; gap: 14px; flex: 1; padding: 0 20px 18px; }
+.projectslist-root .pj-top { margin-top: -24px; padding-right: 0; align-items: flex-end; }
+.projectslist-root .pj-icon { width: 52px; height: 52px; background: var(--surface); border: 2px solid var(--surface); box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--accent) 25%, transparent), var(--shadow-sm); font-size: 20px; }
+.projectslist-root .pj-title { padding-bottom: 2px; }
+.projectslist-root .proj-card-menu-btn { top: 12px; right: 12px; width: 30px; height: 30px; background: color-mix(in srgb, var(--surface) 85%, transparent); }
+
+.projectslist-root .pj-mid { background: none; border: none; padding: 2px 0; justify-content: flex-start; gap: 18px; }
+.projectslist-root .pj-ring { width: 76px; height: 76px; }
+.projectslist-root .pj-ring-pct { font-size: 14px; }
+.projectslist-root .pj-fact-label { display: inline-flex; align-items: center; gap: 5px; }
+.projectslist-root .pj-due-chip { align-self: flex-start; padding: 4px 11px; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 8px; }
+.projectslist-root .pj-due-chip.is-late { color: var(--danger); background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 22%, transparent); }
+.projectslist-root .pj-foot { margin-top: auto; }
+
+@media (max-width: 600px) {
+  .projectslist-root .proj-card.pj-card { padding: 0; }
+  .projectslist-root .pj-body { padding: 0 16px 16px; }
+  .projectslist-root .pj-health { padding: 14px 16px; }
+}
+
+/* ---- projects list: fixes ---- */
+/* the planning status, and a neutral tone for the total card */
+.projectslist-root .st-planning { background: #2189d9; }
+.projectslist-root .pj-banner.st-planning { --band: #2189d9; background: none; }
+.projectslist-root .pj-stat.tone-ink { --tone: var(--ink-soft); }
+.projectslist-root .pj-stats { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .projectslist-root .pj-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .projectslist-root .pj-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* the card body sits above the banner, so the icon and name are never covered by it */
+.projectslist-root .pj-banner { z-index: 0; }
+.projectslist-root .pj-body { position: relative; z-index: 1; }
+.projectslist-root .pj-top { margin-top: -26px; }
+.projectslist-root .pj-name { color: var(--ink); }
+.projectslist-root .pj-title { align-self: flex-end; padding-bottom: 0; }
+/* the status pill keeps a solid white background so it reads on the tinted banner */
+.projectslist-root .pj-banner .status-pill { background: var(--surface); }
+
+/* ---- projects list: second round of fixes ---- */
+/* only the ring itself fills the box; the small icon in its centre keeps its own size */
+.projectslist-root .pj-stat-ring > svg { width: 100%; height: 100%; }
+.projectslist-root .pj-stat-glyph svg { width: 16px; height: 16px; }
+/* tabs: no heavy focus box after a click, a soft ring for keyboard users only */
+.projectslist-root .pj-tabs button { outline: none; }
+.projectslist-root .pj-tabs button:focus-visible { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent); }
+/* the name sits just under the banner; the icon overlaps the banner's edge */
+.projectslist-root .pj-top { align-items: flex-start; }
+.projectslist-root .pj-title { align-self: flex-start; margin-top: 30px; padding-bottom: 0; }
+
+/* ---- the five status cards (redesign): icon + arrow, number + share ring, a quiet footer; click to filter ---- */
+.projectslist-root .pj-stat { appearance: none; font: inherit; text-align: left; cursor: pointer; display: flex; flex-direction: column; align-items: stretch; gap: 14px; padding: 16px 18px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease; }
+.projectslist-root .pj-stat:hover { border-color: var(--tone); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.projectslist-root .pj-stat.is-selected { border-color: var(--tone); box-shadow: 0 0 0 1px var(--tone), var(--shadow-sm); }
+.projectslist-root .pj-stat:focus-visible { outline: 2px solid color-mix(in srgb, var(--tone) 50%, transparent); outline-offset: 2px; }
+.projectslist-root .pj-stat-top { display: flex; align-items: center; justify-content: space-between; }
+.projectslist-root .pj-stat-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--tone); background: color-mix(in srgb, var(--tone) 10%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--tone) 22%, transparent); }
+.projectslist-root .pj-stat-icon svg { width: 17px; height: 17px; }
+.projectslist-root .pj-stat-go { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--ink-faint); background: var(--surface-muted); border: 1px solid var(--border); transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.projectslist-root .pj-stat-go svg { width: 13px; height: 13px; }
+.projectslist-root .pj-stat:hover .pj-stat-go, .projectslist-root .pj-stat.is-selected .pj-stat-go { background: var(--tone); border-color: var(--tone); color: #fff; }
+.projectslist-root .pj-stat-main { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.projectslist-root .pj-stat-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.projectslist-root .pj-stat-text b { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; color: var(--ink); }
+.projectslist-root .pj-stat-text > span { font-size: 13px; font-weight: 500; color: var(--ink-soft); }
+.projectslist-root .pj-stat-ring { width: 44px; height: 44px; flex-shrink: 0; }
+.projectslist-root .pj-stat-ring svg { display: block; width: 100%; height: 100%; }
+.projectslist-root .pj-stat-foot { display: flex; align-items: center; gap: 8px; padding-top: 12px; font-size: 12px; font-weight: 600; color: var(--ink-faint); border-top: 1px dashed var(--border); }
+.projectslist-root .pj-stat-foot i { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: var(--tone); }
+
+/* the share ring: thin, with a soft gradient arc and the percentage in the middle */
+.projectslist-root .pj-stat-ring { position: relative; width: 50px; height: 50px; }
+.projectslist-root .pj-stat-ring-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+
+/* ---- status split (donut) and deadlines (bars) ---- */
+.projectslist-root .pj-graphs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; margin-bottom: 20px; }
+.projectslist-root .pj-g-card { min-width: 0; padding: 18px 20px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); }
+.projectslist-root .pj-g-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px dashed var(--border); }
+.projectslist-root .pj-g-title { font-size: 14px; font-weight: 800; color: var(--ink); }
+.projectslist-root .pj-g-sub { font-size: 12px; color: var(--ink-faint); }
+
+.projectslist-root .pj-g-donut-row { display: flex; align-items: center; gap: 24px; }
+.projectslist-root .pj-g-donut { position: relative; width: 132px; height: 132px; flex-shrink: 0; }
+.projectslist-root .pj-g-donut svg { display: block; width: 100%; height: 100%; }
+.projectslist-root .pj-g-donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; pointer-events: none; }
+.projectslist-root .pj-g-donut-center b { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+.projectslist-root .pj-g-donut-center span { margin-top: 2px; font-size: 11.5px; color: var(--ink-faint); }
+.projectslist-root .pj-g-legend { flex: 1; min-width: 0; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.projectslist-root .pj-g-legend li { display: grid; grid-template-columns: 10px 1fr auto 40px; align-items: center; column-gap: 10px; padding: 6px 4px; font-size: 13px; }
+.projectslist-root .pj-g-legend li.is-zero { opacity: 0.55; }
+.projectslist-root .pj-g-legend i { width: 10px; height: 10px; border-radius: 50%; }
+.projectslist-root .pj-g-legend-label { color: var(--ink-soft); }
+.projectslist-root .pj-g-legend b { font-weight: 800; color: var(--ink); }
+.projectslist-root .pj-g-legend-pct { text-align: right; font-size: 12px; color: var(--ink-faint); }
+
+.projectslist-root .pj-g-bars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; align-items: end; height: 150px; padding: 0 2px; border-bottom: 1px solid var(--border); }
+.projectslist-root .pj-g-col { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; position: relative; }
+.projectslist-root .pj-g-val { font-size: 12px; font-weight: 800; color: var(--ink); }
+.projectslist-root .pj-g-col.zero .pj-g-val { color: var(--ink-faint); font-weight: 600; }
+.projectslist-root .pj-g-bar { width: 100%; max-width: 34px; border-radius: 8px 8px 3px 3px; background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #ffffff)); }
+.projectslist-root .pj-g-col.late .pj-g-bar { background: linear-gradient(180deg, var(--danger), color-mix(in srgb, var(--danger) 55%, #ffffff)); }
+.projectslist-root .pj-g-col.zero .pj-g-bar { background: var(--border-soft); border: 1px solid var(--border); }
+.projectslist-root .pj-g-x { position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--ink-faint); white-space: nowrap; }
+.projectslist-root .pj-g-col.late .pj-g-x { color: var(--danger); font-weight: 700; }
+.projectslist-root .pj-g-bars { margin-bottom: 30px; }
+.projectslist-root .pj-g-note { margin-top: 4px; font-size: 12px; color: var(--ink-faint); }
+
+@media (max-width: 1000px) {
+  .projectslist-root .pj-graphs { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .projectslist-root .pj-g-donut-row { flex-direction: column; align-items: stretch; }
+  .projectslist-root .pj-g-donut { align-self: center; }
+  .projectslist-root .pj-g-bars { gap: 6px; }
+  .projectslist-root .pj-g-x { font-size: 10px; }
+}
+
+/* ---- status donut v2: rounded segments, percentage labels around the ring, legend row underneath ---- */
+.projectslist-root .pj-g-donut { position: relative; width: 100%; max-width: 230px; height: auto; aspect-ratio: 1; margin: 0 auto; flex-shrink: 1; }
+.projectslist-root .pj-g-donut svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.projectslist-root .pj-g-pct-label { font-size: 11px; font-weight: 700; fill: var(--ink-soft); }
+.projectslist-root .pj-g-donut-center span { margin: 0 0 4px; font-size: 12px; color: var(--ink-faint); }
+.projectslist-root .pj-g-donut-center b { font-size: 24px; }
+.projectslist-root .pj-g-legend { flex: none; margin-top: 16px; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 8px 18px; }
+.projectslist-root .pj-g-legend li { display: inline-flex; align-items: center; gap: 7px; padding: 0; }
+.projectslist-root .pj-g-legend i { width: 10px; height: 10px; border-radius: 3px; }
+
+/* hovering (or focusing) a deadline bar lists the projects in it */
+.projectslist-root .pj-g-col { outline: none; cursor: default; }
+.projectslist-root .pj-g-col:not(.zero) { cursor: pointer; }
+.projectslist-root .pj-g-col:not(.zero):hover .pj-g-bar, .projectslist-root .pj-g-col:not(.zero):focus-visible .pj-g-bar { filter: brightness(1.08); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+.projectslist-root .pj-g-col.late:not(.zero):hover .pj-g-bar { box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent); }
+.projectslist-root .pj-g-tip { display: none; position: absolute; z-index: 20; bottom: calc(100% - 6px); left: 50%; transform: translateX(-50%); min-width: 190px; max-width: 260px; padding: 10px 12px; text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-md); pointer-events: none; }
+.projectslist-root .pj-g-col.first .pj-g-tip { left: 0; transform: none; }
+.projectslist-root .pj-g-col.last .pj-g-tip { left: auto; right: 0; transform: none; }
+.projectslist-root .pj-g-col:hover .pj-g-tip, .projectslist-root .pj-g-col:focus-visible .pj-g-tip { display: block; }
+.projectslist-root .pj-g-tip-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed var(--border); font-size: 11.5px; font-weight: 700; color: var(--ink-faint); }
+.projectslist-root .pj-g-tip-head b { font-size: 13px; font-weight: 800; color: var(--ink); }
+.projectslist-root .pj-g-tip ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.projectslist-root .pj-g-tip li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-size: 12.5px; }
+.projectslist-root .pj-g-tip-name { min-width: 0; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projectslist-root .pj-g-tip-due { flex-shrink: 0; font-size: 11.5px; color: var(--ink-faint); }
+.projectslist-root .pj-g-tip-more { margin-top: 6px; font-size: 11.5px; color: var(--ink-faint); }
+
+/* ---- deadlines chart v2: the plot fills the card's height; the popup sits right above the hovered bar ---- */
+.projectslist-root .pj-g-card { display: flex; flex-direction: column; }
+.projectslist-root .pj-g-bars { flex: 1; height: auto; min-height: 210px; margin-bottom: 28px; align-items: stretch; }
+.projectslist-root .pj-g-col { justify-content: flex-start; gap: 0; }
+.projectslist-root .pj-g-track { position: relative; flex: 1; width: 100%; display: block; }
+/* the bar is a share of the plot's height, leaving 24px at the top for its number */
+.projectslist-root .pj-g-fill { position: absolute; left: 50%; bottom: 0; width: 100%; max-width: 34px; transform: translateX(-50%); height: max(4px, calc((100% - 24px) * var(--r, 0))); border-radius: 8px 8px 3px 3px; background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #ffffff)); transition: box-shadow 0.15s ease, filter 0.15s ease; }
+.projectslist-root .pj-g-col.late .pj-g-fill { background: linear-gradient(180deg, var(--danger), color-mix(in srgb, var(--danger) 55%, #ffffff)); }
+.projectslist-root .pj-g-col.zero .pj-g-fill { background: var(--border-soft); border: 1px solid var(--border); }
+.projectslist-root .pj-g-col:not(.zero):hover .pj-g-fill, .projectslist-root .pj-g-col:not(.zero):focus-visible .pj-g-fill { filter: brightness(1.08); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+.projectslist-root .pj-g-col.late:not(.zero):hover .pj-g-fill { box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent); }
+.projectslist-root .pj-g-val { position: absolute; left: 50%; bottom: calc(100% + 4px); transform: translateX(-50%); }
+/* the popup opens just above the bar's number, centred on the bar (or pinned to the card's edge for the first and last) */
+.projectslist-root .pj-g-tip { bottom: calc(100% + 28px); left: 50%; transform: translateX(-50%); }
+.projectslist-root .pj-g-col.first .pj-g-tip { left: -10px; transform: none; }
+.projectslist-root .pj-g-col.last .pj-g-tip { left: auto; right: -10px; transform: none; }
+
+/* ---- deadlines calendar ---- */
+.projectslist-root .pj-cal { display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.projectslist-root .pj-cal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.projectslist-root .pj-cal-nav { display: flex; align-items: center; gap: 10px; }
+.projectslist-root .pj-cal-month { min-width: 124px; text-align: center; font-size: 14px; font-weight: 800; color: var(--ink); }
+.projectslist-root .pj-cal-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft); cursor: pointer; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.projectslist-root .pj-cal-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.projectslist-root .pj-cal-meta { display: flex; align-items: center; gap: 10px; }
+.projectslist-root .pj-cal-count { font-size: 12.5px; color: var(--ink-soft); }
+.projectslist-root .pj-cal-count b { font-weight: 800; color: var(--ink); }
+.projectslist-root .pj-cal-today { padding: 4px 11px; font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 8px; cursor: pointer; }
+
+.projectslist-root .pj-cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.projectslist-root .pj-cal-wd { padding: 2px 0 4px; text-align: center; font-size: 11px; font-weight: 700; color: var(--ink-faint); }
+.projectslist-root .pj-cal-day { position: relative; min-height: 44px; padding: 6px 4px 5px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-radius: 10px; border: 1px solid transparent; outline: none; }
+.projectslist-root .pj-cal-day.out { opacity: 0.35; }
+.projectslist-root .pj-cal-num { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+.projectslist-root .pj-cal-day.today { border-color: var(--accent); }
+.projectslist-root .pj-cal-day.today .pj-cal-num { color: var(--accent); font-weight: 800; }
+.projectslist-root .pj-cal-day.has { background: color-mix(in srgb, var(--accent) 6%, var(--surface)); border-color: var(--border); cursor: default; }
+.projectslist-root .pj-cal-day.has .pj-cal-num { color: var(--ink); font-weight: 800; }
+.projectslist-root .pj-cal-day.has.link { cursor: pointer; }
+.projectslist-root .pj-cal-day.has:hover, .projectslist-root .pj-cal-day.has:focus-visible { border-color: var(--accent); background: var(--accent-soft); }
+.projectslist-root .pj-cal-dots { display: flex; align-items: center; justify-content: center; gap: 3px; min-height: 8px; }
+.projectslist-root .pj-cal-dots em { font-style: normal; font-size: 9.5px; font-weight: 700; color: var(--ink-faint); }
+.projectslist-root .pj-cal i.tone-open { background: var(--accent); }
+.projectslist-root .pj-cal i.tone-late { background: var(--danger); }
+.projectslist-root .pj-cal i.tone-done { background: var(--positive); }
+.projectslist-root .pj-cal-dots i { width: 7px; height: 7px; border-radius: 50%; }
+
+/* the day popup opens above the cell (below for the top rows, so it is never cut off) */
+.projectslist-root .pj-cal-tip { display: none; position: absolute; z-index: 30; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); min-width: 180px; max-width: 250px; padding: 10px 12px; text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-md); pointer-events: none; }
+.projectslist-root .pj-cal-day.row-top .pj-cal-tip { bottom: auto; top: calc(100% + 6px); }
+.projectslist-root .pj-cal-day.edge-l .pj-cal-tip { left: 0; transform: none; }
+.projectslist-root .pj-cal-day.edge-r .pj-cal-tip { left: auto; right: 0; transform: none; }
+.projectslist-root .pj-cal-day:hover .pj-cal-tip, .projectslist-root .pj-cal-day:focus-visible .pj-cal-tip { display: block; }
+.projectslist-root .pj-cal-tip-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed var(--border); font-size: 11.5px; font-weight: 700; color: var(--ink-faint); }
+.projectslist-root .pj-cal-tip-head b { font-size: 13px; font-weight: 800; color: var(--ink); }
+.projectslist-root .pj-cal-tip ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.projectslist-root .pj-cal-tip li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.projectslist-root .pj-cal-tip li i { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; }
+.projectslist-root .pj-cal-tip li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projectslist-root .pj-cal-tip-more { margin-top: 6px; font-size: 11.5px; color: var(--ink-faint); }
+
+.projectslist-root .pj-cal-legend { list-style: none; margin: auto 0 0; padding: 12px 0 0; border-top: 1px dashed var(--border); display: flex; gap: 16px; flex-wrap: wrap; }
+.projectslist-root .pj-cal-legend li { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-soft); }
+.projectslist-root .pj-cal-legend i { width: 8px; height: 8px; border-radius: 50%; }
+
+@media (max-width: 560px) {
+  .projectslist-root .pj-cal-day { min-height: 38px; }
+  .projectslist-root .pj-cal-month { min-width: 108px; font-size: 13px; }
+}
+
+/* ---- deadlines calendar v2: calmer, flatter, and easier to read ---- */
+.projectslist-root .pj-cal { gap: 16px; }
+.projectslist-root .pj-cal-head { align-items: flex-start; }
+.projectslist-root .pj-cal-title { display: flex; flex-direction: column; gap: 3px; }
+.projectslist-root .pj-cal-month { min-width: 0; text-align: left; font-size: 18px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+.projectslist-root .pj-cal-count { font-size: 12.5px; color: var(--ink-faint); }
+.projectslist-root .pj-cal-nav { gap: 6px; }
+.projectslist-root .pj-cal-btn { width: 32px; height: 32px; }
+.projectslist-root .pj-cal-today { padding: 6px 12px; margin-right: 4px; }
+
+.projectslist-root .pj-cal-grid { gap: 6px 4px; }
+.projectslist-root .pj-cal-wd { padding: 0 0 6px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+/* flat cells: just the number, no boxes, until a day has something on it */
+.projectslist-root .pj-cal-day { min-height: 50px; padding: 7px 2px 6px; justify-content: flex-start; gap: 6px; border: 1px solid transparent; border-radius: 12px; transition: background 0.15s ease, border-color 0.15s ease; }
+.projectslist-root .pj-cal-day.out { opacity: 0.28; }
+.projectslist-root .pj-cal-num { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+/* today: a solid indigo number */
+.projectslist-root .pj-cal-day.today { border-color: transparent; }
+.projectslist-root .pj-cal-day.today .pj-cal-num { background: var(--accent); color: #fff; font-weight: 800; }
+/* days with deadlines take the colour of their most urgent project */
+.projectslist-root .pj-cal-day.has { --d: var(--accent); background: color-mix(in srgb, var(--d) 8%, var(--surface)); border-color: color-mix(in srgb, var(--d) 18%, transparent); }
+.projectslist-root .pj-cal-day.has.d-late { --d: var(--danger); }
+.projectslist-root .pj-cal-day.has.d-done { --d: var(--positive); }
+.projectslist-root .pj-cal-day.has .pj-cal-num { color: var(--d); font-weight: 800; }
+.projectslist-root .pj-cal-day.has.today .pj-cal-num { color: #fff; background: var(--accent); }
+.projectslist-root .pj-cal-day.has:hover, .projectslist-root .pj-cal-day.has:focus-visible { background: color-mix(in srgb, var(--d) 14%, var(--surface)); border-color: color-mix(in srgb, var(--d) 45%, transparent); }
+.projectslist-root .pj-cal-dots { min-height: 7px; gap: 4px; }
+.projectslist-root .pj-cal-dots i { width: 6px; height: 6px; }
+
+.projectslist-root .pj-cal-legend { padding-top: 14px; gap: 18px; }
+.projectslist-root .pj-cal-legend li { font-size: 12px; font-weight: 600; }
+@media (max-width: 560px) {
+  .projectslist-root .pj-cal-wd { font-size: 9.5px; letter-spacing: 0.02em; }
+  .projectslist-root .pj-cal-day { min-height: 44px; padding: 5px 0; }
+  .projectslist-root .pj-cal-month { font-size: 16px; }
+}
+/* the deadline count sits on the same line as the month name, as a small pill */
+.projectslist-root .pj-cal-title { flex-direction: row; align-items: center; gap: 10px; flex-wrap: wrap; }
+.projectslist-root .pj-cal-count { padding: 3px 10px; font-size: 12px; font-weight: 600; color: var(--ink-soft); background: var(--surface-muted); border: 1px solid var(--border); border-radius: 8px; white-space: nowrap; }
+.projectslist-root .pj-cal-head { align-items: center; }
+
+/* ---- deadlines calendar v3: deadline days stand out with a coloured number badge and the project's name ---- */
+.projectslist-root .pj-cal-day.has { min-height: 62px; padding: 8px 4px 7px; gap: 7px; border-radius: 14px; background: linear-gradient(180deg, color-mix(in srgb, var(--d) 16%, var(--surface)) 0%, color-mix(in srgb, var(--d) 4%, var(--surface)) 100%); border: 1px solid color-mix(in srgb, var(--d) 28%, transparent); box-shadow: 0 1px 2px color-mix(in srgb, var(--d) 14%, transparent); }
+.projectslist-root .pj-cal-day.has .pj-cal-num { width: 26px; height: 26px; font-size: 12.5px; font-weight: 800; color: #fff; background: var(--d); box-shadow: 0 0 0 3px color-mix(in srgb, var(--d) 18%, transparent); }
+.projectslist-root .pj-cal-day.has.today .pj-cal-num { background: var(--d); box-shadow: 0 0 0 3px color-mix(in srgb, var(--d) 18%, transparent), 0 0 0 5px var(--surface), 0 0 0 6.5px var(--accent); }
+.projectslist-root .pj-cal-day.has:hover, .projectslist-root .pj-cal-day.has:focus-visible { transform: translateY(-1px); box-shadow: var(--shadow-md); background: linear-gradient(180deg, color-mix(in srgb, var(--d) 22%, var(--surface)) 0%, color-mix(in srgb, var(--d) 8%, var(--surface)) 100%); border-color: var(--d); }
+/* the project's name (and +n for more) replaces the dots on roomy screens */
+.projectslist-root .pj-cal-name { display: flex; align-items: center; justify-content: center; gap: 4px; max-width: 100%; padding: 0 3px; font-size: 10.5px; font-weight: 700; line-height: 1.2; color: var(--d); }
+.projectslist-root .pj-cal-name em { flex-shrink: 0; padding: 0 5px; font-style: normal; font-size: 9.5px; color: #fff; background: var(--d); border-radius: 999px; }
+.projectslist-root .pj-cal-name { overflow: hidden; }
+.projectslist-root .pj-cal-day.has .pj-cal-dots { display: none; }
+@media (max-width: 700px) {
+  .projectslist-root .pj-cal-day.has { min-height: 48px; }
+  .projectslist-root .pj-cal-name { display: none; }
+  .projectslist-root .pj-cal-day.has .pj-cal-dots { display: flex; }
+}
+.projectslist-root .pj-cal-name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* ---- calendar popup position fix ---- */
+/* a hovered day rises above its neighbours (the lift on hover made each day its own layer, so later days painted over the popup) */
+.projectslist-root .pj-cal-day:hover, .projectslist-root .pj-cal-day:focus-visible, .projectslist-root .pj-cal-day:focus-within { z-index: 50; }
+/* the popup is centred on its day, a little off the cell; the first two rows open downwards, the rest upwards */
+.projectslist-root .pj-cal-tip { bottom: calc(100% + 8px); top: auto; width: max-content; min-width: 180px; max-width: min(260px, 70vw); }
+.projectslist-root .pj-cal-day.row-top .pj-cal-tip { bottom: auto; top: calc(100% + 8px); }
+/* the first and last columns line the popup up with the cell's own edge, so it never leaves the card */
+.projectslist-root .pj-cal-day.edge-l .pj-cal-tip { left: 0; right: auto; transform: none; }
+.projectslist-root .pj-cal-day.edge-r .pj-cal-tip { left: auto; right: 0; transform: none; }
+
+/* ---- status split v3: the card fills its height (the donut is larger and centred, the legend is a list of rows) ---- */
+.projectslist-root .pj-g-donut { max-width: 270px; margin: auto; }
+.projectslist-root .pj-g-legend { margin-top: 18px; flex-direction: column; flex-wrap: nowrap; justify-content: flex-start; align-items: stretch; gap: 8px; }
+.projectslist-root .pj-g-legend li { display: grid; grid-template-columns: 12px 1fr auto 44px; align-items: center; column-gap: 10px; padding: 9px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; font-size: 13px; }
+.projectslist-root .pj-g-legend li.is-zero { opacity: 0.6; }
+.projectslist-root .pj-g-legend i { width: 12px; height: 12px; border-radius: 4px; }
+.projectslist-root .pj-g-legend-pct { text-align: right; font-size: 12px; font-weight: 600; color: var(--ink-faint); }
+
+/* legend: no boxes, a dotted connector line runs from each name to its numbers */
+.projectslist-root .pj-g-legend { gap: 2px; }
+.projectslist-root .pj-g-legend li { grid-template-columns: 12px auto 1fr auto 44px; padding: 9px 2px; background: none; border: none; border-radius: 0; }
+.projectslist-root .pj-g-leader { align-self: end; height: 0; margin: 0 4px 6px; border-bottom: 2px dotted var(--border); }
+.projectslist-root .pj-g-legend li.is-zero .pj-g-leader { border-bottom-color: var(--border-soft); }
+
+/* ---- toolbar v2: search, status tabs with counts, and a sort control with room either side of its arrow ---- */
+.projectslist-root .pj-toolbar { gap: 12px; align-items: center; }
+.projectslist-root .pj-toolbar .toolbar-search { gap: 10px; padding: 0 14px; height: 44px; border-radius: 12px; cursor: text; }
+.projectslist-root .pj-toolbar .toolbar-search svg { color: var(--ink-faint); flex-shrink: 0; }
+.projectslist-root .pj-toolbar .toolbar-search input { font-size: 13.5px; }
+.projectslist-root .pj-search-clear { width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border: none; border-radius: 50%; background: var(--surface-muted); color: var(--ink-soft); cursor: pointer; }
+.projectslist-root .pj-search-clear:hover { background: var(--border); color: var(--ink); }
+
+.projectslist-root .pj-tabs { height: 44px; align-items: center; padding: 4px; border-radius: 12px; }
+.projectslist-root .pj-tabs button { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 9px; }
+.projectslist-root .pj-tabs button em { min-width: 20px; padding: 1px 6px; text-align: center; font-style: normal; font-size: 11px; font-weight: 700; color: var(--ink-faint); background: var(--surface-muted); border-radius: 999px; }
+.projectslist-root .pj-tabs button.active em { color: var(--accent); background: #fff; }
+
+.projectslist-root .pj-sort { position: relative; display: inline-flex; align-items: center; gap: 10px; height: 44px; margin-left: auto; padding: 0 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; color: var(--ink-faint); cursor: pointer; transition: border-color 0.15s ease; }
+.projectslist-root .pj-sort:hover, .projectslist-root .pj-sort:focus-within { border-color: var(--accent); }
+.projectslist-root .pj-sort select { appearance: none; -webkit-appearance: none; border: none; outline: none; background: transparent; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--ink); padding: 0 26px 0 0; cursor: pointer; }
+.projectslist-root .pj-sort-chevron { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ink-soft); }
+@media (max-width: 600px) {
+  .projectslist-root .pj-sort { margin-left: 0; flex: 1; }
+  .projectslist-root .pj-sort select { flex: 1; }
+}
+/* status split: the donut and its legend sit close together (no big gap between them) */
+.projectslist-root .pj-g-donut { max-width: 290px; margin: 0 auto; }
+.projectslist-root .pj-g-legend { margin-top: 6px; }
+/* more room between the month header and the weekday row */
+.projectslist-root .pj-cal { gap: 38px; }
+.projectslist-root .pj-cal-wd { padding-bottom: 14px; }
+
+/* ---- deadlines calendar: softer colours on the deadline days ---- */
+.projectslist-root .pj-cal-day.has { background: linear-gradient(180deg, color-mix(in srgb, var(--d) 8%, var(--surface)) 0%, color-mix(in srgb, var(--d) 2%, var(--surface)) 100%); border-color: color-mix(in srgb, var(--d) 14%, transparent); box-shadow: none; }
+.projectslist-root .pj-cal-day.has .pj-cal-num { color: var(--d); background: color-mix(in srgb, var(--d) 14%, var(--surface)); box-shadow: none; }
+.projectslist-root .pj-cal-day.has.today .pj-cal-num { color: var(--d); background: color-mix(in srgb, var(--d) 14%, var(--surface)); box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent); }
+.projectslist-root .pj-cal-day.has:hover, .projectslist-root .pj-cal-day.has:focus-visible { background: linear-gradient(180deg, color-mix(in srgb, var(--d) 13%, var(--surface)) 0%, color-mix(in srgb, var(--d) 4%, var(--surface)) 100%); border-color: color-mix(in srgb, var(--d) 30%, transparent); box-shadow: var(--shadow-sm); }
+.projectslist-root .pj-cal-name { color: color-mix(in srgb, var(--d) 75%, var(--ink)); font-weight: 600; }
+.projectslist-root .pj-cal-name em { color: var(--d); background: color-mix(in srgb, var(--d) 14%, var(--surface)); }
+
+/* ==========================================================================
+   Project cards v3: status pill, identity, description, three aligned metrics (progress ring, tasks, deadline), footer.
+   A thin status-coloured line runs along the top edge. All cards line up row by row.
+   ========================================================================== */
+.projectslist-root .proj-card.pj-card { --band: var(--accent); position: relative; display: flex; flex-direction: column; gap: 16px; padding: 20px; overflow: visible; border-radius: 16px; }
+.projectslist-root .pj-card.band-planning { --band: #2189d9; }
+.projectslist-root .pj-card.band-active { --band: var(--accent); }
+.projectslist-root .pj-card.band-review { --band: var(--warning); }
+.projectslist-root .pj-card.band-on_hold { --band: var(--ink-faint); }
+.projectslist-root .pj-card.band-completed { --band: var(--positive); }
+.projectslist-root .pj-card::before { content: ''; position: absolute; top: -1px; left: 24px; right: 24px; height: 3px; border-radius: 0 0 4px 4px; background: var(--band); }
+.projectslist-root .proj-card-menu-btn { top: 14px; right: 14px; }
+
+.projectslist-root .pj2-top { display: flex; align-items: center; min-height: 30px; padding-right: 40px; }
+.projectslist-root .pj2-id { display: flex; align-items: center; gap: 14px; }
+.projectslist-root .pj2-icon { width: 48px; height: 48px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 800; color: var(--band); background: color-mix(in srgb, var(--band) 10%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--band) 24%, transparent); border-radius: 50%; }
+.projectslist-root .pj2-title { min-width: 0; }
+.projectslist-root .pj2-name { font-size: 16.5px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.25; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projectslist-root .pj2-client { margin-top: 3px; font-size: 12.5px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projectslist-root .pj-card .proj-card-desc { margin: 0; min-height: 40px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; line-height: 1.55; color: var(--ink-soft); }
+.projectslist-root .pj2-nodesc { margin: 0; min-height: 40px; font-size: 13px; line-height: 1.55; color: var(--ink-faint); font-style: italic; }
+
+/* three equal metrics with hairline dividers; every card has the same row, so cards line up */
+.projectslist-root .pj2-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: auto; padding: 14px 0; border-top: 1px dashed var(--border); border-bottom: 1px dashed var(--border); }
+.projectslist-root .pj2-metric { min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 0 8px; text-align: center; }
+.projectslist-root .pj2-metric + .pj2-metric { border-left: 1px solid var(--border-soft); }
+.projectslist-root .pj2-ring { position: relative; width: 52px; height: 52px; }
+.projectslist-root .pj2-ring svg { display: block; width: 100%; height: 100%; }
+.projectslist-root .pj2-ring-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: var(--ink); }
+.projectslist-root .pj2-value { display: flex; align-items: baseline; justify-content: center; height: 52px; padding-top: 14px; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; color: var(--ink); white-space: nowrap; }
+.projectslist-root .pj2-value i { font-style: normal; font-size: 14px; font-weight: 600; color: var(--ink-faint); }
+.projectslist-root .pj2-value.is-late { color: var(--danger); }
+.projectslist-root .pj2-value.muted { color: var(--ink-faint); font-weight: 600; }
+.projectslist-root .pj2-label { font-size: 12px; font-weight: 600; color: var(--ink-faint); }
+.projectslist-root .pj2-due { color: var(--accent); }
+.projectslist-root .pj2-due.is-late { color: var(--danger); }
+
+.projectslist-root .pj-card .pj-foot { margin-top: 0; padding-top: 0; border-top: none; }
+.projectslist-root .pj2-noteam { font-size: 12.5px; color: var(--ink-faint); }
+
+@media (max-width: 600px) {
+  .projectslist-root .proj-card.pj-card { padding: 16px; }
+  .projectslist-root .pj2-metric { padding: 0 4px; }
+}
+
+/* the status sits right after the project name: plain coloured text with a dot, no background */
+.projectslist-root .pj2-id { padding-right: 40px; margin-top: 2px; }
+.projectslist-root .pj2-title { flex: 1; }
+.projectslist-root .pj2-name-row { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex-wrap: wrap; }
+.projectslist-root .pj2-name-row .pj2-name { flex: 0 1 auto; min-width: 0; max-width: 100%; }
+.projectslist-root .pj2-status { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--band); white-space: nowrap; }
+.projectslist-root .pj2-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--band); }
+/* the team avatars stay on the left of the footer; the counts stay on the right */
+.projectslist-root .pj-foot { justify-content: space-between; }
+.projectslist-root .pj-foot .avatar-stack { margin-left: 0; margin-right: auto; justify-content: flex-start; }
+.projectslist-root .pj-foot .pj-counts { margin-left: auto; }
+
+/* the progress ring: a thick rounded arc on a pale track, with thin inner rings like a dial (same style as the status donut) */
+.projectslist-root .pj2-ring { width: 60px; height: 60px; }
+.projectslist-root .pj2-ring-pct { font-size: 11.5px; }
+.projectslist-root .pj2-value { height: 60px; padding-top: 18px; }
+
+/* the status tabs: swipe sideways on a phone, without any scrollbar showing */
+.projectslist-root .pj-tabs { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; }
+.projectslist-root .pj-tabs::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.projectslist-root .pj-tabs button { flex-shrink: 0; }
+@media (max-width: 600px) {
+  .projectslist-root .pj-tabs { display: flex; width: 100%; }
+}
+
+/* six status cards: a grey tone for On hold, and a grid that always fills its rows (6, then 3 x 2, then 2 x 3) */
+.projectslist-root .pj-stat.tone-grey { --tone: #8b8895; }
+.projectslist-root .pj-stats { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+@media (max-width: 1280px) { .projectslist-root .pj-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .projectslist-root .pj-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

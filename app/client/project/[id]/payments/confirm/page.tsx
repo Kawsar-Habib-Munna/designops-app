@@ -11,6 +11,7 @@
 // পাইপলাইনেই যায় (এই কোডবেসের একমাত্র real ফাইল স্টোরেজ) — unguessable লিংক-ভিত্তিক
 // অ্যাক্সেস, সত্যিকারের প্রাইভেট ACL না (SOW সিগনেচার/ডকুমেন্টের মতোই honest সীমাবদ্ধতা)।
 
+import ClientAvatar from '@/app/components/ClientAvatar';
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -101,7 +102,7 @@ function ConfirmShell({
           </button>
           <span className="topbar-title">Confirm Payment</span>
                   <button type="button" className="topbar-avatar" aria-label="Sign out" onClick={() => { if (window.confirm('Sign out of your account?')) (onSignOut)(); }}>
-            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
           </button>
 </header>
 
@@ -120,7 +121,7 @@ function ConfirmShell({
           </a>
         <button type="button" className="profile-card topbar-profile" onClick={onSignOut} title="Sign out">
           <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
           </div>
           <div className="profile-meta">
             <div className="profile-name">{client.primary_contact ?? client.company_name}</div>

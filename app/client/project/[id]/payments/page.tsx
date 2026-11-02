@@ -13,6 +13,7 @@
 // দেখায়/লিংক করে, কোনো ডুপ্লিকেট ফর্ম না। internal_note কলাম এখানে কখনো select
 // করা হয় না — client-safe কলাম লিস্টই একমাত্র সুরক্ষা।
 
+import ClientAvatar from '@/app/components/ClientAvatar';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -221,7 +222,7 @@ function PaymentsShell({
           </button>
           <span className="topbar-title">Payments</span>
                   <button type="button" className="topbar-avatar" aria-label="Sign out" onClick={() => { if (window.confirm('Sign out of your account?')) (onSignOut)(); }}>
-            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
           </button>
 </header>
 
@@ -239,7 +240,7 @@ function PaymentsShell({
           </a>
         <button type="button" className="profile-card topbar-profile" onClick={onSignOut} title="Sign out">
           <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
           </div>
           <div className="profile-meta">
             <div className="profile-name">{client.primary_contact ?? client.company_name}</div>

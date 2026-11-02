@@ -441,3 +441,997 @@
 .projdetail-root .pd-draft-banner b{color:var(--ink);font-weight:600;}
 .projdetail-root .pd-pm-change{margin-left:6px;padding:0;border:none;background:none;font:inherit;font-size:12px;font-weight:600;color:var(--accent);cursor:pointer;}
 .projdetail-root .pd-pm-change:hover{text-decoration:underline;}
+
+/* ==========================================================================
+   Project details v2 (step 1): hero, facts, progress dial, attention strip and key numbers
+   ========================================================================== */
+.projdetail-root .pd-hero { position: relative; overflow: hidden; gap: 32px; padding: 28px; border-radius: 20px; }
+.projdetail-root .pd-hero::before { content: ''; position: absolute; top: -90px; right: -90px; width: 300px; height: 300px; pointer-events: none; background: radial-gradient(circle, var(--accent-soft) 0%, transparent 70%); }
+.projdetail-root .pd-hero > * { position: relative; }
+.projdetail-root .pd-icon2 { width: 56px; height: 56px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pd-title { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+.projdetail-root .pd-status { --s: var(--accent); display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: var(--s); }
+.projdetail-root .pd-status i { width: 8px; height: 8px; border-radius: 50%; background: var(--s); }
+.projdetail-root .pd-status.st-planning { --s: #2189d9; }
+.projdetail-root .pd-status.st-review { --s: var(--warning); }
+.projdetail-root .pd-status.st-on_hold, .projdetail-root .pd-status.st-draft { --s: var(--ink-faint); }
+.projdetail-root .pd-status.st-completed { --s: var(--positive); }
+.projdetail-root .pd-meta { gap: 8px 18px; margin-top: 10px; }
+.projdetail-root .pd-meta-item { gap: 7px; font-size: 13px; }
+.projdetail-root .pd-meta-item .avatar { flex-shrink: 0; }
+.projdetail-root .pd-desc { margin-top: 18px; font-size: 14px; }
+
+/* four facts as small cards, each with a circular icon */
+.projdetail-root .pd-facts { gap: 12px; margin-top: 22px; padding-top: 0; border-top: none; }
+.projdetail-root .pd-fact { flex-direction: row; align-items: flex-start; gap: 12px; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+.projdetail-root .pd-fact-icon { width: 34px; height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pd-fact-body { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.projdetail-root .pd-fact-label { font-size: 12px; font-weight: 600; color: var(--ink-faint); }
+.projdetail-root .pd-fact-value { font-size: 15px; font-weight: 800; }
+.projdetail-root .pd-hours-meter { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; margin-top: 4px; }
+.projdetail-root .pd-hours-meter span { height: 6px; border-radius: 2px; background: var(--accent-soft); }
+.projdetail-root .pd-hours-meter span.on { background: var(--accent); }
+.projdetail-root .pd-hours-meter span.on.over { background: var(--danger); }
+
+/* progress dial */
+.projdetail-root .pd-hero-progress { gap: 12px; padding-left: 32px; border-left: 1px dashed var(--border); }
+.projdetail-root .pd-dial { position: relative; width: 168px; height: 168px; }
+.projdetail-root .pd-dial svg { display: block; width: 100%; height: 100%; }
+.projdetail-root .pd-dial-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
+.projdetail-root .pd-dial-center b { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+.projdetail-root .pd-dial-center span { margin-top: 3px; font-size: 12px; color: var(--ink-faint); }
+.projdetail-root .pd-progress-caption { font-size: 12.5px; color: var(--ink-soft); }
+.projdetail-root .pd-progress-caption b { font-weight: 800; color: var(--ink); }
+
+/* needs attention: a title with a round icon, then the chips */
+.projdetail-root .pd-attention { gap: 12px 16px; padding: 12px 18px; border-radius: 14px; }
+.projdetail-root .pd-attention-title { display: inline-flex; align-items: center; gap: 10px; margin-right: 0; font-size: 12.5px; font-weight: 800; letter-spacing: 0; text-transform: none; color: var(--ink); }
+.projdetail-root .pd-attention-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: var(--warning); background: var(--warning-soft); border: 1.5px solid color-mix(in srgb, var(--warning) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pd-attention-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* key numbers */
+.projdetail-root .pd-kpi { gap: 12px; padding: 14px 16px; border-radius: 14px; }
+.projdetail-root .pd-kpi-icon { width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid color-mix(in srgb, currentColor 22%, transparent); }
+.projdetail-root .pd-kpi-value { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+.projdetail-root .pd-kpi-label { font-size: 12px; font-weight: 500; }
+
+@media (max-width: 900px) {
+  .projdetail-root .pd-hero { padding: 20px; }
+  .projdetail-root .pd-hero-progress { padding: 18px 0 0; border-left: none; border-top: 1px dashed var(--border); flex-direction: row; justify-content: flex-start; gap: 18px; }
+  .projdetail-root .pd-dial { width: 112px; height: 112px; }
+  .projdetail-root .pd-dial-center b { font-size: 20px; }
+  .projdetail-root .pd-dial-center span { font-size: 10.5px; }
+  .projdetail-root .pd-icon2 { width: 46px; height: 46px; font-size: 18px; }
+  .projdetail-root .pd-title { font-size: 21px; }
+}
+
+/* back button (replaces the breadcrumb) */
+.projdetail-root .pd-back { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 16px; padding: 5px 16px 5px 5px; font-size: 13px; font-weight: 700; color: var(--ink-soft); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; box-shadow: var(--shadow-sm); transition: color 0.15s ease, border-color 0.15s ease; }
+.projdetail-root .pd-back-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--ink-soft); background: var(--surface-muted); border: 1px solid var(--border); transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.projdetail-root .pd-back:hover { color: var(--accent); border-color: var(--accent); }
+.projdetail-root .pd-back:hover .pd-back-icon { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* the back button sits on the right side of the page */
+.projdetail-root .pd-back { display: flex; width: fit-content; margin-left: auto; }
+.projdetail-root .pd-back { border-color: transparent; box-shadow: none; }
+.projdetail-root .pd-back:hover { border-color: transparent; }
+.projdetail-root .pd-back { background: transparent; }
+
+/* top row: the project's name on the left, the back button on the right */
+.projdetail-root .pd-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.projdetail-root .pd-topbar .pd-back { margin: 0; flex-shrink: 0; }
+.projdetail-root .pd-topbar-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.projdetail-root .pd-topbar-kicker { font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+.projdetail-root .pd-topbar-title { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 600px) { .projdetail-root .pd-topbar-title { font-size: 16px; } }
+
+/* the left side is the page title with a short line under it */
+.projdetail-root .pd-topbar-title { font-size: 22px; letter-spacing: -0.02em; }
+.projdetail-root .pd-topbar-sub { font-size: 13px; color: var(--ink-soft); }
+@media (max-width: 600px) { .projdetail-root .pd-topbar-title { font-size: 19px; } .projdetail-root .pd-topbar-sub { display: none; } }
+.projdetail-root .pd-topbar-sub { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 600px) { .projdetail-root .pd-topbar-sub { display: block; font-size: 12.5px; } }
+.projdetail-root .pd-topbar-sub b { font-weight: 800; color: var(--ink); }
+.projdetail-root .pd-topbar-sub b { font-weight: inherit; color: inherit; }
+
+/* ==========================================================================
+   Project details v3: the first card. A status-coloured line on top, identity and chips, the description, a fact strip
+   with dividers, and a tinted side panel holding the progress dial and a schedule read-out.
+   ========================================================================== */
+.projdetail-root .pdh { --band: var(--accent); position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 270px; margin-bottom: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-sm); overflow: hidden; }
+.projdetail-root .pdh.st-planning { --band: #2189d9; }
+.projdetail-root .pdh.st-review { --band: var(--warning); }
+.projdetail-root .pdh.st-on_hold, .projdetail-root .pdh.st-draft { --band: var(--ink-faint); }
+.projdetail-root .pdh.st-completed { --band: var(--positive); }
+.projdetail-root .pdh::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--band), color-mix(in srgb, var(--band) 35%, transparent)); }
+.projdetail-root .pdh-left { min-width: 0; padding: 28px 28px 26px; }
+
+.projdetail-root .pdh-id { display: flex; align-items: flex-start; gap: 16px; }
+.projdetail-root .pdh-icon { width: 60px; height: 60px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; color: var(--band); background: color-mix(in srgb, var(--band) 10%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--band) 24%, transparent); border-radius: 50%; }
+.projdetail-root .pdh-titles { flex: 1; min-width: 0; }
+.projdetail-root .pdh-title-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.projdetail-root .pdh-title { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.2; color: var(--ink); }
+.projdetail-root .pdh-status { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: var(--band); }
+.projdetail-root .pdh-status i { width: 8px; height: 8px; border-radius: 50%; background: var(--band); }
+.projdetail-root .pdh-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.projdetail-root .pdh-chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); background: var(--surface-muted); border: 1px solid var(--border); border-radius: 8px; }
+.projdetail-root .pdh-chip svg { color: var(--ink-faint); }
+.projdetail-root .pdh-id .header-actions { margin-left: auto; flex-shrink: 0; }
+.projdetail-root .pdh-desc { margin: 18px 0 0; max-width: 70ch; font-size: 14px; line-height: 1.65; color: var(--ink-soft); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* one strip of four facts, separated by hairlines */
+.projdetail-root .pdh-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 24px; padding: 16px 0; border-top: 1px dashed var(--border); }
+.projdetail-root .pdh-fact { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; padding: 0 18px; }
+.projdetail-root .pdh-fact:first-child { padding-left: 0; }
+.projdetail-root .pdh-fact + .pdh-fact { border-left: 1px solid var(--border-soft); }
+.projdetail-root .pdh-fact-label { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: var(--ink-faint); }
+.projdetail-root .pdh-fact-label svg { color: var(--accent); }
+.projdetail-root .pdh-fact-value { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); white-space: nowrap; }
+.projdetail-root .pdh-fact-value i { font-style: normal; font-size: 12.5px; font-weight: 600; color: var(--ink-faint); }
+.projdetail-root .pdh-fact .pd-hours-meter { width: 100%; max-width: 120px; margin-top: 0; }
+
+/* side panel */
+.projdetail-root .pdh-side { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px 20px; background: color-mix(in srgb, var(--accent) 4%, var(--surface)); border-left: 1px solid var(--border); }
+.projdetail-root .pdh-side .pd-dial { width: 176px; height: 176px; }
+.projdetail-root .pdh-schedule { display: inline-flex; align-items: center; gap: 8px; padding: 5px 13px; font-size: 12.5px; font-weight: 700; color: var(--positive); background: var(--positive-soft); border: 1px solid color-mix(in srgb, var(--positive) 22%, transparent); border-radius: 8px; }
+.projdetail-root .pdh-schedule i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.projdetail-root .pdh-schedule.warn { color: var(--warning); background: var(--warning-soft); border-color: color-mix(in srgb, var(--warning) 22%, transparent); }
+.projdetail-root .pdh-schedule.danger { color: var(--danger); background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 22%, transparent); }
+
+@media (max-width: 1000px) {
+  .projdetail-root .pdh { grid-template-columns: minmax(0, 1fr); }
+  .projdetail-root .pdh-side { flex-direction: row; flex-wrap: wrap; justify-content: flex-start; gap: 14px 20px; padding: 20px 24px; border-left: none; border-top: 1px solid var(--border); }
+  .projdetail-root .pdh-side .pd-dial { width: 120px; height: 120px; }
+  .projdetail-root .pdh-side .pd-dial-center b { font-size: 21px; }
+}
+@media (max-width: 700px) {
+  .projdetail-root .pdh-left { padding: 20px 18px; }
+  .projdetail-root .pdh-id { flex-wrap: wrap; }
+  .projdetail-root .pdh-icon { width: 48px; height: 48px; font-size: 19px; order: 1; }
+  .projdetail-root .pdh-id .header-actions { order: 2; margin-left: auto; }
+  .projdetail-root .pdh-titles { order: 3; flex: 1 1 100%; }
+  .projdetail-root .pdh-title { font-size: 22px; }
+  .projdetail-root .pdh-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 0; }
+  .projdetail-root .pdh-fact:nth-child(odd) { padding-left: 0; }
+  .projdetail-root .pdh-fact:nth-child(3) { border-left: none; }
+}
+
+/* the star, Share and More buttons sit in the top-right corner of the whole card, over the side panel */
+.projdetail-root .pdh-id .header-actions { position: absolute; top: 18px; right: 20px; z-index: 2; margin: 0; }
+@media (max-width: 1000px) {
+  .projdetail-root .pdh-titles { padding-right: 150px; }
+}
+@media (max-width: 700px) {
+  .projdetail-root .pdh-id .header-actions { position: static; order: 2; margin-left: auto; }
+  .projdetail-root .pdh-titles { padding-right: 0; }
+}
+.projdetail-root .pdh-desc { max-width: none; width: 100%; }
+
+/* ---- the facts as a premium table: a tinted header row with icon chips, a value row beneath, hairlines between columns ---- */
+.projdetail-root .pdt { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 26px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-sm); }
+.projdetail-root .pdt-col { min-width: 0; display: flex; flex-direction: column; }
+.projdetail-root .pdt-col + .pdt-col { border-left: 1px solid var(--border); }
+.projdetail-root .pdt-head { display: flex; align-items: center; gap: 10px; padding: 11px 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.02em; color: var(--ink-soft); background: color-mix(in srgb, var(--accent) 5%, var(--surface-muted)); border-bottom: 1px solid var(--border); }
+.projdetail-root .pdt-icon { width: 28px; height: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--surface); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pdt-icon svg { stroke-width: 1.75; }
+.projdetail-root .pdt-cell { flex: 1; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 9px; padding: 16px 16px 18px; }
+.projdetail-root .pdt-value { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; color: var(--ink); white-space: nowrap; }
+.projdetail-root .pdt-value i { font-style: normal; font-size: 12.5px; font-weight: 600; color: var(--ink-faint); }
+.projdetail-root .pdt .pd-hours-meter { width: 100%; max-width: 130px; margin-top: 0; }
+.projdetail-root .pdt .pd-hours-meter span { background: var(--border); }
+.projdetail-root .pdt .pd-hours-meter span.on { background: var(--accent); }
+.projdetail-root .pdt .pd-hours-meter span.on.over { background: var(--danger); }
+
+@media (max-width: 1100px) {
+  .projdetail-root .pdt { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .projdetail-root .pdt-col:nth-child(3) { border-left: none; }
+  .projdetail-root .pdt-col:nth-child(n+3) { border-top: 1px solid var(--border); }
+}
+@media (max-width: 480px) {
+  .projdetail-root .pdt { grid-template-columns: 1fr; }
+  .projdetail-root .pdt-col + .pdt-col { border-left: none; border-top: 1px solid var(--border); }
+}
+
+/* ---- facts: clean version. No box, no tinted header, just icons, labels and values with plenty of air ---- */
+.projdetail-root .pdt { margin-top: 26px; padding-top: 22px; background: none; border: none; border-top: 1px dashed var(--border); border-radius: 0; box-shadow: none; overflow: visible; }
+.projdetail-root .pdt-col { padding: 0 24px; }
+.projdetail-root .pdt-col:first-child { padding-left: 0; }
+.projdetail-root .pdt-col + .pdt-col { border-left: 1px solid var(--border-soft); }
+.projdetail-root .pdt-head { padding: 0 0 12px; font-size: 12.5px; font-weight: 600; letter-spacing: 0; color: var(--ink-faint); background: none; border-bottom: none; }
+.projdetail-root .pdt-icon { width: 30px; height: 30px; background: color-mix(in srgb, var(--accent) 7%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 16%, transparent); }
+.projdetail-root .pdt-cell { flex: none; padding: 0; justify-content: flex-start; gap: 10px; }
+.projdetail-root .pdt-value { font-size: 20px; }
+@media (max-width: 1100px) {
+  .projdetail-root .pdt { row-gap: 22px; }
+  .projdetail-root .pdt-col { padding: 0 20px; }
+  .projdetail-root .pdt-col:nth-child(odd) { padding-left: 0; }
+  .projdetail-root .pdt-col:nth-child(n+3) { border-top: none; }
+}
+@media (max-width: 480px) {
+  .projdetail-root .pdt-col, .projdetail-root .pdt-col:nth-child(odd) { padding: 0; border-left: none; }
+  .projdetail-root .pdt-col + .pdt-col { border-top: none; }
+}
+
+/* the status line along the top is short and inset, like on the project cards in the Projects list */
+.projdetail-root .pdh::before { top: 0; left: 24px; right: 24px; height: 3px; border-radius: 0 0 4px 4px; background: var(--band); }
+
+/* ---- facts: minimal. A small grey icon and label, one bold value, a plain note. No circles, no chips, no dividers ---- */
+.projdetail-root .pdt-col + .pdt-col { border-left: none; }
+.projdetail-root .pdt-col { padding: 0 28px; }
+.projdetail-root .pdt-col:first-child { padding-left: 0; }
+.projdetail-root .pdt-head { gap: 7px; padding-bottom: 8px; font-size: 12.5px; font-weight: 500; color: var(--ink-faint); }
+.projdetail-root .pdt-icon { width: auto; height: auto; background: none; border: none; border-radius: 0; color: var(--ink-faint); }
+.projdetail-root .pdt-icon svg { width: 15px; height: 15px; stroke-width: 1.6; }
+.projdetail-root .pdt-cell { gap: 6px; }
+.projdetail-root .pdt-value { font-size: 20px; font-weight: 800; }
+.projdetail-root .pdt-value i { font-size: 13px; font-weight: 500; }
+/* the deadline note is plain coloured text with a dot, not a chip */
+.projdetail-root .pdt .pd-days { padding: 0; background: none; border: none; font-size: 12.5px; font-weight: 600; color: var(--chip); }
+.projdetail-root .pdt .pd-days::before { width: 6px; height: 6px; box-shadow: none; }
+/* no hours meter: the numbers say it */
+.projdetail-root .pdt .pd-hours-meter { display: none; }
+@media (max-width: 1100px) {
+  .projdetail-root .pdt-col { padding: 0 20px; }
+  .projdetail-root .pdt-col:nth-child(odd) { padding-left: 0; }
+}
+@media (max-width: 480px) {
+  .projdetail-root .pdt-col, .projdetail-root .pdt-col:nth-child(odd) { padding: 0; }
+}
+/* smaller text in the facts row */
+.projdetail-root .pdt-value { font-size: 16px; }
+.projdetail-root .pdt-value i { font-size: 12px; }
+.projdetail-root .pdt-head { font-size: 12px; }
+.projdetail-root .pdt .pd-days { font-size: 12px; }
+/* "9 days left" sits on the same line as the due date */
+.projdetail-root .pdt-col:nth-child(2) .pdt-cell { flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: 12px; row-gap: 4px; }
+
+/* ==========================================================================
+   Tasks card (redesign): a header with a round icon, a clean table with generous rows, a ring for progress, and a footer
+   ========================================================================== */
+.projdetail-root .pdk-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 18px 20px; border-bottom: 1px dashed var(--border); }
+.projdetail-root .pdk-badge { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pdk-title-wrap { flex: 1; min-width: 160px; }
+.projdetail-root .pdk-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.projdetail-root .pdk-count { padding: 1px 9px; font-size: 12px; font-weight: 700; color: var(--ink-soft); background: var(--surface-muted); border: 1px solid var(--border); border-radius: 8px; }
+.projdetail-root .pdk-sub { margin-top: 2px; font-size: 12.5px; color: var(--ink-faint); }
+.projdetail-root .pdk-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.projdetail-root .pdk-tools .btn { border-radius: 8px; }
+
+.projdetail-root .pdk-table { width: 100%; min-width: 760px; border-collapse: collapse; }
+.projdetail-root .pdk-table th { padding: 12px 20px; text-align: left; font-size: 12px; font-weight: 700; letter-spacing: 0.02em; color: var(--ink-faint); background: color-mix(in srgb, var(--accent) 3%, var(--surface-muted)); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.projdetail-root .pdk-table td { padding: 14px 20px; vertical-align: middle; border-bottom: 1px solid var(--border-soft); font-size: 13px; color: var(--ink); }
+.projdetail-root .pdk-table tbody tr { transition: background 0.12s ease; }
+.projdetail-root .pdk-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 3%, var(--surface)); }
+.projdetail-root .pdk-table tbody tr:last-child td { border-bottom: none; }
+.projdetail-root .pdk-task { display: flex; align-items: center; gap: 12px; min-width: 200px; }
+.projdetail-root .pdk-check { width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: transparent; border: 1.5px solid var(--border); border-radius: 50%; background: var(--surface); }
+.projdetail-root .pdk-check.done { color: #fff; background: var(--positive); border-color: var(--positive); }
+.projdetail-root .pdk-task-title { font-size: 13.5px; font-weight: 700; line-height: 1.35; color: var(--ink); }
+.projdetail-root .pdk-task-title.done { color: var(--ink-faint); font-weight: 500; text-decoration: line-through; }
+.projdetail-root .pdk-person { display: flex; align-items: center; gap: 9px; white-space: nowrap; font-weight: 600; color: var(--ink-soft); }
+.projdetail-root .pdk-muted { color: var(--ink-faint); }
+.projdetail-root .pdk-date { font-weight: 600; color: var(--ink-soft); white-space: nowrap; }
+.projdetail-root .pdk-date.late { color: var(--danger); font-weight: 700; }
+.projdetail-root .pdk-late-note { display: block; margin-top: 2px; font-size: 11px; font-weight: 600; color: var(--danger); }
+.projdetail-root .pdk-ring { position: relative; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+.projdetail-root .pdk-ring svg { width: 30px; height: 30px; flex-shrink: 0; display: block; }
+
+.projdetail-root .pdk-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 20px; border-top: 1px dashed var(--border); font-size: 12.5px; color: var(--ink-faint); }
+.projdetail-root .pdk-foot b { font-weight: 800; color: var(--ink-soft); }
+.projdetail-root .pdk-all { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
+.projdetail-root .pdk-all-go { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; color: var(--ink-faint); background: var(--surface-muted); border: 1px solid var(--border); border-radius: 50%; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.projdetail-root .pdk-all:hover { color: var(--accent); }
+.projdetail-root .pdk-all:hover .pdk-all-go { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.projdetail-root .pdk-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 40px 20px; text-align: center; font-size: 13px; color: var(--ink-soft); }
+.projdetail-root .pdk-empty strong { font-size: 14px; color: var(--ink); }
+.projdetail-root .pdk-empty-icon { width: 44px; height: 44px; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; color: var(--positive); background: var(--positive-soft); border: 1.5px solid color-mix(in srgb, var(--positive) 22%, transparent); border-radius: 50%; }
+@media (max-width: 700px) {
+  .projdetail-root .pdk-head { padding: 16px; }
+  .projdetail-root .pdk-table th, .projdetail-root .pdk-table td { padding: 12px 14px; }
+}
+
+/* ---- facts as a clean table: the same look as the Tasks table (tinted header row, hairlines, roomy value row) ---- */
+.projdetail-root .pdt { margin-top: 24px; padding-top: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: none; }
+.projdetail-root .pdt-col { padding: 0; }
+.projdetail-root .pdt-col:first-child { padding-left: 0; }
+.projdetail-root .pdt-col + .pdt-col { border-left: 1px solid var(--border); }
+.projdetail-root .pdt-head { padding: 11px 18px; gap: 8px; font-size: 12px; font-weight: 700; color: var(--ink-soft); background: color-mix(in srgb, var(--accent) 3%, var(--surface-muted)); border-bottom: 1px solid var(--border); }
+.projdetail-root .pdt-icon { color: var(--accent); }
+.projdetail-root .pdt-cell { padding: 16px 18px 18px; gap: 8px; }
+.projdetail-root .pdt-value { font-size: 16px; font-weight: 800; }
+.projdetail-root .pdt-col:nth-child(2) .pdt-cell { flex-direction: column; align-items: flex-start; }
+@media (max-width: 1100px) {
+  .projdetail-root .pdt-col, .projdetail-root .pdt-col:nth-child(odd) { padding: 0; }
+  .projdetail-root .pdt-col:nth-child(3) { border-left: none; }
+  .projdetail-root .pdt-col:nth-child(n+3) { border-top: 1px solid var(--border); }
+}
+@media (max-width: 480px) {
+  .projdetail-root .pdt-col + .pdt-col { border-left: none; border-top: 1px solid var(--border); }
+}
+/* the due date and "9 days left" share one line */
+.projdetail-root .pdt-col:nth-child(2) .pdt-cell { flex-direction: row; flex-wrap: nowrap; align-items: center; column-gap: 12px; }
+.projdetail-root .pdt-col:nth-child(2) .pd-days { white-space: nowrap; flex-shrink: 0; }
+@media (max-width: 1320px) { .projdetail-root .pdt-col:nth-child(2) .pdt-cell { flex-wrap: wrap; row-gap: 4px; } }
+/* square corners on the facts table */
+.projdetail-root .pdt { border-radius: 0; }
+/* rounded corners again on the facts table */
+.projdetail-root .pdt { border-radius: 14px; }
+/* lighter text colour for the values in the facts table */
+.projdetail-root .pdt-value { color: var(--ink-soft); }
+.projdetail-root .pdt-value i { color: var(--ink-faint); }
+/* lighter weight for the values in the facts table */
+.projdetail-root .pdt-value { font-weight: 600; }
+.projdetail-root .pdt-value i { font-weight: 500; }
+/* smaller text for the values in the facts table */
+.projdetail-root .pdt-value { font-size: 14px; }
+.projdetail-root .pdt-value i { font-size: 11.5px; }
+.projdetail-root .pdt .pd-days { font-size: 11.5px; }
+
+/* the star / Share / More buttons no longer overlap the dial: the side panel starts below them */
+@media (min-width: 1001px) {
+  .projdetail-root .pdh-side { padding-top: 76px; }
+}
+
+/* ---- more breathing space inside the first card ---- */
+.projdetail-root .pdh-left { padding: 36px 36px 36px; }
+.projdetail-root .pdh-id { gap: 20px; }
+.projdetail-root .pdh-icon { width: 64px; height: 64px; }
+.projdetail-root .pdh-chips { gap: 10px; margin-top: 16px; }
+.projdetail-root .pdh-chip { padding: 7px 14px; }
+.projdetail-root .pdh-desc { margin-top: 28px; line-height: 1.75; }
+.projdetail-root .pdt { margin-top: 34px; }
+.projdetail-root .pdt-head { padding: 14px 22px; }
+.projdetail-root .pdt-cell { padding: 22px 22px 24px; gap: 10px; }
+@media (max-width: 700px) {
+  .projdetail-root .pdh-left { padding: 24px 20px; }
+  .projdetail-root .pdh-desc { margin-top: 20px; }
+  .projdetail-root .pdt { margin-top: 24px; }
+  .projdetail-root .pdt-head { padding: 12px 16px; }
+  .projdetail-root .pdt-cell { padding: 16px; }
+}
+
+/* ==========================================================================
+   Needs attention (redesign): a card with a header, then one tile per item, each with a coloured round icon, a number and a label
+   ========================================================================== */
+.projdetail-root .pda { margin-bottom: 16px; padding: 20px 22px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); }
+.projdetail-root .pda-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px dashed var(--border); }
+.projdetail-root .pda-badge { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--warning); background: var(--warning-soft); border: 1.5px solid color-mix(in srgb, var(--warning) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pda.clear .pda-badge { color: var(--positive); background: var(--positive-soft); border-color: color-mix(in srgb, var(--positive) 22%, transparent); }
+.projdetail-root .pda-title { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.projdetail-root .pda-sub { margin-top: 2px; font-size: 12.5px; color: var(--ink-faint); }
+
+.projdetail-root .pda-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.projdetail-root .pda-item { --t: var(--accent); display: flex; align-items: center; gap: 14px; padding: 14px 16px; text-decoration: none; background: color-mix(in srgb, var(--t) 5%, var(--surface)); border: 1px solid color-mix(in srgb, var(--t) 16%, transparent); border-radius: 14px; transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease; }
+.projdetail-root a.pda-item:hover { border-color: color-mix(in srgb, var(--t) 45%, transparent); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.projdetail-root .pda-item.tone-danger { --t: var(--danger); }
+.projdetail-root .pda-item.tone-warn { --t: var(--warning); }
+.projdetail-root .pda-item.tone-accent { --t: var(--accent); }
+.projdetail-root .pda-item.tone-info { --t: #2189d9; }
+.projdetail-root .pda-item.tone-ok { --t: var(--positive); }
+.projdetail-root .pda-icon { width: 38px; height: 38px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--t); background: var(--surface); border: 1.5px solid color-mix(in srgb, var(--t) 24%, transparent); border-radius: 50%; }
+.projdetail-root .pda-icon svg { stroke-width: 1.75; }
+.projdetail-root .pda-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.projdetail-root .pda-text b { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; color: var(--t); }
+.projdetail-root .pda-text > span { font-size: 12.5px; font-weight: 500; color: var(--ink-soft); }
+.projdetail-root .pda-item.tone-ok .pda-text b { font-size: 15px; letter-spacing: -0.01em; }
+.projdetail-root .pda-go { width: 24px; height: 24px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); background: var(--surface); border: 1px solid var(--border); border-radius: 50%; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.projdetail-root a.pda-item:hover .pda-go { background: var(--t); border-color: var(--t); color: #fff; }
+.projdetail-root .pda-wide { grid-column: 1 / -1; }
+@media (max-width: 600px) {
+  .projdetail-root .pda { padding: 16px; }
+  .projdetail-root .pda-grid { grid-template-columns: 1fr; }
+}
+
+/* Needs attention and Workspace share one row; Workspace has the same width as the side column below */
+.projdetail-root .pd-attn-row { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: stretch; margin-bottom: 16px; }
+.projdetail-root .pd-attn-row > .pdi { margin-bottom: 0; }
+.projdetail-root .pd-attn-row > .pd-workspace { margin: 0; }
+.projdetail-root .pda-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+@media (max-width: 1100px) {
+  .projdetail-root .pd-attn-row { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* three cards in the row: Needs attention (flexible), Workspace and Client details (fixed) */
+.projdetail-root .pd-attn-row.has-client { grid-template-columns: minmax(0, 1fr) 300px 300px; }
+.projdetail-root .pd-attn-row > .pd-client { margin: 0; }
+@media (max-width: 1380px) {
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .projdetail-root .pd-attn-row.has-client > .pdi { grid-column: 1 / -1; }
+}
+@media (max-width: 700px) {
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1100px) {
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Client details comes first in the row, then Needs attention, then Workspace */
+.projdetail-root .pd-attn-row.has-client > .pd-client { order: 1; }
+.projdetail-root .pd-attn-row.has-client > .pdi { order: 2; }
+.projdetail-root .pd-attn-row.has-client > .pd-workspace { order: 3; }
+.projdetail-root .pd-attn-row.has-client { grid-template-columns: 300px minmax(0, 1fr) 300px; }
+@media (max-width: 1380px) {
+  /* client and workspace side by side first, then Needs attention full width under them */
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .projdetail-root .pd-attn-row.has-client > .pd-workspace { order: 2; }
+  .projdetail-root .pd-attn-row.has-client > .pdi { order: 3; grid-column: 1 / -1; }
+}
+@media (max-width: 1100px) {
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Needs attention stays in the middle on mid-size screens too: narrower side cards instead of a stacked layout */
+@media (min-width: 1101px) and (max-width: 1380px) {
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: 250px minmax(0, 1fr) 250px; gap: 16px; }
+  .projdetail-root .pd-attn-row.has-client > .pd-workspace { order: 3; }
+  .projdetail-root .pd-attn-row.has-client > .pdi { order: 2; grid-column: auto; }
+  .projdetail-root .pd-attn-row .pda-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+}
+
+/* final order: Needs attention, then Client details in the middle, then Workspace */
+.projdetail-root .pd-attn-row.has-client > .pdi { order: 1; grid-column: auto; }
+.projdetail-root .pd-attn-row.has-client > .pd-client { order: 2; }
+.projdetail-root .pd-attn-row.has-client > .pd-workspace { order: 3; }
+.projdetail-root .pd-attn-row.has-client { grid-template-columns: minmax(0, 1fr) 300px 300px; }
+@media (min-width: 1101px) and (max-width: 1380px) {
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: minmax(0, 1fr) 250px 250px; gap: 16px; }
+  .projdetail-root .pd-attn-row.has-client > .pdi { order: 1; grid-column: auto; }
+  .projdetail-root .pd-attn-row.has-client > .pd-client { order: 2; }
+  .projdetail-root .pd-attn-row.has-client > .pd-workspace { order: 3; }
+}
+@media (max-width: 1100px) {
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ==========================================================================
+   Needs attention, in the same style as the dashboard's Insights card: header with a count, then bordered rows with a
+   coloured round icon, a bold title, a sentence and a round arrow
+   ========================================================================== */
+.projdetail-root .pdi { position: relative; overflow: hidden; padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); }
+.projdetail-root .pdi::before { content: ''; position: absolute; top: -70px; right: -70px; width: 200px; height: 200px; pointer-events: none; background: radial-gradient(circle, var(--accent-soft) 0%, transparent 70%); }
+.projdetail-root .pdi > * { position: relative; }
+.projdetail-root .pdi-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.projdetail-root .pdi-badge { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--warning); background: var(--warning-soft); border: 1.5px solid color-mix(in srgb, var(--warning) 28%, transparent); border-radius: 50%; }
+.projdetail-root .pdi.clear .pdi-badge { color: var(--positive); background: var(--positive-soft); border-color: color-mix(in srgb, var(--positive) 28%, transparent); }
+.projdetail-root .pdi-head-text { flex: 1; min-width: 0; }
+.projdetail-root .pdi-title { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.projdetail-root .pdi-sub { margin-top: 2px; font-size: 12.5px; color: var(--ink-faint); }
+.projdetail-root .pdi-count { min-width: 28px; height: 28px; padding: 0 9px; display: inline-flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; color: var(--ink-soft); background: var(--surface-muted); border: 1px solid var(--border); border-radius: 999px; }
+
+.projdetail-root .pdi-list { display: flex; flex-direction: column; gap: 10px; }
+.projdetail-root .pdi-item { --t: var(--accent); display: flex; align-items: center; gap: 14px; padding: 13px 14px; text-decoration: none; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease; }
+.projdetail-root a.pdi-item:hover { border-color: var(--t); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.projdetail-root .pdi-item.tone-danger { --t: var(--danger); }
+.projdetail-root .pdi-item.tone-warn { --t: var(--warning); }
+.projdetail-root .pdi-item.tone-accent { --t: var(--accent); }
+.projdetail-root .pdi-item.tone-info { --t: #2189d9; }
+.projdetail-root .pdi-item.tone-ok { --t: var(--positive); }
+.projdetail-root .pdi-icon { width: 38px; height: 38px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--t); background: color-mix(in srgb, var(--t) 10%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--t) 24%, transparent); border-radius: 50%; }
+.projdetail-root .pdi-icon svg { stroke-width: 1.75; }
+.projdetail-root .pdi-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.projdetail-root .pdi-item-title { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.projdetail-root .pdi-item-text { font-size: 12.5px; line-height: 1.5; color: var(--ink-soft); overflow-wrap: anywhere; }
+.projdetail-root .pdi-go { width: 26px; height: 26px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); background: var(--surface-muted); border-radius: 50%; transition: background 0.15s ease, color 0.15s ease; }
+.projdetail-root a.pdi-item:hover .pdi-go { background: var(--t); color: #fff; }
+.projdetail-root .pd-attn-row > .pdi { margin: 0; }
+@media (max-width: 600px) { .projdetail-root .pdi { padding: 16px; } }
+
+/* Needs attention is narrower; Client details takes the extra width */
+.projdetail-root .pd-attn-row.has-client { grid-template-columns: 360px minmax(0, 1fr) 300px; }
+@media (min-width: 1101px) and (max-width: 1380px) {
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: 300px minmax(0, 1fr) 240px; }
+}
+@media (max-width: 1100px) {
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ==========================================================================
+   Client details (redesign): identity on top, then four contact rows, each with a round icon, a small label and a value
+   ========================================================================== */
+.projdetail-root .pdc { padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); }
+.projdetail-root .pdc-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px dashed var(--border); }
+.projdetail-root .pdc-logo { width: 52px; height: 52px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pdc-id { flex: 1; min-width: 0; }
+.projdetail-root .pdc-name { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projdetail-root .pdc-industry { margin-top: 3px; font-size: 12.5px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projdetail-root .pdc-status { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; font-size: 12.5px; font-weight: 700; color: var(--positive); }
+.projdetail-root .pdc-status i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+.projdetail-root .pdc-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px 20px; }
+.projdetail-root .pdc-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.projdetail-root .pdc-icon { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--accent) 18%, transparent); border-radius: 50%; }
+.projdetail-root .pdc-icon svg { stroke-width: 1.75; }
+.projdetail-root .pdc-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.projdetail-root .pdc-label { font-size: 12px; font-weight: 600; color: var(--ink-faint); }
+.projdetail-root .pdc-value { font-size: 13.5px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; text-decoration: none; }
+.projdetail-root a.pdc-value:hover { color: var(--accent); text-decoration: underline; }
+.projdetail-root .pdc-value.muted { color: var(--ink-faint); font-weight: 500; }
+.projdetail-root .pd-attn-row > .pdc { margin: 0; }
+@media (max-width: 600px) { .projdetail-root .pdc { padding: 16px; } }
+
+/* ---- client details: more breathing space ---- */
+.projdetail-root .pdc { padding: 28px; }
+.projdetail-root .pdc-head { gap: 18px; margin-bottom: 26px; padding-bottom: 26px; }
+.projdetail-root .pdc-logo { width: 58px; height: 58px; font-size: 22px; }
+.projdetail-root .pdc-industry { margin-top: 5px; }
+.projdetail-root .pdc-list { gap: 26px 28px; }
+.projdetail-root .pdc-row { gap: 16px; }
+.projdetail-root .pdc-icon { width: 40px; height: 40px; }
+.projdetail-root .pdc-text { gap: 4px; }
+@media (max-width: 600px) {
+  .projdetail-root .pdc { padding: 20px; }
+  .projdetail-root .pdc-head { margin-bottom: 20px; padding-bottom: 20px; }
+  .projdetail-root .pdc-list { gap: 20px; }
+}
+
+/* the client's photo fills the round logo */
+.projdetail-root .pdc-logo { overflow: hidden; }
+.projdetail-root .client-avatar-img { width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 50%; }
+
+/* ==========================================================================
+   Workspace (redesign): a header, then two columns of tool tiles, each with a round icon, a label and a small arrow
+   ========================================================================== */
+.projdetail-root .pdw { padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); }
+.projdetail-root .pdw-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px dashed var(--border); }
+.projdetail-root .pdw-badge { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pdw-title { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.projdetail-root .pdw-sub { margin-top: 2px; font-size: 12.5px; color: var(--ink-faint); }
+.projdetail-root .pdw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.projdetail-root .pdw-tool { display: flex; flex-direction: column; gap: 10px; padding: 12px; text-decoration: none; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease; }
+.projdetail-root .pdw-tool:hover { border-color: var(--accent); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.projdetail-root .pdw-top { display: flex; align-items: center; justify-content: space-between; }
+.projdetail-root .pdw-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--accent) 20%, transparent); border-radius: 50%; }
+.projdetail-root .pdw-icon svg { stroke-width: 1.75; }
+.projdetail-root .pdw-go { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); background: var(--surface-muted); border-radius: 50%; transform: rotate(135deg); transition: background 0.15s ease, color 0.15s ease; }
+.projdetail-root .pdw-tool:hover .pdw-go { background: var(--accent); color: #fff; }
+.projdetail-root .pdw-label { font-size: 12.5px; font-weight: 700; line-height: 1.25; color: var(--ink); }
+.projdetail-root .pd-attn-row > .pdw { margin: 0; }
+@media (max-width: 600px) { .projdetail-root .pdw { padding: 16px; } }
+/* no arrow on the workspace tiles */
+.projdetail-root .pdw-go { display: none; }
+/* each tile: the icon and the label on one line */
+.projdetail-root .pdw-tool { flex-direction: row; align-items: center; gap: 12px; padding: 10px 12px; }
+.projdetail-root .pdw-top { flex-shrink: 0; }
+.projdetail-root .pdw-label { min-width: 0; overflow-wrap: anywhere; }
+
+/* a wider Workspace card, so every label fits on one line */
+.projdetail-root .pd-attn-row.has-client { grid-template-columns: 360px minmax(0, 1fr) 420px; }
+@media (min-width: 1101px) and (max-width: 1380px) {
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: 290px minmax(0, 1fr) 350px; }
+}
+@media (max-width: 1100px) {
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Workspace card: a middle width */
+.projdetail-root .pd-attn-row.has-client { grid-template-columns: 360px minmax(0, 1fr) 360px; }
+@media (min-width: 1101px) and (max-width: 1380px) {
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: 290px minmax(0, 1fr) 300px; }
+}
+@media (max-width: 1100px) {
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Workspace card: a little narrower */
+.projdetail-root .pd-attn-row.has-client { grid-template-columns: 360px minmax(0, 1fr) 330px; }
+@media (min-width: 1101px) and (max-width: 1380px) {
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: 290px minmax(0, 1fr) 275px; }
+}
+@media (max-width: 1100px) {
+  .projdetail-root .pd-attn-row.has-client { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* client details: a wider gap between the rows and columns, and the email gets a full row so it never breaks mid-word */
+.projdetail-root .pdc-list { gap: 38px 52px; }
+.projdetail-root .pdc-row:nth-child(3) { grid-column: 1 / -1; }
+.projdetail-root .pdc-row:nth-child(3) .pdc-value { overflow-wrap: break-word; word-break: normal; }
+@media (max-width: 600px) { .projdetail-root .pdc-list { gap: 26px; } }
+
+/* the email is the last row, on its own full-width line */
+.projdetail-root .pdc-row:nth-child(3) { grid-column: auto; }
+.projdetail-root .pdc-row:last-child { grid-column: 1 / -1; }
+.projdetail-root .pdc-row:last-child .pdc-value { overflow-wrap: break-word; word-break: normal; }
+
+/* Tasks table: the priority and status chips are plain coloured text with a dot, no background or border */
+.projdetail-root .pdk-table td .status-pill, .projdetail-root .pdk-table td .priority-pill { background: transparent; border-color: transparent; padding-left: 0; padding-right: 0; box-shadow: none; }
+
+/* the task progress ring: a thick rounded arc on a pale track with thin inner rings, like the other dials */
+.projdetail-root .pdk-ring svg { width: 38px; height: 38px; }
+.projdetail-root .pdk-ring { gap: 10px; font-size: 12.5px; font-weight: 700; }
+
+/* the percentage sits inside the ring, small enough to fit */
+.projdetail-root .pdk-ring { position: relative; display: block; width: 46px; height: 46px; }
+.projdetail-root .pdk-ring svg { width: 100%; height: 100%; display: block; }
+.projdetail-root .pdk-ring > span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 9.5px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink-soft); }
+/* a smaller ring */
+.projdetail-root .pdk-ring { width: 38px; height: 38px; }
+.projdetail-root .pdk-ring > span { font-size: 8.5px; }
+
+/* ==========================================================================
+   Task numbers (redesign): five cards with a round icon and label, a large number with a share ring, and a quiet footer
+   ========================================================================== */
+.projdetail-root .pdv { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+.projdetail-root .pdv-card { --t: var(--accent); min-width: 0; display: flex; flex-direction: column; gap: 14px; padding: 16px 16px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.projdetail-root .pdv-card:hover { border-color: color-mix(in srgb, var(--t) 45%, transparent); box-shadow: var(--shadow-md); }
+.projdetail-root .pdv-card.tone-green { --t: var(--positive); }
+.projdetail-root .pdv-card.tone-grey { --t: #8b8895; }
+.projdetail-root .pdv-card.tone-red { --t: var(--danger); }
+.projdetail-root .pdv-card.tone-amber { --t: var(--warning); }
+.projdetail-root .pdv-card.tone-blue { --t: #2189d9; }
+.projdetail-root .pdv-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.projdetail-root .pdv-icon { width: 34px; height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--t); background: color-mix(in srgb, var(--t) 10%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--t) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pdv-icon svg { stroke-width: 1.75; }
+.projdetail-root .pdv-label { min-width: 0; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); line-height: 1.25; }
+.projdetail-root .pdv-main { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.projdetail-root .pdv-value { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; color: var(--ink); }
+.projdetail-root .pdv-card.tone-red .pdv-value { color: var(--danger); }
+.projdetail-root .pdv-ring { position: relative; width: 42px; height: 42px; flex-shrink: 0; }
+.projdetail-root .pdv-ring svg { display: block; width: 100%; height: 100%; }
+.projdetail-root .pdv-ring span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink-soft); }
+.projdetail-root .pdv-foot { padding-top: 10px; font-size: 12px; font-weight: 600; color: var(--ink-faint); border-top: 1px dashed var(--border); }
+@media (max-width: 600px) { .projdetail-root .pdv { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .projdetail-root .pdv-value { font-size: 26px; } }
+
+/* ==========================================================================
+   Progress at a glance (redesign): one card with a header, a status donut with percentage labels and a legend, and a
+   bar chart of what is due in the next 7 days
+   ========================================================================== */
+.projdetail-root .pdg { padding: 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); }
+.projdetail-root .pdg-head { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 18px; border-bottom: 1px dashed var(--border); }
+.projdetail-root .pdg-badge { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pdg-title { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.projdetail-root .pdg-sub { margin-top: 2px; font-size: 12.5px; color: var(--ink-faint); }
+.projdetail-root .pdg-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 20px; }
+.projdetail-root .pdg-panel { min-width: 0; display: flex; flex-direction: column; padding: 18px 20px; background: color-mix(in srgb, var(--accent) 2.5%, var(--surface)); border: 1px solid var(--border); border-radius: 14px; }
+.projdetail-root .pdg-panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.projdetail-root .pdg-panel-title { font-size: 13.5px; font-weight: 800; color: var(--ink); }
+.projdetail-root .pdg-panel-sub { font-size: 12px; color: var(--ink-faint); }
+.projdetail-root .pdg-empty { margin: 0; padding: 20px 0; font-size: 13px; color: var(--ink-faint); }
+
+.projdetail-root .pdg-donut { position: relative; width: 100%; max-width: 250px; aspect-ratio: 1; margin: 0 auto; }
+.projdetail-root .pdg-donut svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.projdetail-root .pdg-pct-label { font-size: 11px; font-weight: 700; fill: var(--ink-soft); }
+.projdetail-root .pdg-donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; pointer-events: none; }
+.projdetail-root .pdg-donut-center span { margin-bottom: 4px; font-size: 12px; color: var(--ink-faint); }
+.projdetail-root .pdg-donut-center b { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+.projdetail-root .pdg-legend { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.projdetail-root .pdg-legend li { display: grid; grid-template-columns: 12px auto 1fr auto 44px; align-items: center; column-gap: 10px; padding: 8px 2px; font-size: 13px; }
+.projdetail-root .pdg-legend li.is-zero { opacity: 0.55; }
+.projdetail-root .pdg-legend i { width: 12px; height: 12px; border-radius: 4px; }
+.projdetail-root .pdg-legend-label { color: var(--ink-soft); }
+.projdetail-root .pdg-leader { align-self: end; height: 0; margin: 0 4px 6px; border-bottom: 2px dotted var(--border); }
+.projdetail-root .pdg-legend b { font-weight: 800; color: var(--ink); }
+.projdetail-root .pdg-legend-pct { text-align: right; font-size: 12px; font-weight: 600; color: var(--ink-faint); }
+
+.projdetail-root .pdg-bars { flex: 1; min-height: 220px; margin-bottom: 28px; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; align-items: stretch; border-bottom: 1px solid var(--border); }
+.projdetail-root .pdg-col { position: relative; min-width: 0; display: flex; flex-direction: column; }
+.projdetail-root .pdg-track { position: relative; flex: 1; display: block; }
+.projdetail-root .pdg-fill { position: absolute; left: 50%; bottom: 0; width: 100%; max-width: 30px; transform: translateX(-50%); height: max(4px, calc((100% - 24px) * var(--r, 0))); border-radius: 8px 8px 3px 3px; background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #ffffff)); }
+.projdetail-root .pdg-col.late .pdg-fill { background: linear-gradient(180deg, var(--danger), color-mix(in srgb, var(--danger) 55%, #ffffff)); }
+.projdetail-root .pdg-col.zero .pdg-fill { background: var(--border-soft); border: 1px solid var(--border); }
+.projdetail-root .pdg-val { position: absolute; left: 50%; bottom: calc(100% + 4px); transform: translateX(-50%); font-size: 12px; font-weight: 800; color: var(--ink); }
+.projdetail-root .pdg-col.zero .pdg-val { color: var(--ink-faint); font-weight: 600; }
+.projdetail-root .pdg-x { position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--ink-faint); white-space: nowrap; }
+.projdetail-root .pdg-col.late .pdg-x { color: var(--danger); font-weight: 700; }
+.projdetail-root .pdg-note { font-size: 12px; color: var(--ink-faint); }
+
+@media (max-width: 1000px) { .projdetail-root .pdg-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) {
+  .projdetail-root .pdg { padding: 16px; }
+  .projdetail-root .pdg-panel { padding: 14px; }
+  .projdetail-root .pdg-bars { gap: 4px; }
+  .projdetail-root .pdg-x { font-size: 9.5px; }
+}
+
+/* ==========================================================================
+   Milestones (redesign): a vertical timeline. Numbered nodes join along a dashed line; each stage is a bordered row with
+   its deadline, a days-left note and a progress ring. Click a node to mark the stage done.
+   ========================================================================== */
+.projdetail-root .pdm { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); }
+.projdetail-root .pdm-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 18px 20px; border-bottom: 1px dashed var(--border); }
+.projdetail-root .pdm-badge { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pdm-head-text { flex: 1; min-width: 160px; }
+.projdetail-root .pdm-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.projdetail-root .pdm-count { padding: 1px 9px; font-size: 12px; font-weight: 700; color: var(--ink-soft); background: var(--surface-muted); border: 1px solid var(--border); border-radius: 8px; }
+.projdetail-root .pdm-sub { margin-top: 2px; font-size: 12.5px; color: var(--ink-faint); }
+.projdetail-root .pdm-head .btn { border-radius: 8px; }
+
+.projdetail-root .pdm-list { list-style: none; margin: 0; padding: 22px 20px 20px; display: flex; flex-direction: column; }
+.projdetail-root .pdm-item { position: relative; display: flex; align-items: flex-start; gap: 16px; padding-bottom: 14px; }
+.projdetail-root .pdm-item:last-child { padding-bottom: 0; }
+.projdetail-root .pdm-item:not(:last-child)::before { content: ''; position: absolute; left: 16px; top: 34px; bottom: -2px; border-left: 2px dashed var(--border); }
+.projdetail-root .pdm-item.done:not(:last-child)::before { border-left-style: solid; border-left-color: color-mix(in srgb, var(--positive) 45%, transparent); }
+.projdetail-root .pdm-node { position: relative; z-index: 1; width: 34px; height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 28%, transparent); border-radius: 50%; cursor: pointer; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.projdetail-root .pdm-node:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.projdetail-root .pdm-item.done .pdm-node { color: #fff; background: var(--positive); border-color: var(--positive); }
+.projdetail-root .pdm-item.late .pdm-node { color: var(--danger); background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
+.projdetail-root .pdm-item.late .pdm-node:hover { color: #fff; background: var(--danger); border-color: var(--danger); }
+.projdetail-root .pdm-card { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.projdetail-root .pdm-card:hover { border-color: color-mix(in srgb, var(--accent) 40%, transparent); box-shadow: var(--shadow-sm); }
+.projdetail-root .pdm-info { min-width: 0; }
+.projdetail-root .pdm-name { font-size: 14px; font-weight: 800; line-height: 1.3; color: var(--ink); overflow-wrap: anywhere; }
+.projdetail-root .pdm-item.done .pdm-name { color: var(--ink-faint); font-weight: 600; text-decoration: line-through; }
+.projdetail-root .pdm-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 6px; font-size: 12.5px; font-weight: 500; color: var(--ink-soft); }
+.projdetail-root .pdm-meta svg { color: var(--ink-faint); flex-shrink: 0; }
+.projdetail-root .pdm-chip { font-size: 12px; font-weight: 700; margin-left: 4px; }
+.projdetail-root .pdm-chip::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: currentColor; vertical-align: 1px; }
+.projdetail-root .pdm-chip.ok { color: var(--positive); }
+.projdetail-root .pdm-chip.warn { color: var(--warning); }
+.projdetail-root .pdm-chip.danger { color: var(--danger); }
+.projdetail-root .pdm-ring { position: relative; width: 44px; height: 44px; flex-shrink: 0; }
+.projdetail-root .pdm-ring svg { display: block; width: 100%; height: 100%; }
+.projdetail-root .pdm-ring span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 9.5px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink-soft); }
+
+.projdetail-root .pdm-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 40px 20px; text-align: center; font-size: 13px; color: var(--ink-soft); }
+.projdetail-root .pdm-empty strong { font-size: 14px; color: var(--ink); }
+.projdetail-root .pdm-empty-icon { width: 44px; height: 44px; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+@media (max-width: 600px) {
+  .projdetail-root .pdm-head { padding: 16px; }
+  .projdetail-root .pdm-list { padding: 18px 14px 16px; }
+  .projdetail-root .pdm-card { padding: 12px 14px; gap: 10px; }
+}
+
+/* Progress at a glance and Milestones sit side by side */
+.projdetail-root .pd-pair2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.projdetail-root .pd-pair2 > section { min-width: 0; }
+/* in a half-width card the two chart panels stack */
+.projdetail-root .pd-pair2 .pdg-grid { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1400px) { .projdetail-root .pd-pair2 { grid-template-columns: minmax(0, 1fr); } }
+
+/* Milestones now lives in the narrow side column, so its rows are compact */
+.projdetail-root .pd-side .pdm-head { padding: 16px; }
+.projdetail-root .pd-side .pdm-head .btn { width: 100%; justify-content: center; }
+.projdetail-root .pd-side .pdm-list { padding: 18px 14px 16px; }
+.projdetail-root .pd-side .pdm-card { padding: 12px; gap: 10px; }
+.projdetail-root .pd-side .pdm-ring { width: 40px; height: 40px; }
+.projdetail-root .pd-side .pdm-node { width: 30px; height: 30px; }
+.projdetail-root .pd-side .pdm-item { gap: 12px; }
+.projdetail-root .pd-side .pdm-item:not(:last-child)::before { left: 14px; top: 30px; }
+/* Progress at a glance is full width in the main column again: the two panels sit side by side */
+.projdetail-root .pd-main > .pdg .pdg-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); }
+@media (max-width: 1000px) { .projdetail-root .pd-main > .pdg .pdg-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ==========================================================================
+   Team (redesign): a header, then one bordered row per person with their avatar, role and a plain load status
+   ========================================================================== */
+.projdetail-root .pdt2 { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); }
+.projdetail-root .pdt2-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 18px 20px; border-bottom: 1px dashed var(--border); }
+.projdetail-root .pdt2-badge { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pdt2-head-text { flex: 1; min-width: 120px; }
+.projdetail-root .pdt2-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.projdetail-root .pdt2-count { padding: 1px 9px; font-size: 12px; font-weight: 700; color: var(--ink-soft); background: var(--surface-muted); border: 1px solid var(--border); border-radius: 8px; }
+.projdetail-root .pdt2-sub { margin-top: 2px; font-size: 12.5px; color: var(--ink-faint); }
+.projdetail-root .pdt2-head .btn { border-radius: 8px; }
+.projdetail-root .pdt2-list { list-style: none; margin: 0; padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 10px; }
+.projdetail-root .pdt2-row { --t: var(--positive); display: flex; align-items: center; gap: 14px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.projdetail-root .pdt2-row:hover { border-color: color-mix(in srgb, var(--accent) 40%, transparent); box-shadow: var(--shadow-sm); }
+.projdetail-root .pdt2-row.tone-busy { --t: var(--warning); }
+.projdetail-root .pdt2-row.tone-full { --t: var(--danger); }
+.projdetail-root .pdt2-info { flex: 1; min-width: 0; }
+.projdetail-root .pdt2-name { font-size: 13.5px; font-weight: 800; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projdetail-root .pdt2-role { margin-top: 2px; font-size: 12px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projdetail-root .pdt2-load { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 7px; font-size: 12px; font-weight: 700; color: var(--t); }
+.projdetail-root .pdt2-load i { width: 7px; height: 7px; border-radius: 50%; background: var(--t); }
+.projdetail-root .pdt2-load span { font-weight: 500; color: var(--ink-faint); }
+.projdetail-root .pdt2-add { width: 30px; height: 30px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); background: var(--surface-muted); border: 1px solid var(--border); border-radius: 50%; cursor: pointer; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.projdetail-root .pdt2-add:hover { color: #fff; background: var(--accent); border-color: var(--accent); }
+.projdetail-root .pdt2-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 36px 20px; text-align: center; font-size: 13px; color: var(--ink-soft); }
+.projdetail-root .pdt2-empty strong { font-size: 14px; color: var(--ink); }
+.projdetail-root .pdt2-empty-icon { width: 44px; height: 44px; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pd-side .pdt2-head { padding: 16px; }
+.projdetail-root .pd-side .pdt2-head .btn { width: 100%; justify-content: center; }
+.projdetail-root .pd-side .pdt2-list { padding: 14px 14px 16px; }
+@media (max-width: 600px) { .projdetail-root .pdt2-head { padding: 16px; } .projdetail-root .pdt2-list { padding: 14px; } }
+
+/* ==========================================================================
+   Files (redesign): a header with a working Upload button and a Manage link, a progress line while uploading, and a list of
+   the latest files and links. Each row opens the file in a new tab.
+   ========================================================================== */
+.projdetail-root .pdf { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); }
+.projdetail-root .pdf-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 18px 20px; border-bottom: 1px dashed var(--border); }
+.projdetail-root .pdf-badge { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pdf-head-text { flex: 1; min-width: 160px; }
+.projdetail-root .pdf-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.projdetail-root .pdf-count { padding: 1px 9px; font-size: 12px; font-weight: 700; color: var(--ink-soft); background: var(--surface-muted); border: 1px solid var(--border); border-radius: 8px; }
+.projdetail-root .pdf-sub { margin-top: 2px; font-size: 12.5px; color: var(--ink-faint); }
+.projdetail-root .pdf-tools { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.projdetail-root .pdf-upload { position: relative; cursor: pointer; border-radius: 8px; }
+.projdetail-root .pdf-upload.busy { opacity: 0.75; cursor: progress; }
+.projdetail-root .pdf-upload input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; }
+.projdetail-root .pdf-all { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); }
+.projdetail-root .pdf-all-go { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; color: var(--ink-faint); background: var(--surface-muted); border: 1px solid var(--border); border-radius: 50%; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.projdetail-root .pdf-all:hover { color: var(--accent); }
+.projdetail-root .pdf-all:hover .pdf-all-go { background: var(--accent); border-color: var(--accent); color: #fff; }
+.projdetail-root .pdf-progress { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 20px 0; padding: 10px 14px; font-size: 12.5px; color: var(--accent); background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 10px; }
+.projdetail-root .pdf-error { margin: 14px 20px 0; padding: 10px 14px; font-size: 12.5px; color: var(--danger); background: var(--danger-soft); border: 1px solid color-mix(in srgb, var(--danger) 22%, transparent); border-radius: 10px; overflow-wrap: anywhere; }
+.projdetail-root .pdf-list { list-style: none; margin: 0; padding: 16px 20px 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.projdetail-root .pdf-row { display: flex; align-items: center; gap: 12px; padding: 11px 14px; text-decoration: none; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease; }
+.projdetail-root .pdf-row:hover { border-color: color-mix(in srgb, var(--accent) 45%, transparent); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.projdetail-root .pdf-icon { width: 38px; height: 38px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1.5px solid color-mix(in srgb, currentColor 22%, transparent); }
+.projdetail-root .pdf-icon svg { stroke-width: 1.75; }
+.projdetail-root .pdf-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.projdetail-root .pdf-name { font-size: 13px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projdetail-root .pdf-meta { font-size: 12px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projdetail-root .pdf-tag { flex-shrink: 0; font-size: 11.5px; font-weight: 700; color: var(--ink-soft); }
+.projdetail-root .pdf-tag::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--ink-faint); vertical-align: 1px; }
+.projdetail-root .pdf-tag.tag-shared { color: var(--positive); }
+.projdetail-root .pdf-tag.tag-shared::before { background: var(--positive); }
+.projdetail-root .pdf-tag.tag-task { color: var(--accent); }
+.projdetail-root .pdf-tag.tag-task::before { background: var(--accent); }
+.projdetail-root .pdf-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 40px 20px; text-align: center; font-size: 13px; color: var(--ink-soft); }
+.projdetail-root .pdf-empty strong { font-size: 14px; color: var(--ink); }
+.projdetail-root .pdf-empty-icon { width: 44px; height: 44px; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+@media (max-width: 600px) {
+  .projdetail-root .pdf-head { padding: 16px; }
+  .projdetail-root .pdf-list { padding: 14px; grid-template-columns: minmax(0, 1fr); }
+  .projdetail-root .pdf-progress, .projdetail-root .pdf-error { margin-left: 14px; margin-right: 14px; }
+}
+
+/* ---- Files: cleaner. A single flat list with hairline dividers, no boxes around each row ---- */
+.projdetail-root .pdf-list { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 6px 12px 12px; }
+.projdetail-root .pdf-row { gap: 14px; padding: 13px 10px; background: none; border: none; border-bottom: 1px solid var(--border-soft); border-radius: 10px; box-shadow: none; transform: none; }
+.projdetail-root .pdf-list li:last-child .pdf-row { border-bottom-color: transparent; }
+.projdetail-root .pdf-row:hover { background: color-mix(in srgb, var(--accent) 4%, var(--surface)); border-color: transparent; box-shadow: none; transform: none; }
+.projdetail-root .pdf-icon { width: 36px; height: 36px; border: none; }
+.projdetail-root .pdf-name { font-size: 13.5px; font-weight: 600; }
+.projdetail-root .pdf-meta { font-size: 12px; }
+.projdetail-root .pdf-tag { font-weight: 600; }
+.projdetail-root .pdf-head { padding: 18px 22px; }
+@media (max-width: 600px) { .projdetail-root .pdf-list { padding: 4px 8px 10px; } }
+
+/* ---- Files: list and card views ---- */
+.projdetail-root .pdf-view { display: inline-flex; padding: 3px; gap: 2px; background: var(--surface-muted); border: 1px solid var(--border); border-radius: 10px; }
+.projdetail-root .pdf-view button { width: 30px; height: 26px; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); background: transparent; border: none; border-radius: 7px; cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
+.projdetail-root .pdf-view button:hover { color: var(--ink); }
+.projdetail-root .pdf-view button.active { color: var(--accent); background: var(--surface); box-shadow: var(--shadow-sm); }
+
+/* card view: each file is a small card with the icon on top */
+.projdetail-root .pdf-list.cards { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; padding: 16px 20px 20px; }
+.projdetail-root .pdf-list.cards .pdf-row { position: relative; flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px; height: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+.projdetail-root .pdf-list.cards li:last-child .pdf-row { border-bottom-color: var(--border); }
+.projdetail-root .pdf-list.cards .pdf-row:hover { background: var(--surface); border-color: color-mix(in srgb, var(--accent) 45%, transparent); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.projdetail-root .pdf-list.cards .pdf-icon { width: 44px; height: 44px; border: 1.5px solid color-mix(in srgb, currentColor 22%, transparent); }
+.projdetail-root .pdf-list.cards .pdf-info { width: 100%; }
+.projdetail-root .pdf-list.cards .pdf-name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; }
+.projdetail-root .pdf-list.cards .pdf-tag { position: absolute; top: 16px; right: 14px; }
+@media (max-width: 600px) {
+  .projdetail-root .pdf-list.cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 12px; }
+}
+
+/* the Manage button gets a border */
+.projdetail-root .pdf-all { padding: 5px 7px 5px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; transition: border-color 0.15s ease, color 0.15s ease; }
+.projdetail-root .pdf-all:hover { border-color: var(--accent); }
+
+/* ==========================================================================
+   Files, card view v2: a preview tile on top (a photo for images, a big icon otherwise, with the file type as a badge),
+   then the name, who and when, and the tag. In the list view the thumbnail and the badge are hidden.
+   ========================================================================== */
+.projdetail-root .pdf-icon { position: relative; overflow: hidden; }
+.projdetail-root .pdf-thumb, .projdetail-root .pdf-ext { display: none; }
+
+.projdetail-root .pdf-list.cards { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.projdetail-root .pdf-list.cards .pdf-row { position: relative; flex-direction: column; align-items: stretch; gap: 12px; padding: 10px 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: none; }
+.projdetail-root .pdf-list.cards .pdf-row:hover { border-color: color-mix(in srgb, var(--accent) 45%, transparent); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.projdetail-root .pdf-list.cards .pdf-icon { width: 100%; height: 104px; border: none; border-radius: 11px; display: flex; align-items: center; justify-content: center; }
+.projdetail-root .pdf-list.cards .pdf-icon > svg { width: 30px; height: 30px; stroke-width: 1.5; }
+.projdetail-root .pdf-list.cards .pdf-thumb { display: block; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.projdetail-root .pdf-list.cards .pdf-ext { display: inline-block; position: absolute; left: 8px; bottom: 8px; padding: 2px 8px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.04em; color: var(--ink-soft); background: var(--surface); border-radius: 6px; box-shadow: 0 1px 2px rgba(16, 16, 20, 0.08); }
+.projdetail-root .pdf-list.cards .pdf-info { width: 100%; padding: 0 6px; gap: 5px; }
+.projdetail-root .pdf-list.cards .pdf-name { font-size: 13.5px; font-weight: 700; -webkit-line-clamp: 2; }
+.projdetail-root .pdf-list.cards .pdf-meta { font-size: 12px; }
+.projdetail-root .pdf-list.cards .pdf-tag { position: absolute; top: 18px; right: 18px; padding: 2px 9px; font-size: 11px; font-weight: 700; background: var(--surface); border-radius: 999px; box-shadow: 0 1px 2px rgba(16, 16, 20, 0.08); }
+@media (max-width: 600px) {
+  .projdetail-root .pdf-list.cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .projdetail-root .pdf-list.cards .pdf-icon { height: 84px; }
+}
+/* the tag on a file card (Shared, Private, Task) has no background */
+.projdetail-root .pdf-list.cards .pdf-tag { background: none; box-shadow: none; padding: 0; }
+/* the tag gets the same white background as the file-type badge (LINK, PDF ...) */
+.projdetail-root .pdf-list.cards .pdf-tag { padding: 2px 8px; background: var(--surface); border-radius: 6px; box-shadow: 0 1px 2px rgba(16, 16, 20, 0.08); }
+
+/* the count next to each card title is a circle */
+.projdetail-root .pdf-count, .projdetail-root .pdk-count, .projdetail-root .pdm-count, .projdetail-root .pdt2-count { min-width: 24px; height: 24px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; font-size: 12px; line-height: 1; }
+
+/* the two columns end at the same height: Files (last in the main column) and Quick Actions (last in the side column) stretch to fill */
+.projdetail-root .pd-layout { align-items: stretch; }
+.projdetail-root .pd-main > section:last-child, .projdetail-root .pd-side > section:last-child { flex: 1 1 auto; }
+
+/* ---- Files: pagination under the list ---- */
+.projdetail-root .pdf-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 20px; border-top: 1px dashed var(--border); }
+.projdetail-root .pdf-pager-info { font-size: 12.5px; color: var(--ink-faint); }
+.projdetail-root .pdf-pager-info b { font-weight: 800; color: var(--ink-soft); }
+.projdetail-root .pdf-pager-controls { display: flex; align-items: center; gap: 6px; }
+.projdetail-root .pdf-pg-wrap { display: inline-flex; align-items: center; gap: 6px; }
+.projdetail-root .pdf-pg-gap { padding: 0 2px; font-size: 12px; color: var(--ink-faint); }
+.projdetail-root .pdf-pg { min-width: 30px; height: 30px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700; color: var(--ink-soft); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; cursor: pointer; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.projdetail-root .pdf-pg:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.projdetail-root .pdf-pg.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+.projdetail-root .pdf-pg:disabled { opacity: 0.4; cursor: not-allowed; }
+.projdetail-root .pdf-pg.next svg { transform: rotate(180deg); }
+@media (max-width: 600px) { .projdetail-root .pdf-pager { padding: 12px 14px; justify-content: center; } }
+
+/* ==========================================================================
+   Notes (working): a composer, then notes as rows with an avatar, author, time and the text. Own notes (and admins) can pin, edit and delete.
+   ========================================================================== */
+.projdetail-root .pdn { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); }
+.projdetail-root .pdn-head { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px dashed var(--border); }
+.projdetail-root .pdn-badge { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pdn-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.projdetail-root .pdn-count { min-width: 24px; height: 24px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--ink-soft); background: var(--surface-muted); border: 1px solid var(--border); border-radius: 999px; }
+.projdetail-root .pdn-sub { margin-top: 2px; font-size: 12.5px; color: var(--ink-faint); }
+.projdetail-root .pdn-compose { margin: 18px 20px 0; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.projdetail-root .pdn-compose:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent); }
+.projdetail-root .pdn-compose textarea, .projdetail-root .pdn-edit textarea { width: 100%; display: block; resize: vertical; min-height: 64px; padding: 0; font: inherit; font-size: 13.5px; line-height: 1.55; color: var(--ink); background: transparent; border: none; outline: none; }
+.projdetail-root .pdn-compose textarea::placeholder { color: var(--ink-faint); }
+.projdetail-root .pdn-compose-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.projdetail-root .pdn-hint { font-size: 12px; color: var(--ink-faint); }
+.projdetail-root .pdn-compose-foot .btn { border-radius: 8px; }
+.projdetail-root .pdn-error { margin: 12px 20px 0; padding: 10px 14px; font-size: 12.5px; color: var(--danger); background: var(--danger-soft); border: 1px solid color-mix(in srgb, var(--danger) 22%, transparent); border-radius: 10px; overflow-wrap: anywhere; }
+.projdetail-root .pdn-setup { display: flex; flex-direction: column; gap: 4px; margin: 18px 20px 20px; padding: 14px 16px; font-size: 12.5px; color: var(--ink-soft); background: var(--warning-soft); border: 1px solid color-mix(in srgb, var(--warning) 28%, transparent); border-radius: 12px; }
+.projdetail-root .pdn-setup strong { font-size: 13px; color: var(--ink); }
+.projdetail-root .pdn-list { list-style: none; margin: 0; padding: 14px 20px 20px; display: flex; flex-direction: column; }
+.projdetail-root .pdn-note { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border-soft); }
+.projdetail-root .pdn-note:last-child { border-bottom: none; padding-bottom: 0; }
+.projdetail-root .pdn-body { flex: 1; min-width: 0; }
+.projdetail-root .pdn-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--ink-faint); }
+.projdetail-root .pdn-meta b { font-size: 13px; font-weight: 800; color: var(--ink); }
+.projdetail-root .pdn-pin { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: var(--accent); }
+.projdetail-root .pdn-text { margin: 6px 0 0; font-size: 13.5px; line-height: 1.6; color: var(--ink-soft); white-space: pre-wrap; overflow-wrap: anywhere; }
+.projdetail-root .pdn-note.pinned .pdn-text { color: var(--ink); }
+.projdetail-root .pdn-actions { display: flex; gap: 4px; flex-shrink: 0; opacity: 0; transition: opacity 0.12s ease; }
+.projdetail-root .pdn-note:hover .pdn-actions, .projdetail-root .pdn-note:focus-within .pdn-actions { opacity: 1; }
+@media (hover: none) { .projdetail-root .pdn-actions { opacity: 1; } }
+.projdetail-root .pdn-act { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); background: var(--surface); border: 1px solid var(--border); border-radius: 50%; cursor: pointer; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.projdetail-root .pdn-act:hover, .projdetail-root .pdn-act.on { color: var(--accent); border-color: var(--accent); }
+.projdetail-root .pdn-act.danger:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-soft); }
+.projdetail-root .pdn-edit { margin-top: 8px; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 12px; }
+.projdetail-root .pdn-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.projdetail-root .pdn-edit-actions .btn { border-radius: 8px; }
+.projdetail-root .pdn-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 30px 20px 36px; text-align: center; font-size: 13px; color: var(--ink-soft); }
+.projdetail-root .pdn-empty strong { font-size: 14px; color: var(--ink); }
+.projdetail-root .pdn-empty-icon { width: 44px; height: 44px; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+@media (max-width: 600px) {
+  .projdetail-root .pdn-head { padding: 16px; }
+  .projdetail-root .pdn-compose, .projdetail-root .pdn-error, .projdetail-root .pdn-setup { margin-left: 14px; margin-right: 14px; }
+  .projdetail-root .pdn-list { padding: 10px 14px 16px; }
+}
+
+/* ==========================================================================
+   Recent Activity (redesign): a timeline grouped by Today / Yesterday / Earlier, each event with a round coloured icon
+   ========================================================================== */
+.projdetail-root .pda2 { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-sm); }
+.projdetail-root .pda2-head { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px dashed var(--border); }
+.projdetail-root .pda2-badge { width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+.projdetail-root .pda2-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.projdetail-root .pda2-count { min-width: 24px; height: 24px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--ink-soft); background: var(--surface-muted); border: 1px solid var(--border); border-radius: 999px; }
+.projdetail-root .pda2-sub { margin-top: 2px; font-size: 12.5px; color: var(--ink-faint); }
+.projdetail-root .pda2-body { padding: 18px 20px 22px; }
+.projdetail-root .pda2-group + .pda2-group { margin-top: 20px; }
+.projdetail-root .pda2-group-label { margin-bottom: 12px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); }
+.projdetail-root .pda2-list { list-style: none; margin: 0; padding: 0; }
+.projdetail-root .pda2-row { position: relative; display: flex; align-items: flex-start; gap: 14px; padding-bottom: 18px; }
+.projdetail-root .pda2-row:last-child { padding-bottom: 0; }
+.projdetail-root .pda2-row:not(:last-child)::before { content: ''; position: absolute; left: 17px; top: 36px; bottom: 0; border-left: 1.5px dashed var(--border); }
+.projdetail-root .pda2-icon { --t: var(--accent); position: relative; z-index: 1; width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--t); background: color-mix(in srgb, var(--t) 10%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--t) 24%, transparent); border-radius: 50%; }
+.projdetail-root .pda2-icon.tone-positive { --t: var(--positive); }
+.projdetail-root .pda2-icon.tone-danger { --t: var(--danger); }
+.projdetail-root .pda2-icon.tone-info { --t: #2189d9; }
+.projdetail-root .pda2-icon svg { stroke-width: 1.75; }
+.projdetail-root .pda2-text-wrap { flex: 1; min-width: 0; padding-top: 1px; }
+.projdetail-root .pda2-text { font-size: 13px; line-height: 1.5; color: var(--ink-soft); overflow-wrap: anywhere; }
+.projdetail-root .pda2-text b { font-weight: 800; color: var(--ink); }
+.projdetail-root .pda2-time { margin-top: 3px; font-size: 11.5px; color: var(--ink-faint); }
+.projdetail-root .pda2-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 40px 20px; text-align: center; font-size: 13px; color: var(--ink-soft); }
+.projdetail-root .pda2-empty strong { font-size: 14px; color: var(--ink); }
+.projdetail-root .pda2-empty-icon { width: 44px; height: 44px; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; color: var(--accent); background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; }
+@media (max-width: 600px) { .projdetail-root .pda2-head { padding: 16px; } .projdetail-root .pda2-body { padding: 14px 16px 18px; } }
+/* group headings (Today, Yesterday, Earlier) in sentence case */
+.projdetail-root .pda2-group-label { text-transform: none; letter-spacing: 0; font-size: 12.5px; font-weight: 700; }
+/* the time sits on the right side of each activity row */
+.projdetail-root .pda2-text-wrap { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.projdetail-root .pda2-text { flex: 1; min-width: 0; }
+.projdetail-root .pda2-time { margin-top: 0; flex-shrink: 0; padding-top: 1px; white-space: nowrap; }
+/* smaller icons in the activity timeline */
+.projdetail-root .pda2-icon { width: 30px; height: 30px; }
+.projdetail-root .pda2-icon svg { width: 13px; height: 13px; }
+.projdetail-root .pda2-row { gap: 12px; }
+.projdetail-root .pda2-row:not(:last-child)::before { left: 14px; top: 30px; }

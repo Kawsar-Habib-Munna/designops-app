@@ -9,6 +9,7 @@
 // (ফেজ ১৭, Messages-এর sender_id-এর same প্যাটার্ন) থেকে টিম মেম্বারের real
 // নাম/role/avatar দেখায়, কোনো ID না থাকলে (পুরনো রো) জেনেরিক "FLOW 53 Team"।
 
+import ClientAvatar from '@/app/components/ClientAvatar';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -744,7 +745,7 @@ export default function ClientFilesPage() {
             </button>
             <span className="topbar-title">Files</span>
                       <button type="button" className="topbar-avatar" aria-label="Sign out" onClick={() => { if (window.confirm('Sign out of your account?')) (handleSignOut)(); }}>
-              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+              <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
             </button>
 </header>
 
@@ -762,7 +763,7 @@ export default function ClientFilesPage() {
             </a>
           <button type="button" className="profile-card topbar-profile" onClick={handleSignOut} title="Sign out">
             <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+              <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
             </div>
             <div className="profile-meta">
               <div className="profile-name">{client.primary_contact ?? client.company_name}</div>

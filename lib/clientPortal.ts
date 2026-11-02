@@ -18,6 +18,8 @@ export type ClientRecord = {
   status: string;
   admin_request: string | null;
   admin_request_at: string | null;
+  // the photo from their Google account (set on sign-in); undefined/null when there is none
+  avatar_url?: string | null;
 };
 
 export async function fetchOwnClient(): Promise<ClientRecord | null> {
@@ -30,7 +32,30 @@ export async function fetchOwnClient(): Promise<ClientRecord | null> {
     .eq('user_id', userData.user.id)
     .maybeSingle();
 
-  return (data as ClientRecord) ?? null;
+  const client = (data as ClientRecord) ?? null;
+  if (client) client.avatar_url = await syncClientAvatar(client.id, userData.user.user_metadata);
+  return client;
+}
+
+// The Google profile photo arrives in the sign-in account's metadata (avatar_url or picture). It is copied onto the
+// client's own row so the team can see it too, and refreshed whenever Google hands us a different address. This is
+// kept separate from the main query on purpose: if the avatar_url column has not been added yet, only the photo is
+// skipped, never the whole portal.
+async function syncClientAvatar(clientId: string, metadata: Record<string, unknown> | undefined): Promise<string | null> {
+  try {
+    const raw = metadata?.avatar_url ?? metadata?.picture;
+    const fromGoogle = typeof raw === 'string' && /^https:\/\//.test(raw) ? raw : null;
+    const { data, error } = await supabase.from('clients').select('avatar_url').eq('id', clientId).maybeSingle();
+    if (error) return fromGoogle;
+    const stored = (data as { avatar_url: string | null } | null)?.avatar_url ?? null;
+    if (fromGoogle && fromGoogle !== stored) {
+      await supabase.from('clients').update({ avatar_url: fromGoogle }).eq('id', clientId);
+      return fromGoogle;
+    }
+    return stored;
+  } catch {
+    return null;
+  }
 }
 
 export async function hasSubmittedRequirements(clientId: string): Promise<boolean> {

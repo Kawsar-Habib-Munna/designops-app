@@ -7,6 +7,7 @@
 // ভার্সনের "View" লিঙ্ক ../sow?v=N -এ যায়, যেটা Screen 10-এ viewVersion সাপোর্ট
 // দিয়ে সেই নির্দিষ্ট ভার্সনের পুরো ডকুমেন্ট read-only দেখায়।
 
+import ClientAvatar from '@/app/components/ClientAvatar';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -115,7 +116,7 @@ function HistoryShell({
           </button>
           <span className="topbar-title">Version History</span>
                   <button type="button" className="topbar-avatar" aria-label="Sign out" onClick={() => { if (window.confirm('Sign out of your account?')) (onSignOut)(); }}>
-            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
           </button>
 </header>
 
@@ -125,7 +126,7 @@ function HistoryShell({
           </div>
           <button type="button" className="profile-card topbar-profile" onClick={onSignOut} title="Sign out">
             <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+              <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
             </div>
             <div className="profile-meta">
               <div className="profile-name">{client.primary_contact ?? client.company_name}</div>

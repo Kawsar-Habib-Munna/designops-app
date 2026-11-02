@@ -9,12 +9,13 @@ import { useRouter } from "next/navigation";
 import "./projects.css";
 import { supabase } from "@/lib/supabaseClient";
 import { useSession } from "@/lib/useSession";
-import { formatBnDate } from "@/lib/format";
+import { todayISO } from "@/lib/format";
 import SignInScreen from "@/app/components/SignInScreen";
 import Avatar from "@/app/components/Avatar";
 import { CURRENCIES, currencyLabel } from "@/lib/currency";
 import RichTextField from "@/app/components/RichTextField";
 import RichText from "@/app/components/RichText";
+import DeadlineCalendar from "./DeadlineCalendar";
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -42,6 +43,10 @@ const ICON_PATHS: Record<string, string> = {
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
   menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
   close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+  arrow: '<path d="M7 17 17 7"/><path d="M8 7h9v9"/>',
+  sort: '<path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>',
+  pause: '<rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/>',
   more: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
   edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/>',
   trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
@@ -68,10 +73,11 @@ function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
 
 
 const PROJECT_STATUS_META: Record<string, { label: string; cls: string }> = {
-  active: { label: "চলছে", cls: "s-progress" },
-  review: { label: "রিভিউ", cls: "s-review" },
-  completed: { label: "সম্পন্ন", cls: "s-done" },
-  on_hold: { label: "হোল্ডে", cls: "s-todo" },
+  planning: { label: "Planning", cls: "s-todo" },
+  active: { label: "Active", cls: "s-progress" },
+  review: { label: "In review", cls: "s-review" },
+  completed: { label: "Completed", cls: "s-done" },
+  on_hold: { label: "On hold", cls: "s-todo" },
 };
 
 type ProfileRow = {
@@ -110,6 +116,7 @@ export default function ProjectsListPage() {
 
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"due_date" | "name" | "progress">("due_date");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
@@ -416,13 +423,14 @@ export default function ProjectsListPage() {
 
   const visibleProjects = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const byStatus = statusFilter === "all" ? projects : projects.filter((p) => p.status === statusFilter);
     const filtered = q
-      ? projects.filter(
+      ? byStatus.filter(
           (p) =>
             p.name.toLowerCase().includes(q) ||
             (p.clients?.company_name ?? "").toLowerCase().includes(q),
         )
-      : projects;
+      : byStatus;
     const sorted = [...filtered];
     if (sortBy === "name") {
       sorted.sort((a, b) => a.name.localeCompare(b.name));
@@ -432,7 +440,7 @@ export default function ProjectsListPage() {
       sorted.sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"));
     }
     return sorted;
-  }, [projects, search, sortBy]);
+  }, [projects, search, sortBy, statusFilter]);
 
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
@@ -440,30 +448,237 @@ export default function ProjectsListPage() {
   return (
     <>
       <main className="content">
-            <h1 className="page-title">Projects</h1>
-            <p className="page-sub">
-              সব প্রজেক্ট এক জায়গায় — বিস্তারিত দেখতে যেকোনো একটাতে ক্লিক
-              করুন।
-            </p>
+            <div className="pj-head">
+              <div>
+                <h1 className="page-title">Projects</h1>
+                <p className="page-sub">Every project in one place. Open any card for the full details.</p>
+              </div>
+              <button className="btn btn-accent" onClick={() => setShowCreate(true)}>
+                <Icon name="plus" size={15} /> New project
+              </button>
+            </div>
 
-            <div className="list-toolbar">
-              <div className="toolbar-search">
-                <Icon name="search" size={13} />
+            {!loading && projects.length > 0 && (
+              <div className="pj-stats">
+                {[
+                  { key: "all", label: "Total projects", value: projects.length, icon: "layers" as IconName, tone: "ink" },
+                  { key: "planning", label: "Planning", value: projects.filter((p) => p.status === "planning").length, icon: "edit" as IconName, tone: "blue" },
+                  { key: "active", label: "Active", value: projects.filter((p) => p.status === "active").length, icon: "grid" as IconName, tone: "accent" },
+                  { key: "review", label: "In review", value: projects.filter((p) => p.status === "review").length, icon: "checklist" as IconName, tone: "amber" },
+                  { key: "on_hold", label: "On hold", value: projects.filter((p) => p.status === "on_hold").length, icon: "pause" as IconName, tone: "grey" },
+                  { key: "completed", label: "Completed", value: projects.filter((p) => p.status === "completed").length, icon: "check" as IconName, tone: "green" },
+                ].map((st) => {
+                  const share = Math.round((st.value / projects.length) * 100);
+                  return (
+                    <button
+                      type="button"
+                      className={`pj-stat tone-${st.tone}${statusFilter === st.key ? " is-selected" : ""}`}
+                      key={st.key}
+                      onClick={() => setStatusFilter(st.key)}
+                      aria-pressed={statusFilter === st.key}
+                      aria-label={`Show ${st.label}`}
+                    >
+                      <span className="pj-stat-top">
+                        <span className="pj-stat-icon"><Icon name={st.icon} size={17} /></span>
+                        <span className="pj-stat-go" aria-hidden="true"><Icon name="arrow" size={13} /></span>
+                      </span>
+                      <span className="pj-stat-main">
+                        <span className="pj-stat-text">
+                          <b className="tabular">{st.value}</b>
+                          <span>{st.label}</span>
+                        </span>
+                        <span className="pj-stat-ring" aria-hidden="true">
+                          <svg viewBox="0 0 48 48">
+                            <defs>
+                              <linearGradient id={`pj-stat-grad-${st.key}`} x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" style={{ stopColor: "var(--tone)" }} />
+                                <stop offset="100%" style={{ stopColor: "color-mix(in srgb, var(--tone) 55%, #ffffff)" }} />
+                              </linearGradient>
+                            </defs>
+                            <circle cx={24} cy={24} r={20} fill="none" stroke="color-mix(in srgb, var(--tone) 12%, var(--surface))" strokeWidth={3.5} />
+                            {st.value > 0 && (
+                              <circle
+                                cx={24}
+                                cy={24}
+                                r={20}
+                                fill="none"
+                                stroke={`url(#pj-stat-grad-${st.key})`}
+                                strokeWidth={3.5}
+                                strokeLinecap="round"
+                                strokeDasharray={125.66}
+                                strokeDashoffset={125.66 - (st.value / projects.length) * 125.66}
+                                transform="rotate(-90 24 24)"
+                              />
+                            )}
+                          </svg>
+                          <span className="pj-stat-ring-pct tabular">{share}%</span>
+                        </span>
+                      </span>
+                      <span className="pj-stat-foot">
+                        <i />
+                        {st.key === "all" ? "Across every status" : st.value === 0 ? "None right now" : `${share}% of all projects`}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {!loading && projects.length > 0 && (() => {
+              const SEGS = [
+                { key: "planning", label: "Planning", color: "#2189d9" },
+                { key: "active", label: "Active", color: "var(--accent)" },
+                { key: "review", label: "In review", color: "var(--warning)" },
+                { key: "on_hold", label: "On hold", color: "var(--ink-faint)" },
+                { key: "completed", label: "Completed", color: "var(--positive)" },
+              ].map((x) => ({ ...x, n: projects.filter((p) => p.status === x.key).length }));
+              const total = projects.length;
+              const CX = 110;
+              const R = 56;
+              const SW = 16;
+              const C = 2 * Math.PI * R;
+              const GAP = 5;
+              const shown = SEGS.filter((x) => x.n > 0);
+              let acc = 0;
+              const arcs = shown.map((x) => {
+                const len = (x.n / total) * C;
+                // round caps add half a stroke to each end, so the dash is shortened by a full stroke plus the gap
+                const dash = shown.length > 1 ? Math.max(len - SW - GAP, 0.1) : C;
+                const mid = ((acc + len / 2) / C) * 2 * Math.PI - Math.PI / 2;
+                const arc = {
+                  ...x,
+                  dash,
+                  off: acc + (shown.length > 1 ? (SW + GAP) / 2 : 0),
+                  pct: Math.round((x.n / total) * 100),
+                  lx1: CX + Math.cos(mid) * (R + SW / 2 + 3),
+                  ly1: CX + Math.sin(mid) * (R + SW / 2 + 3),
+                  lx2: CX + Math.cos(mid) * (R + SW / 2 + 10),
+                  ly2: CX + Math.sin(mid) * (R + SW / 2 + 10),
+                  tx: CX + Math.cos(mid) * (R + SW / 2 + 14),
+                  ty: CX + Math.sin(mid) * (R + SW / 2 + 14),
+                  right: Math.cos(mid) >= 0,
+                };
+                acc += len;
+                return arc;
+              });
+
+              return (
+                <div className="pj-graphs">
+                  <div className="pj-g-card">
+                    <div className="pj-g-head">
+                      <span className="pj-g-title">Status split</span>
+                      <span className="pj-g-sub">{total} {total === 1 ? "project" : "projects"} in total</span>
+                    </div>
+                    <div className="pj-g-donut">
+                      <svg viewBox="0 0 220 220" role="img" aria-label="Projects by status">
+                        {/* thin inner rings, a soft detail like a dial */}
+                        <circle cx={CX} cy={CX} r={R - SW / 2 - 8} fill="none" stroke="var(--border)" strokeWidth={1} />
+                        <circle cx={CX} cy={CX} r={R - SW / 2 - 14} fill="none" stroke="var(--border-soft)" strokeWidth={1} strokeDasharray="2 4" />
+                        <circle cx={CX} cy={CX} r={R} fill="none" stroke="var(--border-soft)" strokeWidth={SW} />
+                        <g transform={`rotate(-90 ${CX} ${CX})`}>
+                          {arcs.map((x) => (
+                            <circle
+                              key={x.key}
+                              cx={CX}
+                              cy={CX}
+                              r={R}
+                              fill="none"
+                              stroke={x.color}
+                              strokeWidth={SW}
+                              strokeLinecap={shown.length > 1 ? "round" : "butt"}
+                              strokeDasharray={`${x.dash} ${C - x.dash}`}
+                              strokeDashoffset={-x.off}
+                            >
+                              <title>{`${x.label}: ${x.n}`}</title>
+                            </circle>
+                          ))}
+                        </g>
+                        {/* percentage labels with a short leader line */}
+                        {arcs.map((x) => (
+                          <g key={`l-${x.key}`}>
+                            <line x1={x.lx1} y1={x.ly1} x2={x.lx2} y2={x.ly2} stroke="var(--ink-faint)" strokeWidth={1} />
+                            <text x={x.tx + (x.right ? 3 : -3)} y={x.ty} textAnchor={x.right ? "start" : "end"} dominantBaseline="middle" className="pj-g-pct-label">
+                              {x.pct}%
+                            </text>
+                          </g>
+                        ))}
+                      </svg>
+                      <div className="pj-g-donut-center">
+                        <span>Total</span>
+                        <b className="tabular">{total}</b>
+                      </div>
+                    </div>
+                    <ul className="pj-g-legend">
+                      {SEGS.map((x) => (
+                        <li key={x.key} className={x.n === 0 ? "is-zero" : undefined}>
+                          <i style={{ background: x.color }} />
+                          <span className="pj-g-legend-label">{x.label}</span>
+                          <span className="pj-g-leader" aria-hidden="true" />
+                          <b className="tabular">{x.n}</b>
+                          <span className="pj-g-legend-pct tabular">{Math.round((x.n / total) * 100)}%</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="pj-g-card">
+                    <div className="pj-g-head">
+                      <span className="pj-g-title">Deadlines calendar</span>
+                      <span className="pj-g-sub">Hover a day to see its projects</span>
+                    </div>
+                    <DeadlineCalendar projects={projects.map((p) => ({ id: p.id, name: p.name, due_date: p.due_date, status: p.status }))} today={todayISO()} />
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="pj-toolbar">
+              <label className="toolbar-search">
+                <Icon name="search" size={15} />
                 <input
-                  placeholder="প্রজেক্ট খুঁজুন..."
+                  placeholder="Search projects or clients…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
+                {search && (
+                  <button type="button" className="pj-search-clear" aria-label="Clear search" onClick={() => setSearch("")}>
+                    <Icon name="close" size={12} />
+                  </button>
+                )}
+              </label>
+              <div className="pj-tabs" role="group" aria-label="Filter by status">
+                {[
+                  { key: "all", label: "All" },
+                  { key: "planning", label: "Planning" },
+                  { key: "active", label: "Active" },
+                  { key: "review", label: "In review" },
+                  { key: "on_hold", label: "On hold" },
+                  { key: "completed", label: "Completed" },
+                ].map((t) => (
+                  <button
+                    type="button"
+                    key={t.key}
+                    className={statusFilter === t.key ? "active" : ""}
+                    onClick={() => setStatusFilter(t.key)}
+                  >
+                    {t.label}
+                    <em className="tabular">{t.key === "all" ? projects.length : projects.filter((p) => p.status === t.key).length}</em>
+                  </button>
+                ))}
               </div>
-              <select
-                className="filter-select"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as "due_date" | "name" | "progress")}
-              >
-                <option value="due_date">সর্বশেষ</option>
-                <option value="name">নাম</option>
-                <option value="progress">অগ্রগতি</option>
-              </select>
+              <label className="pj-sort">
+                <Icon name="sort" size={15} />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as "due_date" | "name" | "progress")}
+                  aria-label="Sort projects"
+                >
+                  <option value="due_date">Deadline</option>
+                  <option value="name">Name</option>
+                  <option value="progress">Progress</option>
+                </select>
+                <svg className="pj-sort-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              </label>
             </div>
 
             {error && (
@@ -482,50 +697,37 @@ export default function ProjectsListPage() {
             )}
 
             {loading ? (
-              <p
-                style={{ padding: 24, fontSize: 13, color: "var(--ink-faint)" }}
-              >
-                লোড হচ্ছে…
-              </p>
+              <p style={{ padding: 24, fontSize: 13, color: "var(--ink-faint)" }}>Loading…</p>
             ) : projects.length === 0 ? (
               <div className="empty-state">
-                <button
-                  className="empty-icon"
-                  onClick={() => setShowCreate(true)}
-                  aria-label="নতুন প্রজেক্ট তৈরি করুন"
-                >
+                <button className="empty-icon" onClick={() => setShowCreate(true)} aria-label="Create a new project">
                   ＋
                 </button>
-                <div className="empty-title">এখনও কোনো প্রজেক্ট নেই</div>
-                <button
-                  className="btn btn-accent btn-sm"
-                  onClick={() => setShowCreate(true)}
-                  style={{ marginTop: 10 }}
-                >
-                  + প্রথম প্রজেক্ট তৈরি করুন
+                <div className="empty-title">No projects yet</div>
+                <button className="btn btn-accent btn-sm" onClick={() => setShowCreate(true)} style={{ marginTop: 10 }}>
+                  + Create your first project
                 </button>
               </div>
             ) : visibleProjects.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-title">&quot;{search}&quot;-এর সাথে মিলে এমন কোনো প্রজেক্ট নেই</div>
+                <div className="empty-title">
+                  {search ? <>No project matches &quot;{search}&quot;</> : "No projects in this status"}
+                </div>
               </div>
             ) : (
               <div className="proj-grid">
                 {visibleProjects.map((p) => {
-                  const meta = PROJECT_STATUS_META[p.status] ?? {
-                    label: p.status,
-                    cls: "s-todo",
-                  };
+                  const meta = PROJECT_STATUS_META[p.status] ?? { label: p.status, cls: "s-todo" };
                   const stat = taskStats[p.id];
-                  const progress =
-                    stat && stat.total > 0
-                      ? Math.round((stat.done / stat.total) * 100)
-                      : 0;
+                  const progress = stat && stat.total > 0 ? Math.round((stat.done / stat.total) * 100) : 0;
                   const visibleAvatars = p.avatars.slice(0, 3);
                   const extraAvatars = p.avatars.length - visibleAvatars.length;
+                  const late = p.status !== "completed" && !!p.due_date && p.due_date < todayISO();
+                  const daysLeft = p.due_date ? Math.round((new Date(p.due_date + "T00:00:00").getTime() - new Date(todayISO() + "T00:00:00").getTime()) / 86400000) : 0;
+                  const ringColor = late ? "var(--danger)" : p.status === "completed" ? "var(--positive)" : "url(#pj-ring-grad)";
                   return (
                     <div
-                      className="proj-card"
+                      className={`proj-card pj-card band-${p.status}`}
                       key={p.id}
                       role="link"
                       tabIndex={0}
@@ -537,7 +739,7 @@ export default function ProjectsListPage() {
                       <button
                         type="button"
                         className="proj-card-menu-btn"
-                        aria-label="আরও অপশন"
+                        aria-label="More options"
                         onClick={(e) => {
                           e.stopPropagation();
                           setOpenMenuId((id) => (id === p.id ? null : p.id));
@@ -569,54 +771,104 @@ export default function ProjectsListPage() {
                           )}
                         </div>
                       )}
-                      <div className="proj-card-top">
-                        <div className="proj-card-icon">
-                          {p.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="proj-card-name">{p.name}</div>
-                          <span className={`status-pill ${meta.cls}`}>
-                            {meta.label}
-                          </span>
+
+                      <div className="pj2-id">
+                        <div className="pj2-icon">{p.name.charAt(0).toUpperCase()}</div>
+                        <div className="pj2-title">
+                          <div className="pj2-name-row">
+                            <span className="pj2-name">{p.name}</span>
+                            <span className="pj2-status"><i />{meta.label}</span>
+                          </div>
+                          <div className="pj2-client">{p.clients?.company_name ?? "No client"}</div>
                         </div>
                       </div>
-                      {p.description && (
+
+                      {p.description ? (
                         <RichText text={p.description} className="proj-card-desc" />
+                      ) : (
+                        <p className="pj2-nodesc">No description yet.</p>
                       )}
-                      <div className="proj-card-stats">
-                        <span className="proj-card-stat">
-                          <Icon name="check" size={12} /> <b className="tabular">{p.taskCount}</b> Tasks
-                        </span>
-                        <span className="proj-card-stat">
-                          <Icon name="message" size={12} /> <b className="tabular">{p.discussionCount}</b> Discussions
-                        </span>
-                        <span className="proj-card-stat">
-                          <Icon name="file" size={12} /> <b className="tabular">{p.fileCount}</b> Files
-                        </span>
-                        {visibleAvatars.length > 0 && (
+
+                      <div className="pj2-metrics">
+                        <div className="pj2-metric">
+                          <div className="pj2-ring" aria-label={`${progress}% complete`}>
+                            <svg viewBox="0 0 64 64">
+                              <defs>
+                                <linearGradient id="pj-ring-grad" x1="0" y1="0" x2="1" y2="1">
+                                  <stop offset="0%" stopColor="var(--accent)" />
+                                  <stop offset="100%" stopColor="#2189d9" />
+                                </linearGradient>
+                              </defs>
+                              <circle cx={32} cy={32} r={19} fill="none" stroke="var(--border)" strokeWidth={0.8} />
+                              <circle cx={32} cy={32} r={16} fill="none" stroke="var(--border-soft)" strokeWidth={0.8} strokeDasharray="1.5 2.5" />
+                              <circle cx={32} cy={32} r={26} fill="none" stroke="var(--border-soft)" strokeWidth={8} />
+                              {progress > 0 && (
+                                <circle
+                                  cx={32}
+                                  cy={32}
+                                  r={26}
+                                  fill="none"
+                                  stroke={ringColor}
+                                  strokeWidth={8}
+                                  strokeLinecap="round"
+                                  strokeDasharray={163.36}
+                                  strokeDashoffset={163.36 - (progress / 100) * 163.36}
+                                  transform="rotate(-90 32 32)"
+                                />
+                              )}
+                            </svg>
+                            <span className="pj2-ring-pct tabular">{progress}%</span>
+                          </div>
+                          <span className="pj2-label">Progress</span>
+                        </div>
+                        <div className="pj2-metric">
+                          <span className="pj2-value tabular"><b>{stat?.done ?? 0}</b><i>/{stat?.total ?? p.taskCount}</i></span>
+                          <span className="pj2-label">Tasks done</span>
+                        </div>
+                        <div className="pj2-metric">
+                          {p.due_date ? (
+                            <>
+                              <span className={`pj2-value${late ? " is-late" : ""}`}>
+                                {new Date(p.due_date).toLocaleDateString("en-US", { day: "numeric", month: "short" })}
+                              </span>
+                              <span className={`pj2-label pj2-due${late ? " is-late" : ""}`}>
+                                {p.status === "completed"
+                                  ? "Deadline"
+                                  : late
+                                    ? `${Math.abs(daysLeft)} ${Math.abs(daysLeft) === 1 ? "day" : "days"} overdue`
+                                    : daysLeft === 0
+                                      ? "Due today"
+                                      : `${daysLeft} ${daysLeft === 1 ? "day" : "days"} left`}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="pj2-value muted">—</span>
+                              <span className="pj2-label">No deadline</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="pj-foot">
+                        {visibleAvatars.length > 0 ? (
                           <div className="avatar-stack">
                             {visibleAvatars.map((a, i) => (
-                              <Avatar key={i} person={a} size={22} />
+                              <Avatar key={i} person={a} size={26} />
                             ))}
                             {extraAvatars > 0 && (
-                              <div className="avatar avatar-more" style={{ width: 22, height: 22, fontSize: 9 }}>
+                              <div className="avatar avatar-more" style={{ width: 26, height: 26, fontSize: 10 }}>
                                 +{extraAvatars}
                               </div>
                             )}
                           </div>
+                        ) : (
+                          <span className="pj2-noteam">No team yet</span>
                         )}
-                      </div>
-                      <div className="progress-track">
-                        <div
-                          className="progress-fill"
-                          style={{ width: `${progress}%` }}
-                        ></div>
-                      </div>
-                      <div className="proj-card-foot">
-                        <span className="tabular">{progress}% সম্পন্ন</span>
-                        <span>
-                          <Icon name="calendar" size={12} /> {formatBnDate(p.due_date) || "—"}
-                        </span>
+                        <div className="pj-counts">
+                          <span title="Discussions"><Icon name="message" size={13} /> <b className="tabular">{p.discussionCount}</b></span>
+                          <span title="Files"><Icon name="file" size={13} /> <b className="tabular">{p.fileCount}</b></span>
+                        </div>
                       </div>
                     </div>
                   );

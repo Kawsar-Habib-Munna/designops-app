@@ -16,6 +16,7 @@
 // status/call/video বাটন রাখা হয়নি — কোনো presence/calling সিস্টেম এই কোডবেসে
 // নেই, fake affordance দেখানো হয়নি। Attachment এখন real filename/size/type সহ।
 
+import ClientAvatar from '@/app/components/ClientAvatar';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -442,7 +443,7 @@ export default function ClientMessagesPage() {
               await supabase.auth.signOut();
               router.push('/client');
             })(); }}>
-              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+              <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
             </button>
 </header>
 
@@ -468,7 +469,7 @@ export default function ClientMessagesPage() {
             title="Sign out"
           >
             <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+              <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
             </div>
             <div className="profile-meta">
               <div className="profile-name">{client.primary_contact ?? client.company_name}</div>

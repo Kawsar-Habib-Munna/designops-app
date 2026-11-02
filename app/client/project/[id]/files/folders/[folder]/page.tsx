@@ -5,6 +5,7 @@
 // or the id of one of the client's own folders (client_folders). Only own folders can be renamed, deleted or uploaded into;
 // the built-in ones are managed by the project team.
 
+import ClientAvatar from '@/app/components/ClientAvatar';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -452,7 +453,7 @@ export default function ClientFolderPage() {
             </button>
             <span className="topbar-title">{folderLabel ?? 'Folder'}</span>
             <button type="button" className="topbar-avatar" aria-label="Sign out" onClick={() => { if (window.confirm('Sign out of your account?')) void handleSignOut(); }}>
-              {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+              <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
             </button>
           </header>
 
@@ -465,7 +466,7 @@ export default function ClientFolderPage() {
             </a>
             <button type="button" className="profile-card topbar-profile" onClick={handleSignOut} title="Sign out">
               <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-                {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+                <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
               </div>
               <div className="profile-meta">
                 <div className="profile-name">{client.primary_contact ?? client.company_name}</div>

@@ -29,6 +29,7 @@
 // ডকুমেন্ট লেআউট অক্ষত রেখে (কোনো screenshot/মকআপ ছাড়া বড় tabbed রিডিজাইন করা
 // রিস্কি), শুধু anchor-link pill nav যোগ হলো যা প্রতিটা #sec-* সেকশনে জাম্প করে।
 
+import ClientAvatar from '@/app/components/ClientAvatar';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -162,7 +163,7 @@ function SowShell({
           </button>
           <span className="topbar-title">Statement of Work</span>
                   <button type="button" className="topbar-avatar" aria-label="Sign out" onClick={() => { if (window.confirm('Sign out of your account?')) (onSignOut)(); }}>
-            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
           </button>
 </header>
 
@@ -180,7 +181,7 @@ function SowShell({
           </a>
         <button type="button" className="profile-card topbar-profile" onClick={onSignOut} title="Sign out">
           <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
           </div>
           <div className="profile-meta">
             <div className="profile-name">{client.primary_contact ?? client.company_name}</div>

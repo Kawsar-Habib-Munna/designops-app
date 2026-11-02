@@ -719,3 +719,7 @@ body .client-portal.client-portal select {
   body .client-portal .dx { max-width: none; }
   body .client-portal .page-topbar { padding-left: 24px; padding-right: 24px; }
 }
+
+/* the client's Google profile photo fills the round avatar (initials are the fallback) */
+body .client-portal .client-avatar-img { width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 50%; }
+body .client-portal .topbar-avatar, body .client-portal .avatar { overflow: hidden; }

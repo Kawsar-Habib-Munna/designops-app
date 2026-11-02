@@ -13,6 +13,7 @@
 // signed_at ক্লায়েন্ট ঘড়ি থেকে না — sign_sow() সফল হওয়ার পর sows রো আবার fetch
 // করে ডাটাবেজের আসল timestamptz দেখানো হয় (success স্ক্রিনে "Signed On" এটাই)।
 
+import ClientAvatar from '@/app/components/ClientAvatar';
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -168,7 +169,7 @@ function SignShell({
           </button>
           <span className="topbar-title">Statement of Work</span>
                   <button type="button" className="topbar-avatar" aria-label="Sign out" onClick={() => { if (window.confirm('Sign out of your account?')) (onSignOut)(); }}>
-            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
           </button>
 </header>
 
@@ -186,7 +187,7 @@ function SignShell({
           </a>
         <button type="button" className="profile-card topbar-profile" onClick={onSignOut} title="Sign out">
           <div className="avatar" style={{ width: 32, height: 32, fontSize: 12 }}>
-            {(client.primary_contact ?? client.company_name).charAt(0).toUpperCase()}
+            <ClientAvatar src={client.avatar_url} name={client.primary_contact ?? client.company_name} />
           </div>
           <div className="profile-meta">
             <div className="profile-name">{client.primary_contact ?? client.company_name}</div>

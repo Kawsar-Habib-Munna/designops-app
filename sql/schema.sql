@@ -2403,3 +2403,34 @@ create policy "client can read own files" on client_files for select using (
   and (expires_at is null or expires_at > now())
   and exists (select 1 from clients where clients.id = client_files.client_id and clients.user_id = auth.uid())
 );
+
+
+-- ক্লায়েন্টের প্রোফাইল ছবি: Google দিয়ে লগইন করলে সেই অ্যাকাউন্টের ছবি clients.avatar_url-এ সেভ হয়,
+-- যাতে টিমও (প্রজেক্ট ডিটেইলসের Client Details কার্ডে) দেখতে পায়। ক্লায়েন্ট নিজের রো আপডেট করতে পারে
+-- ("client can update own record" পলিসি), তাই আলাদা পলিসি লাগে না।
+alter table clients add column if not exists avatar_url text;
+
+
+-- প্রজেক্ট ডিটেইলসের Notes: শুধু টিমের জন্য (ক্লায়েন্ট দেখতে পায় না)। প্রতিটা নোট একটা প্রজেক্টের।
+-- লেখক নিজের নোট এডিট/ডিলিট করতে পারে; অ্যাডমিন সবটা পারে।
+create table if not exists project_notes (
+  id uuid default gen_random_uuid() primary key,
+  project_id uuid not null references projects(id) on delete cascade,
+  author_id uuid references profiles(id) on delete set null,
+  body text not null,
+  pinned boolean not null default false,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+create index if not exists idx_project_notes_project on project_notes(project_id, created_at desc);
+alter table project_notes enable row level security;
+drop policy if exists "team can read project_notes" on project_notes;
+create policy "team can read project_notes" on project_notes for select using (public.is_team_member());
+drop policy if exists "team can add project_notes" on project_notes;
+create policy "team can add project_notes" on project_notes for insert with check (public.is_team_member() and author_id = auth.uid());
+drop policy if exists "author or admin can update project_notes" on project_notes;
+create policy "author or admin can update project_notes" on project_notes for update
+  using (public.is_team_member() and (author_id = auth.uid() or exists (select 1 from profiles p where p.id = auth.uid() and p.is_admin)));
+drop policy if exists "author or admin can delete project_notes" on project_notes;
+create policy "author or admin can delete project_notes" on project_notes for delete
+  using (public.is_team_member() and (author_id = auth.uid() or exists (select 1 from profiles p where p.id = auth.uid() and p.is_admin)));
