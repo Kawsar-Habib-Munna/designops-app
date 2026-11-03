@@ -21,6 +21,7 @@ const RULES: { test: RegExp; route: ShellRoute | null }[] = [
   { test: /^\/projects\/[^/]+\/sow\/?$/, route: { root: 'projdetail-root sow-admin-root', active: 'Projects' } },
   { test: /^\/projects\/[^/]+(\/(approvals|change-requests|feedback|files|updates))?\/?$/, route: { root: 'projdetail-root', active: 'Projects' } },
   { test: /^\/projects\/?$/, route: { root: 'projectslist-root', active: 'Projects' } },
+  { test: /^\/reports\/?$/, route: { root: 'todos-root reports-root', active: 'Reports' } },
   { test: /^\/sows\/?$/, route: { root: 'sowslist-root', active: '' } },
   { test: /^\/tasks\/?$/, route: { root: 'tasklist-root', active: 'Tasks' } },
   { test: /^\/team\/?$/, route: { root: 'teamworkload-root', active: 'Team' } },

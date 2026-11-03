@@ -926,3 +926,6 @@
     align-items: flex-start;
   }
 }
+
+/* activity: events joined by a dotted line */
+.client-dashboard-root .timeline-line{width:0;background:none;border-left:2px dotted color-mix(in srgb,var(--accent) 45%,var(--border));margin:3px 0;}

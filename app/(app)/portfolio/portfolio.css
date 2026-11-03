@@ -255,3 +255,138 @@
   .portfolio-root .modal-box{max-width:100%;}
   .portfolio-root .field-row-2{grid-template-columns:1fr;}
 }
+
+/* ==== case studies, testimonials and team order: clean tables, 5 per page ==== */
+.portfolio-root .pf-count{display:inline-flex;align-items:center;margin-left:8px;padding:1px 9px;border-radius:999px;background:var(--surface-muted);border:1px solid var(--border-soft);font-size:11px;font-weight:600;color:var(--ink-soft);vertical-align:middle;}
+.portfolio-root .pf-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-sm);}
+.portfolio-root .pf-table{width:100%;border-collapse:separate;border-spacing:0;}
+.portfolio-root .pf-table th{padding:11px 14px;text-align:left;font-size:11.5px;font-weight:600;color:var(--ink-faint);background:var(--surface-muted);border-bottom:1px solid var(--border-soft);white-space:nowrap;}
+.portfolio-root .pf-table td{padding:12px 14px;border-bottom:1px solid var(--border-soft);font-size:13px;color:var(--ink);vertical-align:middle;}
+.portfolio-root .pf-table tbody tr:last-child td{border-bottom:none;}
+.portfolio-root .pf-table tbody tr:hover td{background:var(--surface-muted);}
+.portfolio-root .pf-col-n{width:44px;text-align:center !important;font-size:12px;color:var(--ink-faint);}
+.portfolio-root .pf-col-act{width:1%;white-space:nowrap;text-align:right !important;}
+.portfolio-root .pf-item{display:flex;align-items:center;gap:12px;min-width:0;}
+.portfolio-root .pf-thumb{width:56px;height:40px;flex:none;border-radius:8px;background:var(--surface-muted) center/cover no-repeat;border:1px solid var(--border-soft);display:flex;align-items:center;justify-content:center;color:var(--ink-faint);}
+.portfolio-root .pf-item-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.portfolio-root .pf-item-title{font-size:13.5px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px;}
+.portfolio-root .pf-item-sub{font-size:11.5px;color:var(--ink-faint);}
+.portfolio-root .pf-muted{font-size:12px;color:var(--ink-faint);}
+.portfolio-root .pf-dash{color:var(--ink-faint);}
+.portfolio-root .pf-quote{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:380px;font-size:12.5px;line-height:1.5;color:var(--ink-soft);}
+.portfolio-root .pf-status{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;}
+.portfolio-root .pf-status::before{content:'';width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px color-mix(in srgb,currentColor 20%,transparent);}
+.portfolio-root .pf-status.pub{color:var(--positive);}
+.portfolio-root .pf-status.draft{color:var(--ink-faint);}
+.portfolio-root .pf-actions{display:inline-flex;align-items:center;gap:6px;}
+.portfolio-root .pf-ico{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink-soft);cursor:pointer;text-decoration:none;}
+.portfolio-root .pf-ico:hover:not(:disabled){border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+.portfolio-root .pf-ico.danger:hover:not(:disabled){border-color:var(--danger);color:var(--danger);background:var(--danger-soft);}
+.portfolio-root .pf-ico:disabled{opacity:.35;cursor:default;}
+.portfolio-root .pf-people{list-style:none;margin:0;padding:0;}
+.portfolio-root .pf-people li{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border-soft);}
+.portfolio-root .pf-people li:last-child{border-bottom:none;}
+.portfolio-root .pf-people .pf-col-n{width:24px;}
+.portfolio-root .pf-people .pf-item-text{flex:1;}
+.portfolio-root .pf-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-top:1px solid var(--border-soft);background:var(--surface);}
+.portfolio-root .pf-pager-info{font-size:12px;color:var(--ink-faint);}
+.portfolio-root .pf-pager-btns{display:flex;align-items:center;gap:8px;}
+.portfolio-root .pf-pager-btns button{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink-soft);cursor:pointer;}
+.portfolio-root .pf-pager-btns button.next svg{transform:rotate(180deg);}
+.portfolio-root .pf-pager-btns button:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+.portfolio-root .pf-pager-btns button:disabled{opacity:.4;cursor:default;}
+.portfolio-root .pf-pager-page{min-width:44px;text-align:center;font-size:12px;font-weight:600;color:var(--ink-soft);}
+@media (max-width:640px){
+  .portfolio-root .pf-item-title{max-width:160px;}
+  .portfolio-root .pf-table th,.portfolio-root .pf-table td{padding:10px;}
+}
+
+/* more breathing room at the left and right edges of the tables and lists */
+.portfolio-root .pf-table th:first-child,.portfolio-root .pf-table td:first-child{padding-left:24px;}
+.portfolio-root .pf-table th:last-child,.portfolio-root .pf-table td:last-child{padding-right:24px;}
+.portfolio-root .pf-people li{padding-left:24px;padding-right:24px;}
+.portfolio-root .pf-pager{padding-left:24px;padding-right:24px;}
+@media (max-width:640px){
+  .portfolio-root .pf-table th:first-child,.portfolio-root .pf-table td:first-child{padding-left:14px;}
+  .portfolio-root .pf-table th:last-child,.portfolio-root .pf-table td:last-child{padding-right:14px;}
+  .portfolio-root .pf-people li,.portfolio-root .pf-pager{padding-left:14px;padding-right:14px;}
+}
+
+/* list / grid switch */
+.portfolio-root .pf-head-actions{display:flex;align-items:center;gap:10px;}
+.portfolio-root .pf-toggle{display:inline-flex;padding:3px;gap:2px;border:1px solid var(--border);border-radius:10px;background:var(--surface);}
+.portfolio-root .pf-toggle button{width:30px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:7px;background:transparent;color:var(--ink-faint);cursor:pointer;}
+.portfolio-root .pf-toggle button:hover{color:var(--ink);}
+.portfolio-root .pf-toggle button.on{background:var(--accent-soft);color:var(--accent);}
+.portfolio-root .pf-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+.portfolio-root .pf-grid-pager{margin-top:14px;}
+.portfolio-root .pf-grid-pager .pf-pager{border-top:none;}
+@media (max-width:1100px){ .portfolio-root .pf-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+@media (max-width:640px){ .portfolio-root .pf-grid{grid-template-columns:minmax(0,1fr);} }
+
+/* category in the table: plain text, no pill background */
+.portfolio-root .pf-table .cs-tag{padding:0;border:none;background:transparent;border-radius:0;font-size:12.5px;font-weight:500;color:var(--ink-soft);}
+
+/* ==== contact information: grouped cards (phone, email, address, social) and one save bar ==== */
+.portfolio-root .ct-intro{margin:0 0 16px;font-size:13px;line-height:1.55;color:var(--ink-faint);}
+.portfolio-root .ct-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start;}
+.portfolio-root .ct-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);padding:20px 24px 22px;}
+.portfolio-root .ct-card:last-child{grid-column:1 / -1;}
+.portfolio-root .ct-card-head{display:flex;align-items:center;gap:12px;padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--border-soft);}
+.portfolio-root .ct-card-ico{width:34px;height:34px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--accent-soft);color:var(--accent);}
+.portfolio-root .ct-card-title{font-size:14px;font-weight:700;color:var(--ink);}
+.portfolio-root .ct-card-sub{margin-top:2px;font-size:11.5px;color:var(--ink-faint);}
+.portfolio-root .ct-fields{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;}
+.portfolio-root .ct-card:last-child .ct-fields{grid-template-columns:repeat(3,minmax(0,1fr));}
+.portfolio-root .ct-field .field-input{margin-bottom:0;height:40px;border-radius:10px;}
+.portfolio-root .ct-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding:12px 16px 12px 24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);}
+.portfolio-root .ct-msg{font-size:12.5px;}
+.portfolio-root .ct-err{color:var(--danger);}
+.portfolio-root .ct-ok{color:var(--positive);font-weight:600;}
+@media (max-width:1000px){
+  .portfolio-root .ct-card:last-child .ct-fields{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media (max-width:760px){
+  .portfolio-root .ct-grid{grid-template-columns:minmax(0,1fr);}
+  .portfolio-root .ct-card{padding:18px;}
+  .portfolio-root .ct-card:last-child .ct-fields{grid-template-columns:minmax(0,1fr);}
+}
+
+/* address and social profiles sit side by side on the second row */
+.portfolio-root .ct-grid{align-items:stretch;}
+.portfolio-root .ct-card:last-child{grid-column:auto;}
+.portfolio-root .ct-card:last-child .ct-fields{grid-template-columns:repeat(2,minmax(0,1fr));}
+@media (max-width:760px){
+  .portfolio-root .ct-card:last-child .ct-fields{grid-template-columns:minmax(0,1fr);}
+}
+
+/* ==== team card order: a card per member, 4 across, 8 per page ==== */
+.portfolio-root .tm-intro{margin:-2px 0 14px;max-width:680px;font-size:13px;line-height:1.55;color:var(--ink-faint);}
+.portfolio-root .tm-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;}
+.portfolio-root .tm-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:26px 16px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);text-align:center;transition:box-shadow .15s ease,border-color .15s ease;}
+.portfolio-root .tm-card:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--border));box-shadow:var(--shadow-md);}
+.portfolio-root .tm-pos{position:absolute;top:12px;left:12px;min-width:24px;height:24px;padding:0 7px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;background:var(--accent-soft);color:var(--accent);font-size:11.5px;font-weight:700;}
+.portfolio-root .tm-name{margin-top:10px;max-width:100%;font-size:14px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.portfolio-root .tm-role{max-width:100%;font-size:12px;color:var(--ink-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.portfolio-root .tm-move{display:flex;gap:8px;margin-top:14px;padding-top:14px;width:100%;justify-content:center;border-top:1px solid var(--border-soft);}
+.portfolio-root .tm-move button{width:34px;height:30px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink-soft);cursor:pointer;}
+.portfolio-root .tm-move button.next svg{transform:rotate(180deg);}
+.portfolio-root .tm-move button:hover:not(:disabled){border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+.portfolio-root .tm-move button:disabled{opacity:.35;cursor:default;}
+@media (max-width:1100px){ .portfolio-root .tm-grid{grid-template-columns:repeat(3,minmax(0,1fr));} }
+@media (max-width:760px){ .portfolio-root .tm-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+
+/* team cards sit together inside one card */
+.portfolio-root .tm-wrap .tm-grid{padding:24px;gap:14px;}
+.portfolio-root .tm-wrap .tm-card{border:1px solid var(--border-soft);box-shadow:none;background:var(--surface);}
+.portfolio-root .tm-wrap .tm-card:hover{box-shadow:none;border-color:color-mix(in srgb,var(--accent) 35%,var(--border));}
+@media (max-width:640px){ .portfolio-root .tm-wrap .tm-grid{padding:14px;gap:10px;} }
+
+/* contact information: everything sits inside one card */
+.portfolio-root .ct-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);padding:24px;}
+.portfolio-root .ct-form .ct-card{border:1px solid var(--border-soft);box-shadow:none;}
+.portfolio-root .ct-form .ct-bar{margin:20px -24px -24px;padding:14px 24px;border:none;border-top:1px solid var(--border-soft);border-radius:0 0 var(--radius-md) var(--radius-md);box-shadow:none;background:var(--surface);}
+@media (max-width:760px){
+  .portfolio-root .ct-form{padding:16px;}
+  .portfolio-root .ct-form .ct-bar{margin:16px -16px -16px;padding:12px 16px;}
+}

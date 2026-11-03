@@ -250,3 +250,12 @@
 }
 /* sidebar brand strip (see globals.css): this page's top bar is 60px tall */
 .kanban-root div.brand.brand-topbar { height: 60px; }
+
+/* activity timeline: a ring dot per entry, joined by a dotted line */
+.kanban-root .act-timeline{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}
+.kanban-root .act-timeline li{position:relative;display:flex;flex-direction:column;gap:2px;padding:0 0 16px 22px;font-size:12px;line-height:1.5;color:var(--ink-soft);}
+.kanban-root .act-timeline li:last-child{padding-bottom:0;}
+.kanban-root .act-timeline li::before{content:'';position:absolute;left:0;top:4px;width:10px;height:10px;box-sizing:border-box;border-radius:50%;background:var(--surface);border:2px solid var(--accent);z-index:1;}
+.kanban-root .act-timeline li:not(:last-child)::after{content:'';position:absolute;left:4px;top:18px;bottom:-1px;border-left:2px dotted color-mix(in srgb,var(--accent) 45%,var(--border));}
+.kanban-root .act-timeline-text b{color:var(--ink);font-weight:600;}
+.kanban-root .act-timeline-time{font-size:11px;color:var(--ink-faint);}

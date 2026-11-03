@@ -557,11 +557,22 @@ export default function TodosPage() {
                 </>
               )}
               <div className="detail-field-label" style={{ marginBottom: 6 }}>Activity</div>
-              <div className="detail-activity">
-                {nameOf(detailTodo.created_by)} To-Do তৈরি করেছেন · {formatBnDate(detailTodo.created_at)}<br />
-                {nameOf(detailTodo.assignee_id)}-কে অ্যাসাইন করা হয়েছে · {formatBnDate(detailTodo.created_at)}
-                {detailTodo.status === 'completed' && detailTodo.completed_at && (<><br />{nameOf(detailTodo.assignee_id)} সম্পন্ন করেছেন · {formatBnDate(detailTodo.completed_at)}</>)}
-              </div>
+              <ul className="act-timeline">
+                <li>
+                  <span className="act-timeline-text">{nameOf(detailTodo.created_by)} To-Do তৈরি করেছেন</span>
+                  <span className="act-timeline-time">{formatBnDate(detailTodo.created_at)}</span>
+                </li>
+                <li>
+                  <span className="act-timeline-text">{nameOf(detailTodo.assignee_id)}-কে অ্যাসাইন করা হয়েছে</span>
+                  <span className="act-timeline-time">{formatBnDate(detailTodo.created_at)}</span>
+                </li>
+                {detailTodo.status === 'completed' && detailTodo.completed_at && (
+                  <li>
+                    <span className="act-timeline-text">{nameOf(detailTodo.assignee_id)} সম্পন্ন করেছেন</span>
+                    <span className="act-timeline-time">{formatBnDate(detailTodo.completed_at)}</span>
+                  </li>
+                )}
+              </ul>
 
               {profile?.is_admin && reassigning && (
                 <div className="reassign-row">

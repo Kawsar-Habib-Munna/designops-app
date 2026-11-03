@@ -332,3 +332,9 @@
 /* hero status and type labels: text only, no filled background */
 .client-projectdash-root .dx-hero-project .status-badge { background: none; padding-left: 0; padding-right: 0; }
 .client-projectdash-root .dx-hero-project .dx-hero-chip { background: none; }
+
+/* client project activity: icons joined by a dotted line */
+.client-projectdash-root .dx-timeline .dx-row{position:relative;align-items:flex-start;border-top:none;padding:0 0 18px;}
+.client-projectdash-root .dx-timeline .dx-row:last-child{padding-bottom:0;}
+.client-projectdash-root .dx-timeline .dx-row:not(:last-child)::before{content:'';position:absolute;left:17px;top:38px;bottom:2px;border-left:2px dotted color-mix(in srgb,var(--accent) 45%,var(--border));}
+.client-projectdash-root .dx-timeline .dx-row-icon{border-radius:50%;position:relative;z-index:1;}

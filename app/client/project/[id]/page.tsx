@@ -681,7 +681,7 @@ export default function ClientProjectDashboard() {
                     {recentActivity.length === 0 ? (
                       <p className="dx-empty">No activity yet.</p>
                     ) : (
-                      <ul className="dx-list">
+                      <ul className="dx-list dx-timeline">
                         {recentActivity.map((a) => (
                           <li className="dx-row" key={a.key}>
                             <span className="dx-row-icon"><Icon name="check" size={12} /></span>

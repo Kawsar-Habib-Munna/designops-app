@@ -1773,3 +1773,6 @@
 .dashboard-root .act2-icon svg { width: 13px; height: 13px; }
 .dashboard-root .act2-row { gap: 12px; }
 .dashboard-root .act2-row:not(:last-child)::before { left: 14px; top: 30px; }
+
+/* activity feed: a dotted connector */
+.dashboard-root .act2-row:not(:last-child)::before{border-left:2px dotted color-mix(in srgb,var(--accent) 45%,var(--border));}

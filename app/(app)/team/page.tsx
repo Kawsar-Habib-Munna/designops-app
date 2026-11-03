@@ -11,12 +11,12 @@
 // সময়ভিত্তিক (দিন-অনুযায়ী ঘণ্টা) লগ টেবিল নেই, তাই ফেক শিডিউল/হিটম্যাপ
 // বসানো হয়নি। এগুলো চালু করতে একটা schedule/attendance টেবিল লাগবে।
 
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type CSSProperties } from 'react';
 import Link from 'next/link';
 import './team.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
-import { formatBnDate, relativeTimeBn, todayISO, formatDate, relativeTime } from '@/lib/format';
+import { formatBnDate, todayISO, formatDate, relativeTime } from '@/lib/format';
 import { STAGE_LABEL, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
 import { uploadFileToDrive } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
@@ -44,11 +44,14 @@ const ICON_PATHS: Record<string, string> = {
   menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
   close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   refresh: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v6h-6"/>',
+  reload: '<path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/>',
+  printer: '<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="9" rx="2"/><path d="M7 14h10v7H7z"/><path d="M17 12.5h.01"/>',
   export: '<path d="M12 15V3"/><path d="M7 8l5-5 5 5"/><path d="M4 19h16"/>',
   bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>',
   'user-plus': '<path d="M14 19v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="7" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>',
   activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
   'check-circle': '<circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   alert: '<path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/>',
   gauge: '<path d="M12 15l3.5-5.5"/><circle cx="12" cy="15" r="1.5"/><path d="M4 15a8 8 0 1 1 16 0"/>',
   spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
@@ -141,6 +144,11 @@ type TeamTaskRow = {
   projects: { id: string; name: string; status: string; progress: number | null; due_date: string | null; project_manager_id: string | null } | null;
 };
 
+// Workload Heatmap: for every member, how many open tasks and To-Dos fall due on each of the next 14 days (plus the overdue ones)
+type HeatmapRow = { id: string; name: string; avatar_color: string | null; avatar_url: string | null; counts: number[]; overdue: number; total: number };
+type HeatmapData = { days: string[]; rows: HeatmapRow[]; max: number };
+const HEATMAP_DAYS = 14;
+
 type TeamActivity = { id: string; detail: string | null; created_at: string; profiles: { full_name: string } | null };
 
 type MemberStat = {
@@ -159,6 +167,10 @@ type MemberStat = {
   projectIds: string[];
   estHours: number;
   nextDeadline: string | null;
+  activeTodos: number;
+  overdueTasks: number;
+  dueToday: number;
+  completedToday: number;
   currentStage: string | null;
   primaryProjectId: string | null;
   primaryProjectName: string | null;
@@ -178,6 +190,29 @@ type MemberTask = {
   projects: { id: string; name: string } | null;
 };
 type MemberActivity = { id: string; action: string; detail: string | null; created_at: string };
+// Activity is stored with Bengali sentences; the drawer shows plain English, using the stored text only when it is already English
+const ACTIVITY_EN: Record<string, string> = {
+  task_created: 'Created a task',
+  task_updated: 'Updated a task',
+  task_completed: 'Completed a task',
+  task_assigned: 'Assigned a task',
+  file_uploaded: 'Uploaded a file',
+  status_changed: 'Changed a client status',
+  info_requested: 'Requested more information',
+  info_request_resolved: 'Resolved an information request',
+  client_deleted: 'Deleted a client',
+  manager_assigned: 'Assigned an account manager',
+  sow_sent: 'Sent a SOW to the client',
+  sow_signed: 'SOW signed by the client',
+  sow_agency_signed: 'Signed a SOW on the agency side',
+  sow_cancelled: 'Changed a SOW status',
+  payment_cancelled: 'Cancelled a payment request',
+  payment_received: 'Confirmed a payment',
+  payment_confirmation_submitted: 'Payment confirmation submitted',
+};
+const activityText = (a: { action: string; detail: string | null }) =>
+  a.detail && !/[ঀ-৿]/.test(a.detail) ? a.detail : ACTIVITY_EN[a.action] ?? (a.action.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase()));
+
 type MemberDetail = { tasks: MemberTask[]; doneThisWeek: number; doneTotal: number; activity: MemberActivity[]; email: string | null; whatsapp: string | null };
 
 const TASK_STATUS_EN: Record<string, string> = { todo: 'To do', in_progress: 'In progress', review: 'In review', done: 'Done' };
@@ -245,11 +280,13 @@ function buildOutlook(tasks: TeamTaskRow[]): { buckets: OutlookBucket[]; undated
 }
 
 async function fetchTeamData() {
-  const [profilesRes, tasksRes, activityRes] = await Promise.all([
+  const [profilesRes, tasksRes, activityRes, todosRes] = await Promise.all([
     supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, is_admin, bio, behance_url, linkedin_url, facebook_url, instagram_url').order('full_name'),
     supabase.from('tasks').select(TEAM_SELECT),
     supabase.from('activity_log').select('id, detail, created_at, profiles(full_name)').order('created_at', { ascending: false }).limit(8),
+    supabase.from('todos').select('assignee_id, status, due_date, completed_at'),
   ]);
+  const todoRows = (todosRes.data as { assignee_id: string | null; status: string; due_date: string | null; completed_at: string | null }[]) ?? [];
 
   const firstErrored = [profilesRes, tasksRes, activityRes].find((r) => r.error);
 
@@ -260,18 +297,27 @@ async function fetchTeamData() {
   // ---- per-member aggregation ----
   const memberAgg = new Map<
     string,
-    { activeTasks: number; projectIds: Set<string>; estHours: number; nextDeadline: string | null; lastActivityAt: string | null; stageByProject: Map<string, { stage: string; updatedAt: string }>; projectTaskCount: Map<string, number> }
+    { activeTasks: number; projectIds: Set<string>; estHours: number; nextDeadline: string | null; todos: number; overdue: number; dueToday: number; doneToday: number; lastActivityAt: string | null; stageByProject: Map<string, { stage: string; updatedAt: string }>; projectTaskCount: Map<string, number> }
   >();
+
+  const todayStr = todayISO();
+  // the local calendar day of a timestamp, as YYYY-MM-DD, so "today" means the viewer's own today
+  const localDay = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
 
   for (const t of tasks) {
     if (!t.assignee_id) continue;
     const cur =
       memberAgg.get(t.assignee_id) ??
-      { activeTasks: 0, projectIds: new Set<string>(), estHours: 0, nextDeadline: null, lastActivityAt: null, stageByProject: new Map(), projectTaskCount: new Map() };
+      { activeTasks: 0, projectIds: new Set<string>(), estHours: 0, nextDeadline: null, todos: 0, overdue: 0, dueToday: 0, doneToday: 0, lastActivityAt: null, stageByProject: new Map(), projectTaskCount: new Map() };
 
     if (t.status !== 'done') {
       cur.activeTasks += 1;
       cur.estHours += t.estimated_hours ?? 0;
+      if (t.due_date && t.due_date < todayStr) cur.overdue += 1;
+      else if (t.due_date === todayStr) cur.dueToday += 1;
       if (t.due_date && (!cur.nextDeadline || t.due_date < cur.nextDeadline)) cur.nextDeadline = t.due_date;
       if (t.projects) {
         cur.projectIds.add(t.projects.id);
@@ -280,9 +326,26 @@ async function fetchTeamData() {
         if (!existingStage || t.updated_at > existingStage.updatedAt) cur.stageByProject.set(t.projects.id, { stage: t.workflow_stage, updatedAt: t.updated_at });
       }
     }
+    if (t.status === 'done' && localDay(t.updated_at) === todayStr) cur.doneToday += 1;
     if (!cur.lastActivityAt || t.updated_at > cur.lastActivityAt) cur.lastActivityAt = t.updated_at;
 
     memberAgg.set(t.assignee_id, cur);
+  }
+
+  // To-Do page items: an open To-Do adds to the workload like an open task does
+  const emptyAgg = () => ({ activeTasks: 0, projectIds: new Set<string>(), estHours: 0, nextDeadline: null as string | null, todos: 0, overdue: 0, dueToday: 0, doneToday: 0, lastActivityAt: null as string | null, stageByProject: new Map<string, { stage: string; updatedAt: string }>(), projectTaskCount: new Map<string, number>() });
+  for (const td of todoRows) {
+    if (!td.assignee_id) continue;
+    const cur = memberAgg.get(td.assignee_id) ?? emptyAgg();
+    if (td.status !== 'completed') {
+      cur.todos += 1;
+      if (td.due_date && td.due_date < todayStr) cur.overdue += 1;
+      else if (td.due_date === todayStr) cur.dueToday += 1;
+      if (td.due_date && (!cur.nextDeadline || td.due_date < cur.nextDeadline)) cur.nextDeadline = td.due_date;
+    } else if (td.completed_at && localDay(td.completed_at) === todayStr) {
+      cur.doneToday += 1;
+    }
+    memberAgg.set(td.assignee_id, cur);
   }
 
   const members: MemberStat[] = profiles.map((p) => {
@@ -310,7 +373,9 @@ async function fetchTeamData() {
       currentStage = primaryProjectId ? agg.stageByProject.get(primaryProjectId)?.stage ?? null : null;
     }
 
-    const capacityPercent = Math.min(100, Math.round((activeTasks / 5) * 100));
+    const activeTodos = agg?.todos ?? 0;
+    // the workload: open tasks plus open To-Dos, five items being a full load
+    const capacityPercent = Math.min(100, Math.round((((activeTasks || 0) + (activeTodos || 0)) / 5) * 100)) || 0;
 
     return {
       id: p.id,
@@ -328,6 +393,10 @@ async function fetchTeamData() {
       projectIds,
       estHours,
       nextDeadline: agg?.nextDeadline ?? null,
+      activeTodos,
+      overdueTasks: agg?.overdue ?? 0,
+      dueToday: agg?.dueToday ?? 0,
+      completedToday: agg?.doneToday ?? 0,
       currentStage,
       primaryProjectId,
       primaryProjectName,
@@ -362,8 +431,36 @@ async function fetchTeamData() {
     allocMap.set(t.projects.id, proj);
   }
 
+  const heatDays: string[] = [];
+  for (let i = 0; i < HEATMAP_DAYS; i++) {
+    const d = new Date(todayStr + 'T00:00:00');
+    d.setDate(d.getDate() + i);
+    heatDays.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+  }
+  const heatRows: HeatmapRow[] = profiles.map((p) => ({ id: p.id, name: p.full_name, avatar_color: p.avatar_color, avatar_url: p.avatar_url ?? null, counts: heatDays.map(() => 0), overdue: 0, total: 0 }));
+  const heatById = new Map(heatRows.map((r) => [r.id, r]));
+  const addHeat = (assigneeId: string | null, due: string | null) => {
+    if (!assigneeId || !due) return;
+    const row = heatById.get(assigneeId);
+    if (!row) return;
+    if (due < todayStr) {
+      row.overdue += 1;
+      row.total += 1;
+      return;
+    }
+    const idx = heatDays.indexOf(due);
+    if (idx >= 0) {
+      row.counts[idx] += 1;
+      row.total += 1;
+    }
+  };
+  for (const t of tasks) if (t.status !== 'done') addHeat(t.assignee_id, t.due_date);
+  for (const td of todoRows) if (td.status !== 'completed') addHeat(td.assignee_id, td.due_date);
+  const heatmap: HeatmapData = { days: heatDays, rows: heatRows.filter((r) => r.total > 0).sort((x, y) => y.total - x.total), max: Math.max(1, ...heatRows.flatMap((r) => r.counts)) };
+
   return {
     errorMessage: firstErrored?.error?.message ?? null,
+    heatmap,
     members,
     allocations: Array.from(allocMap.values()),
     activity: (activityRes.data as unknown as TeamActivity[]) ?? [],
@@ -417,6 +514,9 @@ export default function TeamWorkloadPage() {
   const { user, loading: sessionLoading } = useSession();
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   useEffect(() => {
     if (!openMenuId) return;
     const close = () => setOpenMenuId(null);
@@ -433,9 +533,9 @@ export default function TeamWorkloadPage() {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [members, setMembers] = useState<MemberStat[]>([]);
   const [allocations, setAllocations] = useState<AllocProject[]>([]);
-  const [activity, setActivity] = useState<TeamActivity[]>([]);
   const [completedThisWeek, setCompletedThisWeek] = useState(0);
   const [outlook, setOutlook] = useState<{ buckets: OutlookBucket[]; undated: number }>({ buckets: [], undated: 0 });
+  const [heatmap, setHeatmap] = useState<HeatmapData>({ days: [], rows: [], max: 1 });
   const [loading, setLoading] = useState(true);
   const [reloading, setReloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -518,10 +618,9 @@ export default function TeamWorkloadPage() {
       setError(result.errorMessage);
       setMembers(result.members);
       setAllocations(result.allocations);
-      setActivity(result.activity);
       setCompletedThisWeek(result.completedThisWeek);
-    setOutlook(result.outlook);
       setOutlook(result.outlook);
+      setHeatmap(result.heatmap);
       if (profileRes.data) setProfile(profileRes.data as ProfileRow);
       setLoading(false);
     }
@@ -535,7 +634,6 @@ export default function TeamWorkloadPage() {
     setError(result.errorMessage);
     setMembers(result.members);
     setAllocations(result.allocations);
-    setActivity(result.activity);
     setCompletedThisWeek(result.completedThisWeek);
     setReloading(false);
   }
@@ -749,17 +847,31 @@ export default function TeamWorkloadPage() {
   return (
     <>
       <main className="content">
-            <div className="page-header-row">
-              <div>
-                <h1 className="page-title">Team Workload</h1>
-                <p className="page-sub">টিমের ক্যাপাসিটি মনিটর করুন, workload ব্যালেন্স করুন, প্রজেক্ট এগিয়ে রাখুন।</p>
+            <div className="th-head">
+              <div className="th-text">
+                <h1 className="th-title">Team Workload</h1>
+                <p className="th-sub">টিমের ক্যাপাসিটি মনিটর করুন, workload ব্যালেন্স করুন, প্রজেক্ট এগিয়ে রাখুন।</p>
               </div>
-              <div className="header-actions">
-                <button className="btn btn-ghost btn-sm" onClick={handleReload} disabled={reloading}><Icon name="refresh" size={13} /> {reloading ? 'রিলোড হচ্ছে…' : 'রিলোড'}</button>
-                <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="export" size={13} /> Export</button>
-                <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="bookmark" size={13} /> Saved Views</button>
-                <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="bar" size={13} /> Generate Report</button>
-                {profile?.is_admin && <button className="btn btn-accent" onClick={() => setShowAddMember(true)}><Icon name="user-plus" /> টিম মেম্বার যোগ করুন</button>}
+              <div className="th-actions">
+                <button className="th-btn" onClick={handleReload} disabled={reloading}>
+                  <Icon name="reload" size={14} /> {reloading ? 'রিলোড হচ্ছে…' : 'Reload'}
+                </button>
+                <div className="th-more">
+                  <button type="button" className="th-btn th-icon" aria-label="More actions" aria-haspopup="menu" aria-expanded={headerMenuOpen} onClick={() => setHeaderMenuOpen((o) => !o)}>
+                    <Icon name="more" size={16} />
+                  </button>
+                  {headerMenuOpen && (
+                    <>
+                      <div className="th-backdrop" onClick={() => setHeaderMenuOpen(false)} />
+                      <div className="th-menu" role="menu">
+                        <button type="button" role="menuitem" disabled title="শীঘ্রই আসছে"><Icon name="export" size={14} /> Export <em>soon</em></button>
+                        <button type="button" role="menuitem" disabled title="শীঘ্রই আসছে"><Icon name="bookmark" size={14} /> Saved Views <em>soon</em></button>
+                        <button type="button" role="menuitem" disabled={loading || members.length === 0} onClick={() => { setHeaderMenuOpen(false); setShowReport(true); }}><Icon name="bar" size={14} /> Generate Report</button>
+                      </div>
+                    </>
+                  )}
+                </div>
+                {profile?.is_admin && <button className="th-primary" onClick={() => setShowAddMember(true)}><Icon name="user-plus" size={15} /> টিম মেম্বার যোগ করুন</button>}
               </div>
             </div>
 
@@ -798,6 +910,8 @@ export default function TeamWorkloadPage() {
                   {members.map((m) => {
                     const state = capacityState(m.capacityPercent);
                     const availableHours = Math.max(0, WEEKLY_CAPACITY_HOURS - m.estHours);
+                    const todoCount = Number.isFinite(m.activeTodos) ? m.activeTodos : 0;
+                    const openItems = m.activeTasks + todoCount;
                     return (
                       <article
                         className="member-card clickable"
@@ -896,53 +1010,54 @@ export default function TeamWorkloadPage() {
                           )}
                         </header>
 
-                        <div className="mc-capacity">
-                          <svg className="mc-ring" width="76" height="76" viewBox="0 0 76 76" role="img" aria-label={`${m.capacityPercent}% of weekly capacity`}>
-                            <circle cx="38" cy="38" r={RING_R} fill="none" stroke="var(--border-soft)" strokeWidth="8" />
-                            {m.capacityPercent > 0 && (
-                              <circle
-                                cx="38"
-                                cy="38"
-                                r={RING_R}
-                                fill="none"
-                                stroke={state.color}
-                                strokeWidth="8"
-                                strokeLinecap="round"
-                                strokeDasharray={RING_C}
-                                strokeDashoffset={RING_C - (RING_C * Math.min(100, m.capacityPercent)) / 100}
-                                transform="rotate(-90 38 38)"
-                              />
-                            )}
-                            <text x="38" y="43" textAnchor="middle" fontSize="16" fontWeight="700" fill="var(--ink)">
-                              {m.capacityPercent}%
-                            </text>
-                          </svg>
-                          <div className="mc-capacity-info">
-                            <span className={`state-chip ${state.cls}`}>{state.label}</span>
-                            <div className="mc-hours tabular">
-                              Est. <b>{m.estHours}h</b> of {WEEKLY_CAPACITY_HOURS}h this week
+                        <div className="mc3">
+                          <div className="mc3-top">
+                            <div className="mc3-left">
+                              <span className="mc3-label">Workload</span>
+                              <span className={`state-chip ${state.cls}`}>{state.label}</span>
                             </div>
                           </div>
-                        </div>
-
-                        <div className="mc-stats">
-                          <div className="mc-stat">
-                            <div className="mc-stat-value tabular">{m.activeTasks}</div>
-                            <div className="mc-stat-label">Active tasks</div>
+                          <div className="mc3-line">
+                            {/* five active tasks is a full load, so the bar fills 20% per task */}
+                            <div className="mc3-track" role="img" aria-label={`${openItems} of 5 open items, ${m.capacityPercent}% workload`} style={{ '--c': state.color } as CSSProperties}>
+                              <div className="mc3-bar-fill" style={{ width: `${Math.min(100, Math.max(0, m.capacityPercent))}%` }} />
+                            </div>
+                            <span className="mc3-pct tabular" style={{ color: state.color }}>{m.capacityPercent}%</span>
                           </div>
-                          <div className="mc-stat">
-                            <div className="mc-stat-value tabular">{m.projectIds.length}</div>
-                            <div className="mc-stat-label">Projects</div>
-                          </div>
-                          <div className="mc-stat">
-                            <div className="mc-stat-value tabular">{availableHours}h</div>
-                            <div className="mc-stat-label">Available</div>
+                          <div className="mc3-meta">
+                            <span className="tabular"><b>{openItems}</b> of 5 · {m.activeTasks} task{m.activeTasks === 1 ? '' : 's'} + {todoCount} to-do{todoCount === 1 ? '' : 's'}</span>
+                            <span className="tabular">{m.estHours > 0 ? `${m.estHours}h planned · ${availableHours}h free` : 'No time estimates yet'}</span>
                           </div>
                         </div>
 
-                        <footer className="mc-foot">
-                          <span className="mc-foot-text">{m.primaryProjectName ? `${m.primaryProjectName} · ${STAGE_LABEL[m.currentStage ?? ''] ?? m.currentStage ?? '—'}` : 'কোনো অ্যাক্টিভ প্রজেক্ট নেই'}</span>
-                          <Link href={`/tasks?assignee=${m.id}`} className="mc-foot-link" onClick={(e) => e.stopPropagation()}>টাস্ক দিন</Link>
+                        <table className="mc3-table cols">
+                          <thead>
+                            <tr>
+                              <th><span className="mc3-t-label"><Icon name="clock" size={14} />Overdue</span></th>
+                              <th><span className="mc3-t-label"><Icon name="calendar" size={14} />Due today</span></th>
+                              <th><span className="mc3-t-label"><Icon name="check-circle" size={14} />Done today</span></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td className={`tabular${m.overdueTasks > 0 ? ' is-danger' : ''}`}>{m.overdueTasks}</td>
+                              <td className={`tabular${m.dueToday > 0 ? ' is-warn' : ''}`}>{m.dueToday}</td>
+                              <td className={`tabular${m.completedToday > 0 ? ' is-good' : ''}`}>{m.completedToday}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+
+                        <footer className="mc4-foot">
+                          <div className={`mc4-now${m.primaryProjectName ? '' : ' empty'}`}>
+                            <div className="mc4-text">
+                              <span className="mc4-label">Working on</span>
+                              <span className="mc4-name">{m.primaryProjectName ?? 'কোনো অ্যাক্টিভ প্রজেক্ট নেই'}</span>
+                            </div>
+                            {m.primaryProjectName && (
+                              <span className="mc4-stage"><i />{STAGE_LABEL[m.currentStage ?? ''] ?? m.currentStage ?? '—'}</span>
+                            )}
+                          </div>
+                          <Link href={`/tasks?assignee=${m.id}`} className="mc4-assign" onClick={(e) => e.stopPropagation()}>Assign task</Link>
                         </footer>
                       </article>
                     );
@@ -951,7 +1066,8 @@ export default function TeamWorkloadPage() {
               )}
             </section>
 
-            {/* Workload Outlook */}
+            {/* Workload Outlook and Project Allocation, side by side */}
+            <div className={`pair-row out-row${outlook.buckets.length > 0 ? '' : ' single'}`}>
             {outlook.buckets.length > 0 && (
               <section className="block">
                 <div className="section-title-row">
@@ -962,8 +1078,78 @@ export default function TeamWorkloadPage() {
                 </div>
               </section>
             )}
+        <section className="block">
+          <div className="section-title-row"><span className="section-title">Project Allocation</span></div>
+          {allocations.length === 0 ? (
+            <div className="panel"><div className="empty-state"><div className="empty-icon"><Icon name="folder" /></div><div className="empty-title">কোনো অ্যাক্টিভ প্রজেক্ট নেই</div><div className="empty-sub">নতুন প্রজেক্ট শুরু হলে টিম অ্যালোকেশন এখানে দেখা যাবে।</div></div></div>
+          ) : (
+            <div className="proj-alloc-grid">
+              {allocations.map((a) => {
+                const isOverdue = a.due_date ? a.due_date < today : false;
+                const healthColor = isOverdue ? 'var(--danger)' : (a.progress ?? 0) < 40 ? 'var(--warning)' : 'var(--positive)';
+                return (
+                  <Link className="proj-alloc-card" href={`/projects/${a.id}`} key={a.id}>
+                    <div className="proj-alloc-top"><span className="proj-alloc-name">{a.name}</span><span className="health-dot" style={{ background: healthColor }}></span></div>
+                    <div className="proj-alloc-deadline">ডেডলাইন · {formatBnDate(a.due_date) || '—'}</div>
+                    <div className="progress-track"><div className="progress-fill" style={{ width: `${a.progress ?? 0}%` }}></div></div>
+                    <div className="proj-alloc-foot">
+                      <div className="avatar-stack">
+                        {a.assignees.slice(0, 4).map((m) => (
+                          <Avatar key={m.id} person={{ full_name: m.name, avatar_color: m.avatar_color, avatar_url: m.avatar_url }} size={24} />
+                        ))}
+                      </div>
+                      <span className="tabular" style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{a.progress ?? 0}%</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
+            </div>
 
-            {/* Workload Distribution */}
+            {/* Workload Distribution and Today at a glance, side by side */}
+            <div className="pair-row">
+        {/* Today at a glance: each member's overdue, due today and done today, with the team total */}
+        <section className="block">
+          <div className="section-title-row"><span className="section-title">Today at a glance</span></div>
+          {members.length === 0 ? (
+            <div className="panel"><div className="empty-state"><div className="empty-icon"><Icon name="users" /></div><div className="empty-title">কোনো টিম মেম্বার নেই</div></div></div>
+          ) : (
+            <div className="table-scroll">
+              <table className="today-table">
+                <thead>
+                  <tr>
+                    <th>Member</th>
+                    <th className="num">Overdue</th>
+                    <th className="num">Due today</th>
+                    <th className="num">Done today</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...members]
+                    .sort((x, y) => y.overdueTasks - x.overdueTasks || y.dueToday - x.dueToday || x.name.localeCompare(y.name))
+                    .map((m) => (
+                      <tr key={m.id}>
+                        <td><div className="assignee-cell"><Avatar person={{ full_name: m.name, avatar_color: m.avatar_color, avatar_url: m.avatar_url }} size={24} />{m.name}</div></td>
+                        <td className={`num tabular${m.overdueTasks > 0 ? ' t-danger' : ' t-zero'}`}>{m.overdueTasks}</td>
+                        <td className={`num tabular${m.dueToday > 0 ? ' t-warn' : ' t-zero'}`}>{m.dueToday}</td>
+                        <td className={`num tabular${m.completedToday > 0 ? ' t-good' : ' t-zero'}`}>{m.completedToday}</td>
+                      </tr>
+                    ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td>Team total</td>
+                    <td className="num tabular">{members.reduce((n, m) => n + m.overdueTasks, 0)}</td>
+                    <td className="num tabular">{members.reduce((n, m) => n + m.dueToday, 0)}</td>
+                    <td className="num tabular">{members.reduce((n, m) => n + m.completedToday, 0)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </section>
             <section className="block">
               <div className="section-title-row">
                 <span className="section-title">Workload Distribution</span>
@@ -996,99 +1182,131 @@ export default function TeamWorkloadPage() {
                 />
               </div>
             </section>
+            </div>
+
+        {/* Current Assignments */}
+        <section className="block">
+          <div className="section-title-row"><span className="section-title">Current Assignments</span></div>
+          {members.filter((m) => m.activeTasks > 0).length === 0 ? (
+            <div className="panel"><div className="empty-state"><div className="empty-icon"><Icon name="check" /></div><div className="empty-title">এখন কারো নামে অ্যাক্টিভ টাস্ক নেই</div></div></div>
+          ) : (
+            <div className="table-scroll">
+              <table className="assign-table">
+                <thead><tr><th>Member</th><th>Projects</th><th>Tasks</th><th>Current Stage</th><th>Next Deadline</th><th>Capacity</th><th>Manager</th><th>Action</th></tr></thead>
+                <tbody>
+                  {sortedMembers.filter((m) => m.activeTasks > 0).map((m) => {
+                    const projectNames = m.projectIds.map((pid) => allocations.find((a) => a.id === pid)?.name).filter(Boolean);
+                    const isOverdue = m.nextDeadline ? m.nextDeadline < today : false;
+                    const isSoon = m.nextDeadline ? m.nextDeadline >= today && m.nextDeadline <= todayISO() : false;
+                    const state = capacityState(m.capacityPercent);
+                    return (
+                      <tr key={m.id}>
+                        <td><div className="assignee-cell"><Avatar person={{ full_name: m.name, avatar_color: m.avatar_color, avatar_url: m.avatar_url }} size={22} />{m.name}</div></td>
+                        <td>{projectNames.length > 0 ? projectNames.join(', ') : '—'}</td>
+                        <td className="tabular">{m.activeTasks}</td>
+                        <td>{m.currentStage ? <span className="stage-pill">{STAGE_LABEL[m.currentStage] ?? m.currentStage}</span> : '—'}</td>
+                        <td className="tabular" style={{ color: isOverdue ? 'var(--danger)' : isSoon ? 'var(--warning)' : undefined, fontWeight: isOverdue || isSoon ? 600 : undefined }}>{formatBnDate(m.nextDeadline) || '—'}</td>
+                        <td className="tabular" style={{ color: state.color, fontWeight: 600 }}>{m.capacityPercent}%</td>
+                        <td>{m.managerName ?? '—'}</td>
+                        <td>
+                          {state.key === 'available' ? (
+                            <Link className="btn btn-accent btn-sm" href={`/tasks?assignee=${m.id}`}>টাস্ক দিন</Link>
+                          ) : (
+                            <Link className="btn btn-ghost btn-sm" href="/tasks" title="টাস্ক লিস্টে গিয়ে যেকোনো টাস্ক এক্সপ্যান্ড করে নতুন করে অ্যাসাইন করুন">রি-অ্যাসাইন</Link>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
             <div className="grid-2col">
               <div>
-                {/* Today's Availability — schema-তে attendance/presence টেবিল নেই */}
+                {/* Workload Heatmap: who has how much falling due on which day, for the next two weeks */}
                 <section className="block">
-                  <div className="section-title-row"><span className="section-title">Today&apos;s Availability</span></div>
-                  <div className="panel">
-                    <div className="empty-state">
-                      <div className="empty-icon"><Icon name="calendar" /></div>
-                      <div className="empty-title">এই ফিচার এখনো যোগ করা হয়নি</div>
-                      <div className="empty-sub">লাইভ উপস্থিতি/শিডিউল দেখাতে হলে একটা attendance টেবিল ও আপডেট ফ্লো লাগবে।</div>
-                    </div>
+                  <div className="section-title-row">
+                    <span className="section-title">Workload Heatmap</span>
+                    <span className="hm-legend" aria-hidden="true">Less <i className="l0" /><i className="l1" /><i className="l2" /><i className="l3" /><i className="l4" /> More</span>
                   </div>
-                </section>
-
-                {/* Current Assignments */}
-                <section className="block">
-                  <div className="section-title-row"><span className="section-title">Current Assignments</span></div>
-                  {members.filter((m) => m.activeTasks > 0).length === 0 ? (
-                    <div className="panel"><div className="empty-state"><div className="empty-icon"><Icon name="check" /></div><div className="empty-title">এখন কারো নামে অ্যাক্টিভ টাস্ক নেই</div></div></div>
+                  {heatmap.rows.length === 0 ? (
+                    <div className="panel">
+                      <div className="empty-state">
+                        <div className="empty-icon"><Icon name="calendar" /></div>
+                        <div className="empty-title">এই দুই সপ্তাহে কোনো ডেডলাইন নেই</div>
+                        <div className="empty-sub">টাস্ক বা To-Do-তে ডেডলাইন দিলে এখানে কার কোন দিনে কতটা কাজ জমা আছে দেখা যাবে।</div>
+                      </div>
+                    </div>
                   ) : (
-                    <div className="table-scroll">
-                      <table className="assign-table">
-                        <thead><tr><th>Member</th><th>Projects</th><th>Tasks</th><th>Current Stage</th><th>Next Deadline</th><th>Capacity</th><th>Manager</th><th></th></tr></thead>
+                    <div className="hm-card">
+                    <div className="table-scroll hm-scroll">
+                      <table className="hm-table">
+                        <thead>
+                          <tr>
+                            <th className="hm-name">Member</th>
+                            <th className="hm-over">Overdue</th>
+                            {heatmap.days.map((d) => {
+                              const dt = new Date(d + 'T00:00:00');
+                              const weekend = dt.getDay() === 0 || dt.getDay() === 6;
+                              return (
+                                <th key={d} className={`hm-day${d === today ? ' today' : ''}${weekend ? ' weekend' : ''}`}>
+                                  <span>{dt.toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2)}</span>
+                                  <b>{dt.getDate()}</b>
+                                </th>
+                              );
+                            })}
+                          </tr>
+                        </thead>
                         <tbody>
-                          {sortedMembers.filter((m) => m.activeTasks > 0).map((m) => {
-                            const projectNames = m.projectIds.map((pid) => allocations.find((a) => a.id === pid)?.name).filter(Boolean);
-                            const isOverdue = m.nextDeadline ? m.nextDeadline < today : false;
-                            const isSoon = m.nextDeadline ? m.nextDeadline >= today && m.nextDeadline <= todayISO() : false;
-                            const state = capacityState(m.capacityPercent);
-                            return (
-                              <tr key={m.id}>
-                                <td><div className="assignee-cell"><Avatar person={{ full_name: m.name, avatar_color: m.avatar_color, avatar_url: m.avatar_url }} size={22} />{m.name}</div></td>
-                                <td>{projectNames.length > 0 ? projectNames.join(', ') : '—'}</td>
-                                <td className="tabular">{m.activeTasks}</td>
-                                <td>{m.currentStage ? <span className="stage-pill">{STAGE_LABEL[m.currentStage] ?? m.currentStage}</span> : '—'}</td>
-                                <td className="tabular" style={{ color: isOverdue ? 'var(--danger)' : isSoon ? 'var(--warning)' : undefined, fontWeight: isOverdue || isSoon ? 600 : undefined }}>{formatBnDate(m.nextDeadline) || '—'}</td>
-                                <td className="tabular" style={{ color: state.color, fontWeight: 600 }}>{m.capacityPercent}%</td>
-                                <td>{m.managerName ?? '—'}</td>
-                                <td>
-                                  {state.key === 'available' ? (
-                                    <Link className="btn btn-accent btn-sm" href={`/tasks?assignee=${m.id}`}>টাস্ক দিন</Link>
-                                  ) : (
-                                    <Link className="btn btn-ghost btn-sm" href="/tasks" title="টাস্ক লিস্টে গিয়ে যেকোনো টাস্ক এক্সপ্যান্ড করে নতুন করে অ্যাসাইন করুন">রি-অ্যাসাইন</Link>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
+                          {heatmap.rows.map((r) => (
+                            <tr key={r.id}>
+                              <td className="hm-name"><div className="assignee-cell"><Avatar person={{ full_name: r.name, avatar_color: r.avatar_color, avatar_url: r.avatar_url }} size={22} />{r.name}</div></td>
+                              <td className={`hm-over tabular${r.overdue > 0 ? ' has' : ''}`}>{r.overdue > 0 ? r.overdue : ''}</td>
+                              {r.counts.map((n, i) => {
+                                const level = n === 0 ? 0 : Math.min(4, Math.max(1, Math.ceil((n / heatmap.max) * 4)));
+                                const dt = new Date(heatmap.days[i] + 'T00:00:00');
+                                return (
+                                  <td key={i} className="hm-cell-wrap">
+                                    <span className={`hm-cell l${level}`} title={`${r.name}: ${n} due on ${dt.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}`}>{n > 0 ? n : ''}</span>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
                         </tbody>
                       </table>
                     </div>
-                  )}
-                </section>
-
-                {/* Workload Heatmap — schema-তে সময়ভিত্তিক (দিন/ঘণ্টা) লগ নেই */}
-                <section className="block">
-                  <div className="section-title-row"><span className="section-title">Workload Heatmap</span></div>
-                  <div className="panel">
-                    <div className="empty-state">
-                      <div className="empty-icon"><Icon name="bar" /></div>
-                      <div className="empty-title">এই ফিচার এখনো যোগ করা হয়নি</div>
-                      <div className="empty-sub">দিন/সময় অনুযায়ী হিটম্যাপ দেখাতে হলে টাস্কে টাইমস্ট্যাম্পড time-log লাগবে — এখন শুধু মোট estimated/logged hours আছে।</div>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Project Allocation */}
-                <section className="block">
-                  <div className="section-title-row"><span className="section-title">Project Allocation</span></div>
-                  {allocations.length === 0 ? (
-                    <div className="panel"><div className="empty-state"><div className="empty-icon"><Icon name="folder" /></div><div className="empty-title">কোনো অ্যাক্টিভ প্রজেক্ট নেই</div><div className="empty-sub">নতুন প্রজেক্ট শুরু হলে টিম অ্যালোকেশন এখানে দেখা যাবে।</div></div></div>
-                  ) : (
-                    <div className="proj-alloc-grid">
-                      {allocations.map((a) => {
-                        const isOverdue = a.due_date ? a.due_date < today : false;
-                        const healthColor = isOverdue ? 'var(--danger)' : (a.progress ?? 0) < 40 ? 'var(--warning)' : 'var(--positive)';
+                    <div className="hm-foot">
+                      {(() => {
+                        const dayTotals = heatmap.days.map((_, i) => heatmap.rows.reduce((n, r) => n + r.counts[i], 0));
+                        const dueTotal = dayTotals.reduce((n, x) => n + x, 0);
+                        const overdueTotal = heatmap.rows.reduce((n, r) => n + r.overdue, 0);
+                        const peakIdx = dayTotals.indexOf(Math.max(...dayTotals));
+                        const peakDay = dueTotal > 0 ? new Date(heatmap.days[peakIdx] + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : null;
+                        const busiest = [...heatmap.rows].sort((x, y) => y.counts.reduce((n, c) => n + c, 0) - x.counts.reduce((n, c) => n + c, 0))[0];
+                        const busiestN = busiest ? busiest.counts.reduce((n, c) => n + c, 0) : 0;
                         return (
-                          <Link className="proj-alloc-card" href={`/projects/${a.id}`} key={a.id}>
-                            <div className="proj-alloc-top"><span className="proj-alloc-name">{a.name}</span><span className="health-dot" style={{ background: healthColor }}></span></div>
-                            <div className="proj-alloc-deadline">ডেডলাইন · {formatBnDate(a.due_date) || '—'}</div>
-                            <div className="progress-track"><div className="progress-fill" style={{ width: `${a.progress ?? 0}%` }}></div></div>
-                            <div className="proj-alloc-foot">
-                              <div className="avatar-stack">
-                                {a.assignees.slice(0, 4).map((m) => (
-                                  <Avatar key={m.id} person={{ full_name: m.name, avatar_color: m.avatar_color, avatar_url: m.avatar_url }} size={24} />
-                                ))}
-                              </div>
-                              <span className="tabular" style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{a.progress ?? 0}%</span>
-                            </div>
-                          </Link>
+                          <div className="hm-facts">
+                            <div><span>Due in 14 days</span><b className="tabular">{dueTotal}</b></div>
+                            <div><span>Busiest day</span><b className="tabular">{peakDay ? `${peakDay} · ${dayTotals[peakIdx]}` : 'No deadlines yet'}</b></div>
+                            <div><span>Most loaded</span><b>{busiestN > 0 && busiest ? `${busiest.name.split(' ')[0]} · ${busiestN}` : 'Nobody yet'}</b></div>
+                            <div><span>Already overdue</span><b className={`tabular${overdueTotal > 0 ? ' danger' : ''}`}>{overdueTotal}</b></div>
+                          </div>
                         );
-                      })}
+                      })()}
+                      <div className="hm-how">
+                        <span className="hm-how-title">How to read this</span>
+                        <ul className="hm-how-list">
+                          <li><i className="hm-dot l3" />Each square = open tasks + To-Dos due that day</li>
+                          <li><i className="hm-dot l1" />Darker purple = more work due</li>
+                          <li><i className="hm-dot over" />Overdue column = past the due date</li>
+                          <li><i className="hm-dot none" />No due date = not shown</li>
+                        </ul>
+                      </div>
+                    </div>
                     </div>
                   )}
                 </section>
@@ -1097,25 +1315,8 @@ export default function TeamWorkloadPage() {
               <div>
                 {/* AI Workload Insights */}
                 <section className="ai-card block">
-                  <div className="ai-head"><div className="ai-badge"><Icon name="spark" color="#fff" /></div><div className="ai-title">AI ইনসাইট</div></div>
+                  <div className="ai-head"><div className="ai-badge"><Icon name="spark" size={16} /></div><div className="ai-title">AI ইনসাইট</div><span className="ai-count tabular">{insights.length}</span></div>
                   <div className="ai-list">{insights.map((text, i) => (<div className="ai-item" key={i}><span className="dot"></span> {text}</div>))}</div>
-                </section>
-
-                {/* Recent Activity */}
-                <section className="panel block">
-                  <div className="panel-head"><span className="panel-title">Recent Activity</span></div>
-                  <div className="panel-body">
-                    {activity.length === 0 ? (
-                      <p style={{ padding: 16, fontSize: 13, color: 'var(--ink-faint)' }}>এখনো কোনো অ্যাক্টিভিটি নেই।</p>
-                    ) : (
-                      activity.map((a) => (
-                        <div className="activity-row" key={a.id}>
-                          <div className="activity-icon"><Icon name="check-circle" size={14} /></div>
-                          <div><div className="activity-text"><b>{a.profiles?.full_name ?? 'কেউ একজন'}</b> {a.detail}</div><div className="activity-time">{relativeTimeBn(a.created_at)}</div></div>
-                        </div>
-                      ))
-                    )}
-                  </div>
                 </section>
 
                 {/* Quick Actions */}
@@ -1135,6 +1336,92 @@ export default function TeamWorkloadPage() {
               </div>
             </div>
           </main>
+      {showReport && (() => {
+        const generated = new Date();
+        const rows = [...members].sort((x, y) => y.capacityPercent - x.capacityPercent);
+        const openTasks = rows.reduce((n, r) => n + r.activeTasks, 0);
+        const openTodos = rows.reduce((n, r) => n + r.activeTodos, 0);
+        const overdue = rows.reduce((n, r) => n + r.overdueTasks, 0);
+        const hours = rows.reduce((n, r) => n + r.estHours, 0);
+        const avg = rows.length ? Math.round(rows.reduce((n, r) => n + r.capacityPercent, 0) / rows.length) : 0;
+        const dueNext14 = heatmap.rows.reduce((n, r) => n + r.counts.reduce((a, c) => a + c, 0), 0);
+        const stamp = generated.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+        const downloadCsv = () => {
+          const esc = (v: string | number) => '"' + String(v).replace(/"/g, '""') + '"';
+          const head = ['Member', 'Role', 'Workload %', 'Status', 'Open tasks', 'Pending To-Dos', 'Estimated hours', 'Overdue', 'Due today', 'Done today', 'Projects', 'Next deadline'];
+          const lines = rows.map((r) => [r.name, r.role ?? 'Team Member', r.capacityPercent, capacityState(r.capacityPercent).label, r.activeTasks, r.activeTodos, r.estHours, r.overdueTasks, r.dueToday, r.completedToday, r.projectIds.length, r.nextDeadline ?? ''].map(esc).join(','));
+          const blob = new Blob(['\uFEFF' + [head.map(esc).join(','), ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `team-workload-${todayISO()}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+        return (
+          <div className="rp-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowReport(false); }}>
+            <div className="rp-modal" role="dialog" aria-modal="true" aria-label="Team workload report">
+              <div className="rp-bar">
+                <span className="rp-bar-title">Team Workload Report</span>
+                <div className="rp-bar-actions">
+                  <button type="button" className="th-btn" onClick={downloadCsv}><Icon name="export" size={14} /> Download CSV</button>
+                  <button type="button" className="rp-print" onClick={() => window.print()}><span className="rp-print-ico"><Icon name="printer" size={14} /></span>Print / Save PDF</button>
+                  <button type="button" className="md-close" aria-label="Close" onClick={() => setShowReport(false)}><Icon name="close" size={16} /></button>
+                </div>
+              </div>
+              <div className="rp-scroll">
+                <div className="rp-sheet">
+                  <div className="rp-head">
+                    <div>
+                      <div className="rp-brand">FLOW 53</div>
+                      <h2 className="rp-title">Team Workload Report</h2>
+                    </div>
+                    <div className="rp-stamp">Generated {stamp}</div>
+                  </div>
+                  <table className="rp-sum">
+                    <tbody>
+                      <tr>
+                        <td><b>{rows.length}</b><span>Team members</span></td>
+                        <td><b>{openTasks}</b><span>Open tasks</span></td>
+                        <td><b>{openTodos}</b><span>Pending To-Dos</span></td>
+                        <td><b>{avg}%</b><span>Average workload</span></td>
+                      </tr>
+                      <tr>
+                        <td><b>{hours}h</b><span>Estimated of {rows.length * WEEKLY_CAPACITY_HOURS}h</span></td>
+                        <td><b className={overdue > 0 ? 'rp-red' : ''}>{overdue}</b><span>Overdue tasks</span></td>
+                        <td><b>{dueNext14}</b><span>Due in next 14 days</span></td>
+                        <td><b>{completedThisWeek}</b><span>Completed this week</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <h3 className="rp-h">Workload by member</h3>
+                  <table className="rp-table">
+                    <thead>
+                      <tr><th>Member</th><th>Workload</th><th>Status</th><th>Tasks</th><th>To-Dos</th><th>Hours</th><th>Overdue</th><th>Due today</th><th>Next deadline</th></tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((r) => (
+                        <tr key={r.id}>
+                          <td><b>{r.name}</b><span>{r.role ?? 'Team Member'}</span></td>
+                          <td className="tabular">{r.capacityPercent}%</td>
+                          <td>{capacityState(r.capacityPercent).label}</td>
+                          <td className="tabular">{r.activeTasks}</td>
+                          <td className="tabular">{r.activeTodos}</td>
+                          <td className="tabular">{r.estHours}h</td>
+                          <td className={`tabular${r.overdueTasks > 0 ? ' rp-red' : ''}`}>{r.overdueTasks}</td>
+                          <td className="tabular">{r.dueToday}</td>
+                          <td>{r.nextDeadline ? formatDate(r.nextDeadline) : '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p className="rp-foot">Workload % = (open tasks + pending To-Dos) / 5, capped at 100. Under 30% Available, 30-64% Balanced, 65-84% Busy, 85% and above Overloaded. Hours are the estimated hours of open tasks against a {WEEKLY_CAPACITY_HOURS}h week.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       {detailMember && (() => {
         const m = detailMember;
         const state = capacityState(m.capacityPercent);
@@ -1178,6 +1465,13 @@ export default function TeamWorkloadPage() {
                   </button>
                 )}
               </div>
+
+              <section className="md-stats">
+                <div><b className="tabular">{m.activeTasks}</b><span>Open tasks</span></div>
+                <div><b className="tabular">{m.projectIds.length}</b><span>Projects</span></div>
+                <div><b className="tabular">{detail ? detail.doneThisWeek : 0}</b><span>Done this week</span></div>
+                <div><b className="tabular">{detail ? detail.doneTotal : 0}</b><span>Done in total</span></div>
+              </section>
 
               <section className="md-section">
                 <h3 className="md-h">Contact</h3>
@@ -1259,13 +1553,6 @@ export default function TeamWorkloadPage() {
                 </div>
               </section>
 
-              <section className="md-stats">
-                <div><b className="tabular">{m.activeTasks}</b><span>Open tasks</span></div>
-                <div><b className="tabular">{m.projectIds.length}</b><span>Projects</span></div>
-                <div><b className="tabular">{detail ? detail.doneThisWeek : '—'}</b><span>Done this week</span></div>
-                <div><b className="tabular">{detail ? detail.doneTotal : '—'}</b><span>Done in total</span></div>
-              </section>
-
               <section className="md-section">
                 <h3 className="md-h">Open tasks {detail && <span className="md-count">{detail.tasks.length}</span>}</h3>
                 {detailLoading ? (
@@ -1316,7 +1603,7 @@ export default function TeamWorkloadPage() {
                   <ul className="md-activity">
                     {detail.activity.map((a) => (
                       <li key={a.id}>
-                        <span className="md-activity-text">{a.detail ?? a.action.replace(/_/g, ' ')}</span>
+                        <span className="md-activity-text">{activityText(a)}</span>
                         <span className="md-activity-time">{relativeTime(a.created_at)}</span>
                       </li>
                     ))}

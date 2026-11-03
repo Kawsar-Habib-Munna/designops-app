@@ -257,3 +257,12 @@
   .todos-root .modal-field-grid{grid-template-columns:1fr;}
   .todos-root .detail-field-grid{grid-template-columns:1fr 1fr;}
 }
+
+/* activity timeline: a ring dot per entry, joined by a dotted line */
+.todos-root .act-timeline{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}
+.todos-root .act-timeline li{position:relative;display:flex;flex-direction:column;gap:2px;padding:0 0 16px 22px;font-size:12px;line-height:1.5;color:var(--ink-soft);}
+.todos-root .act-timeline li:last-child{padding-bottom:0;}
+.todos-root .act-timeline li::before{content:'';position:absolute;left:0;top:4px;width:10px;height:10px;box-sizing:border-box;border-radius:50%;background:var(--surface);border:2px solid var(--accent);z-index:1;}
+.todos-root .act-timeline li:not(:last-child)::after{content:'';position:absolute;left:4px;top:18px;bottom:-1px;border-left:2px dotted color-mix(in srgb,var(--accent) 45%,var(--border));}
+.todos-root .act-timeline-text b{color:var(--ink);font-weight:600;}
+.todos-root .act-timeline-time{font-size:11px;color:var(--ink-faint);}

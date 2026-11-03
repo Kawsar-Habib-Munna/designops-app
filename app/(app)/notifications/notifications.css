@@ -200,3 +200,55 @@
 }
 /* sidebar brand strip (see globals.css): this page's top bar is 60px tall */
 .notif-root div.brand.brand-topbar { height: 60px; }
+
+/* ==== redesign: bold header, underlined tabs, and each day's notifications in one card ==== */
+.notif-root .content{max-width:980px;}
+.notif-root .nh-head{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:22px;}
+.notif-root .nh-text{min-width:0;}
+.notif-root .nh-title{display:flex;align-items:center;gap:12px;margin:0;font-size:28px;font-weight:800;letter-spacing:-0.025em;line-height:1.15;color:var(--ink);}
+.notif-root .nh-badge{padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:700;letter-spacing:0;}
+.notif-root .nh-sub{margin:6px 0 0;font-size:13.5px;line-height:1.5;color:var(--ink-faint);}
+.notif-root .nh-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.notif-root .nh-btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface);font-size:13px;font-weight:600;color:var(--ink);transition:border-color .15s ease,color .15s ease;}
+.notif-root .nh-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+.notif-root .nh-btn:disabled{opacity:.5;cursor:default;}
+
+.notif-root .nf-tabs{gap:4px;margin:0 0 22px;padding:0;border-bottom:1px solid var(--border);overflow-x:auto;}
+.notif-root .nf-tabs .filter-pill{position:relative;padding:11px 14px;border:none;border-radius:0;background:transparent;font-size:13px;font-weight:600;color:var(--ink-faint);}
+.notif-root .nf-tabs .filter-pill:hover{color:var(--ink);border-color:transparent;}
+.notif-root .nf-tabs .filter-pill.active{background:transparent;color:var(--accent);}
+.notif-root .nf-tabs .filter-pill.active::after{content:'';position:absolute;left:10px;right:10px;bottom:-1px;height:2px;border-radius:2px;background:var(--accent);}
+.notif-root .nf-tabs .fp-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:18px;margin-left:7px;padding:0 6px;border-radius:999px;background:var(--surface-muted);border:1px solid var(--border-soft);font-size:10.5px;font-weight:700;opacity:1;color:var(--ink-soft);}
+.notif-root .nf-tabs .filter-pill.active .fp-count{background:var(--accent-soft);border-color:transparent;color:var(--accent);}
+
+.notif-root .date-group-label{margin:26px 0 10px;font-size:12px;font-weight:700;letter-spacing:.02em;text-transform:none;color:var(--ink-soft);}
+.notif-root .notif-list{gap:0;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden;}
+.notif-root .notif-row{align-items:center;gap:14px;padding:16px 22px 16px 20px;border-radius:0;border-bottom:1px solid var(--border-soft);}
+.notif-root .notif-row:last-child{border-bottom:none;}
+.notif-root .notif-row.unread{background:transparent;box-shadow:inset 3px 0 0 var(--accent);}
+.notif-root .notif-row:hover,.notif-root .notif-row.unread:hover{background:var(--surface-muted);}
+.notif-root .notif-unread-dot{display:none;}
+.notif-root .notif-icon-badge{width:40px;height:40px;border-radius:12px;border:none;}
+.notif-root .notif-text{font-size:13.5px;color:var(--ink-soft);}
+.notif-root .notif-row.unread .notif-text{font-weight:600;}
+.notif-root .notif-item-title{font-size:12.5px;}
+.notif-root .notif-time{align-self:center;font-size:11.5px;}
+@media (max-width:640px){
+  .notif-root .nh-title{font-size:23px;}
+  .notif-root .nh-actions{width:100%;}
+  .notif-root .nh-btn{flex:1;justify-content:center;padding:0 10px;}
+  .notif-root .notif-row{padding:14px 16px;}
+}
+
+/* page spacing: same width and padding as the Team page, so the content lines up with the other screens */
+.notif-root .content{padding:24px 32px 64px 32px;max-width:1500px;width:100%;margin:0 auto;overflow-x:hidden;}
+.notif-root .nh-head{margin-bottom:24px;}
+.notif-root .nf-tabs{margin-bottom:8px;}
+.notif-root .date-group-label{margin:22px 0 10px;}
+.notif-root .date-group-label:first-child{margin-top:16px;}
+@media (max-width:640px){ .notif-root .content{padding:20px 16px 48px;} }
+
+/* tabs: no scrollbar (the underline used to overflow the bar by 1px and made a tiny vertical scroller) */
+.notif-root .nf-tabs{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;}
+.notif-root .nf-tabs::-webkit-scrollbar{display:none;width:0;height:0;}
+.notif-root .nf-tabs .filter-pill.active::after{bottom:0;}

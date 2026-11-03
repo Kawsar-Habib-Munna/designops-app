@@ -42,6 +42,7 @@ const ICON_PATHS: Record<string, string> = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
   refresh: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v6h-6"/>',
+  reload: '<path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/>',
   at: '<circle cx="12" cy="12" r="4"/><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-5.5 8.3"/>',
   trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>',
   dot: '<circle cx="12" cy="12" r="9"/>',
@@ -112,11 +113,11 @@ function typeMeta(t: string) {
 }
 
 const FILTER_PILLS: { key: string; label: string }[] = [
-  { key: 'all', label: 'সব' },
-  { key: 'unread', label: 'না পড়া' },
-  { key: 'task', label: 'টাস্ক' },
-  { key: 'discussion', label: 'আলোচনা' },
-  { key: 'vote', label: 'ভোট' },
+  { key: 'all', label: 'All' },
+  { key: 'unread', label: 'Unread' },
+  { key: 'task', label: 'Tasks' },
+  { key: 'discussion', label: 'Discussions' },
+  { key: 'vote', label: 'Votes' },
 ];
 
 function dateGroupLabel(iso: string): string {
@@ -127,10 +128,10 @@ function dateGroupLabel(iso: string): string {
   startOfYesterday.setDate(startOfYesterday.getDate() - 1);
   const startOfWeek = new Date(startOfToday);
   startOfWeek.setDate(startOfWeek.getDate() - 7);
-  if (d >= startOfToday) return 'আজ';
-  if (d >= startOfYesterday) return 'গতকাল';
-  if (d >= startOfWeek) return 'এই সপ্তাহে';
-  return 'আগে';
+  if (d >= startOfToday) return 'Today';
+  if (d >= startOfYesterday) return 'Yesterday';
+  if (d >= startOfWeek) return 'This week';
+  return 'Earlier';
 }
 
 function Toggle({ on, onChange, disabled }: { on: boolean; onChange: () => void; disabled?: boolean }) {
@@ -395,23 +396,23 @@ export default function NotificationsPage() {
   return (
     <>
       <main className="content">
-            <div className="page-header-row">
-              <div>
-                <h1 className="page-title">Notifications</h1>
-                <p className="page-sub">টাস্ক অ্যাসাইনমেন্ট, আলোচনা আর ভোটের সব আপডেট এক জায়গায়।</p>
+            <div className="nh-head">
+              <div className="nh-text">
+                <h1 className="nh-title">Notifications{counts.unread > 0 && <span className="nh-badge tabular">{counts.unread} new</span>}</h1>
+                <p className="nh-sub">Task assignments, discussions and votes, all in one place.</p>
               </div>
-              <div className="header-actions">
-                <button className="btn btn-ghost btn-sm" onClick={handleReload} disabled={reloading}><Icon name="refresh" size={13} /> {reloading ? 'রিলোড হচ্ছে…' : 'রিলোড'}</button>
-                <button className="btn btn-ghost btn-sm" onClick={markAllRead} disabled={markingAll || counts.unread === 0}><Icon name="check-circle" size={13} /> সব পড়া হয়েছে বলে চিহ্নিত করুন</button>
-                <button className="btn btn-ghost btn-sm" onClick={openSettings}><Icon name="settings" size={13} /> সেটিংস</button>
+              <div className="nh-actions">
+                <button className="nh-btn" onClick={handleReload} disabled={reloading}><Icon name="reload" size={14} /> {reloading ? 'Reloading…' : 'Reload'}</button>
+                <button className="nh-btn" onClick={markAllRead} disabled={markingAll || counts.unread === 0}><Icon name="check-circle" size={14} /> Mark all as read</button>
+                <button className="nh-btn" onClick={openSettings}><Icon name="settings" size={14} /> Settings</button>
               </div>
             </div>
 
             {error && <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: 13 }}>{error}</div>}
 
-            <div className="filter-bar">
+            <div className="filter-bar nf-tabs" role="tablist">
               {FILTER_PILLS.map((p) => (
-                <button key={p.key} className={`filter-pill${activeFilter === p.key ? ' active' : ''}`} onClick={() => setActiveFilter(p.key)}>
+                <button key={p.key} role="tab" aria-selected={activeFilter === p.key} className={`filter-pill${activeFilter === p.key ? ' active' : ''}`} onClick={() => setActiveFilter(p.key)}>
                   {p.label}<span className="fp-count">{counts[p.key] ?? 0}</span>
                 </button>
               ))}

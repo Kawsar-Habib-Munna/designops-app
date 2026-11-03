@@ -22,9 +22,10 @@ export type ParsedTask = {
   todos: string[];
   priority: ParsedPriority | null;
   dueDate: string | null; // YYYY-MM-DD
+  hours: number | null; // estimated hours
 };
 
-type Field = 'member' | 'title' | 'description' | 'todo' | 'priority' | 'due';
+type Field = 'member' | 'title' | 'description' | 'todo' | 'priority' | 'due' | 'hours';
 
 const LABELS: { field: Field; names: string }[] = [
   { field: 'member', names: 'member\\s*name|member|assignee|assigned\\s*to|team\\s*member|name' },
@@ -33,6 +34,7 @@ const LABELS: { field: Field; names: string }[] = [
   { field: 'todo', names: 'to[\\s-]*dos?|checklist|sub[\\s-]*tasks?|steps' },
   { field: 'priority', names: 'priority' },
   { field: 'due', names: 'due\\s*date|due|deadline' },
+  { field: 'hours', names: 'estimated\\s*hours|estimate|est\\.?\\s*hours|hours' },
 ];
 
 const LABEL_LINE = new RegExp(
@@ -84,7 +86,7 @@ export function parseTaskText(text: string): ParsedTask[] {
   let mode: Field | null = null;
   let lastMember = '';
 
-  const blank = (member: string): ParsedTask => ({ memberName: member, title: '', description: '', todos: [], priority: null, dueDate: null });
+  const blank = (member: string): ParsedTask => ({ memberName: member, title: '', description: '', todos: [], priority: null, dueDate: null, hours: null });
   const finish = () => {
     if (cur && cur.memberName.trim() && cur.title.trim()) {
       cur.title = cur.title.trim();
@@ -132,6 +134,10 @@ export function parseTaskText(text: string): ParsedTask[] {
       } else if (field === 'due') {
         cur.dueDate = parseDue(value);
         mode = 'due';
+      } else if (field === 'hours') {
+        const h = parseFloat(value.replace(/[^0-9.]/g, ''));
+        cur.hours = Number.isFinite(h) && h > 0 ? h : null;
+        mode = 'hours';
       }
       continue;
     }

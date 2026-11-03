@@ -157,6 +157,12 @@ const PRIORITY_EN: Record<string, { label: string; cls: string }> = {
 
 // A task's progress follows its checklist (ticked items out of all items). Without a checklist a finished task is 100% and any
 // other task keeps its saved number. The saved number alone was never updated when checklist items were ticked, so it stayed at 0%.
+// "4", "4.5" or "" from a form field -> a number of hours, or null when it is empty or not a positive number
+function parseHours(value: string): number | null {
+  const n = parseFloat(value);
+  return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
+}
+
 function checklistProgress(items: { is_done: boolean }[] | undefined): number | null {
   if (!items || items.length === 0) return null;
   return Math.round((items.filter((c) => c.is_done).length / items.length) * 100);
@@ -264,6 +270,7 @@ function TasksPageInner() {
   const [newAssigneeIds, setNewAssigneeIds] = useState<string[]>([]);
   const [newPriority, setNewPriority] = useState<TaskPriority>('normal');
   const [newDueDate, setNewDueDate] = useState('');
+  const [newEstimate, setNewEstimate] = useState('');
   // "Assigned date" = কোন দিনের টাস্ক হিসেবে এটা দেখানো হবে (daily লিস্টে/
   // "আজকের টাস্ক"-এ) — ডেডলাইন (due_date) থেকে সম্পূর্ণ আলাদা, ডেডলাইন ভিন্ন ভিন্ন
   // দিন হতে পারে কিন্তু assigned date সবসময় থাকবে, ডিফল্ট আজ।
@@ -292,7 +299,7 @@ function TasksPageInner() {
 
   // ---- List tab: per-person card view ----
   const [editTaskId, setEditTaskId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ title: '', projectId: '', assigneeId: '', priority: 'normal' as TaskPriority, status: 'todo' as TaskStatus, dueDate: '', assignedDate: '', description: '' });
+  const [editForm, setEditForm] = useState({ title: '', projectId: '', assigneeId: '', priority: 'normal' as TaskPriority, status: 'todo' as TaskStatus, dueDate: '', assignedDate: '', description: '', estimate: '' });
   const [editSaving, setEditSaving] = useState(false);
   const editingTask = tasks.find((t) => t.id === editTaskId) ?? null;
 
@@ -425,6 +432,7 @@ function TasksPageInner() {
           dueDate: t.due_date ?? '',
           assignedDate: t.assigned_date,
           description: t.description ?? '',
+          estimate: t.estimated_hours != null ? String(t.estimated_hours) : '',
         });
       }
       if (!expandData[editTaskId]) loadExpandData(editTaskId);
@@ -983,6 +991,7 @@ function TasksPageInner() {
           assignee_id: assigneeId,
           priority: newPriority,
           due_date: newDueDate || null,
+          estimated_hours: parseHours(newEstimate),
           assigned_date: newAssignedDate || todayISO(),
           status: 'todo',
           workflow_stage: 'backlog',
@@ -1046,6 +1055,7 @@ function TasksPageInner() {
     setNewAssigneeIds([]);
     setNewPriority('normal');
     setNewDueDate('');
+    setNewEstimate('');
     setNewAssignedDate(todayISO());
     setNewChecklist(['']);
     setCreating(false);
@@ -1075,6 +1085,7 @@ function TasksPageInner() {
       '- <step 2>',
       'Priority: <low | normal | high | urgent>   (optional)',
       'Due: <YYYY-MM-DD>   (optional)',
+      'Hours: <estimated hours as a number, e.g. 4>   (optional)',
       '',
       'Here is what I need:',
       '',
@@ -1104,6 +1115,7 @@ function TasksPageInner() {
           assignee_id: r.memberId,
           priority: r.priority ?? 'normal',
           due_date: r.dueDate,
+          estimated_hours: r.hours,
           assigned_date: todayISO(),
           status: 'todo',
           workflow_stage: 'backlog',
@@ -1169,6 +1181,7 @@ function TasksPageInner() {
       priority: task.priority,
       status: task.status,
       dueDate: task.due_date ?? '',
+      estimate: task.estimated_hours != null ? String(task.estimated_hours) : '',
       assignedDate: task.assigned_date,
       description: task.description ?? '',
     });
@@ -1189,6 +1202,7 @@ function TasksPageInner() {
         priority: editForm.priority,
         status: editForm.status,
         due_date: editForm.dueDate || null,
+        estimated_hours: parseHours(editForm.estimate),
         assigned_date: editForm.assignedDate || todayISO(),
         description: editForm.description.trim() || null,
       })
@@ -1600,6 +1614,7 @@ function TasksPageInner() {
                                     {checklist.length > 0 && (
                                       <span className="ptk-count tabular"><Icon name="checklist" size={13} />{doneCount}/{checklist.length}</span>
                                     )}
+                                    {task.estimated_hours ? <span className="ptk-count tabular">{task.estimated_hours}h</span> : null}
                                     {task.due_date && <span className="ptk-due tabular">Due {task.due_date.slice(8, 10)}/{task.due_date.slice(5, 7)}/{task.due_date.slice(0, 4)}</span>}
                                   </div>
                                   {task.description && <RichText text={task.description} className="person-task-desc" />}
@@ -1932,7 +1947,7 @@ function TasksPageInner() {
                                 <span className="is-task-main">
                                   <span className="is-task-title">{r.title}</span>
                                   <span className="is-task-meta">
-                                    {[r.todos.length > 0 ? `${r.todos.length} to-do${r.todos.length > 1 ? 's' : ''}` : null, r.priority, r.dueDate ? `due ${r.dueDate}` : null].filter(Boolean).join(' · ') || 'No to-dos'}
+                                    {[r.todos.length > 0 ? `${r.todos.length} to-do${r.todos.length > 1 ? 's' : ''}` : null, r.priority, r.hours ? `${r.hours}h` : null, r.dueDate ? `due ${r.dueDate}` : null].filter(Boolean).join(' · ') || 'No to-dos'}
                                   </span>
                                 </span>
                               </label>
@@ -2045,6 +2060,9 @@ function TasksPageInner() {
               <label className="field-label">ডেডলাইন (ঐচ্ছিক)</label>
               <input className="field-input" type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} />
 
+              <label className="field-label">Estimated hours (optional)</label>
+              <input className="field-input" type="number" inputMode="decimal" min="0" step="0.5" placeholder="e.g. 4" value={newEstimate} onChange={(e) => setNewEstimate(e.target.value)} />
+
               <div className="modal-foot">
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowCreate(false)}>বাতিল</button>
                 <button type="submit" className="btn btn-accent btn-sm" disabled={creating || !newTitle.trim()}>
@@ -2129,6 +2147,9 @@ function TasksPageInner() {
 
               <label className="field-label">ডেডলাইন (ঐচ্ছিক)</label>
               <input className="field-input" type="date" value={editForm.dueDate} onChange={(e) => setEditForm((f) => ({ ...f, dueDate: e.target.value }))} />
+
+              <label className="field-label">Estimated hours (optional)</label>
+              <input className="field-input" type="number" inputMode="decimal" min="0" step="0.5" placeholder="e.g. 4" value={editForm.estimate} onChange={(e) => setEditForm((f) => ({ ...f, estimate: e.target.value }))} />
 
               <label className="field-label">Description</label>
               <RichTextField value={editForm.description} onChange={(v) => setEditForm((f) => ({ ...f, description: v }))} textareaClassName="field-input" placeholder="একটা বিবরণ যোগ করুন..." minHeight={64} />

@@ -642,3 +642,6 @@
 .client-detail-root .lc-state-check{width:14px;height:14px;border-width:1.2px;}
 .client-detail-root .lc-state-check svg{width:8px;height:8px;}
 .client-detail-root .lc-state{gap:5px;}
+
+/* activity: events joined by a dotted line */
+.client-detail-root .timeline-line{width:0;background:none;border-left:2px dotted color-mix(in srgb,var(--accent) 45%,var(--border));margin:3px 0;}

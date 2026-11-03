@@ -821,11 +821,14 @@ export default function BoardPage() {
                 ) : drawerData.activity.length === 0 ? (
                   <p style={{ fontSize: 12, color: 'var(--ink-faint)' }}>এখনো কোনো অ্যাক্টিভিটি নেই।</p>
                 ) : (
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-soft)', lineHeight: 2 }}>
+                  <ul className="act-timeline">
                     {drawerData.activity.map((a) => (
-                      <div key={a.id}>{a.profiles?.full_name ?? 'কেউ একজন'} — {a.detail} · {relativeTimeBn(a.created_at)}</div>
+                      <li key={a.id}>
+                        <span className="act-timeline-text"><b>{a.profiles?.full_name ?? 'কেউ একজন'}</b> {a.detail}</span>
+                        <span className="act-timeline-time">{relativeTimeBn(a.created_at)}</span>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 )}
               </div>
             </div>

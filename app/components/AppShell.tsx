@@ -53,7 +53,7 @@ const NAV_ITEMS: { icon: IconName; label: string; href: string }[] = [
   { icon: 'message', label: 'Discussions', href: '/discussions' },
   { icon: 'layers', label: 'Portfolio', href: '/portfolio' },
   { icon: 'sparkles', label: 'AI Prompts', href: '/prompts' },
-  { icon: 'bar', label: 'Reports', href: '#' },
+  { icon: 'bar', label: 'Reports', href: '/reports' },
 ];
 const NAV_ITEMS_BOTTOM: { icon: IconName; label: string; href: string }[] = [
   { icon: 'bell', label: 'Notifications', href: '/notifications' },

@@ -37,6 +37,7 @@ const ICON_PATHS: Record<string, string> = {
   menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
   close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   refresh: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v6h-6"/>',
+  reload: '<path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/>',
   message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
   layers: '<path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>',
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
@@ -48,9 +49,45 @@ const ICON_PATHS: Record<string, string> = {
   down: '<path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/>',
   video: '<path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>',
   'chevron-down': '<path d="M6 9l6 6 6-6"/>',
+  mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+  phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
+  pin: '<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+  'chevron-left': '<path d="M15 18l-6-6 6-6"/>',
+  list: '<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
 };
 
 type IconName = keyof typeof ICON_PATHS;
+
+const PF_PAGE_SIZE = 5;
+const PF_GRID_SIZE = 6;
+const PF_TEAM_SIZE = 8;
+type PfView = 'list' | 'grid';
+
+// "1-5 of 12" with previous / next, shown under a list when it has more than one page
+function ViewToggle({ view, onView }: { view: PfView; onView: (v: PfView) => void }) {
+  return (
+    <div className="pf-toggle" role="group" aria-label="View">
+      <button type="button" className={view === 'list' ? 'on' : ''} onClick={() => onView('list')} aria-label="List view" title="List view"><Icon name="list" size={14} /></button>
+      <button type="button" className={view === 'grid' ? 'on' : ''} onClick={() => onView('grid')} aria-label="Grid view" title="Grid view"><Icon name="grid" size={14} /></button>
+    </div>
+  );
+}
+
+function Pager({ page, total, size = PF_PAGE_SIZE, onPage }: { page: number; total: number; size?: number; onPage: (p: number) => void }) {
+  const pages = Math.max(1, Math.ceil(total / size));
+  if (pages <= 1) return null;
+  const from = (page - 1) * size;
+  return (
+    <div className="pf-pager">
+      <span className="pf-pager-info tabular">{from + 1}-{Math.min(from + size, total)} of {total}</span>
+      <div className="pf-pager-btns">
+        <button type="button" disabled={page === 1} onClick={() => onPage(page - 1)} aria-label="Previous page"><Icon name="chevron-left" size={14} /></button>
+        <span className="pf-pager-page tabular">{page} / {pages}</span>
+        <button type="button" className="next" disabled={page === pages} onClick={() => onPage(page + 1)} aria-label="Next page"><Icon name="chevron-left" size={14} /></button>
+      </div>
+    </div>
+  );
+}
 
 function Icon({ name, size = 16, color = 'currentColor' }: { name: IconName; size?: number; color?: string }) {
   return (
@@ -197,6 +234,11 @@ export default function PortfolioPage() {
   const [sections, setSections] = useState<CSSection[]>([]);
   const [media, setMedia] = useState<CSMedia[]>([]);
   const [loading, setLoading] = useState(true);
+  const [csPage, setCsPage] = useState(1);
+  const [csView, setCsView] = useState<PfView>('list');
+  const [tView, setTView] = useState<PfView>('list');
+  const [tPage, setTPage] = useState(1);
+  const [tmPage, setTmPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
 
   const [showCreate, setShowCreate] = useState(false);
@@ -809,17 +851,17 @@ export default function PortfolioPage() {
   return (
     <>
       <TopbarActions>
-        <a className="btn btn-ghost" href="/" target="_blank" rel="noopener noreferrer"><Icon name="globe" size={14} /> পাবলিক সাইট দেখুন</a>
+        <a className="btn btn-ghost" href="/" target="_blank" rel="noopener noreferrer"><Icon name="globe" size={14} /> View Public Site</a>
       </TopbarActions>
       <main className="content">
             <div className="page-header-row">
               <div>
                 <h1 className="page-title">Portfolio</h1>
-                <p className="page-sub">পাবলিক ল্যান্ডিং পেজের Work সেকশনে দেখানো কেস স্টাডি ম্যানেজ করুন — publish না করা পর্যন্ত এটা শুধু draft হিসেবে এখানেই থাকবে।</p>
+                <p className="page-sub">Manage the case studies shown in the Work section of the public landing page. Until you publish one, it stays here as a draft.</p>
               </div>
               <div className="header-actions">
-                <button className="btn btn-ghost btn-sm" onClick={reload}><Icon name="refresh" size={13} /> রিলোড</button>
-                <button className="btn btn-accent" onClick={() => { setNewTitle(''); setCreateError(null); setShowCreate(true); }}><Icon name="plus" /> নতুন কেস স্টাডি</button>
+                <button className="btn btn-ghost btn-sm" onClick={reload}><Icon name="reload" size={13} /> Reload</button>
+                <button className="btn btn-accent btn-sm" onClick={() => { setNewTitle(''); setCreateError(null); setShowCreate(true); }}><Icon name="plus" size={13} /> New Case Study</button>
               </div>
             </div>
 
@@ -835,209 +877,326 @@ export default function PortfolioPage() {
             </div>
 
             <section className="block">
-              <div className="section-title-row"><span className="section-title">সব কেস স্টাডি</span></div>
+              <div className="section-title-row">
+                <span className="section-title">সব কেস স্টাডি{!loading && sortedCaseStudies.length > 0 && <span className="pf-count tabular">{sortedCaseStudies.length}</span>}</span>
+                <div className="pf-head-actions">
+                  <ViewToggle view={csView} onView={(v) => { setCsView(v); setCsPage(1); }} />
+                  <button className="btn btn-accent btn-sm" onClick={() => { setNewTitle(''); setCreateError(null); setShowCreate(true); }}><Icon name="plus" size={13} /> Add Case Study</button>
+                </div>
+              </div>
               {loading ? (
                 <p style={{ fontSize: 13, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
               ) : sortedCaseStudies.length === 0 ? (
-                <div className="panel"><div className="empty-state"><div className="empty-icon"><Icon name="layers" /></div><div className="empty-title">এখনো কোনো কেস স্টাডি নেই</div><div className="empty-sub">&ldquo;নতুন কেস স্টাডি&rdquo; চেপে প্রথমটা তৈরি করুন।</div></div></div>
-              ) : (
-                <div className="cs-grid">
-                  {sortedCaseStudies.map((cs, i) => {
-                    const cover = cs.cover_image ? driveThumbnailUrl(cs.cover_image) : null;
-                    return (
-                      <div className="cs-card" key={cs.id}>
-                        <div className="cs-cover" style={cover ? { backgroundImage: `url(${cover})` } : undefined}>
-                          {!cover && <Icon name="image" size={28} />}
-                          <div className="cs-order-btns">
-                            <button onClick={() => handleMoveCaseStudy(cs.id, -1)} disabled={i === 0} aria-label="উপরে সরান"><Icon name="up" size={12} /></button>
-                            <button onClick={() => handleMoveCaseStudy(cs.id, 1)} disabled={i === sortedCaseStudies.length - 1} aria-label="নিচে সরান"><Icon name="down" size={12} /></button>
-                          </div>
-                          <span className={`cs-badge ${cs.published ? 'pub' : 'draft'}`}>{cs.published ? 'Published' : 'Draft'}</span>
-                        </div>
-                        <div className="cs-body">
-                          <div className="cs-title">{cs.title}</div>
-                          {cs.category && <span className="cs-tag">{cs.category}</span>}
-                          {cs.client_name && <div className="cs-client">{cs.client_name}</div>}
-                          {cs.summary && <div className="cs-summary">{cs.summary}</div>}
-                          {cs.tags && cs.tags.length > 0 && (
-                            <div className="cs-tags">{cs.tags.map((t) => <span className="cs-tag" key={t}>{t}</span>)}</div>
-                          )}
-                          <div className="cs-section-counts">{csStatsText(cs.id)}</div>
-                          <div className="cs-actions">
-                            <button className="btn btn-ghost btn-sm" onClick={() => openEditor(cs)}><Icon name="edit" size={13} /> এডিট</button>
-                            {cs.published && <a className="btn btn-ghost btn-sm" href={`/work/${cs.slug}`} target="_blank" rel="noopener noreferrer"><Icon name="globe" size={13} /> দেখুন</a>}
-                            <button className="btn btn-danger btn-sm" onClick={() => handleDeleteCaseStudy(cs.id, cs.title)}><Icon name="trash" size={13} /></button>
-                          </div>
-                        </div>
+                <div className="panel"><div className="empty-state"><div className="empty-icon"><Icon name="layers" /></div><div className="empty-title">এখনো কোনো কেস স্টাডি নেই</div><div className="empty-sub">&ldquo;New Case Study&rdquo; চেপে প্রথমটা তৈরি করুন।</div></div></div>
+              ) : (() => {
+                const size = csView === 'grid' ? PF_GRID_SIZE : PF_PAGE_SIZE;
+                const page = Math.min(csPage, Math.max(1, Math.ceil(sortedCaseStudies.length / size)));
+                const start = (page - 1) * size;
+                if (csView === 'grid') {
+                  return (
+                    <div>
+                      <div className="cs-grid pf-grid">
+                        {sortedCaseStudies.slice(start, start + size).map((cs, k) => {
+                          const i = start + k;
+                          const cover = cs.cover_image ? driveThumbnailUrl(cs.cover_image) : null;
+                          return (
+                            <div className="cs-card" key={cs.id}>
+                              <div className="cs-cover" style={cover ? { backgroundImage: `url(${cover})` } : undefined}>
+                                {!cover && <Icon name="image" size={28} />}
+                                <div className="cs-order-btns">
+                                  <button onClick={() => handleMoveCaseStudy(cs.id, -1)} disabled={i === 0} aria-label="উপরে সরান"><Icon name="up" size={12} /></button>
+                                  <button onClick={() => handleMoveCaseStudy(cs.id, 1)} disabled={i === sortedCaseStudies.length - 1} aria-label="নিচে সরান"><Icon name="down" size={12} /></button>
+                                </div>
+                                <span className={`cs-badge ${cs.published ? 'pub' : 'draft'}`}>{cs.published ? 'Published' : 'Draft'}</span>
+                              </div>
+                              <div className="cs-body">
+                                <div className="cs-title">{cs.title}</div>
+                                {cs.category && <span className="cs-tag" style={{ alignSelf: 'flex-start' }}>{cs.category}</span>}
+                                {cs.client_name && <div className="cs-client">{cs.client_name}</div>}
+                                {cs.summary && <div className="cs-summary">{cs.summary}</div>}
+                                <div className="cs-section-counts">{csStatsText(cs.id)}</div>
+                                <div className="cs-actions">
+                                  <button className="btn btn-ghost btn-sm" onClick={() => openEditor(cs)}><Icon name="edit" size={13} /> Edit</button>
+                                  {cs.published && <a className="btn btn-ghost btn-sm" href={`/work/${cs.slug}`} target="_blank" rel="noopener noreferrer"><Icon name="globe" size={13} /> View</a>}
+                                  <button className="btn btn-danger btn-sm" onClick={() => handleDeleteCaseStudy(cs.id, cs.title)}><Icon name="trash" size={13} /></button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                      <div className="pf-card pf-grid-pager"><Pager page={page} total={sortedCaseStudies.length} size={size} onPage={setCsPage} /></div>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="pf-card">
+                    <div className="table-scroll">
+                      <table className="pf-table">
+                        <thead>
+                          <tr><th className="pf-col-n">#</th><th>Case study</th><th>Category</th><th>Status</th><th>Content</th><th className="pf-col-act">Actions</th></tr>
+                        </thead>
+                        <tbody>
+                          {sortedCaseStudies.slice(start, start + size).map((cs, k) => {
+                            const i = start + k;
+                            const cover = cs.cover_image ? driveThumbnailUrl(cs.cover_image) : null;
+                            return (
+                              <tr key={cs.id}>
+                                <td className="pf-col-n tabular">{i + 1}</td>
+                                <td>
+                                  <div className="pf-item">
+                                    <span className="pf-thumb" style={cover ? { backgroundImage: `url(${cover})` } : undefined}>{!cover && <Icon name="image" size={16} />}</span>
+                                    <span className="pf-item-text">
+                                      <span className="pf-item-title">{cs.title}</span>
+                                      {cs.client_name && <span className="pf-item-sub">{cs.client_name}</span>}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td>{cs.category ? <span className="cs-tag">{cs.category}</span> : <span className="pf-dash">-</span>}</td>
+                                <td><span className={`pf-status ${cs.published ? 'pub' : 'draft'}`}>{cs.published ? 'Published' : 'Draft'}</span></td>
+                                <td className="pf-muted">{csStatsText(cs.id)}</td>
+                                <td className="pf-col-act">
+                                  <div className="pf-actions">
+                                    <button className="pf-ico" onClick={() => handleMoveCaseStudy(cs.id, -1)} disabled={i === 0} aria-label="উপরে সরান" title="Move up"><Icon name="up" size={13} /></button>
+                                    <button className="pf-ico" onClick={() => handleMoveCaseStudy(cs.id, 1)} disabled={i === sortedCaseStudies.length - 1} aria-label="নিচে সরান" title="Move down"><Icon name="down" size={13} /></button>
+                                    <button className="pf-ico" onClick={() => openEditor(cs)} aria-label="Edit" title="Edit"><Icon name="edit" size={13} /></button>
+                                    {cs.published && <a className="pf-ico" href={`/work/${cs.slug}`} target="_blank" rel="noopener noreferrer" aria-label="View" title="View on site"><Icon name="globe" size={13} /></a>}
+                                    <button className="pf-ico danger" onClick={() => handleDeleteCaseStudy(cs.id, cs.title)} aria-label="Delete" title="Delete"><Icon name="trash" size={13} /></button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <Pager page={page} total={sortedCaseStudies.length} size={size} onPage={setCsPage} />
+                  </div>
+                );
+              })()}
             </section>
 
             <section className="block">
               <div className="section-title-row">
-                <span className="section-title">সব টেস্টিমোনিয়াল</span>
-                <button className="btn btn-accent btn-sm" onClick={openTestimonialCreate}><Icon name="plus" size={13} /> নতুন টেস্টিমোনিয়াল</button>
+                <span className="section-title">সব টেস্টিমোনিয়াল{!loading && sortedTestimonials.length > 0 && <span className="pf-count tabular">{sortedTestimonials.length}</span>}</span>
+                <div className="pf-head-actions">
+                  <ViewToggle view={tView} onView={(v) => { setTView(v); setTPage(1); }} />
+                  <button className="btn btn-accent btn-sm" onClick={openTestimonialCreate}><Icon name="plus" size={13} /> New Testimonial</button>
+                </div>
               </div>
               {loading ? (
                 <p style={{ fontSize: 13, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
               ) : sortedTestimonials.length === 0 ? (
-                <div className="panel"><div className="empty-state"><div className="empty-icon"><Icon name="message" /></div><div className="empty-title">এখনো কোনো টেস্টিমোনিয়াল নেই</div><div className="empty-sub">&ldquo;নতুন টেস্টিমোনিয়াল&rdquo; চেপে প্রথমটা তৈরি করুন।</div></div></div>
-              ) : (
-                <div className="cs-grid">
-                  {sortedTestimonials.map((t, i) => {
-                    const avatar = t.avatar_url ? driveThumbnailUrl(t.avatar_url) : null;
-                    return (
-                      <div className="cs-card" key={t.id}>
-                        <div className="cs-cover" style={avatar ? { backgroundImage: `url(${avatar})` } : undefined}>
-                          {!avatar && <Icon name="image" size={28} />}
-                          <div className="cs-order-btns">
-                            <button onClick={() => handleMoveTestimonial(t.id, -1)} disabled={i === 0} aria-label="উপরে সরান"><Icon name="up" size={12} /></button>
-                            <button onClick={() => handleMoveTestimonial(t.id, 1)} disabled={i === sortedTestimonials.length - 1} aria-label="নিচে সরান"><Icon name="down" size={12} /></button>
-                          </div>
-                          <span className={`cs-badge ${t.published ? 'pub' : 'draft'}`}>{t.published ? 'Published' : 'Draft'}</span>
-                        </div>
-                        <div className="cs-body">
-                          <div className="cs-title">{t.name}</div>
-                          <span className="cs-tag">{t.role}</span>
-                          <div className="cs-summary">{t.quote}</div>
-                          <div className="cs-actions">
-                            <button className="btn btn-ghost btn-sm" onClick={() => openTestimonialEditor(t)}><Icon name="edit" size={13} /> এডিট</button>
-                            <button className="btn btn-danger btn-sm" onClick={() => handleDeleteTestimonial(t.id, t.name)}><Icon name="trash" size={13} /></button>
-                          </div>
-                        </div>
+                <div className="panel"><div className="empty-state"><div className="empty-icon"><Icon name="message" /></div><div className="empty-title">এখনো কোনো টেস্টিমোনিয়াল নেই</div><div className="empty-sub">&ldquo;New Testimonial&rdquo; চেপে প্রথমটা তৈরি করুন।</div></div></div>
+              ) : (() => {
+                const size = tView === 'grid' ? PF_GRID_SIZE : PF_PAGE_SIZE;
+                const page = Math.min(tPage, Math.max(1, Math.ceil(sortedTestimonials.length / size)));
+                const start = (page - 1) * size;
+                if (tView === 'grid') {
+                  return (
+                    <div>
+                      <div className="cs-grid pf-grid">
+                        {sortedTestimonials.slice(start, start + size).map((t, k) => {
+                          const i = start + k;
+                          const avatar = t.avatar_url ? driveThumbnailUrl(t.avatar_url) : null;
+                          return (
+                            <div className="cs-card" key={t.id}>
+                              <div className="cs-cover" style={avatar ? { backgroundImage: `url(${avatar})` } : undefined}>
+                                {!avatar && <Icon name="image" size={28} />}
+                                <div className="cs-order-btns">
+                                  <button onClick={() => handleMoveTestimonial(t.id, -1)} disabled={i === 0} aria-label="উপরে সরান"><Icon name="up" size={12} /></button>
+                                  <button onClick={() => handleMoveTestimonial(t.id, 1)} disabled={i === sortedTestimonials.length - 1} aria-label="নিচে সরান"><Icon name="down" size={12} /></button>
+                                </div>
+                                <span className={`cs-badge ${t.published ? 'pub' : 'draft'}`}>{t.published ? 'Published' : 'Draft'}</span>
+                              </div>
+                              <div className="cs-body">
+                                <div className="cs-title">{t.name}</div>
+                                <span className="cs-tag" style={{ alignSelf: 'flex-start' }}>{t.role}</span>
+                                <div className="cs-summary">{t.quote}</div>
+                                <div className="cs-actions">
+                                  <button className="btn btn-ghost btn-sm" onClick={() => openTestimonialEditor(t)}><Icon name="edit" size={13} /> Edit</button>
+                                  <button className="btn btn-danger btn-sm" onClick={() => handleDeleteTestimonial(t.id, t.name)}><Icon name="trash" size={13} /></button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                      <div className="pf-card pf-grid-pager"><Pager page={page} total={sortedTestimonials.length} size={size} onPage={setTPage} /></div>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="pf-card">
+                    <div className="table-scroll">
+                      <table className="pf-table">
+                        <thead>
+                          <tr><th className="pf-col-n">#</th><th>Person</th><th>Quote</th><th>Status</th><th className="pf-col-act">Actions</th></tr>
+                        </thead>
+                        <tbody>
+                          {sortedTestimonials.slice(start, start + size).map((t, k) => {
+                            const i = start + k;
+                            return (
+                              <tr key={t.id}>
+                                <td className="pf-col-n tabular">{i + 1}</td>
+                                <td>
+                                  <div className="pf-item">
+                                    <Avatar person={{ full_name: t.name, avatar_color: null, avatar_url: t.avatar_url ? driveThumbnailUrl(t.avatar_url) : null }} size={36} />
+                                    <span className="pf-item-text">
+                                      <span className="pf-item-title">{t.name}</span>
+                                      <span className="pf-item-sub">{t.role}</span>
+                                    </span>
+                                  </div>
+                                </td>
+                                <td><span className="pf-quote">{t.quote}</span></td>
+                                <td><span className={`pf-status ${t.published ? 'pub' : 'draft'}`}>{t.published ? 'Published' : 'Draft'}</span></td>
+                                <td className="pf-col-act">
+                                  <div className="pf-actions">
+                                    <button className="pf-ico" onClick={() => handleMoveTestimonial(t.id, -1)} disabled={i === 0} aria-label="উপরে সরান" title="Move up"><Icon name="up" size={13} /></button>
+                                    <button className="pf-ico" onClick={() => handleMoveTestimonial(t.id, 1)} disabled={i === sortedTestimonials.length - 1} aria-label="নিচে সরান" title="Move down"><Icon name="down" size={13} /></button>
+                                    <button className="pf-ico" onClick={() => openTestimonialEditor(t)} aria-label="Edit" title="Edit"><Icon name="edit" size={13} /></button>
+                                    <button className="pf-ico danger" onClick={() => handleDeleteTestimonial(t.id, t.name)} aria-label="Delete" title="Delete"><Icon name="trash" size={13} /></button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <Pager page={page} total={sortedTestimonials.length} size={size} onPage={setTPage} />
+                  </div>
+                );
+              })()}
             </section>
 
             <section className="block">
               <div className="section-title-row">
-                <span className="section-title">টিম কার্ডের অর্ডার</span>
+                <span className="section-title">Team Card Order{!loading && sortedTeamMembers.length > 0 && <span className="pf-count tabular">{sortedTeamMembers.length}</span>}</span>
               </div>
-              <p className="field-hint" style={{ marginTop: -4, marginBottom: 12 }}>
-                About পেজের &ldquo;Our Team&rdquo; সেকশনে কে কততম কার্ডে দেখাবে এখান থেকে ঠিক করুন। নাম/রোল/ছবি/বায়ো/সোশ্যাল লিংক প্রতিটা মেম্বার নিজে নিজের প্রোফাইল থেকে এডিট করে।
-              </p>
+              <p className="tm-intro">Choose who appears in which position in the &ldquo;Our Team&rdquo; section of the About page. Each member edits their own name, role, photo, bio and social links from their profile.</p>
               {loading ? (
                 <p style={{ fontSize: 13, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
               ) : sortedTeamMembers.length === 0 ? (
                 <div className="panel"><div className="empty-state"><div className="empty-icon"><Icon name="users" /></div><div className="empty-title">কোনো টিম মেম্বার পাওয়া যায়নি</div></div></div>
-              ) : (
-                <div className="panel" style={{ maxWidth: 640 }}>
-                  {sortedTeamMembers.map((m, i) => {
-                    return (
-                      <div
-                        key={m.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 12,
-                          padding: '10px 14px',
-                          borderBottom: i === sortedTeamMembers.length - 1 ? 'none' : '1px solid var(--border)',
-                        }}
-                      >
-                        <span style={{ fontSize: 12, color: 'var(--ink-faint)', width: 18, textAlign: 'right' }}>{i + 1}</span>
-                        <Avatar person={{ full_name: m.full_name, avatar_color: m.avatar_color, avatar_url: m.avatar_url }} size={32} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="cs-title" style={{ fontSize: 14 }}>{m.full_name}</div>
-                          {m.role && <span className="cs-tag">{m.role}</span>}
-                        </div>
-                        <div className="team-order-btns">
-                          <button onClick={() => handleMoveTeamMember(m.id, -1)} disabled={i === 0} aria-label="উপরে সরান"><Icon name="up" size={12} /></button>
-                          <button onClick={() => handleMoveTeamMember(m.id, 1)} disabled={i === sortedTeamMembers.length - 1} aria-label="নিচে সরান"><Icon name="down" size={12} /></button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              ) : (() => {
+                const size = PF_TEAM_SIZE;
+                const page = Math.min(tmPage, Math.max(1, Math.ceil(sortedTeamMembers.length / size)));
+                const start = (page - 1) * size;
+                return (
+                  <div className="pf-card tm-wrap">
+                    <div className="tm-grid">
+                      {sortedTeamMembers.slice(start, start + size).map((m, k) => {
+                        const i = start + k;
+                        return (
+                          <div className="tm-card" key={m.id}>
+                            <span className="tm-pos tabular">{i + 1}</span>
+                            <Avatar person={{ full_name: m.full_name, avatar_color: m.avatar_color, avatar_url: m.avatar_url }} size={64} />
+                            <div className="tm-name">{m.full_name}</div>
+                            <div className="tm-role">{m.role || 'Team Member'}</div>
+                            <div className="tm-move">
+                              <button type="button" onClick={() => handleMoveTeamMember(m.id, -1)} disabled={i === 0} aria-label="Move earlier" title="Move earlier"><Icon name="chevron-left" size={14} /></button>
+                              <button type="button" className="next" onClick={() => handleMoveTeamMember(m.id, 1)} disabled={i === sortedTeamMembers.length - 1} aria-label="Move later" title="Move later"><Icon name="chevron-left" size={14} /></button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <Pager page={page} total={sortedTeamMembers.length} size={size} onPage={setTmPage} />
+                  </div>
+                );
+              })()}
             </section>
 
             <section className="block">
               <div className="section-title-row">
-                <span className="section-title">যোগাযোগের তথ্য</span>
+                <span className="section-title">Contact Information</span>
               </div>
-              <div className="panel panel-padded" style={{ maxWidth: 640 }}>
-                <form onSubmit={handleSaveSettings}>
-                  <p className="field-hint" style={{ marginTop: 0 }}>পাবলিক সাইটের ফুটার, FAQ সেকশন আর &ldquo;Book A Call&rdquo;/&ldquo;Start A Project&rdquo; বাটনগুলোতে এই তথ্যই দেখা যায়।</p>
+              <form className="ct-form" onSubmit={handleSaveSettings}>
+                <p className="ct-intro">Shown in the footer and FAQ of the public site, and behind the &ldquo;Book A Call&rdquo; and &ldquo;Start A Project&rdquo; buttons.</p>
 
-                  <div className="field-row-2" style={{ marginBottom: 12 }}>
-                    <div>
-                      <label className="field-label">প্রধান ফোন নাম্বার (WhatsApp, country code সহ)</label>
-                      <PhoneInput format="digits" inputClassName="field-input" value={ssPhone} onChange={setSsPhone} placeholder="1996925819" required />
+                <div className="ct-grid">
+                  <section className="ct-card">
+                    <div className="ct-card-head"><span className="ct-card-ico"><Icon name="phone" size={15} /></span><div><div className="ct-card-title">Phone</div><div className="ct-card-sub">Digits only, starting with the country code (88 for Bangladesh)</div></div></div>
+                    <div className="ct-fields">
+                      <div className="ct-field">
+                        <label className="field-label">Main number (WhatsApp)</label>
+                        <PhoneInput format="digits" inputClassName="field-input" value={ssPhone} onChange={setSsPhone} placeholder="1996925819" required />
+                      </div>
+                      <div className="ct-field">
+                        <label className="field-label">&ldquo;Book A Call&rdquo; number</label>
+                        <PhoneInput format="digits" inputClassName="field-input" value={ssBookCallPhone} onChange={setSsBookCallPhone} placeholder="1804409235" required />
+                      </div>
                     </div>
-                    <div>
-                      <label className="field-label">&ldquo;Book A Call&rdquo; বাটনের নাম্বার</label>
-                      <PhoneInput format="digits" inputClassName="field-input" value={ssBookCallPhone} onChange={setSsBookCallPhone} placeholder="1804409235" required />
-                    </div>
-                  </div>
-                  <p className="field-hint">শুধু ডিজিট, কোনো +/স্পেস/ড্যাশ ছাড়া - দেশের কোড দিয়ে শুরু (যেমন বাংলাদেশ হলে 88 দিয়ে)।</p>
+                  </section>
 
-                  <div className="field-row-2" style={{ marginBottom: 12 }}>
-                    <div>
-                      <label className="field-label">প্রধান ইমেইল</label>
-                      <input className="field-input" style={{ marginBottom: 0 }} type="email" value={ssEmail} onChange={(e) => setSsEmail(e.target.value)} placeholder="info@flow53design.com" required />
+                  <section className="ct-card">
+                    <div className="ct-card-head"><span className="ct-card-ico"><Icon name="mail" size={15} /></span><div><div className="ct-card-title">Email</div><div className="ct-card-sub">Where clients can reach you</div></div></div>
+                    <div className="ct-fields">
+                      <div className="ct-field">
+                        <label className="field-label">Main email</label>
+                        <input className="field-input" type="email" value={ssEmail} onChange={(e) => setSsEmail(e.target.value)} placeholder="info@flow53design.com" required />
+                      </div>
+                      <div className="ct-field">
+                        <label className="field-label">Second email</label>
+                        <input className="field-input" type="email" value={ssEmailSecondary} onChange={(e) => setSsEmailSecondary(e.target.value)} placeholder="flow53design@gmail.com" />
+                      </div>
                     </div>
-                    <div>
-                      <label className="field-label">দ্বিতীয় ইমেইল</label>
-                      <input className="field-input" style={{ marginBottom: 0 }} type="email" value={ssEmailSecondary} onChange={(e) => setSsEmailSecondary(e.target.value)} placeholder="flow53design@gmail.com" />
-                    </div>
-                  </div>
+                  </section>
 
-                  <div className="field-row-2" style={{ marginBottom: 12 }}>
-                    <div>
-                      <label className="field-label">ঠিকানা (লাইন ১)</label>
-                      <input className="field-input" style={{ marginBottom: 0 }} type="text" value={ssAddress1} onChange={(e) => setSsAddress1(e.target.value)} placeholder="Dhaka" required />
+                  <section className="ct-card">
+                    <div className="ct-card-head"><span className="ct-card-ico"><Icon name="pin" size={15} /></span><div><div className="ct-card-title">Address</div><div className="ct-card-sub">Shown in the footer, in two lines</div></div></div>
+                    <div className="ct-fields">
+                      <div className="ct-field">
+                        <label className="field-label">Line 1</label>
+                        <input className="field-input" type="text" value={ssAddress1} onChange={(e) => setSsAddress1(e.target.value)} placeholder="Dhaka" required />
+                      </div>
+                      <div className="ct-field">
+                        <label className="field-label">Line 2</label>
+                        <input className="field-input" type="text" value={ssAddress2} onChange={(e) => setSsAddress2(e.target.value)} placeholder="Bangladesh" />
+                      </div>
                     </div>
-                    <div>
-                      <label className="field-label">ঠিকানা (লাইন ২)</label>
-                      <input className="field-input" style={{ marginBottom: 0 }} type="text" value={ssAddress2} onChange={(e) => setSsAddress2(e.target.value)} placeholder="Bangladesh" />
-                    </div>
-                  </div>
+                  </section>
 
-                  <label className="field-label" style={{ marginTop: 4 }}>সোশ্যাল মিডিয়া প্রোফাইল লিংক</label>
-                  <p className="field-hint">খালি রাখলে ফুটারে ওই আইকনটা non-clickable থেকে যাবে।</p>
-                  <div className="field-row-2" style={{ marginBottom: 12 }}>
-                    <div>
-                      <label className="field-label">Behance</label>
-                      <input className="field-input" style={{ marginBottom: 0 }} type="url" value={ssBehance} onChange={(e) => setSsBehance(e.target.value)} placeholder="https://www.behance.net/..." />
+                  <section className="ct-card">
+                    <div className="ct-card-head"><span className="ct-card-ico"><Icon name="link" size={15} /></span><div><div className="ct-card-title">Social profiles</div><div className="ct-card-sub">Leave one empty and its footer icon stays non-clickable</div></div></div>
+                    <div className="ct-fields">
+                      <div className="ct-field">
+                        <label className="field-label">Behance</label>
+                        <input className="field-input" type="url" value={ssBehance} onChange={(e) => setSsBehance(e.target.value)} placeholder="https://www.behance.net/..." />
+                      </div>
+                      <div className="ct-field">
+                        <label className="field-label">Dribbble</label>
+                        <input className="field-input" type="url" value={ssDribbble} onChange={(e) => setSsDribbble(e.target.value)} placeholder="https://dribbble.com/..." />
+                      </div>
+                      <div className="ct-field">
+                        <label className="field-label">LinkedIn</label>
+                        <input className="field-input" type="url" value={ssLinkedin} onChange={(e) => setSsLinkedin(e.target.value)} placeholder="https://www.linkedin.com/company/..." />
+                      </div>
+                      <div className="ct-field">
+                        <label className="field-label">Facebook</label>
+                        <input className="field-input" type="url" value={ssFacebook} onChange={(e) => setSsFacebook(e.target.value)} placeholder="https://www.facebook.com/..." />
+                      </div>
+                      <div className="ct-field">
+                        <label className="field-label">Instagram</label>
+                        <input className="field-input" type="url" value={ssInstagram} onChange={(e) => setSsInstagram(e.target.value)} placeholder="https://www.instagram.com/..." />
+                      </div>
+                      <div className="ct-field">
+                        <label className="field-label">X (Twitter)</label>
+                        <input className="field-input" type="url" value={ssX} onChange={(e) => setSsX(e.target.value)} placeholder="https://x.com/..." />
+                      </div>
                     </div>
-                    <div>
-                      <label className="field-label">Dribbble</label>
-                      <input className="field-input" style={{ marginBottom: 0 }} type="url" value={ssDribbble} onChange={(e) => setSsDribbble(e.target.value)} placeholder="https://dribbble.com/..." />
-                    </div>
-                  </div>
-                  <div className="field-row-2" style={{ marginBottom: 12 }}>
-                    <div>
-                      <label className="field-label">LinkedIn</label>
-                      <input className="field-input" style={{ marginBottom: 0 }} type="url" value={ssLinkedin} onChange={(e) => setSsLinkedin(e.target.value)} placeholder="https://www.linkedin.com/company/..." />
-                    </div>
-                    <div>
-                      <label className="field-label">Facebook</label>
-                      <input className="field-input" style={{ marginBottom: 0 }} type="url" value={ssFacebook} onChange={(e) => setSsFacebook(e.target.value)} placeholder="https://www.facebook.com/..." />
-                    </div>
-                  </div>
-                  <div className="field-row-2" style={{ marginBottom: 12 }}>
-                    <div>
-                      <label className="field-label">Instagram</label>
-                      <input className="field-input" style={{ marginBottom: 0 }} type="url" value={ssInstagram} onChange={(e) => setSsInstagram(e.target.value)} placeholder="https://www.instagram.com/..." />
-                    </div>
-                    <div>
-                      <label className="field-label">X (Twitter)</label>
-                      <input className="field-input" style={{ marginBottom: 0 }} type="url" value={ssX} onChange={(e) => setSsX(e.target.value)} placeholder="https://x.com/..." />
-                    </div>
-                  </div>
+                  </section>
+                </div>
 
-                  {settingsError && <p style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 10 }}>{settingsError}</p>}
-                  {settingsSaved && !settingsError && <p style={{ color: 'var(--success, #1a7f37)', fontSize: 12, marginBottom: 10 }}>সেভ হয়েছে।</p>}
-
-                  <button type="submit" className="btn btn-accent btn-sm" disabled={savingSettings}>{savingSettings ? 'সেভ হচ্ছে…' : 'সেভ করুন'}</button>
-                </form>
-              </div>
+                <div className="ct-bar">
+                  <div className="ct-msg">
+                    {settingsError && <span className="ct-err">{settingsError}</span>}
+                    {settingsSaved && !settingsError && <span className="ct-ok">Saved.</span>}
+                  </div>
+                  <button type="submit" className="btn btn-accent btn-sm" disabled={savingSettings}>{savingSettings ? 'Saving…' : 'Save changes'}</button>
+                </div>
+              </form>
             </section>
           </main>
       {showCreate && (
