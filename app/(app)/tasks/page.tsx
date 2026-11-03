@@ -247,6 +247,8 @@ function TasksPageInner() {
   const [exportingPdf, setExportingPdf] = useState(false);
   const [sharingPdf, setSharingPdf] = useState(false);
   const [sharePreviewOpen, setSharePreviewOpen] = useState(false);
+  const [sharePreparing, setSharePreparing] = useState(false);
+  const shareFilesRef = useRef<{ pdf: File } | null>(null);
   const teamExportRef = useRef<HTMLDivElement>(null);
 
   const [expandData, setExpandData] = useState<Record<string, ExpandData>>({});
@@ -564,97 +566,55 @@ function TasksPageInner() {
   // Team tasks কার্ড-গ্রিড PDF এ এক্সপোর্ট — গ্রুপে শেয়ার করার জন্য। স্ক্রিনে
   // যা দেখা যাচ্ছে (ডার্ক মোডেও) তার বদলে সবসময় লাইট/প্রিন্ট-স্টাইল একটা হিডেন
   // ডকুমেন্ট (teamExportRef) ক্যাপচার করা হয় — PDF এর রং UI থিমের সাথে বদলানো উচিত না।
+  // A member's card is never cut across two pages: when a card does not fit in the space left on the page, it starts on a new page.
+  // Only a card taller than a whole page is split (by height), since it cannot fit anywhere.
   async function generateTeamTasksPdfBlob(): Promise<{ blob: Blob; filename: string }> {
     const node = teamExportRef.current;
     if (!node) throw new Error('Export content not ready');
     const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
     await document.fonts.ready;
     await Promise.all([document.fonts.load(`500 14px ${hindSiliguri.style.fontFamily}`, 'অআকখ'), document.fonts.load(`700 14px ${hindSiliguri.style.fontFamily}`, 'অআকখ')]).catch(() => undefined);
-    const canvas = await html2canvas(node, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-    const imgData = canvas.toDataURL('image/png');
+    const SCALE = 3;
+    const canvas = await html2canvas(node, { scale: SCALE, backgroundColor: '#ffffff', useCORS: true });
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    // addImage নিজে থেকে পেজ-কাট করে না — শুধু পেজের শেষ প্রান্তে (y=pageHeight)
-    // ক্লিপ হয়ে যায়, তাই আগে কনটেন্ট সরাসরি পেজের একদম নিচের কিনারা পর্যন্ত চলে
-    // যেত, কোনো মার্জিন ছাড়াই। এখন প্রতি পেজের উপরে/নিচে marginMM ফাঁকা রাখা হয় —
-    // নিচের অংশটা একটা সাদা রেক্ট্যাঙ্গেল দিয়ে মাস্ক করে (কারণ আসল ছবিটা পেজ-কিনারা
-    // পর্যন্তই রেন্ডার হতে চায়), আর পরের পেজের স্লাইসও সেই অনুযায়ী শিফট করা হয়।
     const marginMM = 12;
-    const usableHeight = pageHeight - marginMM * 2;
-    const imgWidth = pageWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const usableMM = pageHeight - marginMM * 2;
 
-    function maskMargins() {
-      pdf.setFillColor(255, 255, 255);
-      // পেজ১-এ উপরের ফাঁকা অংশ এমনিতেই ব্ল্যাঙ্ক (ছবিই ওখানে আঁকা হয়নি), কিন্তু
-      // পরের পেজগুলোতে ছবি y=0 থেকে শুরু হয় বলে আগের পেজে যা শেষের দিকে দেখানো
-      // হয়েছিল তারই শেষ ১২মিমি আবার উপরে পুনরাবৃত্তি হয়ে যাচ্ছিল (বাগ — টাস্ক/
-      // চেকলিস্ট আইটেম ডুপ্লিকেট দেখাচ্ছিল)। তাই এখন প্রতি পেজেই উপরে-নিচে দুই
-      // দিকেই মাস্ক করা হয়।
-      pdf.rect(0, 0, pageWidth, marginMM, 'F');
-      pdf.rect(0, pageHeight - marginMM, pageWidth, marginMM, 'F');
-    }
-
-    let heightLeft = imgHeight;
-    let position = marginMM;
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    maskMargins();
-    heightLeft -= usableHeight;
-    while (heightLeft > 0) {
-      position = marginMM - (imgHeight - heightLeft);
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      maskMargins();
-      heightLeft -= usableHeight;
-    }
-    return { blob: pdf.output('blob'), filename: `team-tasks-${todayISO()}.pdf` };
-  }
-
-  // The picture that is shared on WhatsApp. WhatsApp shrinks any picture whose longest side is over about 1600px, so one tall picture of
-  // the whole sheet (4000px high, say) was cut down to a quarter of its size and the text turned blurry. So the sheet is drawn once
-  // at 2x and then cut into pages that are at most about 1560px tall, cutting between the member cards, so every page keeps its
-  // full sharpness. One page when it is short, several when it is long.
-  async function generateTeamTasksPngPages(): Promise<{ blob: Blob; filename: string }[]> {
-    const node = teamExportRef.current;
-    if (!node) throw new Error('Export content not ready');
-    const [{ default: html2canvas }] = await Promise.all([import('html2canvas')]);
-    await document.fonts.ready;
-    await Promise.all([document.fonts.load(`500 14px ${hindSiliguri.style.fontFamily}`, 'অআকখ'), document.fonts.load(`700 14px ${hindSiliguri.style.fontFamily}`, 'অআকখ')]).catch(() => undefined);
-    const SCALE = 2;
-    const MAX_PAGE_CSS = 780; // 780 css px x 2 = 1560px
-    const canvas = await html2canvas(node, { scale: SCALE, backgroundColor: '#ffffff', useCORS: true });
-
-    // where each page may start and end: the gaps between the header and the cards
+    // how tall one page is in the sheet's own pixels: the sheet is as wide as the page, so 1px of sheet = pageWidth / width mm
+    const cssW = node.offsetWidth;
     const totalCss = node.offsetHeight;
-    const cuts: number[] = [];
+    const pageCss = (usableMM * cssW) / pageWidth;
+
+    // the places where a page may end: just after the header and after each member card
     const kids = Array.from(node.children) as HTMLElement[];
+    const cuts: number[] = [];
     for (let i = 0; i < kids.length - 1; i++) cuts.push(kids[i].offsetTop + kids[i].offsetHeight + 11);
+
     const pages: [number, number][] = [];
     let start = 0;
     let lastFit = -1;
     for (const cut of cuts) {
-      if (cut - start <= MAX_PAGE_CSS) {
+      if (cut - start <= pageCss) {
         lastFit = cut;
       } else {
-        const end = lastFit > start ? lastFit : Math.min(start + MAX_PAGE_CSS, totalCss);
+        // the next card does not fit: close the page before it (or split by height when one card alone is longer than a page)
+        const end = lastFit > start ? lastFit : Math.min(start + pageCss, totalCss);
         pages.push([start, end]);
         start = end;
-        lastFit = cut - start <= MAX_PAGE_CSS ? cut : -1;
+        lastFit = cut - start <= pageCss ? cut : -1;
       }
     }
-    // whatever is left, cut into pieces that fit when a single block is taller than a page
-    while (totalCss - start > MAX_PAGE_CSS) {
-      const end = lastFit > start ? lastFit : start + MAX_PAGE_CSS;
+    while (totalCss - start > pageCss) {
+      const end = lastFit > start ? lastFit : start + pageCss;
       pages.push([start, end]);
       start = end;
       lastFit = -1;
     }
     pages.push([start, totalCss]);
 
-    const out: { blob: Blob; filename: string }[] = [];
-    for (let i = 0; i < pages.length; i++) {
-      const [y0, y1] = pages[i];
+    pages.forEach(([y0, y1], i) => {
       const slice = document.createElement('canvas');
       slice.width = canvas.width;
       slice.height = Math.max(1, Math.round((y1 - y0) * SCALE));
@@ -663,17 +623,32 @@ function TasksPageInner() {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, slice.width, slice.height);
       ctx.drawImage(canvas, 0, Math.round(y0 * SCALE), canvas.width, slice.height, 0, 0, slice.width, slice.height);
-      const blob: Blob = await new Promise((resolve, reject) => {
-        slice.toBlob((bl) => (bl ? resolve(bl) : reject(new Error('toBlob failed'))), 'image/png');
-      });
-      out.push({ blob, filename: `team-tasks-${todayISO()}${pages.length > 1 ? `-${i + 1}` : ''}.png` });
-    }
-    return out;
+      if (i > 0) pdf.addPage();
+      const heightMM = ((y1 - y0) / cssW) * pageWidth;
+      pdf.addImage(slice.toDataURL('image/png'), 'PNG', 0, marginMM, pageWidth, heightMM);
+    });
+    return { blob: pdf.output('blob'), filename: `team-tasks-${todayISO()}.pdf` };
+  }
+
+  // the PDF, built once when the preview opens so that pressing Share can hand it over at once
+  async function prepareShareFiles(): Promise<{ pdf: File }> {
+    const pdfPart = await generateTeamTasksPdfBlob();
+    const files = { pdf: new File([pdfPart.blob], pdfPart.filename, { type: 'application/pdf' }) };
+    shareFilesRef.current = files;
+    return files;
   }
 
   // Preview: the team tasks sheet shown live in a window before it is shared
   function openSharePreview() {
     setSharePreviewOpen(true);
+    shareFilesRef.current = null;
+    setSharePreparing(true);
+    // wait a moment so the sheet is on screen, then build the files in the background
+    window.setTimeout(() => {
+      prepareShareFiles()
+        .catch((err) => console.error(err))
+        .finally(() => setSharePreparing(false));
+    }, 150);
   }
   function closeSharePreview() {
     setSharePreviewOpen(false);
@@ -713,28 +688,25 @@ function TasksPageInner() {
   async function handleShareTeamTasksWhatsApp() {
     if (sharingPdf) return;
     setSharingPdf(true);
-    const dummyFile = new File([''], 'team-tasks.png', { type: 'image/png' });
-    const canShareFile = typeof navigator !== 'undefined' && !!navigator.canShare && !!navigator.share && navigator.canShare({ files: [dummyFile] });
+    const dummyFiles = [new File([''], 'team-tasks.pdf', { type: 'application/pdf' })];
+    const canShareFile = typeof navigator !== 'undefined' && !!navigator.canShare && !!navigator.share && navigator.canShare({ files: dummyFiles });
     const fallbackTab = canShareFile ? null : window.open('about:blank', '_blank', 'noopener');
     const todayLabel = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
     const shareText = `Today's (${todayLabel}) team tasks`;
     try {
-      const pages = await generateTeamTasksPngPages();
+      // use the files built when the preview opened (instant); build them now only when sharing without the preview
+      const { pdf } = shareFilesRef.current ?? (await prepareShareFiles());
       if (canShareFile) {
-        const files = pages.map((p) => new File([p.blob], p.filename, { type: 'image/png' }));
-        await navigator.share({ files, title: 'Team Tasks', text: shareText });
+        await navigator.share({ files: [pdf], title: 'Team Tasks', text: shareText });
         return;
       }
-      for (const p of pages) {
-        const url = URL.createObjectURL(p.blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = p.filename;
-        a.click();
-        URL.revokeObjectURL(url);
-        await new Promise((r) => window.setTimeout(r, 250));
-      }
-      const waUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(`${shareText} — ছবি ডাউনলোড হয়ে গেছে, এগুলো চ্যাটে অ্যাটাচ করে পাঠান।`)}`;
+      const url = URL.createObjectURL(pdf);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = pdf.name;
+      a.click();
+      URL.revokeObjectURL(url);
+      const waUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(`${shareText} — PDF ডাউনলোড হয়ে গেছে, এটা চ্যাটে অ্যাটাচ করে পাঠান।`)}`;
       if (fallbackTab) fallbackTab.location.href = waUrl;
       else window.open(waUrl, '_blank', 'noopener');
     } catch (err) {
@@ -1669,7 +1641,7 @@ function TasksPageInner() {
                   <div className="sp-head">
                     <div className="sp-head-text">
                       <div className="sp-title">Share preview</div>
-                      <div className="sp-sub">This is how the team tasks sheet will look when shared</div>
+                      <div className="sp-sub">Sharing sends this sheet as a PDF</div>
                     </div>
                     <button type="button" className="sp-close" onClick={closeSharePreview} aria-label="Close"><Icon name="close" size={16} /></button>
                   </div>
@@ -1682,8 +1654,8 @@ function TasksPageInner() {
                     <button type="button" className="btn btn-ghost btn-sm" onClick={handleExportTeamTasksPdf} disabled={exportingPdf}>
                       <Icon name="export" size={13} /> {exportingPdf ? 'এক্সপোর্ট হচ্ছে…' : 'Download PDF'}
                     </button>
-                    <button type="button" className="btn btn-accent btn-sm" onClick={handleShareTeamTasksWhatsApp} disabled={sharingPdf}>
-                      <Icon name="whatsapp" size={13} color="#fff" /> {sharingPdf ? 'শেয়ার হচ্ছে…' : 'Share to WhatsApp'}
+                    <button type="button" className="btn btn-accent btn-sm" onClick={handleShareTeamTasksWhatsApp} disabled={sharingPdf || sharePreparing}>
+                      <Icon name="whatsapp" size={13} color="#fff" /> {sharePreparing ? 'Preparing PDF…' : sharingPdf ? 'শেয়ার হচ্ছে…' : 'Share PDF'}
                     </button>
                   </div>
                 </div>
