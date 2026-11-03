@@ -817,3 +817,162 @@
     font-size: 20px;
   }
 }
+
+/* ==== redesign: same purple look as sign-in / register, one framed container, a vertical stepper, and a form area that scrolls inside the frame ==== */
+.client-onboarding-root.client-portal {
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-soft: #f3edfe;
+  --surface-muted: #faf9fc;
+  --bg: #f2f1f2;
+}
+@media (prefers-color-scheme: dark) {
+  .client-onboarding-root.client-portal {
+    --accent: #9661f1;
+    --accent-hover: #a77bf3;
+    --accent-soft: #3a2470;
+    --surface-muted: #393b4a;
+    --bg: #2b2c36;
+  }
+}
+
+/* dark panel */
+.client-onboarding-root.client-portal .brand-panel {
+  background: radial-gradient(circle at 15% 10%, rgba(129, 51, 241, 0.28), transparent 50%), radial-gradient(circle at 90% 90%, rgba(98, 0, 238, 0.2), transparent 50%), #010003;
+}
+.client-onboarding-root.client-portal .panel-headline { font-size: 24px; margin: 28px 0 8px; }
+.client-onboarding-root.client-portal .panel-sub { font-size: 13.5px; color: rgba(255, 255, 255, 0.6); }
+.client-onboarding-root.client-portal .step-nav { margin-top: 28px; gap: 6px; justify-content: flex-start; }
+.client-onboarding-root.client-portal .step-nav-item { position: relative; padding: 10px; }
+.client-onboarding-root.client-portal .step-nav-item:not(:last-child)::after { content: ''; position: absolute; left: 22px; top: 37px; bottom: -17px; border-left: 2px dotted rgba(255, 255, 255, 0.18); }
+.client-onboarding-root.client-portal .step-nav-item.done:not(:last-child)::after { border-left-color: rgba(185, 140, 255, 0.55); }
+.client-onboarding-root.client-portal .step-nav-item.current { background: rgba(129, 51, 241, 0.16); }
+.client-onboarding-root.client-portal .step-nav-item.done .step-nav-dot { background: #8133f1; border-color: #8133f1; }
+.client-onboarding-root.client-portal .step-nav-item.current .step-nav-dot { background: #fff; border-color: #fff; color: #6100ed; box-shadow: 0 0 0 4px rgba(185, 140, 255, 0.28); }
+.client-onboarding-root.client-portal .step-nav-label { font-size: 13.5px; }
+
+/* form side */
+.client-onboarding-root.client-portal .topbar { padding: 16px 40px; border-bottom: 1px solid var(--border-soft); }
+.client-onboarding-root.client-portal .main { padding: 32px 40px 40px; }
+.client-onboarding-root.client-portal .form-wrap { max-width: 600px; }
+.client-onboarding-root.client-portal .step-head { margin-bottom: 22px; }
+.client-onboarding-root.client-portal .step-title { font-size: 26px; letter-spacing: -0.02em; margin-bottom: 6px; }
+.client-onboarding-root.client-portal .step-sub { font-size: 14px; }
+
+.client-onboarding-root.client-portal .field { margin-bottom: 16px; }
+.client-onboarding-root.client-portal .field-label { font-size: 12px; margin-bottom: 6px; }
+.client-onboarding-root.client-portal .field-input,
+.client-onboarding-root.client-portal .field-select,
+.client-onboarding-root.client-portal .field-textarea { border-width: 1px; border-color: #e6e3ec; border-radius: 10px; background-color: #faf9fc; font-size: 13.5px; min-height: 42px; padding: 9px 12px; }
+.client-onboarding-root.client-portal .field-select { padding-right: 40px; }
+.client-onboarding-root.client-portal .field-textarea { min-height: 96px; }
+.client-onboarding-root.client-portal .field-input:hover,
+.client-onboarding-root.client-portal .field-select:hover,
+.client-onboarding-root.client-portal .field-textarea:hover { border-color: #d4cfe0; }
+.client-onboarding-root.client-portal .field-input:focus,
+.client-onboarding-root.client-portal .field-select:focus,
+.client-onboarding-root.client-portal .field-textarea:focus { background-color: var(--surface); border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.client-onboarding-root.client-portal .radio-pill,
+.client-onboarding-root.client-portal .check-row { border-radius: 10px; border-color: #e6e3ec; }
+.client-onboarding-root.client-portal .btn { min-height: 42px; border-radius: 10px; font-size: 13.5px; }
+.client-onboarding-root.client-portal .btn-accent { box-shadow: 0 6px 16px rgba(124, 58, 237, 0.25); }
+.client-onboarding-root.client-portal .btn-accent:hover { box-shadow: 0 8px 20px rgba(124, 58, 237, 0.32); }
+
+/* desktop: one framed container; only the form area scrolls, and Back / Continue stay pinned at its bottom */
+@media (min-width: 1024px) and (min-height: 640px) {
+  .client-onboarding-root.client-portal { display: flex; align-items: center; justify-content: center; height: 100vh; min-height: 0; padding: 24px; overflow: hidden; background: var(--bg); }
+  .client-onboarding-root.client-portal .split-shell { width: min(1240px, 100%); height: min(840px, calc(100vh - 48px)); min-height: 0; border-radius: 20px; overflow: hidden; background: var(--surface); box-shadow: 0 30px 80px rgba(16, 16, 20, 0.14), 0 2px 8px rgba(16, 16, 20, 0.06); }
+  .client-onboarding-root.client-portal .brand-panel { position: relative; align-self: stretch; height: 100%; width: 36%; min-width: 320px; max-width: 420px; padding: 32px 30px 26px; }
+  .client-onboarding-root.client-portal .form-panel { height: 100%; min-height: 0; background: var(--surface); }
+  .client-onboarding-root.client-portal .topbar { position: static; flex-shrink: 0; }
+  .client-onboarding-root.client-portal .main { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 28px 40px 0; }
+  .client-onboarding-root.client-portal .form-wrap { margin: 0 auto; }
+  .client-onboarding-root.client-portal .step-nav-buttons { position: sticky; bottom: 0; z-index: 3; margin: 24px -40px 0; padding: 16px 40px 20px; background: var(--surface); border-top: 1px solid var(--border-soft); }
+}
+@media (max-width: 1023px) {
+  .client-onboarding-root.client-portal .main { padding: 24px 20px 90px; }
+  .client-onboarding-root.client-portal .topbar { padding: 14px 20px; }
+}
+
+/* top bar: the "Saved" status and the help link sit on the left */
+.client-onboarding-root.client-portal .topbar { justify-content: flex-start; }
+.client-onboarding-root.client-portal .topbar-left:empty { display: none; }
+.client-onboarding-root.client-portal .topbar-right { justify-content: flex-start; }
+
+/* logo at the right end of the top bar */
+.client-onboarding-root.client-portal .topbar-logo { display: block; width: 110px; height: auto; margin-left: auto; flex-shrink: 0; }
+.client-onboarding-root.client-portal .panel-headline { margin-top: 0; }
+@media (max-width: 520px) { .client-onboarding-root.client-portal .topbar-logo { width: 92px; } }
+
+/* ==== fields in two columns (desktop and tablets); wide things span both ==== */
+@media (min-width: 700px) {
+  .client-onboarding-root.client-portal .step-panel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row dense; column-gap: 16px; align-items: start; }
+  .client-onboarding-root.client-portal .step-panel > :not(.field) { grid-column: 1 / -1; }
+  .client-onboarding-root.client-portal .step-panel > .field:has(.radio-group, .check-grid, .tag-input-wrap, .dropzone, .link-row, .file-list, .btn-text, #projectDescription) { grid-column: 1 / -1; }
+  .client-onboarding-root.client-portal .step-panel > .field { margin-bottom: 14px; min-width: 0; }
+}
+
+/* logo a little lower */
+.client-onboarding-root.client-portal .topbar-logo { position: relative; top: 8px; }
+
+/* required marker */
+.client-onboarding-root.client-portal .field-label .req { color: var(--danger); font-weight: 700; margin-left: 2px; }
+
+/* ==== who fills in the rest: two choice cards on step 2 ==== */
+.client-onboarding-root.client-portal .step-panel > .fill-choice { margin-bottom: 18px; }
+.client-onboarding-root.client-portal .fill-choice-title { margin-bottom: 10px; font-size: 13px; font-weight: 700; color: var(--ink); }
+.client-onboarding-root.client-portal .fill-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.client-onboarding-root.client-portal .fill-card { display: flex; align-items: flex-start; gap: 12px; padding: 14px; text-align: left; border: 1px solid #e6e3ec; border-radius: 12px; background: var(--surface); cursor: pointer; font-family: inherit; position: relative; transition: border-color .15s ease, background .15s ease, box-shadow .15s ease; }
+.client-onboarding-root.client-portal .fill-card:hover { border-color: #cfc8de; }
+.client-onboarding-root.client-portal .fill-card.selected { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 3px var(--accent-soft); }
+.client-onboarding-root.client-portal .fill-card-ico { width: 36px; height: 36px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
+.client-onboarding-root.client-portal .fill-card.selected .fill-card-ico { background: var(--accent); color: #fff; }
+.client-onboarding-root.client-portal .fill-card-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding-right: 22px; }
+.client-onboarding-root.client-portal .fill-card-text b { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.client-onboarding-root.client-portal .fill-card-text em { font-style: normal; font-size: 12px; line-height: 1.45; color: var(--ink-soft); }
+.client-onboarding-root.client-portal .fill-card-radio { position: absolute; top: 14px; right: 14px; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #cfc8de; background: var(--surface); }
+.client-onboarding-root.client-portal .fill-card.selected .fill-card-radio { border-color: var(--accent); box-shadow: inset 0 0 0 3.5px var(--surface); background: var(--accent); }
+.client-onboarding-root.client-portal .fill-note { padding: 12px 14px; border-radius: 10px; background: var(--accent-soft); font-size: 13px; line-height: 1.55; color: var(--ink-soft); }
+.client-onboarding-root.client-portal .fill-note b { color: var(--ink); font-weight: 700; }
+.client-onboarding-root.client-portal .step-nav-item.skipped .step-nav-label { color: rgba(255, 255, 255, 0.3); }
+.client-onboarding-root.client-portal .step-nav-item.skipped .step-nav-dot { opacity: .5; }
+@media (max-width: 640px) {
+  .client-onboarding-root.client-portal .fill-choice-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* choice cards: icons without a background tile */
+.client-onboarding-root.client-portal .fill-card-ico,
+.client-onboarding-root.client-portal .fill-card.selected .fill-card-ico { background: transparent; color: var(--accent); width: 24px; height: 24px; border-radius: 0; }
+
+/* ==== company form: a Company / Personal switch, then one card with the details in two columns ==== */
+.client-onboarding-root.client-portal .acct-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 5px; margin-bottom: 18px; border: 1px solid #e6e3ec; border-radius: 14px; background: #faf9fc; }
+.client-onboarding-root.client-portal .acct-opt { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid transparent; border-radius: 10px; background: transparent; text-align: left; font-family: inherit; color: var(--ink-soft); cursor: pointer; transition: background .15s ease, color .15s ease, box-shadow .15s ease; }
+.client-onboarding-root.client-portal .acct-opt:hover { color: var(--ink); }
+.client-onboarding-root.client-portal .acct-opt svg { flex: none; }
+.client-onboarding-root.client-portal .acct-opt span { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.client-onboarding-root.client-portal .acct-opt b { font-size: 13.5px; font-weight: 700; }
+.client-onboarding-root.client-portal .acct-opt em { font-style: normal; font-size: 11.5px; color: var(--ink-faint); }
+.client-onboarding-root.client-portal .acct-opt.on { background: var(--surface); color: var(--accent); box-shadow: 0 1px 3px rgba(16, 16, 20, 0.08), 0 0 0 1px var(--accent); }
+.client-onboarding-root.client-portal .acct-opt.on b { color: var(--ink); }
+
+.client-onboarding-root.client-portal .company-card { border: 1px solid #e6e3ec; border-radius: 14px; background: var(--surface); }
+.client-onboarding-root.client-portal .company-card-head { padding: 14px 18px; border-bottom: 1px solid var(--border-soft); font-size: 13px; font-weight: 700; color: var(--ink); }
+.client-onboarding-root.client-portal .company-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 16px; padding: 18px; }
+.client-onboarding-root.client-portal .company-grid .field { margin: 0; min-width: 0; }
+@media (max-width: 640px) {
+  .client-onboarding-root.client-portal .acct-switch { grid-template-columns: minmax(0, 1fr); }
+  .client-onboarding-root.client-portal .company-grid { grid-template-columns: minmax(0, 1fr); padding: 14px; }
+}
+
+/* company details: the fields scroll inside the card (the header stays put) */
+.client-onboarding-root.client-portal .company-card { overflow: hidden; }
+.client-onboarding-root.client-portal .company-grid { max-height: min(300px, 42vh); overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+
+/* dropdown options: purple hover and purple selected state (was grey hover and a plain bold selected option) */
+.client-onboarding-root.client-portal .cs-option:hover,
+.client-onboarding-root.client-portal .cs-option.active { background: var(--accent-soft); color: var(--accent); }
+.client-onboarding-root.client-portal .cs-option.selected { background: var(--accent); color: #fff; font-weight: 600; }
+.client-onboarding-root.client-portal .cs-option.selected svg { color: #fff; }
+.client-onboarding-root.client-portal .cs-option.selected:hover,
+.client-onboarding-root.client-portal .cs-option.selected.active { background: var(--accent-hover); color: #fff; }
+.client-onboarding-root.client-portal .cs-trigger:hover { border-color: var(--accent); }

@@ -174,3 +174,80 @@
   .client-sign-root .sg-success-card { padding: 36px 20px; }
   .client-sign-root .sg-table th { width: 48%; }
 }
+
+/* ==== content padding, lighter background, smaller card corners ==== */
+.client-sign-root .sg-shell { padding: 28px 32px 120px; }
+@media (max-width: 860px) { .client-sign-root .sg-shell { padding: 20px 16px 120px; } }
+@media not (prefers-color-scheme: dark) {
+  .client-sign-root.client-portal { --bg: #f9f8fb; }
+}
+.client-sign-root .sg-summary-card,
+.client-sign-root .sg-panel,
+.client-sign-root .sg-state-card,
+.client-sign-root .sg-success-card { border-radius: 10px; }
+.client-sign-root .sg-modal-box { border-radius: 12px; }
+.client-sign-root .sg-table,
+.client-sign-root .sg-legal-text,
+.client-sign-root .sg-tabs,
+.client-sign-root .sg-success-next { border-radius: 8px; }
+.client-sign-root .sg-tab { border-radius: 6px; }
+.client-sign-root .sg-canvas { border-radius: 8px; }
+
+/* tables: no purple fill on the label column; labels become quiet grey text */
+.client-sign-root .sg-table th { background: var(--surface); color: var(--ink-soft); font-weight: 600; }
+
+/* success screen: the summary is a real table with one column per detail */
+.client-sign-root .sg-table-cols th { width: auto; padding: 11px 16px; border-bottom: 1px solid var(--border); }
+.client-sign-root .sg-table-cols td { padding: 14px 16px; border-bottom: none; font-weight: 600; }
+.client-sign-root .sg-table-cols th:not(:last-child),
+.client-sign-root .sg-table-cols td:not(:last-child) { border-right: 1px solid var(--border); }
+@media (max-width: 760px) {
+  .client-sign-root .sg-table-cols thead { display: none; }
+  .client-sign-root .sg-table-cols,
+  .client-sign-root .sg-table-cols tbody,
+  .client-sign-root .sg-table-cols tr { display: block; width: 100%; }
+  .client-sign-root .sg-table-cols td { display: flex; justify-content: space-between; gap: 16px; padding: 11px 14px; border-right: none !important; border-bottom: 1px solid var(--border); text-align: right; }
+  .client-sign-root .sg-table-cols td:last-child { border-bottom: none; }
+  .client-sign-root .sg-table-cols td::before { content: attr(data-label); flex: none; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--ink-soft); text-align: left; }
+}
+
+/* success table: a full grid of clear lines (outer border, line under the header, line between every column) */
+.client-sign-root .sg-table-cols { border: 1px solid #cfccd6; border-collapse: collapse; border-spacing: 0; }
+.client-sign-root .sg-table-cols th,
+.client-sign-root .sg-table-cols td { border: 1px solid #cfccd6; }
+.client-sign-root .sg-table-cols th { background: #faf9fc; }
+@media (max-width: 760px) {
+  .client-sign-root .sg-table-cols { border-collapse: separate; }
+  .client-sign-root .sg-table-cols td { border: none; border-bottom: 1px solid #e6e3ec; }
+  .client-sign-root .sg-table-cols td:last-child { border-bottom: none; }
+}
+
+/* every table on the signing page gets the same clear grid: outer border and a line around each cell */
+.client-sign-root .sg-table { border: 1px solid #cfccd6; }
+.client-sign-root .sg-table th,
+.client-sign-root .sg-table td { border-bottom: 1px solid #cfccd6; }
+.client-sign-root .sg-table th:not(:last-child),
+.client-sign-root .sg-table td:not(:last-child) { border-right: 1px solid #cfccd6; }
+.client-sign-root .sg-table tr:last-child th,
+.client-sign-root .sg-table tr:last-child td { border-bottom: none; }
+.client-sign-root .sg-table-cols tbody tr:last-child td { border-bottom: none; }
+.client-sign-root .sg-table-cols thead tr th { border-bottom: 1px solid #cfccd6; }
+@media (max-width: 760px) {
+  .client-sign-root .sg-table-cols td { border-bottom: 1px solid #e6e3ec; }
+  .client-sign-root .sg-table-cols td:last-child { border-bottom: none; }
+}
+
+/* success table: a full outer border that is not clipped (separate borders, one line between cells) */
+.client-sign-root .sg-table.sg-table-cols { border-collapse: separate; border-spacing: 0; border: 1.5px solid #cfccd6; border-radius: 8px; overflow: hidden; }
+.client-sign-root .sg-table.sg-table-cols th,
+.client-sign-root .sg-table.sg-table-cols td { border: none; border-bottom: 1px solid #cfccd6; }
+.client-sign-root .sg-table.sg-table-cols th:not(:last-child),
+.client-sign-root .sg-table.sg-table-cols td:not(:last-child) { border-right: 1px solid #cfccd6; }
+.client-sign-root .sg-table.sg-table-cols tbody tr:last-child td { border-bottom: none; }
+@media (max-width: 760px) {
+  .client-sign-root .sg-table.sg-table-cols td { border-right: none; border-bottom: 1px solid #e6e3ec; }
+  .client-sign-root .sg-table.sg-table-cols td:last-child { border-bottom: none; }
+}
+
+/* the line under the header row of the success table (an older "last row has no bottom line" rule was removing it) */
+.client-sign-root .sg-table.sg-table-cols thead tr:last-child th { border-bottom: 1.5px solid #cfccd6; }

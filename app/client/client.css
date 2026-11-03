@@ -385,3 +385,102 @@
     align-items: flex-start;
   }
 }
+
+/* smaller buttons: Sign In (nav) and Create Client Account (hero) */
+.client-entry-root .client-nav-signin { gap: 8px; padding: 2px 8px 2px 2px; border-radius: 9px; }
+.client-entry-root .client-nav-signin-inner { padding: 5px 14px; border-radius: 7px; font-size: 14px; }
+.client-entry-root .client-nav-signin img { width: 18px; height: 18px; }
+.client-entry-root .client-hero-cta { gap: 10px; padding: 2px 12px 2px 2px; border-radius: 11px; }
+.client-entry-root .client-hero-cta-inner { padding: 10px 22px; border-radius: 9px; font-size: 14px; }
+.client-entry-root .client-hero-cta img { width: 20px; height: 20px; }
+
+/* keep the slogan under the logo on phones too (the 640px rule above used to hide it) */
+@media (max-width: 640px) {
+  .client-entry-root .client-nav-logo-tagline { display: block; }
+}
+
+/* ==== hero, redesigned: eyebrow pill, bigger headline, two buttons, feature points and a framed preview with a glow ==== */
+.client-entry-root .client-hero { padding: 72px 0 96px; }
+.client-entry-root .client-hero-inner { gap: 72px; }
+.client-entry-root .client-hero-copy { gap: 22px; }
+.client-entry-root .client-hero-eyebrow { display: inline-flex; align-items: center; gap: 9px; padding: 7px 14px; border: 1px solid rgba(206, 176, 250, 0.28); border-radius: 999px; background: rgba(129, 51, 241, 0.12); font-size: 12.5px; font-weight: 600; letter-spacing: .04em; color: #d9c6fb; }
+.client-entry-root .client-hero-eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: #b98cff; box-shadow: 0 0 0 4px rgba(185, 140, 255, 0.22); }
+.client-entry-root .client-hero-title { font-size: clamp(36px, 5vw, 66px); line-height: 1.12; letter-spacing: -0.02em; }
+.client-entry-root .client-hero-desc { font-size: 17px; line-height: 1.65; font-weight: 400; max-width: 500px; }
+.client-entry-root .client-hero-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 4px; }
+.client-entry-root .client-hero-ghost { display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 24px; border: 1px solid rgba(239, 230, 253, 0.22); border-radius: 12px; background: rgba(255, 255, 255, 0.04); font-size: 14px; font-weight: 600; color: #efe6fd; transition: border-color .2s ease, background .2s ease, transform .2s ease; }
+.client-entry-root .client-hero-ghost:hover { border-color: #b98cff; background: rgba(129, 51, 241, 0.16); transform: translateY(-2px); }
+.client-entry-root .client-hero-signin-line { margin: 0; font-size: 13px; color: #8c8794; }
+.client-entry-root .client-hero-points { list-style: none; margin: 8px 0 0; padding: 22px 0 0; border-top: 1px solid rgba(239, 230, 253, 0.1); display: flex; flex-wrap: wrap; gap: 10px 22px; width: 100%; max-width: 520px; }
+.client-entry-root .client-hero-points li { position: relative; padding-left: 16px; font-size: 13.5px; font-weight: 500; color: #c8c5cd; }
+.client-entry-root .client-hero-points li::before { content: ''; position: absolute; left: 0; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: #8133f1; }
+
+.client-entry-root .client-hero-visual { position: relative; flex: 1 1 520px; min-width: 0; }
+.client-entry-root .client-hero-glow { position: absolute; inset: -8% -6%; background: radial-gradient(closest-side, rgba(129, 51, 241, 0.42), transparent 72%); filter: blur(30px); pointer-events: none; z-index: 0; }
+.client-entry-root .client-hero-photo { position: relative; z-index: 1; flex: none; border-radius: 24px; border: 1px solid rgba(239, 230, 253, 0.2); box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55), 0 0 0 6px rgba(255, 255, 255, 0.03); }
+.client-entry-root .client-hero-badge { position: absolute; z-index: 2; left: -18px; bottom: 28px; display: inline-flex; align-items: center; gap: 9px; padding: 10px 16px; border: 1px solid rgba(239, 230, 253, 0.18); border-radius: 12px; background: rgba(1, 0, 3, 0.82); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); font-size: 13px; font-weight: 600; color: #efe6fd; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45); }
+.client-entry-root .client-hero-badge i { width: 8px; height: 8px; border-radius: 50%; background: #3ccb7f; box-shadow: 0 0 0 4px rgba(60, 203, 127, 0.22); }
+
+@media (max-width: 900px) {
+  .client-entry-root .client-hero-inner { flex-direction: column; align-items: stretch; gap: 48px; }
+  .client-entry-root .client-hero-visual { flex: none; }
+  .client-entry-root .client-hero-badge { left: 14px; bottom: 14px; }
+}
+@media (max-width: 640px) {
+  .client-entry-root .client-hero { padding: 40px 0 56px; }
+  .client-entry-root .client-hero-desc { font-size: 15.5px; }
+  .client-entry-root .client-hero-actions { width: 100%; }
+  .client-entry-root .client-hero-actions .client-hero-cta { flex: 1 1 100%; width: auto; }
+  .client-entry-root .client-hero-ghost { flex: 1 1 100%; }
+}
+
+/* Create Client Account lives in the top bar now, next to Sign In */
+.client-entry-root .client-nav-right { gap: 20px; }
+.client-entry-root .client-nav-create { display: inline-flex; align-items: center; height: 38px; padding: 0 18px; border-radius: 10px; background: linear-gradient(90deg, #ffffff, #ceb0fa); font-size: 14px; font-weight: 600; color: #010003; white-space: nowrap; transition: transform .2s ease, box-shadow .2s ease; box-shadow: 0 8px 20px rgba(129, 51, 241, 0.25); }
+.client-entry-root .client-nav-create:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(129, 51, 241, 0.38); }
+.client-entry-root .client-hero-signin-line { font-size: 14px; }
+.client-entry-root .client-hero-signin-link { color: #b98cff; }
+@media (max-width: 640px) {
+  .client-entry-root .client-nav-right { gap: 8px; }
+  .client-entry-root .client-nav-create { height: 34px; padding: 0 12px; font-size: 12.5px; }
+  .client-entry-root .client-nav-signin-inner { padding: 4px 10px; font-size: 12.5px; }
+  .client-entry-root .client-nav-signin img { display: none; }
+  .client-entry-root .client-nav-signin { padding: 2px; }
+}
+
+/* ==== hero, minimal: a headline, one line of text, one line to sign in, and the preview photo ==== */
+.client-entry-root .client-hero { padding: 88px 0 104px; }
+.client-entry-root .client-hero-inner { gap: 80px; }
+.client-entry-root .client-hero-copy { gap: 20px; }
+.client-entry-root .client-hero-title { font-size: clamp(34px, 4.6vw, 58px); line-height: 1.15; }
+.client-entry-root .client-hero-desc { max-width: 420px; font-size: 18px; line-height: 1.6; color: #a9a4b1; }
+.client-entry-root .client-hero-signin-line { margin-top: 8px; font-size: 14px; color: #8c8794; }
+.client-entry-root .client-hero-signin-link { color: #b98cff; font-weight: 600; }
+.client-entry-root .client-hero-photo { border-radius: 20px; border: 1px solid rgba(239, 230, 253, 0.14); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5); }
+@media (max-width: 900px) {
+  .client-entry-root .client-hero { padding: 56px 0 72px; }
+  .client-entry-root .client-hero-inner { gap: 40px; }
+}
+@media (max-width: 640px) {
+  .client-entry-root .client-hero { padding: 40px 0 56px; }
+  .client-entry-root .client-hero-desc { font-size: 16px; }
+}
+
+/* the preview is a full mockup with its own background: show all of it, no crop, no extra frame */
+.client-entry-root .client-hero-photo { aspect-ratio: 1585 / 992; border: none; background: transparent; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); }
+.client-entry-root .client-hero-photo img { object-fit: contain; }
+
+/* phones and tablets: the text block was keeping its 480px desktop basis as a height, which left a big gap above the image */
+@media (max-width: 900px) {
+  .client-entry-root .client-hero-copy { flex: none; }
+  .client-entry-root .client-hero-visual { flex: none; }
+  .client-entry-root .client-hero-inner { gap: 28px; }
+}
+@media (max-width: 640px) {
+  .client-entry-root .client-hero-inner { gap: 24px; }
+}
+
+/* top bar: smaller "Client Portal" label and "Need help ?" link */
+.client-entry-root .client-nav-center { font-size: 14px; gap: 7px; }
+.client-entry-root .client-nav-dot { width: 5px; height: 5px; }
+.client-entry-root .client-nav-help { font-size: 14px; }

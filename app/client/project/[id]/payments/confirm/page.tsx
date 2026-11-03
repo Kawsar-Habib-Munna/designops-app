@@ -24,12 +24,12 @@ import '../../../../client-shared.css';
 import './confirm.css';
 
 const ICONS: Record<string, string> = {
-  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
-  folder: '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/>',
-  file: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>',
-  doc: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M9 13h6"/><path d="M9 17h6"/>',
-  card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
-  message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
+  grid: '<rect x="3" y="3" width="8" height="10" rx="2" fill="currentColor" fill-opacity="0.13"/><rect x="13" y="3" width="8" height="6" rx="2" fill="currentColor" fill-opacity="0.13"/><rect x="13" y="11" width="8" height="10" rx="2" fill="currentColor" fill-opacity="0.13"/><rect x="3" y="15" width="8" height="6" rx="2" fill="currentColor" fill-opacity="0.13"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" fill="currentColor" fill-opacity="0.13"/><path d="M3 10.5h18"/>',
+  file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" fill="currentColor" fill-opacity="0.13"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
+  doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" fill="currentColor" fill-opacity="0.13"/><path d="M14 3v5h5"/><path d="m9.5 14.5 1.8 1.8 3.2-3.6"/>',
+  card: '<rect x="2.5" y="5" width="19" height="14" rx="2.5" fill="currentColor" fill-opacity="0.13"/><path d="M2.5 10h19"/><path d="M6.5 15h3.5"/>',
+  message: '<path d="M20 4H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h3.5v3.5L12 17h8a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1Z" fill="currentColor" fill-opacity="0.13"/><path d="M8 9.5h8M8 12.5h5"/>',
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
   menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
   close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
@@ -63,11 +63,10 @@ function ConfirmShell({
       <aside className={`sidebar${mobileNavOpen ? ' open' : ''}`}>
         <div>
           <div className="cp-brand cp-brand-sidebar">
-            <div className="cp-brand-mark" aria-hidden="true"></div>
-            <div>
-              <div className="cp-brand-text">FLOW 53</div>
-              <div className="cp-brand-tagline">Innovate · Design · Elevate</div>
-            </div>
+            <span className="cp-brand-art">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/sidebar-logo.webp" alt="FLOW 53 - Innovate-Design-Elevate" className="cp-brand-logo-combined" />
+            </span>
             <button type="button" className="sidebar-close-btn" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
               <Icon name="close" size={16} />
             </button>
@@ -375,26 +374,24 @@ export default function ConfirmPaymentPage() {
           <div className="cf-success-card">
             <div className="cf-success-icon">✓</div>
             <h1 className="cf-success-title">Payment Confirmed ✓</h1>
-            <div className="cf-success-grid">
-              <div>
-                <span className="cf-success-label">Amount</span>
-                <p>
-                  {sym} {invoice.amount.toLocaleString('en-US')}
-                </p>
-              </div>
-              <div>
-                <span className="cf-success-label">Paid</span>
-                <p>{latestPayment?.confirmed_at ? formatDateLong(latestPayment.confirmed_at) : '—'}</p>
-              </div>
-              <div>
-                <span className="cf-success-label">Payment Method</span>
-                <p>{latestPayment?.payment_method ?? invoice.payment_method ?? '—'}</p>
-              </div>
-              <div>
-                <span className="cf-success-label">Transaction</span>
-                <p>{latestPayment?.transaction_id ?? '—'}</p>
-              </div>
-            </div>
+            <table className="cf-table">
+              <thead>
+                <tr>
+                  <th>Amount</th>
+                  <th>Paid</th>
+                  <th>Payment Method</th>
+                  <th>Transaction</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td data-label="Amount">{sym} {invoice.amount.toLocaleString('en-US')}</td>
+                  <td data-label="Paid">{latestPayment?.confirmed_at ? formatDateLong(latestPayment.confirmed_at) : '—'}</td>
+                  <td data-label="Payment Method">{latestPayment?.payment_method ?? invoice.payment_method ?? '—'}</td>
+                  <td data-label="Transaction">{latestPayment?.transaction_id ?? '—'}</td>
+                </tr>
+              </tbody>
+            </table>
             <div className="cf-state-actions">
               {latestPayment && (
                 <Link href={`/client/project/${project.id}/payments/${latestPayment.id}/receipt`} className="cp-btn cp-btn-primary">
@@ -443,27 +440,25 @@ export default function ConfirmPaymentPage() {
             <div className="cf-success-icon">✓</div>
             <h1 className="cf-success-title">Payment confirmation submitted</h1>
             <p className="cf-success-sub">We&apos;ve received your payment details. Our team will verify the payment shortly.</p>
-            <div className="cf-success-grid">
-              <div>
-                <span className="cf-success-label">Amount</span>
-                <p>
-                  {sym} {invoice.amount.toLocaleString('en-US')}
-                </p>
-              </div>
-              <div>
-                <span className="cf-success-label">Payment Request</span>
-                <p>{invoice.request_number ?? '—'}</p>
-              </div>
-              <div>
-                <span className="cf-success-label">Transaction Reference</span>
-                <p>{latestPayment?.transaction_id ?? '—'}</p>
-              </div>
-              <div>
-                <span className="cf-success-label">Submitted</span>
-                <p>{latestPayment?.created_at ? formatDateTime(latestPayment.created_at) : '—'}</p>
-              </div>
-            </div>
-            <span className="cp-badge cp-badge-pending cf-success-badge">Awaiting Verification</span>
+            <table className="cf-table">
+              <thead>
+                <tr>
+                  <th>Amount</th>
+                  <th>Payment Request</th>
+                  <th>Transaction Reference</th>
+                  <th>Submitted</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td data-label="Amount">{sym} {invoice.amount.toLocaleString('en-US')}</td>
+                  <td data-label="Payment Request">{invoice.request_number ?? '—'}</td>
+                  <td data-label="Transaction Reference">{latestPayment?.transaction_id ?? '—'}</td>
+                  <td data-label="Submitted">{latestPayment?.created_at ? formatDateTime(latestPayment.created_at) : '—'}</td>
+                </tr>
+              </tbody>
+            </table>
+            <span className="cf-success-status"><span className="cf-success-dot" />Awaiting verification</span>
             <div className="cf-state-actions">
               <Link href={`/client/project/${project.id}`} className="cp-btn cp-btn-primary">
                 Back to Project
@@ -503,11 +498,13 @@ export default function ConfirmPaymentPage() {
           </div>
         )}
 
+        <div className="cf-grid">
+        <div className="cf-left">
         {/* ---- summary ---- */}
         <div className="cf-summary-card">
           <div className="cf-summary-top">
             <span className="cf-summary-ref">{invoice.request_number ?? '—'}</span>
-            <span className="cp-badge cp-badge-pending">Pending Payment</span>
+            <span className="cf-pending"><span className="cf-pending-dot" />Pending payment</span>
           </div>
           <div className="cf-summary-grid">
             <div>
@@ -559,6 +556,9 @@ export default function ConfirmPaymentPage() {
           </div>
         )}
 
+        </div>
+
+        <div className="cf-right">
         {/* ---- form ---- */}
         <div className="cf-form-card">
           <div className="cf-form-title">Payment Details</div>
@@ -636,6 +636,8 @@ export default function ConfirmPaymentPage() {
             {submitting && <span className="cp-spinner" />}
             {submitting ? 'Submitting…' : 'Submit Payment Confirmation'}
           </button>
+        </div>
+        </div>
         </div>
 
         <p className="cf-support-line">

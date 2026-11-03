@@ -26,12 +26,12 @@ import './files.css';
 import './files-v2.css';
 
 const ICONS: Record<string, string> = {
-  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
-  folder: '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/>',
-  file: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>',
-  doc: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M9 13h6"/><path d="M9 17h6"/>',
-  card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
-  message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
+  grid: '<rect x="3" y="3" width="8" height="10" rx="2" fill="currentColor" fill-opacity="0.13"/><rect x="13" y="3" width="8" height="6" rx="2" fill="currentColor" fill-opacity="0.13"/><rect x="13" y="11" width="8" height="10" rx="2" fill="currentColor" fill-opacity="0.13"/><rect x="3" y="15" width="8" height="6" rx="2" fill="currentColor" fill-opacity="0.13"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" fill="currentColor" fill-opacity="0.13"/><path d="M3 10.5h18"/>',
+  file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" fill="currentColor" fill-opacity="0.13"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
+  doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" fill="currentColor" fill-opacity="0.13"/><path d="M14 3v5h5"/><path d="m9.5 14.5 1.8 1.8 3.2-3.6"/>',
+  card: '<rect x="2.5" y="5" width="19" height="14" rx="2.5" fill="currentColor" fill-opacity="0.13"/><path d="M2.5 10h19"/><path d="M6.5 15h3.5"/>',
+  message: '<path d="M20 4H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h3.5v3.5L12 17h8a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1Z" fill="currentColor" fill-opacity="0.13"/><path d="M8 9.5h8M8 12.5h5"/>',
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
   menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
   close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
@@ -893,308 +893,310 @@ export default function ClientFilesPage() {
                 </a>
               </section>
 
-              {/* ---- folders ---- */}
-              <section className="dx-card">
-                <div className="dx-card-head">
-                  <h2 className="dx-card-title">Folders</h2>
-                  <div className="ff-head-actions">
-                    {folders.length > 4 && (
-                      <button type="button" className="dx-link ff-link-btn" onClick={() => setShowAllFolders((v) => !v)}>
-                        {showAllFolders ? 'Show less' : 'View all'}
+              <div className="ff-row3">
+                {/* ---- folders ---- */}
+                <section className="dx-card">
+                  <div className="dx-card-head">
+                    <h2 className="dx-card-title">Folders</h2>
+                    <div className="ff-head-actions">
+                      {folders.length > 4 && (
+                        <button type="button" className="dx-link ff-link-btn" onClick={() => setShowAllFolders((v) => !v)}>
+                          {showAllFolders ? 'Show less' : 'View all'}
+                        </button>
+                      )}
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => openFolderModal('new')}>
+                        <Icon name="plus" size={13} /> New folder
                       </button>
-                    )}
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => openFolderModal('new')}>
-                      <Icon name="plus" size={13} /> New folder
+                    </div>
+                  </div>
+                  {customFolders.length === 0 && <p className="dx-empty ff-folders-hint">Create folders to keep your files organised, for example &ldquo;Brand assets&rdquo; or &ldquo;Contracts&rdquo;.</p>}
+                  {folders.length > 0 && (
+                    <div className="ff-folders">
+                      {visibleFolders.map((f, idx) => {
+                        const cf = f.custom ? customFolders.find((x) => `f:${x.id}` === f.id) : undefined;
+                        return (
+                          <div className="ff-folder-cell" key={f.id}>
+                            <Link href={`/client/project/${project.id}/files/folders/${encodeURIComponent(f.custom ? f.id.slice(2) : f.id)}`} className="ff-folder">
+                              <span className="dx-kpi-icon dx-tone-accent"><Icon name="folder" size={18} /></span>
+                              <span className="ff-folder-dot" style={{ background: FOLDER_COLORS[idx % FOLDER_COLORS.length] }} />
+                              <span className="ff-folder-body">
+                                <span className="ff-folder-name">{f.label}</span>
+                                <span className="ff-folder-meta">
+                                  {f.count} file{f.count === 1 ? '' : 's'}
+                                  {f.latest && nowIso ? ` · ${dayLabel(f.latest.created_at, nowIso)}` : ''}
+                                </span>
+                              </span>
+                            </Link>
+                            {cf && (
+                              <span className="ff-folder-tools">
+                                <button type="button" className="ff-tool" aria-label={`Rename ${f.label}`} onClick={() => openFolderModal('rename', cf)}>
+                                  <Icon name="edit" size={13} />
+                                </button>
+                                <button type="button" className="ff-tool" aria-label={`Delete ${f.label}`} onClick={() => openFolderModal('delete', cf)}>
+                                  <Icon name="trash" size={13} />
+                                </button>
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+
+                {/* ---- links ---- */}
+                <section className="dx-card" id="links">
+                  <div className="dx-card-head">
+                    <h2 className="dx-card-title">
+                      Links <span className="ff-count">{linkRows.length}</span>
+                    </h2>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setLinkError(null); setLinkOpen(true); }}>
+                      <Icon name="plus" size={13} /> Add a link
                     </button>
                   </div>
-                </div>
-                {customFolders.length === 0 && <p className="dx-empty ff-folders-hint">Create folders to keep your files organised, for example &ldquo;Brand assets&rdquo; or &ldquo;Contracts&rdquo;.</p>}
-                {folders.length > 0 && (
-                  <div className="ff-folders">
-                    {visibleFolders.map((f, idx) => {
-                      const cf = f.custom ? customFolders.find((x) => `f:${x.id}` === f.id) : undefined;
-                      return (
-                        <div className="ff-folder-cell" key={f.id}>
-                          <Link href={`/client/project/${project.id}/files/folders/${encodeURIComponent(f.custom ? f.id.slice(2) : f.id)}`} className="ff-folder">
-                            <span className="dx-kpi-icon dx-tone-accent"><Icon name="folder" size={18} /></span>
-                            <span className="ff-folder-dot" style={{ background: FOLDER_COLORS[idx % FOLDER_COLORS.length] }} />
-                            <span className="ff-folder-body">
-                              <span className="ff-folder-name">{f.label}</span>
-                              <span className="ff-folder-meta">
-                                {f.count} file{f.count === 1 ? '' : 's'}
-                                {f.latest && nowIso ? ` · ${dayLabel(f.latest.created_at, nowIso)}` : ''}
-                              </span>
-                            </span>
-                          </Link>
-                          {cf && (
-                            <span className="ff-folder-tools">
-                              <button type="button" className="ff-tool" aria-label={`Rename ${f.label}`} onClick={() => openFolderModal('rename', cf)}>
-                                <Icon name="edit" size={13} />
-                              </button>
-                              <button type="button" className="ff-tool" aria-label={`Delete ${f.label}`} onClick={() => openFolderModal('delete', cf)}>
-                                <Icon name="trash" size={13} />
-                              </button>
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
+                  {linkRows.length === 0 ? (
+                    <div className="ff-empty">
+                      <span className="dx-kpi-icon dx-tone-accent"><Icon name="link" size={20} /></span>
+                      <div className="ff-empty-title">No links yet</div>
+                      <p className="ff-empty-sub">Figma files, Google Docs, websites, videos&hellip; save any link here and it stays with your project.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <ul className="ff-list">
+                        {visibleLinks.map((l) => {
+                          const uploader = l.uploaded_by_id ? uploaders[l.uploaded_by_id] : null;
+                          const sharedBy = uploader?.full_name ?? (l.uploaded_by === 'client' ? 'You' : 'FLOW 53 Team');
+                          return (
+                            <li className="ff-item" key={l.id}>
+                              <span className="dx-row-icon"><Icon name="link" size={15} /></span>
+                              <div className="ff-item-body">
+                                <div className="ff-item-name">
+                                  <a href={l.drive_url} target="_blank" rel="noopener noreferrer" className="ff-item-name-text ff-link-name">{l.name}</a>
+                                  <span className="ff-name-who">{sharedBy} · {nowIso ? dayLabel(l.created_at, nowIso) : ''}</span>
+                                </div>
+                                <div className="ff-item-meta">
+                                  <span className="ff-meta-group">
+                                    <span className="ff-ext">{domainOf(l.drive_url)}</span>
+                                  </span>
+                                  <span className="ff-meta-group">
+                                    <span>{sharedBy}</span>
+                                    <span>{nowIso ? dayLabel(l.created_at, nowIso) : ''}</span>
+                                  </span>
+                                </div>
+                              </div>
+                              <div className={`ff-item-actions${menuId === l.id ? ' open' : ''}`}>
+                                <button type="button" className="ff-more-btn" aria-label="More actions" aria-expanded={menuId === l.id} onClick={() => setMenuId((id) => (id === l.id ? null : l.id))}>
+                                  <Icon name="dots" size={16} />
+                                </button>
+                                <div className="ff-actions-pop" onClick={() => setMenuId(null)}>
+                                  <button type="button" className="ff-icon-btn" aria-label={`Copy link to ${l.name}`} title={copiedId === l.id ? 'Copied' : 'Copy link'} onClick={() => copyLink(l)}>
+                                    <Icon name={copiedId === l.id ? 'check' : 'copy'} size={15} /><span className="ff-act-label">{copiedId === l.id ? 'Copied' : 'Copy link'}</span>
+                                  </button>
+                                  <a href={l.drive_url} target="_blank" rel="noopener noreferrer" className="ff-icon-btn" aria-label={`Open ${l.name}`} title="Open link">
+                                    <Icon name="external" size={15} /><span className="ff-act-label">Open link</span>
+                                  </a>
+                                  {l.uploaded_by === 'client' && (
+                                    <button type="button" className="ff-icon-btn ff-danger" aria-label={`Delete ${l.name}`} title="Delete link" onClick={() => { setDeleteLinkError(null); setLinkToDelete(l); }}>
+                                      <Icon name="trash" size={15} /><span className="ff-act-label">Delete</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {linkRows.length > 5 && (
+                        <button type="button" className="ff-more" onClick={() => setShowAllLinks((v) => !v)}>
+                          {showAllLinks ? 'Show fewer links' : `Show all ${linkRows.length} links`}
+                        </button>
+                      )}
+                    </>
+                  )}
+                </section>
 
-              {/* ---- links ---- */}
-              <section className="dx-card" id="links">
-                <div className="dx-card-head">
-                  <h2 className="dx-card-title">
-                    Links <span className="ff-count">{linkRows.length}</span>
-                  </h2>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setLinkError(null); setLinkOpen(true); }}>
-                    <Icon name="plus" size={13} /> Add a link
-                  </button>
-                </div>
-                {linkRows.length === 0 ? (
-                  <div className="ff-empty">
-                    <span className="dx-kpi-icon dx-tone-accent"><Icon name="link" size={20} /></span>
-                    <div className="ff-empty-title">No links yet</div>
-                    <p className="ff-empty-sub">Figma files, Google Docs, websites, videos&hellip; save any link here and it stays with your project.</p>
+                {/* ---- files ---- */}
+                <section className="dx-card ff-allfiles" id="all-files">
+                  <div className="ff-all-head">
+                    <div className="ff-all-title">
+                      <h2 className="dx-card-title">
+                        All files <span className="ff-count">{filteredFiles.length}</span>
+                      </h2>
+                      {categoryFilter && (
+                        <button type="button" className="ff-chip" onClick={() => setCategoryFilter(null)}>
+                          {activeFolder?.label ?? CATEGORY_LABEL[categoryFilter] ?? 'Folder'} <Icon name="close" size={11} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="ff-toggle">
+                      <button type="button" className={viewMode === 'list' ? 'active' : ''} onClick={() => setViewMode('list')} aria-label="List view" title="List">
+                        <Icon name="list" size={15} />
+                      </button>
+                      <button type="button" className={viewMode === 'grid' ? 'active' : ''} onClick={() => setViewMode('grid')} aria-label="Grid view" title="Grid">
+                        <Icon name="grid2" size={15} />
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <>
-                    <ul className="ff-list">
-                      {visibleLinks.map((l) => {
-                        const uploader = l.uploaded_by_id ? uploaders[l.uploaded_by_id] : null;
-                        const sharedBy = uploader?.full_name ?? (l.uploaded_by === 'client' ? 'You' : 'FLOW 53 Team');
+
+                  <div className="ff-toolbar">
+                    <label className={`ff-search${search ? ' has-value' : ''}`}>
+                      <span className="ff-search-icon"><Icon name="search" size={16} /></span>
+                      <input
+                        ref={searchRef}
+                        type="search"
+                        placeholder="Search files by name"
+                        value={search}
+                        aria-label="Search files by name"
+                        onChange={(e) => {
+                          setSearch(e.target.value);
+                          resetToPage1();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') {
+                            setSearch('');
+                            resetToPage1();
+                            e.currentTarget.blur();
+                          }
+                        }}
+                      />
+                      {search ? (
+                        <>
+                          <span className="ff-search-count">{filteredFiles.length} result{filteredFiles.length === 1 ? '' : 's'}</span>
+                          <button type="button" className="ff-search-clear" aria-label="Clear search" onClick={() => { setSearch(''); resetToPage1(); searchRef.current?.focus(); }}>
+                            <Icon name="close" size={12} />
+                          </button>
+                        </>
+                      ) : (
+                        <kbd className="ff-kbd" aria-hidden="true">/</kbd>
+                      )}
+                    </label>
+                    <ClientSelect className="ff-sort" ariaLabel="Sort files" value={sortBy} onChange={(v) => setSortBy(v as typeof sortBy)} options={[{ value: 'recent', label: 'Newest first' }, { value: 'oldest', label: 'Oldest first' }, { value: 'name', label: 'Name (A–Z)' }, { value: 'size', label: 'Largest first' }]} />
+                  </div>
+
+                  {kindOptions.length > 1 && (
+                    <div className="ff-kinds" role="tablist" aria-label="Filter by file type">
+                      <button type="button" role="tab" aria-selected={typeFilter === 'all'} className={`ff-kind${typeFilter === 'all' ? ' active' : ''}`} onClick={() => { setTypeFilter('all'); resetToPage1(); }}>
+                        All <span>{files.length}</span>
+                      </button>
+                      {kindOptions.map(([k, n]) => (
+                        <button key={k} type="button" role="tab" aria-selected={typeFilter === k} className={`ff-kind${typeFilter === k ? ' active' : ''}`} onClick={() => { setTypeFilter(k); resetToPage1(); }}>
+                          <i className={`ff-kind-dot ff-type-${k}`} />
+                          {KIND_LABEL[k]} <span>{n}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {filteredFiles.length === 0 ? (
+                    <div className="ff-empty">
+                      <span className="dx-kpi-icon dx-tone-accent"><Icon name="file" size={20} /></span>
+                      <div className="ff-empty-title">{files.length === 0 ? 'No files yet' : 'No files found'}</div>
+                      <p className="ff-empty-sub">{files.length === 0 ? 'Files shared with you will show up here. You can also upload your own.' : 'Try a different search, or clear the filters.'}</p>
+                    </div>
+                  ) : viewMode === 'list' ? (
+                    <ul className="ff-rows">
+                      {pagedFiles.map((f) => {
+                        const uploader = f.uploaded_by_id ? uploaders[f.uploaded_by_id] : null;
+                        const isNew = nowIso ? new Date(nowIso).getTime() - new Date(f.created_at).getTime() < 24 * 3600 * 1000 : false;
+                        const sharedBy = uploader?.full_name ?? (f.uploaded_by === 'client' ? 'You' : 'FLOW 53 Team');
+                        const kind = typeKind(f);
                         return (
-                          <li className="ff-item" key={l.id}>
-                            <span className="dx-row-icon"><Icon name="link" size={15} /></span>
-                            <div className="ff-item-body">
+                          <li className="ff-row" key={f.id}>
+                            {kind === 'image' ? (
+                              <FileThumb f={f} kind={kind} className="ff-thumb" />
+                            ) : (
+                              <span className={`ff-type ff-type-${kind}`}>{fileExtension(f.name).slice(0, 4)}</span>
+                            )}
+                            <div className="ff-row-main">
                               <div className="ff-item-name">
-                                <a href={l.drive_url} target="_blank" rel="noopener noreferrer" className="ff-item-name-text ff-link-name">{l.name}</a>
-                                <span className="ff-name-who">{sharedBy} · {nowIso ? dayLabel(l.created_at, nowIso) : ''}</span>
+                                <span className="ff-item-name-text">{f.name}</span>
+                                {isNew && <span className="ff-new">New</span>}
+                                <span className="ff-name-who">{sharedBy} · {nowIso ? dayLabel(f.created_at, nowIso) : ''}</span>
                               </div>
                               <div className="ff-item-meta">
                                 <span className="ff-meta-group">
-                                  <span className="ff-ext">{domainOf(l.drive_url)}</span>
+                                  <span className="ff-ext">{KIND_LABEL[kind]}</span>
+                                  <span>{formatBytes(f.size_bytes)}</span>
                                 </span>
                                 <span className="ff-meta-group">
                                   <span>{sharedBy}</span>
-                                  <span>{nowIso ? dayLabel(l.created_at, nowIso) : ''}</span>
+                                  <span>{nowIso ? dayLabel(f.created_at, nowIso) : ''}, {formatClockTime(f.created_at)}</span>
                                 </span>
                               </div>
                             </div>
-                            <div className={`ff-item-actions${menuId === l.id ? ' open' : ''}`}>
-                              <button type="button" className="ff-more-btn" aria-label="More actions" aria-expanded={menuId === l.id} onClick={() => setMenuId((id) => (id === l.id ? null : l.id))}>
+                            <span className="ff-where" title="Folder">
+                              <Icon name="folder" size={12} /> {folderOf(f)}
+                            </span>
+                            <div className={`ff-item-actions${menuId === f.id ? ' open' : ''}`}>
+                              <button type="button" className="ff-more-btn" aria-label="More actions" aria-expanded={menuId === f.id} onClick={() => setMenuId((id) => (id === f.id ? null : f.id))}>
                                 <Icon name="dots" size={16} />
                               </button>
                               <div className="ff-actions-pop" onClick={() => setMenuId(null)}>
-                                <button type="button" className="ff-icon-btn" aria-label={`Copy link to ${l.name}`} title={copiedId === l.id ? 'Copied' : 'Copy link'} onClick={() => copyLink(l)}>
-                                  <Icon name={copiedId === l.id ? 'check' : 'copy'} size={15} /><span className="ff-act-label">{copiedId === l.id ? 'Copied' : 'Copy link'}</span>
-                                </button>
-                                <a href={l.drive_url} target="_blank" rel="noopener noreferrer" className="ff-icon-btn" aria-label={`Open ${l.name}`} title="Open link">
-                                  <Icon name="external" size={15} /><span className="ff-act-label">Open link</span>
-                                </a>
-                                {l.uploaded_by === 'client' && (
-                                  <button type="button" className="ff-icon-btn ff-danger" aria-label={`Delete ${l.name}`} title="Delete link" onClick={() => { setDeleteLinkError(null); setLinkToDelete(l); }}>
-                                    <Icon name="trash" size={15} /><span className="ff-act-label">Delete</span>
+                                {customFolders.length > 0 && (
+                                  <button type="button" className="ff-icon-btn" aria-label={`Move ${f.name} to a folder`} title="Move to a folder" onClick={() => openFolderModal('move', undefined, f)}>
+                                    <Icon name="move" size={15} /><span className="ff-act-label">Move</span>
                                   </button>
                                 )}
+                                <button type="button" className="ff-icon-btn" aria-label={`View ${f.name}`} title="View" onClick={() => setPreviewItem({ name: f.name, url: f.drive_url, fileType: previewType(f) })}>
+                                  <Icon name="eye" size={15} /><span className="ff-act-label">View</span>
+                                </button>
+                                <a href={driveDownloadUrl(f.drive_url)} target="_blank" rel="noopener noreferrer" className="ff-icon-btn" aria-label={`Download ${f.name}`} title="Download">
+                                  <Icon name="download" size={15} /><span className="ff-act-label">Download</span>
+                                </a>
                               </div>
                             </div>
                           </li>
                         );
                       })}
                     </ul>
-                    {linkRows.length > 5 && (
-                      <button type="button" className="ff-more" onClick={() => setShowAllLinks((v) => !v)}>
-                        {showAllLinks ? 'Show fewer links' : `Show all ${linkRows.length} links`}
-                      </button>
-                    )}
-                  </>
-                )}
-              </section>
-
-              {/* ---- files ---- */}
-              <section className="dx-card ff-allfiles" id="all-files">
-                <div className="ff-all-head">
-                  <div className="ff-all-title">
-                    <h2 className="dx-card-title">
-                      All files <span className="ff-count">{filteredFiles.length}</span>
-                    </h2>
-                    {categoryFilter && (
-                      <button type="button" className="ff-chip" onClick={() => setCategoryFilter(null)}>
-                        {activeFolder?.label ?? CATEGORY_LABEL[categoryFilter] ?? 'Folder'} <Icon name="close" size={11} />
-                      </button>
-                    )}
-                  </div>
-                  <div className="ff-toggle">
-                    <button type="button" className={viewMode === 'list' ? 'active' : ''} onClick={() => setViewMode('list')} aria-label="List view" title="List">
-                      <Icon name="list" size={15} />
-                    </button>
-                    <button type="button" className={viewMode === 'grid' ? 'active' : ''} onClick={() => setViewMode('grid')} aria-label="Grid view" title="Grid">
-                      <Icon name="grid2" size={15} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="ff-toolbar">
-                  <label className={`ff-search${search ? ' has-value' : ''}`}>
-                    <span className="ff-search-icon"><Icon name="search" size={16} /></span>
-                    <input
-                      ref={searchRef}
-                      type="search"
-                      placeholder="Search files by name"
-                      value={search}
-                      aria-label="Search files by name"
-                      onChange={(e) => {
-                        setSearch(e.target.value);
-                        resetToPage1();
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Escape') {
-                          setSearch('');
-                          resetToPage1();
-                          e.currentTarget.blur();
-                        }
-                      }}
-                    />
-                    {search ? (
-                      <>
-                        <span className="ff-search-count">{filteredFiles.length} result{filteredFiles.length === 1 ? '' : 's'}</span>
-                        <button type="button" className="ff-search-clear" aria-label="Clear search" onClick={() => { setSearch(''); resetToPage1(); searchRef.current?.focus(); }}>
-                          <Icon name="close" size={12} />
-                        </button>
-                      </>
-                    ) : (
-                      <kbd className="ff-kbd" aria-hidden="true">/</kbd>
-                    )}
-                  </label>
-                  <ClientSelect className="ff-sort" ariaLabel="Sort files" value={sortBy} onChange={(v) => setSortBy(v as typeof sortBy)} options={[{ value: 'recent', label: 'Newest first' }, { value: 'oldest', label: 'Oldest first' }, { value: 'name', label: 'Name (A–Z)' }, { value: 'size', label: 'Largest first' }]} />
-                </div>
-
-                {kindOptions.length > 1 && (
-                  <div className="ff-kinds" role="tablist" aria-label="Filter by file type">
-                    <button type="button" role="tab" aria-selected={typeFilter === 'all'} className={`ff-kind${typeFilter === 'all' ? ' active' : ''}`} onClick={() => { setTypeFilter('all'); resetToPage1(); }}>
-                      All <span>{files.length}</span>
-                    </button>
-                    {kindOptions.map(([k, n]) => (
-                      <button key={k} type="button" role="tab" aria-selected={typeFilter === k} className={`ff-kind${typeFilter === k ? ' active' : ''}`} onClick={() => { setTypeFilter(k); resetToPage1(); }}>
-                        <i className={`ff-kind-dot ff-type-${k}`} />
-                        {KIND_LABEL[k]} <span>{n}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {filteredFiles.length === 0 ? (
-                  <div className="ff-empty">
-                    <span className="dx-kpi-icon dx-tone-accent"><Icon name="file" size={20} /></span>
-                    <div className="ff-empty-title">{files.length === 0 ? 'No files yet' : 'No files found'}</div>
-                    <p className="ff-empty-sub">{files.length === 0 ? 'Files shared with you will show up here. You can also upload your own.' : 'Try a different search, or clear the filters.'}</p>
-                  </div>
-                ) : viewMode === 'list' ? (
-                  <ul className="ff-rows">
-                    {pagedFiles.map((f) => {
-                      const uploader = f.uploaded_by_id ? uploaders[f.uploaded_by_id] : null;
-                      const isNew = nowIso ? new Date(nowIso).getTime() - new Date(f.created_at).getTime() < 24 * 3600 * 1000 : false;
-                      const sharedBy = uploader?.full_name ?? (f.uploaded_by === 'client' ? 'You' : 'FLOW 53 Team');
-                      const kind = typeKind(f);
-                      return (
-                        <li className="ff-row" key={f.id}>
-                          {kind === 'image' ? (
-                            <FileThumb f={f} kind={kind} className="ff-thumb" />
-                          ) : (
-                            <span className={`ff-type ff-type-${kind}`}>{fileExtension(f.name).slice(0, 4)}</span>
-                          )}
-                          <div className="ff-row-main">
-                            <div className="ff-item-name">
-                              <span className="ff-item-name-text">{f.name}</span>
-                              {isNew && <span className="ff-new">New</span>}
-                              <span className="ff-name-who">{sharedBy} · {nowIso ? dayLabel(f.created_at, nowIso) : ''}</span>
-                            </div>
-                            <div className="ff-item-meta">
-                              <span className="ff-meta-group">
-                                <span className="ff-ext">{KIND_LABEL[kind]}</span>
-                                <span>{formatBytes(f.size_bytes)}</span>
-                              </span>
-                              <span className="ff-meta-group">
-                                <span>{sharedBy}</span>
-                                <span>{nowIso ? dayLabel(f.created_at, nowIso) : ''}, {formatClockTime(f.created_at)}</span>
-                              </span>
-                            </div>
-                          </div>
-                          <span className="ff-where" title="Folder">
-                            <Icon name="folder" size={12} /> {folderOf(f)}
-                          </span>
-                          <div className={`ff-item-actions${menuId === f.id ? ' open' : ''}`}>
-                            <button type="button" className="ff-more-btn" aria-label="More actions" aria-expanded={menuId === f.id} onClick={() => setMenuId((id) => (id === f.id ? null : f.id))}>
-                              <Icon name="dots" size={16} />
-                            </button>
-                            <div className="ff-actions-pop" onClick={() => setMenuId(null)}>
-                              {customFolders.length > 0 && (
-                                <button type="button" className="ff-icon-btn" aria-label={`Move ${f.name} to a folder`} title="Move to a folder" onClick={() => openFolderModal('move', undefined, f)}>
-                                  <Icon name="move" size={15} /><span className="ff-act-label">Move</span>
-                                </button>
+                  ) : (
+                    <div className="ff-tiles">
+                      {pagedFiles.map((f) => {
+                        const kind = typeKind(f);
+                        const uploader = f.uploaded_by_id ? uploaders[f.uploaded_by_id] : null;
+                        return (
+                          <button type="button" key={f.id} className="ff-tile" onClick={() => setPreviewItem({ name: f.name, url: f.drive_url, fileType: previewType(f) })}>
+                            <span className="ff-tile-art">
+                              {kind === 'image' ? (
+                                <FileThumb f={f} kind={kind} className="ff-thumb-fill" />
+                              ) : (
+                                <span className={`ff-type ff-type-lg ff-type-${kind}`}>{fileExtension(f.name).slice(0, 4)}</span>
                               )}
-                              <button type="button" className="ff-icon-btn" aria-label={`View ${f.name}`} title="View" onClick={() => setPreviewItem({ name: f.name, url: f.drive_url, fileType: previewType(f) })}>
-                                <Icon name="eye" size={15} /><span className="ff-act-label">View</span>
-                              </button>
-                              <a href={driveDownloadUrl(f.drive_url)} target="_blank" rel="noopener noreferrer" className="ff-icon-btn" aria-label={`Download ${f.name}`} title="Download">
-                                <Icon name="download" size={15} /><span className="ff-act-label">Download</span>
-                              </a>
-                            </div>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : (
-                  <div className="ff-tiles">
-                    {pagedFiles.map((f) => {
-                      const kind = typeKind(f);
-                      const uploader = f.uploaded_by_id ? uploaders[f.uploaded_by_id] : null;
-                      return (
-                        <button type="button" key={f.id} className="ff-tile" onClick={() => setPreviewItem({ name: f.name, url: f.drive_url, fileType: previewType(f) })}>
-                          <span className="ff-tile-art">
-                            {kind === 'image' ? (
-                              <FileThumb f={f} kind={kind} className="ff-thumb-fill" />
-                            ) : (
-                              <span className={`ff-type ff-type-lg ff-type-${kind}`}>{fileExtension(f.name).slice(0, 4)}</span>
-                            )}
-                          </span>
-                          <span className="ff-tile-name">{f.name}</span>
-                          <span className="ff-tile-meta">{KIND_LABEL[kind]} · {formatBytes(f.size_bytes)}</span>
-                          <span className="ff-tile-meta">{uploader?.full_name ?? (f.uploaded_by === 'client' ? 'You' : 'FLOW 53 Team')}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {filteredFiles.length > 0 && (
-                  <div className="ff-pager">
-                    <span className="ff-pager-info">
-                      {(pageSafe - 1) * PAGE_SIZE + 1}–{Math.min(pageSafe * PAGE_SIZE, filteredFiles.length)} of {filteredFiles.length} files
-                    </span>
-                    <div className="ff-pager-controls">
-                      <button type="button" disabled={pageSafe === 1} onClick={() => setPage((p) => Math.max(1, p - 1))} aria-label="Previous page">
-                        <Icon name="chevronLeft" size={14} />
-                      </button>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1)
-                        .slice(0, 5)
-                        .map((n) => (
-                          <button key={n} type="button" className={pageSafe === n ? 'active' : ''} onClick={() => setPage(n)}>
-                            {n}
+                            </span>
+                            <span className="ff-tile-name">{f.name}</span>
+                            <span className="ff-tile-meta">{KIND_LABEL[kind]} · {formatBytes(f.size_bytes)}</span>
+                            <span className="ff-tile-meta">{uploader?.full_name ?? (f.uploaded_by === 'client' ? 'You' : 'FLOW 53 Team')}</span>
                           </button>
-                        ))}
-                      {totalPages > 5 && <span className="ff-pager-dots">…</span>}
-                      <button type="button" disabled={pageSafe === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} aria-label="Next page">
-                        <Icon name="chevronRight" size={14} />
-                      </button>
+                        );
+                      })}
                     </div>
-                  </div>
-                )}
-              </section>
+                  )}
+
+                  {filteredFiles.length > 0 && (
+                    <div className="ff-pager">
+                      <span className="ff-pager-info">
+                        {(pageSafe - 1) * PAGE_SIZE + 1}–{Math.min(pageSafe * PAGE_SIZE, filteredFiles.length)} of {filteredFiles.length} files
+                      </span>
+                      <div className="ff-pager-controls">
+                        <button type="button" disabled={pageSafe === 1} onClick={() => setPage((p) => Math.max(1, p - 1))} aria-label="Previous page">
+                          <Icon name="chevronLeft" size={14} />
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                          .slice(0, 5)
+                          .map((n) => (
+                            <button key={n} type="button" className={pageSafe === n ? 'active' : ''} onClick={() => setPage(n)}>
+                              {n}
+                            </button>
+                          ))}
+                        {totalPages > 5 && <span className="ff-pager-dots">…</span>}
+                        <button type="button" disabled={pageSafe === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} aria-label="Next page">
+                          <Icon name="chevronRight" size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </section>
+              </div>
             </div>
           </main>
         </div>

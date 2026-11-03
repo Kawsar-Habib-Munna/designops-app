@@ -516,3 +516,8 @@
 .client-payments-root .receipt-page-img { border-radius: 0; }
 /* no border around a receipt page */
 .client-payments-root .receipt-page-img { border: none; }
+
+/* action banners ("Payment due" and the others): no amber, a plain white card with neutral text */
+.client-payments-root .dx-action:not(.ok) { background: var(--surface); border-color: var(--border); border-radius: 10px; box-shadow: var(--shadow-lg); }
+.client-payments-root .dx-action:not(.ok) .dx-action-icon { background: var(--bg); color: var(--ink-soft); }
+.client-payments-root .dx-action:not(.ok) .dx-action-label { color: var(--ink-faint); }

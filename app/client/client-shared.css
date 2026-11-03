@@ -723,3 +723,69 @@ body .client-portal.client-portal select {
 /* the client's Google profile photo fills the round avatar (initials are the fallback) */
 body .client-portal .client-avatar-img { width: 100%; height: 100%; display: block; object-fit: cover; border-radius: 50%; }
 body .client-portal .topbar-avatar, body .client-portal .avatar { overflow: hidden; }
+
+/* Manrope for the client dashboard pages (the sign-in, register and onboarding pages keep their own fonts) */
+.client-portal.client-dashboard-root,
+.client-portal.client-projectdash-root,
+.client-portal.files-root,
+.client-portal.client-payments-root,
+.client-portal.client-sow-root,
+.client-portal.client-sign-root,
+.client-portal.client-confirm-root,
+.client-portal.msg-root { font-family: var(--font-manrope), 'Manrope', 'Nunito Sans', sans-serif; }
+
+/* a slightly taller top bar: the content's top bar and the logo strip above the sidebar share one height, so the line stays continuous */
+body .client-portal .page-topbar { height: 64px; }
+body .client-portal .cp-brand-sidebar { height: 64px; }
+
+/* ==== navigation: the same selected style on every client page (soft fill + a purple bar on the left edge) ==== */
+body .client-portal .nav-item { position: relative; border-radius: 6px; }
+body .client-portal .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+body .client-portal .nav-item.active svg { color: var(--accent); }
+body .client-portal .nav-item.active::before { content: ''; position: absolute; left: -14px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+body .client-portal a.nav-item:hover:not(.active) { background: var(--bg); color: var(--ink); }
+
+/* navigation icons: a little larger, thin crisp outline over a soft tinted fill */
+body .client-portal .nav-item svg { width: 20px; height: 20px; stroke-width: 1.6; }
+
+/* ==== client dashboard colour palette: #430ABF, #3B0AA6, #161C8C, #0D51D9, #F2F2F2 (light mode) ====
+   #430ABF is the main colour (buttons, links, selected items), #3B0AA6 its hover, #0D51D9 the blue accent, text is black,
+   #F2F2F2 the page background. Borders and fills are very light tints of the same violet / navy.
+   Green / red / amber stay only where they mean success, error or warning. */
+@media not (prefers-color-scheme: dark) {
+  .client-portal.client-dashboard-root,
+  .client-portal.client-projectdash-root,
+  .client-portal.files-root,
+  .client-portal.client-payments-root,
+  .client-portal.client-sow-root,
+  .client-portal.client-sign-root,
+  .client-portal.client-confirm-root,
+  .client-portal.msg-root {
+    --accent: #430ABF;
+    --accent-hover: #3B0AA6;
+    --accent-soft: #ece8fb;
+    --ink: #000000;
+    --ink-soft: #4d4d4d;
+    --ink-faint: #8a8a8a;
+    --border: #e1e1ec;
+    --border-soft: #ebebf3;
+    --bg: #F2F2F2;
+    --surface-muted: #f7f7fb;
+  }
+  .client-portal.client-dashboard-root :is(h1, h2),
+  .client-portal.client-projectdash-root :is(h1, h2) { color: #000000; }
+  /* the summary cards walk through the palette */
+  .client-portal[class*="-root"] .dx-tone-accent, .client-portal[class*="-root"] .dx-tone-blue, .client-portal[class*="-root"] .dx-tone-green, .client-portal[class*="-root"] .dx-tone-amber { background: #ece8fb; color: #430ABF; }
+  .client-portal[class*="-root"] .dx-kpis .dx-kpi:nth-child(1)::before { color: #430ABF; }
+  .client-portal[class*="-root"] .dx-kpis .dx-kpi:nth-child(2)::before { color: #0D51D9; }
+  .client-portal[class*="-root"] .dx-kpis .dx-kpi:nth-child(3)::before { color: #161C8C; }
+  .client-portal[class*="-root"] .dx-kpis .dx-kpi:nth-child(4)::before { color: #3B0AA6; }
+  .client-portal[class*="-root"] .dx-kpis .dx-kpi:nth-child(1) .dx-kpi-icon { background: #ece8fb; color: #430ABF; }
+  .client-portal[class*="-root"] .dx-kpis .dx-kpi:nth-child(2) .dx-kpi-icon { background: #e4edfc; color: #0D51D9; }
+  .client-portal[class*="-root"] .dx-kpis .dx-kpi:nth-child(3) .dx-kpi-icon { background: #e6e7f4; color: #161C8C; }
+  .client-portal[class*="-root"] .dx-kpis .dx-kpi:nth-child(4) .dx-kpi-icon { background: #e9e4f6; color: #3B0AA6; }
+  .client-portal[class*="-root"] .dx-action:not(.ok) .dx-action-icon { color: #430ABF; }
+  .client-portal[class*="-root"] .dx-action:not(.ok) .dx-action-label { color: #3B0AA6; }
+  .client-portal[class*="-root"] .nav-state.awaiting { color: #0D51D9; }
+  .client-portal[class*="-root"] .dx-title-ico { background: #ece8fb; color: #430ABF; }
+}

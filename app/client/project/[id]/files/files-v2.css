@@ -721,3 +721,46 @@
 .files-root .ff-sort { flex: 0 0 auto; }
 .files-root .ff-sort .cs-trigger { min-width: 170px; }
 @media (max-width: 860px) { .files-root .ff-sort { flex: 1; min-width: 0; } .files-root .ff-sort .cs-trigger { min-width: 0; } }
+
+/* Folders, Links and All files share one row */
+.files-root .ff-row3 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.5fr); gap: 14px; align-items: start; }
+.files-root .ff-row3 > .dx-card { min-width: 0; }
+.files-root .ff-row3 .ff-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+@media (max-width: 1200px) { .files-root .ff-row3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .files-root .ff-row3 > .ff-allfiles { grid-column: 1 / -1; } }
+@media (max-width: 760px) { .files-root .ff-row3 { grid-template-columns: minmax(0, 1fr); } }
+
+/* the three cards in the row are the same height */
+.files-root .ff-row3 { align-items: stretch; }
+
+/* ==== smaller corner radius on every card of the files page ==== */
+.files-root .dx-hero,
+.files-root .dx-kpi,
+.files-root .dx-card,
+.files-root .dx-action,
+.files-root .dx-clear { border-radius: 10px; }
+.files-root .dx-doc-status,
+.files-root .dx-next-pay,
+.files-root .dx-table-wrap,
+.files-root .dx-details,
+.files-root .ff-folder,
+.files-root .ff-list,
+.files-root .ff-card,
+.files-root .ff-empty { border-radius: 8px; }
+.files-root .ff-select,
+.files-root .ff-toggle,
+.files-root .ff-field input,
+.files-root .ff-field select,
+.files-root .ff-newfolder input,
+.files-root .ff-move-item { border-radius: 8px; }
+.files-root .ff-modal { border-radius: 12px; }
+@media (max-width: 860px) {
+  .files-root .dx-hero,
+  .files-root .dx-kpi,
+  .files-root .dx-card,
+  .files-root .dx-details { border-radius: 10px; }
+}
+
+/* action banners ("Payment due" and the others): no amber, a plain white card with neutral text */
+.files-root .dx-action:not(.ok) { background: var(--surface); border-color: var(--border); border-radius: 10px; box-shadow: var(--shadow-lg); }
+.files-root .dx-action:not(.ok) .dx-action-icon { background: var(--bg); color: var(--ink-soft); }
+.files-root .dx-action:not(.ok) .dx-action-label { color: var(--ink-faint); }

@@ -11,29 +11,24 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClient, hasSubmittedRequirements } from '@/lib/clientPortal';
-import PhoneInput from '@/app/components/PhoneInput';
 import '../client-shared.css';
 import './register.css';
 
 const WHATSAPP_SUPPORT_URL = 'https://wa.me/8801804409235?text=Hi%20FLOW53,%20I%27m%20having%20trouble%20creating%20my%20client%20account.';
 
-const FEATURES = [
-  {
-    title: 'Track project progress',
-    desc: 'See exactly where your project stands, always.',
-    icon: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
-  },
-  {
-    title: 'Sign SOWs & review files',
-    desc: 'Approvals and deliverables, all in your portal.',
-    icon: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>',
-  },
-  {
-    title: 'Pay & track invoices',
-    desc: 'Clear payment history and downloadable receipts.',
-    icon: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
-  },
-];
+const FIELD_ICONS: Record<string, string> = {
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  building: '<path d="M6 22V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v18"/><path d="M16 9h2a1 1 0 0 1 1 1v12"/><path d="M10 7h2M10 11h2M10 15h2"/><path d="M4 22h16"/>',
+  mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+  lock: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+};
+function FieldIcon({ name }: { name: keyof typeof FIELD_ICONS }) {
+  return (
+    <span className="field-icon" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: FIELD_ICONS[name] }} />
+    </span>
+  );
+}
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -72,11 +67,8 @@ export default function ClientRegister() {
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [agreed, setAgreed] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
@@ -129,10 +121,6 @@ export default function ClientRegister() {
       setError('Password must be at least 8 characters.');
       return;
     }
-    if (password !== confirmPassword) {
-      setError("Passwords don't match.");
-      return;
-    }
     if (!agreed) {
       setError('You must agree to the Terms & Conditions to continue.');
       return;
@@ -143,7 +131,7 @@ export default function ClientRegister() {
     const res = await fetch('/api/client/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fullName: fullName.trim(), companyName: companyName.trim(), email: email.trim(), phone: phone.trim(), password }),
+      body: JSON.stringify({ fullName: fullName.trim(), companyName: companyName.trim(), email: email.trim(), password }),
     });
     const data = await res.json();
 
@@ -190,19 +178,8 @@ export default function ClientRegister() {
             </h2>
             <p className="brand-panel-sub">Create your client account to track progress, review deliverables, and manage payments — all in one secure portal.</p>
 
-            <div className="panel-feature-list">
-              {FEATURES.map((f) => (
-                <div className="panel-feature" key={f.title}>
-                  <div className="panel-feature-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: f.icon }} />
-                  </div>
-                  <div>
-                    <div className="panel-feature-title">{f.title}</div>
-                    <div className="panel-feature-desc">{f.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/client-portal/register.webp" alt="Track project progress, sign SOWs and review files, pay and track invoices with Flow 53" width={1448} height={1086} className="panel-shot" />
           </div>
 
           <div className="brand-panel-bottom">
@@ -227,8 +204,7 @@ export default function ClientRegister() {
           <main className="main">
             <div className="auth-card">
               <div className="auth-head">
-                <h1 className="headline">Create Your Client Account</h1>
-                <p className="subtext">Create your account in minutes to get your project started.</p>
+                <h1 className="headline">Create your account</h1>
               </div>
 
               <button type="button" className="cp-btn cp-btn-secondary cp-btn-block" onClick={handleGoogleSignIn} disabled={googleSubmitting}>
@@ -246,7 +222,7 @@ export default function ClientRegister() {
               </button>
 
               <div className="auth-divider">
-                <span>or</span>
+                <span>or sign up with email</span>
               </div>
 
               <form onSubmit={handleSubmit} noValidate>
@@ -266,13 +242,19 @@ export default function ClientRegister() {
                     <label className="cp-label" htmlFor="reg-fullname">
                       Full Name
                     </label>
-                    <input id="reg-fullname" type="text" className="cp-input" required autoFocus value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Jane Doe" autoComplete="name" />
+                    <div className="field-input-wrap has-icon">
+                      <FieldIcon name="user" />
+                      <input id="reg-fullname" type="text" className="cp-input" required autoFocus value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Jane Doe" autoComplete="name" />
+                    </div>
                   </div>
                   <div className="cp-field">
                     <label className="cp-label" htmlFor="reg-company">
                       Company Name
                     </label>
-                    <input id="reg-company" type="text" className="cp-input" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Acme Inc." autoComplete="organization" />
+                    <div className="field-input-wrap has-icon">
+                      <FieldIcon name="building" />
+                      <input id="reg-company" type="text" className="cp-input" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Acme Inc." autoComplete="organization" />
+                    </div>
                   </div>
                 </div>
 
@@ -281,22 +263,17 @@ export default function ClientRegister() {
                     <label className="cp-label" htmlFor="reg-email">
                       Email
                     </label>
-                    <input id="reg-email" type="email" className="cp-input" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" autoComplete="email" />
+                    <div className="field-input-wrap has-icon">
+                      <FieldIcon name="mail" />
+                      <input id="reg-email" type="email" className="cp-input" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" autoComplete="email" />
+                    </div>
                   </div>
-                  <div className="cp-field">
-                    <label className="cp-label" htmlFor="reg-phone">
-                      Phone <span className="cp-label-optional">(optional)</span>
-                    </label>
-                    <PhoneInput id="reg-phone" inputClassName="cp-input" value={phone} onChange={setPhone} placeholder="1XXX XXXXXX" />
-                  </div>
-                </div>
-
-                <div className="cp-field-row">
                   <div className="cp-field">
                     <label className="cp-label" htmlFor="reg-password">
                       Password
                     </label>
-                    <div className="field-input-wrap">
+                    <div className="field-input-wrap has-icon">
+                      <FieldIcon name="lock" />
                       <input
                         id="reg-password"
                         type={showPassword ? 'text' : 'password'}
@@ -312,26 +289,6 @@ export default function ClientRegister() {
                       </button>
                     </div>
                   </div>
-                  <div className="cp-field">
-                    <label className="cp-label" htmlFor="reg-confirm">
-                      Confirm Password
-                    </label>
-                    <div className="field-input-wrap">
-                      <input
-                        id="reg-confirm"
-                        type={showConfirm ? 'text' : 'password'}
-                        className="cp-input pw"
-                        required
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Re-enter your password"
-                        autoComplete="new-password"
-                      />
-                      <button type="button" className="pw-toggle" onClick={() => setShowConfirm((s) => !s)} aria-label={showConfirm ? 'Hide password' : 'Show password'}>
-                        <EyeIcon open={showConfirm} />
-                      </button>
-                    </div>
-                  </div>
                 </div>
 
                 <label className="cp-checkbox-row">
@@ -343,7 +300,7 @@ export default function ClientRegister() {
 
                 <button type="submit" className="cp-btn cp-btn-primary cp-btn-block" disabled={submitting}>
                   {submitting && <span className="cp-spinner" />}
-                  {submitting ? 'Creating account…' : 'Create Client Account'}
+                  {submitting ? 'Creating account…' : 'Create Account'}
                 </button>
               </form>
 
@@ -354,13 +311,6 @@ export default function ClientRegister() {
                 </Link>
               </p>
 
-              <div className="trust-row">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="4" y="10" width="16" height="10" rx="2" />
-                  <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-                </svg>
-                Your information is securely protected.
-              </div>
             </div>
           </main>
 

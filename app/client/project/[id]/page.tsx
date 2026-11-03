@@ -47,12 +47,22 @@ import './project-dashboard.css';
 import './project-v2.css';
 
 const ICONS: Record<string, string> = {
-  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
-  folder: '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/>',
-  file: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>',
-  doc: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M9 13h6"/><path d="M9 17h6"/>',
-  card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
-  message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
+  ti_bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  ti_doc: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 13h4M10 17h4"/>',
+  ti_wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+  ti_file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>',
+  ti_usercard: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  ti_info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  ti_flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1Z"/><path d="M4 22v-7"/>',
+  ti_target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  ti_activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+  ti_chats: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  grid: '<rect x="3" y="3" width="8" height="10" rx="2" fill="currentColor" fill-opacity="0.13"/><rect x="13" y="3" width="8" height="6" rx="2" fill="currentColor" fill-opacity="0.13"/><rect x="13" y="11" width="8" height="10" rx="2" fill="currentColor" fill-opacity="0.13"/><rect x="3" y="15" width="8" height="6" rx="2" fill="currentColor" fill-opacity="0.13"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" fill="currentColor" fill-opacity="0.13"/><path d="M3 10.5h18"/>',
+  file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" fill="currentColor" fill-opacity="0.13"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
+  doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" fill="currentColor" fill-opacity="0.13"/><path d="M14 3v5h5"/><path d="m9.5 14.5 1.8 1.8 3.2-3.6"/>',
+  card: '<rect x="2.5" y="5" width="19" height="14" rx="2.5" fill="currentColor" fill-opacity="0.13"/><path d="M2.5 10h19"/><path d="M6.5 15h3.5"/>',
+  message: '<path d="M20 4H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h3.5v3.5L12 17h8a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1Z" fill="currentColor" fill-opacity="0.13"/><path d="M8 9.5h8M8 12.5h5"/>',
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
   alert: '<path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/>',
   refresh: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v6h-6"/>',
@@ -461,6 +471,7 @@ export default function ClientProjectDashboard() {
                 </div>
               </section>
 
+              <div className="dx-pair-status">
               {/* ---- status banner: completed / on hold / action needed / all good ---- */}
               {isCompleted ? (
                 <section className="dx-action ok">
@@ -532,29 +543,30 @@ export default function ClientProjectDashboard() {
                 </section>
               )}
 
-            {/* ---- latest update ---- */}
-            <section className="dx-card">
-              <div className="dx-card-head">
-                <h2 className="dx-card-title">Latest update</h2>
-                {updates.length > 0 && (
-                  <Link href={`/client/project/${project.id}/updates`} className="dx-link">View all</Link>
-                )}
-              </div>
-              {!latestUpdate ? (
-                <p className="dx-empty">Your project updates will appear here as work progresses.</p>
-              ) : (
-                <div className="dx-update">
-                  <div className="dx-update-title">{latestUpdate.title}</div>
-                  <div className="dx-row-sub">{formatDate(latestUpdate.created_at)} · Posted by {toOne(latestUpdate.author)?.full_name ?? 'FLOW 53 Team'}</div>
-                  {latestUpdate.description && <RichText text={latestUpdate.description} className="dx-update-body" />}
-                  {latestUpdate.attachment_url && (
-                    <a className="dx-update-file" href={latestUpdate.attachment_url} target="_blank" rel="noopener noreferrer">
-                      <Icon name="paperclip" size={13} /> View attachment
-                    </a>
+              {/* ---- latest update ---- */}
+              <section className="dx-card">
+                <div className="dx-card-head">
+                  <h2 className="dx-card-title"><span className="dx-title-ico"><Icon name="ti_bell" size={15} /></span>Latest update</h2>
+                  {updates.length > 0 && (
+                    <Link href={`/client/project/${project.id}/updates`} className="dx-link">View all</Link>
                   )}
                 </div>
-              )}
-            </section>
+                {!latestUpdate ? (
+                  <p className="dx-empty">Your project updates will appear here as work progresses.</p>
+                ) : (
+                  <div className="dx-update">
+                    <div className="dx-update-title">{latestUpdate.title}</div>
+                    <div className="dx-row-sub">{formatDate(latestUpdate.created_at)} · Posted by {toOne(latestUpdate.author)?.full_name ?? 'FLOW 53 Team'}</div>
+                    {latestUpdate.description && <RichText text={latestUpdate.description} className="dx-update-body" />}
+                    {latestUpdate.attachment_url && (
+                      <a className="dx-update-file" href={latestUpdate.attachment_url} target="_blank" rel="noopener noreferrer">
+                        <Icon name="paperclip" size={13} /> View attachment
+                      </a>
+                    )}
+                  </div>
+                )}
+              </section>
+              </div>
 
               {/* ---- key numbers ---- */}
               <section className="dx-kpis">
@@ -605,78 +617,142 @@ export default function ClientProjectDashboard() {
                 </Link>
               </section>
 
-              {/* ---- project details ---- */}
-              <section className="dx-card">
-                <div className="dx-card-head">
-                  <h2 className="dx-card-title">Project details</h2>
+              <div className="dx-pair-details">
+                {/* ---- project details ---- */}
+                <section className="dx-card">
+                  <div className="dx-card-head">
+                    <h2 className="dx-card-title"><span className="dx-title-ico"><Icon name="ti_info" size={15} /></span>Project details</h2>
+                  </div>
+                  <dl className="dx-details">
+                    <div><dt>Client</dt><dd>{client.company_name}</dd></div>
+                    <div><dt>Project type</dt><dd>{project.category ?? '—'}</dd></div>
+                    <div><dt>Start date</dt><dd>{formatDate(project.start_date) || '—'}</dd></div>
+                    <div><dt>Expected delivery</dt><dd>{formatDate(project.due_date) || '—'}</dd></div>
+                    <div><dt>Project manager</dt><dd>{manager?.full_name ?? '—'}</dd></div>
+                  </dl>
+                </section>
+
+                {/* ---- milestones ---- */}
+                <section className="dx-card">
+                  <div className="dx-card-head">
+                    <h2 className="dx-card-title"><span className="dx-title-ico"><Icon name="ti_flag" size={15} /></span>Project milestones</h2>
+                  </div>
+                  {milestones.length === 0 ? (
+                    <p className="dx-empty">Your project milestones will appear here once our team sets them up.</p>
+                  ) : (
+                    <ol className="dx-journey">
+                      {milestones.map((m) => {
+                        const isDone = !!m.completed_at;
+                        const isCurrent = !isDone && currentMilestone?.id === m.id;
+                        return (
+                          <li className={`dx-step${isDone ? ' done' : ''}${isCurrent ? ' current' : ''}`} key={m.id}>
+                            <span className="dx-step-dot">{isDone ? <Icon name="check" size={11} /> : null}</span>
+                            <span className="dx-step-text">
+                              <span className="dx-step-label">{m.title}</span>
+                              <span className="dx-step-sub">{isDone ? `Done ${formatDate(m.completed_at)}` : isCurrent ? 'In progress' : m.due_date ? `Due ${formatDate(m.due_date)}` : 'Upcoming'}</span>
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  )}
+                </section>
+              </div>
+
+              <div className="dx-trio">
+              {/* ---- current phase ---- */}
+              {!isCompleted && (
+                <section className="dx-card">
+                  <div className="dx-card-head">
+                    <h2 className="dx-card-title"><span className="dx-title-ico"><Icon name="ti_target" size={15} /></span>Current phase</h2>
+                  </div>
+                  {currentMilestone ? (
+                    <div className="dx-phase">
+                      <div className="dx-phase-ring">
+                        <Ring pct={currentMilestone.progress ?? 0} size={84} stroke={9} color="var(--accent)" />
+                        <div className="dx-ring-center dx-ring-small">
+                          <strong>{currentMilestone.progress ?? 0}%</strong>
+                        </div>
+                      </div>
+                      <div className="dx-phase-body">
+                        <div className="dx-phase-name">{currentMilestone.title}</div>
+                        {currentMilestone.description && <p className="dx-phase-desc">{currentMilestone.description}</p>}
+                        {currentMilestone.due_date && <div className="dx-row-sub">Expected {formatDate(currentMilestone.due_date)}</div>}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="dx-empty">{milestones.length === 0 ? 'Your project phases will appear here once our team sets them up.' : 'All phases are complete — finishing up final details.'}</p>
+                  )}
+                </section>
+              )}
+
+              {/* ---- statement of work ---- */}
+              <section className="dx-card dx-sow">
+                <div className="dx-sow-banner">
+                  <div className="dx-sow-banner-text">
+                    <h2 className="dx-card-title">Statement of Work</h2>
+                  </div>
+                  <span className={`dx-sow-state ${sowDone ? 'ok' : sow ? 'wait' : 'idle'}`}>
+                    <span className="dx-sow-state-dot" />
+                    {sowDone ? 'Signed' : sow ? 'Needs signature' : 'In preparation'}
+                  </span>
                 </div>
-                <dl className="dx-details">
-                  <div><dt>Client</dt><dd>{client.company_name}</dd></div>
-                  <div><dt>Project type</dt><dd>{project.category ?? '—'}</dd></div>
-                  <div><dt>Start date</dt><dd>{formatDate(project.start_date) || '—'}</dd></div>
-                  <div><dt>Expected delivery</dt><dd>{formatDate(project.due_date) || '—'}</dd></div>
-                  <div><dt>Project manager</dt><dd>{manager?.full_name ?? '—'}</dd></div>
-                </dl>
+                <div className="dx-sow-about">
+                  <p className="dx-sow-intro">The agreement that sets out what we will deliver, when, and for how much.</p>
+                  <dl className="dx-sow-facts">
+                    <div>
+                      <dt>Version</dt>
+                      <dd>{sow ? `v${sow.version}.0` : '—'}</dd>
+                    </div>
+                    <div>
+                      <dt>{sowDone ? 'Signed on' : 'Sent on'}</dt>
+                      <dd>{sowDone ? (formatDate(sow?.signed_at ?? null) || '—') : (formatDate(sow?.sent_at ?? null) || '—')}</dd>
+                    </div>
+                  </dl>
+                </div>
+                <Link href={`/client/project/${project.id}/sow`} className={`btn btn-sm ${sow && !sowDone ? 'btn-accent' : 'btn-ghost'}`}>
+                  {sow && !sowDone ? 'Review & sign' : 'View SOW'}
+                </Link>
               </section>
 
-              {/* ---- milestones ---- */}
-              <section className="dx-card">
-                <div className="dx-card-head">
-                  <h2 className="dx-card-title">Project milestones</h2>
+              {/* ---- payments ---- */}
+              <section className="dx-card dx-doc">
+                <div className="dx-doc-head">
+                  <span className="dx-kpi-icon dx-tone-green"><Icon name="wallet" size={20} /></span>
+                  <div>
+                    <h2 className="dx-card-title">Payments</h2>
+                    <div className="dx-ap-sub">{project.budget ? `Project value ${formatMoney(project.budget, currency)}` : 'Details coming soon'}</div>
+                  </div>
                 </div>
-                {milestones.length === 0 ? (
-                  <p className="dx-empty">Your project milestones will appear here once our team sets them up.</p>
+                {project.budget ? (
+                  <div className="dx-pay2">
+                    <div className="dx-pay-ring">
+                      <Ring pct={paymentPct} size={96} stroke={10} color="var(--positive)" />
+                      <div className="dx-ring-center dx-ring-small">
+                        <strong>{paymentPct}%</strong>
+                        <span>paid</span>
+                      </div>
+                    </div>
+                    <div className="dx-pay-legend">
+                      <div><span className="dx-swatch dx-swatch-green" />Paid<strong>{formatMoney(totalPaid, currency)}</strong></div>
+                      <div><span className="dx-swatch dx-swatch-grey" />Remaining<strong>{formatMoney(Math.max(0, project.budget - totalPaid), currency)}</strong></div>
+                    </div>
+                  </div>
                 ) : (
-                  <ol className="dx-journey">
-                    {milestones.map((m) => {
-                      const isDone = !!m.completed_at;
-                      const isCurrent = !isDone && currentMilestone?.id === m.id;
-                      return (
-                        <li className={`dx-step${isDone ? ' done' : ''}${isCurrent ? ' current' : ''}`} key={m.id}>
-                          <span className="dx-step-dot">{isDone ? <Icon name="check" size={11} /> : null}</span>
-                          <span className="dx-step-text">
-                            <span className="dx-step-label">{m.title}</span>
-                            <span className="dx-step-sub">{isDone ? `Done ${formatDate(m.completed_at)}` : isCurrent ? 'In progress' : m.due_date ? `Due ${formatDate(m.due_date)}` : 'Upcoming'}</span>
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ol>
+                  <p className="dx-empty">Payment information will appear here once available.</p>
                 )}
+                <Link href={`/client/project/${project.id}/payments`} className={`btn btn-sm ${hasPendingPayment ? 'btn-accent' : 'btn-ghost'}`}>
+                  {hasPendingPayment ? 'View & pay' : 'View payments'}
+                </Link>
               </section>
+              </div>
 
               <div className="dx-cols">
                 <div className="dx-col">
-                  {/* ---- current phase ---- */}
-                  {!isCompleted && (
-                    <section className="dx-card">
-                      <div className="dx-card-head">
-                        <h2 className="dx-card-title">Current phase</h2>
-                      </div>
-                      {currentMilestone ? (
-                        <div className="dx-phase">
-                          <div className="dx-phase-ring">
-                            <Ring pct={currentMilestone.progress ?? 0} size={84} stroke={9} color="var(--accent)" />
-                            <div className="dx-ring-center dx-ring-small">
-                              <strong>{currentMilestone.progress ?? 0}%</strong>
-                            </div>
-                          </div>
-                          <div className="dx-phase-body">
-                            <div className="dx-phase-name">{currentMilestone.title}</div>
-                            {currentMilestone.description && <p className="dx-phase-desc">{currentMilestone.description}</p>}
-                            {currentMilestone.due_date && <div className="dx-row-sub">Expected {formatDate(currentMilestone.due_date)}</div>}
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="dx-empty">{milestones.length === 0 ? 'Your project phases will appear here once our team sets them up.' : 'All phases are complete — finishing up final details.'}</p>
-                      )}
-                    </section>
-                  )}
-
                   {/* ---- recent activity ---- */}
                   <section className="dx-card">
                     <div className="dx-card-head">
-                      <h2 className="dx-card-title">Recent activity</h2>
+                      <h2 className="dx-card-title"><span className="dx-title-ico"><Icon name="ti_activity" size={15} /></span>Recent activity</h2>
                     </div>
                     {recentActivity.length === 0 ? (
                       <p className="dx-empty">No activity yet.</p>
@@ -697,71 +773,11 @@ export default function ClientProjectDashboard() {
                 </div>
 
                 <div className="dx-col">
-                  {/* ---- statement of work ---- */}
-                  <section className="dx-card dx-sow">
-                    <div className="dx-sow-banner">
-                      <div className="dx-sow-banner-text">
-                        <h2 className="dx-card-title">Statement of Work</h2>
-                      </div>
-                      <span className={`dx-sow-state ${sowDone ? 'ok' : sow ? 'wait' : 'idle'}`}>
-                        <span className="dx-sow-state-dot" />
-                        {sowDone ? 'Signed' : sow ? 'Needs signature' : 'In preparation'}
-                      </span>
-                    </div>
-                    <div className="dx-sow-about">
-                      <p className="dx-sow-intro">The agreement that sets out what we will deliver, when, and for how much.</p>
-                      <dl className="dx-sow-facts">
-                        <div>
-                          <dt>Version</dt>
-                          <dd>{sow ? `v${sow.version}.0` : '—'}</dd>
-                        </div>
-                        <div>
-                          <dt>{sowDone ? 'Signed on' : 'Sent on'}</dt>
-                          <dd>{sowDone ? (formatDate(sow?.signed_at ?? null) || '—') : (formatDate(sow?.sent_at ?? null) || '—')}</dd>
-                        </div>
-                      </dl>
-                    </div>
-                    <Link href={`/client/project/${project.id}/sow`} className={`btn btn-sm ${sow && !sowDone ? 'btn-accent' : 'btn-ghost'}`}>
-                      {sow && !sowDone ? 'Review & sign' : 'View SOW'}
-                    </Link>
-                  </section>
-
-                  {/* ---- payments ---- */}
-                  <section className="dx-card dx-doc">
-                    <div className="dx-doc-head">
-                      <span className="dx-kpi-icon dx-tone-green"><Icon name="wallet" size={20} /></span>
-                      <div>
-                        <h2 className="dx-card-title">Payments</h2>
-                        <div className="dx-ap-sub">{project.budget ? `Project value ${formatMoney(project.budget, currency)}` : 'Details coming soon'}</div>
-                      </div>
-                    </div>
-                    {project.budget ? (
-                      <div className="dx-pay2">
-                        <div className="dx-pay-ring">
-                          <Ring pct={paymentPct} size={96} stroke={10} color="var(--positive)" />
-                          <div className="dx-ring-center dx-ring-small">
-                            <strong>{paymentPct}%</strong>
-                            <span>paid</span>
-                          </div>
-                        </div>
-                        <div className="dx-pay-legend">
-                          <div><span className="dx-swatch dx-swatch-green" />Paid<strong>{formatMoney(totalPaid, currency)}</strong></div>
-                          <div><span className="dx-swatch dx-swatch-grey" />Remaining<strong>{formatMoney(Math.max(0, project.budget - totalPaid), currency)}</strong></div>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="dx-empty">Payment information will appear here once available.</p>
-                    )}
-                    <Link href={`/client/project/${project.id}/payments`} className={`btn btn-sm ${hasPendingPayment ? 'btn-accent' : 'btn-ghost'}`}>
-                      {hasPendingPayment ? 'View & pay' : 'View payments'}
-                    </Link>
-                  </section>
-
                   {/* ---- messages ---- */}
                   <section className="dx-card">
                     <div className="dx-card-head">
                       <h2 className="dx-card-title">
-                        Messages {unreadFromTeam > 0 && <span className="dx-chip">{unreadFromTeam} new</span>}
+                        <span className="dx-title-ico"><Icon name="ti_chats" size={15} /></span>Messages {unreadFromTeam > 0 && <span className="dx-chip">{unreadFromTeam} new</span>}
                       </h2>
                       <Link href={`/client/project/${project.id}/messages`} className="dx-link">Open</Link>
                     </div>
@@ -790,7 +806,7 @@ export default function ClientProjectDashboard() {
                   {/* ---- files ---- */}
                   <section className="dx-card">
                     <div className="dx-card-head">
-                      <h2 className="dx-card-title">{isCompleted ? 'Final files' : 'Recent files'}</h2>
+                      <h2 className="dx-card-title"><span className="dx-title-ico"><Icon name="ti_file" size={15} /></span>{isCompleted ? 'Final files' : 'Recent files'}</h2>
                       {files.length > 0 && (
                         <Link href={`/client/project/${project.id}/files`} className="dx-link">View all</Link>
                       )}
@@ -818,7 +834,7 @@ export default function ClientProjectDashboard() {
                   {/* ---- manager ---- */}
                   <section className="dx-card">
                     <div className="dx-card-head">
-                      <h2 className="dx-card-title">Your project manager</h2>
+                      <h2 className="dx-card-title"><span className="dx-title-ico"><Icon name="ti_usercard" size={15} /></span>Your project manager</h2>
                     </div>
                     {manager ? (
                       <div className="dx-manager">

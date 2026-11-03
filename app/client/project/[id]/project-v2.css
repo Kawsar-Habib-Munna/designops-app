@@ -338,3 +338,61 @@
 .client-projectdash-root .dx-timeline .dx-row:last-child{padding-bottom:0;}
 .client-projectdash-root .dx-timeline .dx-row:not(:last-child)::before{content:'';position:absolute;left:17px;top:38px;bottom:2px;border-left:2px dotted color-mix(in srgb,var(--accent) 45%,var(--border));}
 .client-projectdash-root .dx-timeline .dx-row-icon{border-radius:50%;position:relative;z-index:1;}
+
+/* the status banner ("You're all caught up", an action, on hold, completed) and Latest update share one row */
+.client-projectdash-root .dx-pair-status { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+.client-projectdash-root .dx-pair-status > section { min-width: 0; }
+.client-projectdash-root .dx-pair-status .dx-action,
+.client-projectdash-root .dx-pair-status .dx-clear { flex-wrap: wrap; align-items: flex-start; }
+.client-projectdash-root .dx-pair-status .dx-clear-body { flex: 1 1 180px; }
+.client-projectdash-root .dx-pair-status .dx-action-body { flex: 1 1 180px; }
+@media (max-width: 1000px) { .client-projectdash-root .dx-pair-status { grid-template-columns: minmax(0, 1fr); } }
+
+/* Project details and Project milestones share one row */
+.client-projectdash-root .dx-pair-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+.client-projectdash-root .dx-pair-details > section { min-width: 0; }
+@media (max-width: 1000px) { .client-projectdash-root .dx-pair-details { grid-template-columns: minmax(0, 1fr); } }
+
+/* Current phase, Statement of Work and Payments share one row */
+.client-projectdash-root .dx-trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+.client-projectdash-root .dx-trio > section { min-width: 0; }
+@media (max-width: 1100px) { .client-projectdash-root .dx-trio { grid-template-columns: minmax(0, 1fr); } }
+
+/* Recent activity, Messages, Recent files and Your project manager share one row (2 across on tablets, 1 on phones) */
+.client-projectdash-root .dx-cols { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+.client-projectdash-root .dx-cols > .dx-col { display: contents; }
+.client-projectdash-root .dx-cols .dx-card { min-width: 0; }
+@media (max-width: 1200px) { .client-projectdash-root .dx-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .client-projectdash-root .dx-cols { grid-template-columns: minmax(0, 1fr); } }
+
+/* ==== smaller corner radius on every card of the project page ==== */
+.client-projectdash-root .dx-hero,
+.client-projectdash-root .dx-kpi,
+.client-projectdash-root .dx-card,
+.client-projectdash-root .dx-action,
+.client-projectdash-root .dx-clear { border-radius: 10px; }
+.client-projectdash-root .dx-doc-status,
+.client-projectdash-root .dx-next-pay,
+.client-projectdash-root .dx-table-wrap { border-radius: 8px; }
+.client-projectdash-root .dx-action-icon,
+.client-projectdash-root .dx-kpi-icon { border-radius: 10px; }
+.client-projectdash-root .dx-kpis .dx-kpi-icon { border-radius: 50%; }
+@media (max-width: 860px) {
+  .client-projectdash-root .dx-hero,
+  .client-projectdash-root .dx-kpi,
+  .client-projectdash-root .dx-card,
+  .client-projectdash-root .dx-clear { border-radius: 10px; }
+}
+
+/* modern, clean icons on the card titles */
+.client-dashboard-root .dx-card-title,
+.client-projectdash-root .dx-card-title { display: inline-flex; align-items: center; gap: 10px; }
+.client-dashboard-root .dx-title-ico,
+.client-projectdash-root .dx-title-ico { width: 30px; height: 30px; flex: none; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--accent-soft); color: var(--accent); }
+.client-dashboard-root .dx-title-ico svg,
+.client-projectdash-root .dx-title-ico svg { width: 16px; height: 16px; stroke-width: 1.6; }
+
+/* "Payment Required" and the other action banners: no amber, a plain white card with neutral text */
+.client-projectdash-root .dx-action:not(.ok) { background: var(--surface); border-color: var(--border); box-shadow: var(--shadow-lg); }
+.client-projectdash-root .dx-action:not(.ok) .dx-action-icon { background: var(--bg); color: var(--ink-soft); }
+.client-projectdash-root .dx-action:not(.ok) .dx-action-label { color: var(--ink-faint); }

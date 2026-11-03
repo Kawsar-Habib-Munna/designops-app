@@ -37,12 +37,20 @@ import './dashboard-v2.css';
 const WHATSAPP_URL = 'https://wa.me/8801804409235?text=Hi%20FLOW53,%20I%27m%20a%20client%20and%20I%27d%20like%20to%20get%20in%20touch%20about%20my%20project.';
 
 const ICONS: Record<string, string> = {
-  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
-  folder: '<path d="M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/>',
-  file: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>',
-  doc: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M9 13h6"/><path d="M9 17h6"/>',
-  card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
-  message: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.9-.9L3 21l1.9-5.6A8.4 8.4 0 0 1 3.5 11.5 8.5 8.5 0 1 1 21 11.5z"/>',
+  ti_bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  ti_calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  ti_route: '<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>',
+  ti_doc: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 13h4M10 17h4"/>',
+  ti_wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+  ti_file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>',
+  ti_usercard: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  ti_chats: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  grid: '<rect x="3" y="3" width="8" height="10" rx="2" fill="currentColor" fill-opacity="0.13"/><rect x="13" y="3" width="8" height="6" rx="2" fill="currentColor" fill-opacity="0.13"/><rect x="13" y="11" width="8" height="10" rx="2" fill="currentColor" fill-opacity="0.13"/><rect x="3" y="15" width="8" height="6" rx="2" fill="currentColor" fill-opacity="0.13"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" fill="currentColor" fill-opacity="0.13"/><path d="M3 10.5h18"/>',
+  file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" fill="currentColor" fill-opacity="0.13"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
+  doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" fill="currentColor" fill-opacity="0.13"/><path d="M14 3v5h5"/><path d="m9.5 14.5 1.8 1.8 3.2-3.6"/>',
+  card: '<rect x="2.5" y="5" width="19" height="14" rx="2.5" fill="currentColor" fill-opacity="0.13"/><path d="M2.5 10h19"/><path d="M6.5 15h3.5"/>',
+  message: '<path d="M20 4H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h3.5v3.5L12 17h8a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1Z" fill="currentColor" fill-opacity="0.13"/><path d="M8 9.5h8M8 12.5h5"/>',
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
   alert: '<path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/>',
   refresh: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v6h-6"/>',
@@ -59,6 +67,8 @@ const ICONS: Record<string, string> = {
   calendarcheck: '<path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>',
   wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
   chats: '<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  lock: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.8c0 1.7-2.4 2-2.4 3.7"/><path d="M12 17h.01"/>',
 };
 function Icon({ name, size = 14 }: { name: string; size?: number }) {
@@ -559,7 +569,7 @@ export default function ClientDashboard() {
                 {/* ---- updates ---- */}
                 <section className="dx-card">
                   <div className="dx-card-head">
-                    <h2 className="dx-card-title">Recent updates</h2>
+                    <h2 className="dx-card-title"><span className="dx-title-ico"><Icon name="ti_bell" size={15} /></span>Recent updates</h2>
                     {updates.length > 0 && (
                       <Link href={`/client/project/${project.id}/updates`} className="dx-link">View all</Link>
                     )}
@@ -660,10 +670,38 @@ export default function ClientDashboard() {
                   </Link>
                 </section>
 
+                <div className="dx-pair">
+                {/* ---- journey ---- */}
+                <section className="dx-card">
+                  <div className="dx-card-head">
+                    <h2 className="dx-card-title"><span className="dx-title-ico"><Icon name="ti_route" size={15} /></span>Project journey</h2>
+                    <Link href={`/client/project/${project.id}`} className="dx-link">Details</Link>
+                  </div>
+                  {milestones.length === 0 ? (
+                    <p className="dx-empty">Your project phases will appear here once our team sets them up.</p>
+                  ) : (
+                    <ol className="dx-journey">
+                      {milestones.map((m) => {
+                        const isDone = !!m.completed_at;
+                        const isCurrent = !isDone && currentMilestone?.id === m.id;
+                        return (
+                          <li className={`dx-step${isDone ? ' done' : ''}${isCurrent ? ' current' : ''}`} key={m.id}>
+                            <span className="dx-step-dot">{isDone ? <Icon name="check" size={11} /> : null}</span>
+                            <span className="dx-step-text">
+                              <span className="dx-step-label">{m.title}</span>
+                              <span className="dx-step-sub">{isDone ? `Done ${formatDate(m.completed_at)}` : isCurrent ? 'In progress' : m.due_date ? `Due ${formatDate(m.due_date)}` : 'Upcoming'}</span>
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  )}
+                </section>
+
                 {/* ---- upcoming ---- */}
                 <section className="dx-card">
                   <div className="dx-card-head">
-                    <h2 className="dx-card-title">Coming up</h2>
+                    <h2 className="dx-card-title"><span className="dx-title-ico"><Icon name="ti_calendar" size={15} /></span>Coming up</h2>
                   </div>
                   {upcomingTop.length === 0 ? (
                     <p className="dx-empty">Nothing scheduled right now.</p>
@@ -705,36 +743,10 @@ export default function ClientDashboard() {
                     </div>
                   )}
                 </section>
+                </div>
 
                 <div className="dx-cols">
                   <div className="dx-col">
-                    {/* ---- journey ---- */}
-                    <section className="dx-card">
-                      <div className="dx-card-head">
-                        <h2 className="dx-card-title">Project journey</h2>
-                        <Link href={`/client/project/${project.id}`} className="dx-link">Details</Link>
-                      </div>
-                      {milestones.length === 0 ? (
-                        <p className="dx-empty">Your project phases will appear here once our team sets them up.</p>
-                      ) : (
-                        <ol className="dx-journey">
-                          {milestones.map((m) => {
-                            const isDone = !!m.completed_at;
-                            const isCurrent = !isDone && currentMilestone?.id === m.id;
-                            return (
-                              <li className={`dx-step${isDone ? ' done' : ''}${isCurrent ? ' current' : ''}`} key={m.id}>
-                                <span className="dx-step-dot">{isDone ? <Icon name="check" size={11} /> : null}</span>
-                                <span className="dx-step-text">
-                                  <span className="dx-step-label">{m.title}</span>
-                                  <span className="dx-step-sub">{isDone ? `Done ${formatDate(m.completed_at)}` : isCurrent ? 'In progress' : m.due_date ? `Due ${formatDate(m.due_date)}` : 'Upcoming'}</span>
-                                </span>
-                              </li>
-                            );
-                          })}
-                        </ol>
-                      )}
-                    </section>
-
                     {/* ---- agreement & payment ---- */}
                     {/* ---- agreement & payment: two focused cards ---- */}
                     <div className="dx-ap2">
@@ -835,7 +847,7 @@ export default function ClientDashboard() {
                     <section className="dx-card">
                       <div className="dx-card-head">
                         <h2 className="dx-card-title">
-                          Messages {unreadFromTeam > 0 && <span className="dx-chip">{unreadFromTeam} new</span>}
+                          <span className="dx-title-ico"><Icon name="ti_chats" size={15} /></span>Messages {unreadFromTeam > 0 && <span className="dx-chip">{unreadFromTeam} new</span>}
                         </h2>
                         <Link href={`/client/project/${project.id}/messages`} className="dx-link">Open</Link>
                       </div>
@@ -864,7 +876,7 @@ export default function ClientDashboard() {
                     {/* ---- files ---- */}
                     <section className="dx-card">
                       <div className="dx-card-head">
-                        <h2 className="dx-card-title">Recent files</h2>
+                        <h2 className="dx-card-title"><span className="dx-title-ico"><Icon name="ti_file" size={15} /></span>Recent files</h2>
                         {projectFiles.length > 0 && (
                           <Link href={`/client/project/${project.id}/files`} className="dx-link">View all</Link>
                         )}
@@ -892,7 +904,7 @@ export default function ClientDashboard() {
                     {/* ---- manager ---- */}
                     <section className="dx-card">
                       <div className="dx-card-head">
-                        <h2 className="dx-card-title">Your project manager</h2>
+                        <h2 className="dx-card-title"><span className="dx-title-ico"><Icon name="ti_usercard" size={15} /></span>Your project manager</h2>
                       </div>
                       {manager ? (
                         <div className="dx-manager">
@@ -1016,7 +1028,7 @@ export default function ClientDashboard() {
               </span>
               {NAV_ITEMS.map((item) => (
                 <span className="nav-item disabled" key={item.label} title="Available once your project is created">
-                  <Icon name={item.icon} /> {item.label} <span className="nav-tag">{item.tag}</span>
+                  <Icon name={item.icon} /> {item.label} <span className={`nav-state ${item.tag === 'Awaiting' ? 'awaiting' : 'locked'}`} title={item.tag} aria-label={item.tag}><Icon name={item.tag === 'Awaiting' ? 'clock' : 'lock'} size={14} /></span>
                 </span>
               ))}
             </nav>
@@ -1051,12 +1063,14 @@ export default function ClientDashboard() {
 </header>
 
           <main className="content">
-            <h1 className="welcome-title">Welcome, {client.primary_contact ?? client.company_name} 👋</h1>
-            <p className="welcome-sub">
-              {hasActionRequired
-                ? "We need a bit more information from you before we can move forward with your project."
-                : 'Thanks for sharing your project details. Our team is reviewing your information and will create your project shortly.'}
-            </p>
+            <section className="welcome-card">
+              <h1 className="welcome-title">Welcome, <span className="welcome-name">{client.primary_contact ?? client.company_name}</span></h1>
+              <p className="welcome-sub">
+                {hasActionRequired
+                  ? "We need a bit more information from you before we can move forward with your project."
+                  : 'Thanks for sharing your project details. Our team is reviewing your information and will create your project shortly.'}
+              </p>
+            </section>
 
             <section className="block">
               <div className="status-card">
@@ -1101,50 +1115,90 @@ export default function ClientDashboard() {
               </div>
             </section>
 
-            <section className="block">
-              <div className="lifecycle-card">
-                <div className="lc-label">Your Progress</div>
-                <div className="lc-row">
-                  <div className="lc-step done">
-                    <div className="lc-line"></div>
-                    <div className="lc-dot">✓</div>
-                    <div className="lc-step-label">Account</div>
+            <section className="block content-2col row-progress">
+              <div>
+              <div className="lifecycle-card pg-card">
+                <div className="card-head pg-head">
+                  <span>Your progress</span>
+                  <span className="pg-count tabular">3 of 5 done</span>
+                </div>
+                <div className="pg-bar" aria-hidden="true"><span style={{ width: '60%' }} /></div>
+                <ol className="pg-list">
+                  {[
+                    { label: 'Account', desc: 'Your account is ready.', state: 'done' },
+                    { label: 'Information', desc: 'Personal and company details received.', state: 'done' },
+                    { label: 'Requirements', desc: 'Project requirements and files received.', state: 'done' },
+                    { label: 'Agency Review', desc: 'Our team is reviewing your information.', state: 'current' },
+                    { label: 'Project Creation', desc: 'We set up your official project.', state: 'todo' },
+                  ].map((st, i) => (
+                    <li className={`pg-step ${st.state}`} key={st.label}>
+                      <span className="pg-dot">{st.state === 'done' ? <Icon name="check" size={13} /> : st.state === 'current' ? <span className="pg-pulse" /> : i + 1}</span>
+                      <span className="pg-text">
+                        <b>{st.label}</b>
+                        <em>{st.desc}</em>
+                      </span>
+                      <span className="pg-state">{st.state === 'done' ? 'Done' : st.state === 'current' ? 'In progress' : 'Up next'}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+              </div>
+              <div>
+                <div className="summary-card">
+                  <div className="card-head">Submitted Information</div>
+                  <div className="summary-row">
+                    <span>Client</span>
+                    <span>{client.primary_contact ?? '—'}</span>
                   </div>
-                  <div className="lc-step done">
-                    <div className="lc-line"></div>
-                    <div className="lc-dot">✓</div>
-                    <div className="lc-step-label">Information</div>
+                  <div className="summary-row">
+                    <span>Company</span>
+                    <span>{client.company_name}</span>
                   </div>
-                  <div className="lc-step done">
-                    <div className="lc-line"></div>
-                    <div className="lc-dot">✓</div>
-                    <div className="lc-step-label">Requirements</div>
+                  <div className="summary-row">
+                    <span>Requested Project</span>
+                    <span>{requirements.project_name ?? '—'}</span>
                   </div>
-                  <div className="lc-step current">
-                    <div className="lc-line"></div>
-                    <div className="lc-dot">●</div>
-                    <div className="lc-step-label">Agency Review</div>
+                  <div className="summary-row">
+                    <span>Project Type</span>
+                    <span>{requirements.project_type ?? '—'}</span>
                   </div>
-                  <div className="lc-step">
-                    <div className="lc-dot">○</div>
-                    <div className="lc-step-label">Project Creation</div>
+                  <div className="summary-row">
+                    <span>Submitted</span>
+                    <span>{formatDateLong(requirements.created_at)}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span>Files</span>
+                    <span>{filesCount} file{filesCount === 1 ? '' : 's'}</span>
                   </div>
                 </div>
               </div>
             </section>
 
             <section className="block">
-              <div className="project-empty-card">
-                <span className={`pe-badge${hasActionRequired ? ' pe-badge-action' : ''}`}>
-                  <span className="dot"></span>
-                  {hasActionRequired ? 'Action Required' : 'Waiting for Agency Review'}
-                </span>
-                <div className="pe-icon-wrap">
-                  <Icon name="grid" size={26} />
-                </div>
-                <div className="pe-title">Your project is being prepared</div>
-                <p className="pe-desc">Our team is reviewing your requirements. Once your project is created, it will automatically appear here.</p>
+              <div className="project-empty-card pe-split">
+                <div className="pe-main">
+                  <span className={`pe-badge${hasActionRequired ? ' pe-badge-action' : ''}`}>
+                    <span className="dot"></span>
+                    {hasActionRequired ? 'Action Required' : 'Waiting for Agency Review'}
+                  </span>
+                  <div className="pe-icon-wrap">
+                    <Icon name="grid" size={26} />
+                  </div>
+                  <div className="pe-title">Your project is being prepared</div>
+                  <p className="pe-desc">Our team is reviewing your requirements. Once your project is created, it will automatically appear here.</p>
 
+                  <div className="pe-actions">
+                    <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="btn btn-accent">
+                      Send a Message
+                    </a>
+                    <button type="button" className="btn btn-ghost" onClick={() => setUploadOpen((v) => !v)}>
+                      Upload Additional Files
+                    </button>
+                    <button type="button" className="btn btn-ghost" onClick={() => setReviewOpen((v) => !v)}>
+                      Review Submitted Information
+                    </button>
+                  </div>
+                </div>
                 <div className="whats-next">
                   <div className="whats-next-title">What&apos;s next?</div>
                   <div className="whats-next-item">
@@ -1161,17 +1215,6 @@ export default function ClientDashboard() {
                   </div>
                 </div>
 
-                <div className="pe-actions">
-                  <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="btn btn-accent">
-                    Send a Message
-                  </a>
-                  <button type="button" className="btn btn-ghost" onClick={() => setUploadOpen((v) => !v)}>
-                    Upload Additional Files
-                  </button>
-                  <button type="button" className="btn btn-ghost" onClick={() => setReviewOpen((v) => !v)}>
-                    Review Submitted Information
-                  </button>
-                </div>
               </div>
             </section>
 
@@ -1235,39 +1278,10 @@ export default function ClientDashboard() {
               </section>
             )}
 
-            <section className="block content-2col">
+            <section className="block content-2col row-help">
               <div>
-                <div className="section-title">Submitted Information</div>
-                <div className="summary-card">
-                  <div className="summary-row">
-                    <span>Client</span>
-                    <span>{client.primary_contact ?? '—'}</span>
-                  </div>
-                  <div className="summary-row">
-                    <span>Company</span>
-                    <span>{client.company_name}</span>
-                  </div>
-                  <div className="summary-row">
-                    <span>Requested Project</span>
-                    <span>{requirements.project_name ?? '—'}</span>
-                  </div>
-                  <div className="summary-row">
-                    <span>Project Type</span>
-                    <span>{requirements.project_type ?? '—'}</span>
-                  </div>
-                  <div className="summary-row">
-                    <span>Submitted</span>
-                    <span>{formatDateLong(requirements.created_at)}</span>
-                  </div>
-                  <div className="summary-row">
-                    <span>Files</span>
-                    <span>{filesCount} file{filesCount === 1 ? '' : 's'}</span>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <div className="section-title">Recent Activity</div>
                 <div className="activity-card">
+                  <div className="card-head">Recent Activity</div>
                   {activity.length === 0 ? (
                     <p className="empty-inline">No activity yet.</p>
                   ) : (
@@ -1288,10 +1302,8 @@ export default function ClientDashboard() {
                   )}
                 </div>
               </div>
-            </section>
-
-            <section className="block">
-              <div className="support-card">
+              <div>
+                <div className="support-card">
                 <div>
                   <div className="support-title">Need help?</div>
                   <div className="support-desc">If you&apos;d like to add more information or have a question while your project is being reviewed, contact our team.</div>
@@ -1299,6 +1311,7 @@ export default function ClientDashboard() {
                 <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
                   Contact Support
                 </a>
+                </div>
               </div>
             </section>
           </main>

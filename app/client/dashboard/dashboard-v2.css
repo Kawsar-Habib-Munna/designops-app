@@ -287,3 +287,53 @@
 /* hero status and type labels: text only, no filled background */
 .client-dashboard-root .dx-hero-project .status-badge { background: none; padding-left: 0; padding-right: 0; }
 .client-dashboard-root .dx-hero-project .dx-hero-chip { background: none; }
+
+/* ==== smaller corner radius on every card of the project dashboard ==== */
+.client-dashboard-root .dx-hero,
+.client-dashboard-root .dx-kpi,
+.client-dashboard-root .dx-card,
+.client-dashboard-root .dx-action { border-radius: 10px; }
+.client-dashboard-root .dx-doc-status,
+.client-dashboard-root .dx-next-pay,
+.client-dashboard-root .dx-table-wrap { border-radius: 8px; }
+.client-dashboard-root .dx-action-icon,
+.client-dashboard-root .dx-kpi-icon { border-radius: 10px; }
+.client-dashboard-root .dx-kpis .dx-kpi-icon { border-radius: 50%; }
+@media (max-width: 860px) {
+  .client-dashboard-root .dx-hero,
+  .client-dashboard-root .dx-kpi,
+  .client-dashboard-root .dx-card { border-radius: 10px; }
+}
+
+/* ==== tighter gaps between the cards ==== */
+.client-dashboard-root .dx { gap: 14px; }
+.client-dashboard-root .dx-kpis { gap: 12px; }
+.client-dashboard-root .dx-ap2 { gap: 14px; }
+@media (max-width: 860px) {
+  .client-dashboard-root .dx { gap: 12px; }
+  .client-dashboard-root .dx-kpis { gap: 10px; }
+  .client-dashboard-root .dx-ap2 { gap: 12px; }
+}
+
+/* lighter page background (light mode only; dark mode keeps its own) */
+@media not (prefers-color-scheme: dark) {
+  .client-dashboard-root.client-portal { --bg: #f9f8fb; }
+}
+
+/* Project journey and Coming up share one row */
+.client-dashboard-root .dx-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: 14px; align-items: stretch; }
+.client-dashboard-root .dx-pair > .dx-card { min-width: 0; }
+@media (max-width: 1000px) { .client-dashboard-root .dx-pair { grid-template-columns: minmax(0, 1fr); } }
+
+/* modern, clean icons on the card titles */
+.client-dashboard-root .dx-card-title,
+.client-projectdash-root .dx-card-title { display: inline-flex; align-items: center; gap: 10px; }
+.client-dashboard-root .dx-title-ico,
+.client-projectdash-root .dx-title-ico { width: 30px; height: 30px; flex: none; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; background: var(--accent-soft); color: var(--accent); }
+.client-dashboard-root .dx-title-ico svg,
+.client-projectdash-root .dx-title-ico svg { width: 16px; height: 16px; stroke-width: 1.6; }
+
+/* "Payment Required" and the other action banners: no amber, a plain white card with neutral text */
+.client-dashboard-root .dx-action:not(.ok) { background: var(--surface); border-color: var(--border); box-shadow: var(--shadow-lg); }
+.client-dashboard-root .dx-action:not(.ok) .dx-action-icon { background: var(--bg); color: var(--ink-soft); }
+.client-dashboard-root .dx-action:not(.ok) .dx-action-label { color: var(--ink-faint); }

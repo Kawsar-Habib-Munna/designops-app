@@ -74,6 +74,7 @@ export default function ClientPortalEntry() {
             <a href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noopener noreferrer" className="client-nav-help">
               Need help ?
             </a>
+            <Link href="/client/register" className="client-nav-create">Create Account</Link>
             <Link href="/client/sign-in" className="client-nav-signin">
               <span className="client-nav-signin-inner">Sign In</span>
               <img src="/client-portal/icon-arrow-flat.svg" alt="" />
@@ -87,20 +88,13 @@ export default function ClientPortalEntry() {
         <div className="client-hero-inner">
           <div className="client-hero-copy">
             <h1 className="client-hero-title">Your project, all in one place.</h1>
-            <p className="client-hero-desc">Access your project updates, files, payments, approvals and communication through our secure client portal.</p>
-            <Link href="/client/register" className="client-hero-cta">
-              <span className="client-hero-cta-inner">Create Client Account</span>
-              <img src="/cta/icon-arrow.svg" alt="" />
-            </Link>
-            <p className="client-hero-signin-line">
-              Already working with Flow53?{' '}
-              <Link href="/client/sign-in" className="client-hero-signin-link">
-                Sign in using your registered email.
-              </Link>
-            </p>
+            <p className="client-hero-desc">Updates, files, payments and approvals, in one secure portal.</p>
+            <p className="client-hero-signin-line">Already working with Flow53? <Link href="/client/sign-in" className="client-hero-signin-link">Sign in</Link></p>
           </div>
-          <div className="client-hero-photo">
-            <img src="/client-portal/hero-photo.webp" alt="Preview of the Flow 53 client dashboard" />
+          <div className="client-hero-visual">
+            <div className="client-hero-photo">
+              <img src="/client-portal/Client.webp" alt="Preview of the Flow 53 client dashboard" width={1585} height={992} />
+            </div>
           </div>
         </div>
       </header>

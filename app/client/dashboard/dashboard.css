@@ -929,3 +929,176 @@
 
 /* activity: events joined by a dotted line */
 .client-dashboard-root .timeline-line{width:0;background:none;border-left:2px dotted color-mix(in srgb,var(--accent) 45%,var(--border));margin:3px 0;}
+
+/* ==== waiting-for-review screen, redesigned ==== */
+.client-dashboard-root .welcome-title { font-size: 30px; letter-spacing: -0.025em; }
+.client-dashboard-root .welcome-name { color: var(--accent); }
+.client-dashboard-root .welcome-sub { max-width: 640px; font-size: 14.5px; line-height: 1.6; color: var(--ink-faint); }
+
+/* status card: dot badge, tidy checklist */
+.client-dashboard-root .status-card { border-radius: 18px; padding: 24px 28px; box-shadow: 0 1px 2px rgba(16, 16, 20, 0.04), 0 10px 28px rgba(16, 16, 20, 0.04); }
+.client-dashboard-root .status-title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.client-dashboard-root .status-badge.b-review,
+.client-dashboard-root .status-badge.b-action { background: none; padding-left: 0; padding-right: 0; font-weight: 600; }
+.client-dashboard-root .status-desc { max-width: 720px; font-size: 14px; line-height: 1.6; color: var(--ink-soft); }
+.client-dashboard-root .checklist-row { gap: 10px 10px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border-soft); }
+.client-dashboard-root .checklist-item { padding: 7px 12px 7px 8px; border: 1px solid var(--border-soft); border-radius: 999px; background: var(--surface); font-size: 12.5px; font-weight: 500; }
+
+/* progress: bigger dots, a glow on the current step */
+.client-dashboard-root .lifecycle-card { border-radius: 18px; padding: 22px 28px 24px; box-shadow: 0 1px 2px rgba(16, 16, 20, 0.04), 0 10px 28px rgba(16, 16, 20, 0.04); }
+.client-dashboard-root .lc-label { margin-bottom: 18px; font-size: 14px; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--ink); }
+.client-dashboard-root .lc-step.current .lc-dot { box-shadow: 0 0 0 6px var(--accent-soft); }
+.client-dashboard-root .lc-step-label { font-size: 12.5px; font-weight: 500; }
+.client-dashboard-root .lc-step.current .lc-step-label { font-weight: 700; }
+
+/* "being prepared" card: text and actions on the left, "what's next" as a timeline on the right */
+.client-dashboard-root .project-empty-card.pe-split { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 36px; align-items: start; padding: 32px 36px; text-align: left; border-radius: 18px; box-shadow: 0 1px 2px rgba(16, 16, 20, 0.04), 0 10px 28px rgba(16, 16, 20, 0.04); }
+.client-dashboard-root .pe-split .pe-main { display: flex; flex-direction: column; align-items: flex-start; }
+.client-dashboard-root .pe-split .pe-badge { background: none; padding-left: 0; padding-right: 0; }
+.client-dashboard-root .pe-split .pe-icon-wrap { margin: 18px 0 16px; }
+.client-dashboard-root .pe-split .pe-title { text-align: left; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+.client-dashboard-root .pe-split .pe-desc { text-align: left; max-width: 460px; margin: 8px 0 0; font-size: 14px; line-height: 1.65; }
+.client-dashboard-root .pe-split .pe-actions { justify-content: flex-start; margin-top: 24px; }
+.client-dashboard-root .pe-split .whats-next { margin: 0; padding: 22px 24px; border: 1px solid var(--border-soft); border-radius: 16px; background: var(--surface-muted, #faf9fc); text-align: left; max-width: none; }
+.client-dashboard-root .pe-split .whats-next-title { margin-bottom: 16px; font-size: 13.5px; font-weight: 700; }
+.client-dashboard-root .pe-split .whats-next-item { position: relative; padding-bottom: 16px; font-size: 13.5px; line-height: 1.5; }
+.client-dashboard-root .pe-split .whats-next-item:last-child { padding-bottom: 0; }
+.client-dashboard-root .pe-split .whats-next-item:not(:last-child)::after { content: ''; position: absolute; left: 11px; top: 26px; bottom: 2px; border-left: 2px dotted color-mix(in srgb, var(--accent) 35%, var(--border)); }
+@media (max-width: 900px) {
+  .client-dashboard-root .project-empty-card.pe-split { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 24px 20px; }
+}
+@media (max-width: 640px) {
+  .client-dashboard-root .welcome-title { font-size: 25px; }
+  .client-dashboard-root .status-card, .client-dashboard-root .lifecycle-card { padding: 18px; }
+}
+
+/* welcome in a card */
+.client-dashboard-root .welcome-card { margin-bottom: 20px; padding: 26px 30px; background: linear-gradient(115deg, var(--surface) 40%, color-mix(in srgb, var(--accent) 6%, var(--surface)) 100%); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 1px 2px rgba(16, 16, 20, 0.04), 0 10px 28px rgba(16, 16, 20, 0.04); }
+.client-dashboard-root .welcome-card .welcome-title { margin: 0; }
+.client-dashboard-root .welcome-card .welcome-sub { margin: 8px 0 0; }
+@media (max-width: 640px) { .client-dashboard-root .welcome-card { padding: 20px 18px; } }
+
+/* welcome name: same colour as the rest of the heading */
+.client-dashboard-root .welcome-name { color: inherit; }
+
+/* welcome card: the office photo on the right, fading into the card */
+.client-dashboard-root .welcome-card { position: relative; overflow: hidden; }
+.client-dashboard-root .welcome-card::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 42%; background: url('/dashboard-banner.jpg') center / cover no-repeat; -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 55%); mask-image: linear-gradient(to right, transparent 0%, #000 55%); pointer-events: none; }
+.client-dashboard-root .welcome-card > * { position: relative; z-index: 1; max-width: 58%; }
+@media (max-width: 860px) {
+  .client-dashboard-root .welcome-card::after { display: none; }
+  .client-dashboard-root .welcome-card > * { max-width: none; }
+}
+
+/* Your progress and Submitted Information share one row, equal height */
+.client-dashboard-root .row-progress > div { display: flex; flex-direction: column; min-width: 0; }
+.client-dashboard-root .row-progress .lifecycle-card,
+.client-dashboard-root .row-progress .summary-card { flex: 1 1 auto; }
+.client-dashboard-root .row-progress .lifecycle-card { display: flex; flex-direction: column; justify-content: center; padding: 24px 22px; }
+.client-dashboard-root .row-progress .lc-step-label { font-size: 11.5px; text-align: center; }
+
+/* Recent Activity and Need help? share a row */
+.client-dashboard-root .row-help > div { display: flex; flex-direction: column; min-width: 0; }
+.client-dashboard-root .row-help .help-spacer { visibility: hidden; }
+.client-dashboard-root .row-help .support-card { flex: 1 1 auto; flex-direction: column; align-items: flex-start; justify-content: center; gap: 18px; }
+
+/* Recent Activity is as tall as the help card; a long list scrolls inside it */
+.client-dashboard-root .row-help .activity-card { contain: size; flex: 1 1 0; min-height: 150px; overflow-y: auto; overscroll-behavior: contain; }
+@media (max-width: 860px) {
+  /* stacked: let the activity card size itself again */
+  .client-dashboard-root .row-help .activity-card { contain: none; flex: 0 0 auto; max-height: 360px; }
+}
+
+/* activity: the time sits on the right of each entry */
+.client-dashboard-root .activity-card .timeline-item > div:last-child { flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.client-dashboard-root .activity-card .timeline-text { flex: 1 1 auto; min-width: 0; }
+.client-dashboard-root .activity-card .timeline-time { flex: none; margin: 0; white-space: nowrap; text-align: right; }
+
+/* smaller card corners on the waiting screen */
+.client-dashboard-root .welcome-card,
+.client-dashboard-root .status-card,
+.client-dashboard-root .lifecycle-card,
+.client-dashboard-root .project-empty-card,
+.client-dashboard-root .project-empty-card.pe-split,
+.client-dashboard-root .summary-card,
+.client-dashboard-root .activity-card,
+.client-dashboard-root .support-card { border-radius: 10px; }
+.client-dashboard-root .pe-split .whats-next { border-radius: 8px; }
+
+/* section titles live inside their cards */
+.client-dashboard-root .card-head { margin: 0 0 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border-soft); font-size: 14px; font-weight: 700; letter-spacing: -0.005em; color: var(--ink); }
+.client-dashboard-root .row-progress .lifecycle-card { justify-content: flex-start; }
+.client-dashboard-root .row-progress .lifecycle-card .lc-row { margin: auto 0; padding: 8px 0; }
+.client-dashboard-root .row-help .help-spacer { display: none; }
+
+/* ==== Your progress: a vertical timeline with a short line for each step ==== */
+.client-dashboard-root .pg-card { display: flex; flex-direction: column; justify-content: flex-start; }
+.client-dashboard-root .pg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 0; border-bottom: none; padding-bottom: 12px; }
+.client-dashboard-root .pg-count { font-size: 12px; font-weight: 600; color: var(--accent); }
+.client-dashboard-root .pg-bar { height: 6px; margin-bottom: 20px; border-radius: 999px; background: var(--border-soft); overflow: hidden; }
+.client-dashboard-root .pg-bar span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--positive, #10b981), var(--accent)); }
+.client-dashboard-root .pg-list { list-style: none; margin: 0; padding: 0; }
+.client-dashboard-root .pg-step { position: relative; display: flex; align-items: flex-start; gap: 14px; padding-bottom: 18px; }
+.client-dashboard-root .pg-step:last-child { padding-bottom: 0; }
+.client-dashboard-root .pg-step:not(:last-child)::after { content: ''; position: absolute; left: 13px; top: 30px; bottom: 2px; border-left: 2px dotted var(--border); }
+.client-dashboard-root .pg-step.done:not(:last-child)::after { border-left: 2px solid var(--positive, #10b981); }
+.client-dashboard-root .pg-dot { position: relative; z-index: 1; width: 28px; height: 28px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2px solid var(--border); background: var(--surface); font-size: 11.5px; font-weight: 700; color: var(--ink-faint); }
+.client-dashboard-root .pg-step.done .pg-dot { border-color: var(--positive, #10b981); background: var(--positive, #10b981); color: #fff; }
+.client-dashboard-root .pg-step.current .pg-dot { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 5px var(--accent-soft); }
+.client-dashboard-root .pg-pulse { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+.client-dashboard-root .pg-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding-top: 3px; }
+.client-dashboard-root .pg-text b { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.client-dashboard-root .pg-step.todo .pg-text b { color: var(--ink-soft); font-weight: 600; }
+.client-dashboard-root .pg-text em { font-style: normal; font-size: 12px; line-height: 1.45; color: var(--ink-faint); }
+.client-dashboard-root .pg-state { flex: none; margin-top: 4px; font-size: 11.5px; font-weight: 600; color: var(--ink-faint); white-space: nowrap; }
+.client-dashboard-root .pg-step.done .pg-state { color: var(--positive, #10b981); }
+.client-dashboard-root .pg-step.current .pg-state { color: var(--accent); }
+
+/* ==== left navigation, redesigned: roomier rows, a purple bar on the current page, quiet locked items ==== */
+.client-dashboard-root .nav-group { gap: 4px; padding-top: 8px; }
+.client-dashboard-root .nav-item { position: relative; min-height: 42px; padding: 0 12px; gap: 12px; border-radius: 10px; font-size: 13.5px; font-weight: 500; white-space: nowrap; color: var(--ink-soft); transition: background .15s ease, color .15s ease; }
+.client-dashboard-root .nav-item svg { flex: none; width: 18px; height: 18px; color: var(--ink-faint); transition: color .15s ease; }
+.client-dashboard-root a.nav-item:hover { background: var(--bg); color: var(--ink); }
+.client-dashboard-root a.nav-item:hover svg { color: var(--ink-soft); }
+.client-dashboard-root .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.client-dashboard-root .nav-item.active svg { color: var(--accent); }
+.client-dashboard-root .nav-item.active::before { content: ''; position: absolute; left: -14px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.client-dashboard-root .nav-item.disabled { opacity: 1; color: var(--ink-faint); cursor: not-allowed; }
+.client-dashboard-root .nav-item.disabled svg { opacity: .65; }
+.client-dashboard-root .nav-tag { margin-left: auto; padding: 2px 8px; border: 1px solid var(--border-soft); border-radius: 999px; background: var(--bg); font-size: 10.5px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--ink-faint); }
+@media (min-width: 861px) { .client-dashboard-root .sidebar { width: 252px; padding: 18px 14px; } }
+
+/* locked items: a small icon instead of a text label (clock = awaiting, lock = unavailable) */
+.client-dashboard-root .nav-state { margin-left: auto; display: flex; flex: none; color: var(--ink-faint); }
+.client-dashboard-root .nav-state svg { width: 14px; height: 14px; }
+.client-dashboard-root .nav-state.awaiting { color: #d98b0f; }
+
+/* thinner navigation icon strokes */
+.client-dashboard-root .nav-item svg,
+.client-dashboard-root .nav-state svg { stroke-width: 1.4; }
+
+/* navigation hover / selected shape: smaller corners */
+.client-dashboard-root .nav-item { border-radius: 6px; }
+
+/* phones and tablets: the three actions are equal-width, full-width buttons; the card content fills the width */
+@media (max-width: 900px) {
+  .client-dashboard-root .pe-split .pe-main { align-items: stretch; width: 100%; }
+  .client-dashboard-root .pe-split .pe-badge { align-self: flex-start; }
+  .client-dashboard-root .pe-split .pe-icon-wrap { align-self: flex-start; }
+  .client-dashboard-root .pe-split .pe-actions { display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: 100%; margin-top: 20px; }
+  .client-dashboard-root .pe-split .pe-actions .btn { width: 100%; justify-content: center; text-align: center; min-height: 44px; margin: 0; }
+  .client-dashboard-root .pe-split .pe-desc { max-width: none; }
+  .client-dashboard-root .pe-split .whats-next { width: 100%; }
+}
+
+/* phones and tablets: more room on the left and right inside every card */
+@media (max-width: 900px) {
+  .client-dashboard-root .welcome-card,
+  .client-dashboard-root .status-card,
+  .client-dashboard-root .lifecycle-card,
+  .client-dashboard-root .summary-card,
+  .client-dashboard-root .activity-card,
+  .client-dashboard-root .support-card,
+  .client-dashboard-root .project-empty-card.pe-split { padding-left: 24px; padding-right: 24px; }
+  .client-dashboard-root .pe-split .whats-next { padding-left: 22px; padding-right: 22px; }
+}

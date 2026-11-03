@@ -18,23 +18,17 @@ import './signin.css';
 
 const WHATSAPP_SUPPORT_URL = 'https://wa.me/8801804409235?text=Hi%20FLOW53,%20I%27m%20having%20trouble%20signing%20into%20my%20client%20portal.';
 
-const FEATURES = [
-  {
-    title: 'Track project progress',
-    desc: 'See exactly where your project stands, always.',
-    icon: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
-  },
-  {
-    title: 'Sign SOWs & review files',
-    desc: 'Approvals and deliverables, all in your portal.',
-    icon: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M6 3h8l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>',
-  },
-  {
-    title: 'Pay & track invoices',
-    desc: 'Clear payment history and downloadable receipts.',
-    icon: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
-  },
-];
+const FIELD_ICONS: Record<string, string> = {
+  mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+  lock: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+};
+function FieldIcon({ name }: { name: keyof typeof FIELD_ICONS }) {
+  return (
+    <span className="field-icon" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: FIELD_ICONS[name] }} />
+    </span>
+  );
+}
 
 function BrandMark() {
   return (
@@ -181,23 +175,12 @@ export default function ClientSignIn() {
 
           <div className="brand-panel-mid">
             <h2 className="brand-panel-headline">
-              Everything about your project, <span className="accent-word">in one place</span>.
+              Sign in to <span className="accent-word">your project</span>.
             </h2>
             <p className="brand-panel-sub">Sign in to track progress, review deliverables, and manage payments — without digging through email threads.</p>
 
-            <div className="panel-feature-list">
-              {FEATURES.map((f) => (
-                <div className="panel-feature" key={f.title}>
-                  <div className="panel-feature-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: f.icon }} />
-                  </div>
-                  <div>
-                    <div className="panel-feature-title">{f.title}</div>
-                    <div className="panel-feature-desc">{f.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/client-portal/register.webp" alt="Track project progress, sign SOWs and review files, pay and track invoices with Flow 53" width={1448} height={1086} className="panel-shot" />
           </div>
 
           <div className="brand-panel-bottom">
@@ -310,8 +293,7 @@ export default function ClientSignIn() {
               ) : (
                 <>
                   <div className="auth-head">
-                    <h1 className="headline">Welcome Back</h1>
-                    <p className="subtext">Sign in to access your projects, payments and client portal.</p>
+                    <h1 className="headline">Welcome back</h1>
                   </div>
 
                   <button type="button" className="cp-btn cp-btn-secondary cp-btn-block" onClick={handleGoogleSignIn} disabled={googleSubmitting}>
@@ -329,7 +311,7 @@ export default function ClientSignIn() {
                   </button>
 
                   <div className="auth-divider">
-                    <span>or</span>
+                    <span>or sign in with email</span>
                   </div>
 
                   <form onSubmit={handleSubmit} noValidate>
@@ -348,13 +330,17 @@ export default function ClientSignIn() {
                       <label className="cp-label" htmlFor="signin-email">
                         Email Address
                       </label>
-                      <input id="signin-email" type="email" className="cp-input" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" autoComplete="email" />
+                      <div className="field-input-wrap has-icon">
+                        <FieldIcon name="mail" />
+                        <input id="signin-email" type="email" className="cp-input" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" autoComplete="email" />
+                      </div>
                     </div>
                     <div className="cp-field">
                       <label className="cp-label" htmlFor="signin-password">
                         Password
                       </label>
-                      <div className="field-input-wrap">
+                      <div className="field-input-wrap has-icon">
+                        <FieldIcon name="lock" />
                         <input
                           id="signin-password"
                           type={showPassword ? 'text' : 'password'}
@@ -410,17 +396,10 @@ export default function ClientSignIn() {
                   <p className="register-line">
                     Don&apos;t have a client account?{' '}
                     <Link href="/client/register" className="link">
-                      Create Client Account
+                      Create Account
                     </Link>
                   </p>
 
-                  <div className="trust-row">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="4" y="10" width="16" height="10" rx="2" />
-                      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-                    </svg>
-                    Your information is securely protected.
-                  </div>
                 </>
               )}
             </div>

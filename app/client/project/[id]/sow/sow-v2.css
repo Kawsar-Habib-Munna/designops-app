@@ -79,3 +79,42 @@
 @media print {
   .client-sow-root .sx-hero, .client-sow-root .cbn { display: none !important; }
 }
+
+/* ==== consistent padding: the two top cards share the same inner space, the heading lines up with the cards ==== */
+.client-sow-root .content { padding: 28px 32px 64px; }
+.client-sow-root .sx-hero { padding: 28px 32px; margin-bottom: 20px; }
+.client-sow-root .sx-review { padding: 28px 32px; }
+.client-sow-root .sx-doc-head { padding: 0 2px; margin-bottom: 12px; }
+.client-sow-root .sw-layout { gap: 20px; }
+@media (max-width: 860px) {
+  .client-sow-root .content { padding: 20px 16px calc(96px + env(safe-area-inset-bottom)); }
+  .client-sow-root .sx-hero, .client-sow-root .sx-review { padding: 22px 20px; }
+}
+
+/* the content fills the width; only the 32px side padding is left (the max-width used to centre it and leave ~110px each side) */
+.client-sow-root .content { max-width: none; padding-left: 32px; padding-right: 32px; }
+.client-sow-root .sw-doc-wrap { max-width: none; }
+@media (max-width: 860px) {
+  .client-sow-root .content { padding-left: 16px; padding-right: 16px; }
+}
+
+/* "Agreement document" heading in its own card */
+.client-sow-root .sx-doc-head { margin: 0 0 14px; padding: 18px 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg); }
+.client-sow-root .sx-doc-title { font-size: 17px; }
+@media (max-width: 860px) { .client-sow-root .sx-doc-head { padding: 16px 20px; } }
+
+/* ==== smaller corner radius on every card of the SOW page ==== */
+.client-sow-root .sx-hero,
+.client-sow-root .sx-review,
+.client-sow-root .sx-doc-head { border-radius: 10px; }
+.client-sow-root .sx-facts { border-radius: 8px; }
+.client-sow-root .sx-review-icon { border-radius: 10px; }
+@media (max-width: 860px) { .client-sow-root .sx-hero { border-radius: 10px; } }
+
+/* the heading and the document preview live in one card; the paper sits on a soft grey area inside it */
+.client-sow-root .sx-doc-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg); overflow: hidden; }
+.client-sow-root .sx-doc-card .sx-doc-head { margin: 0; padding: 18px 24px; background: transparent; border: none; border-bottom: 1px solid var(--border-soft, var(--border)); border-radius: 0; box-shadow: none; }
+.client-sow-root .sx-doc-body { padding: 24px; background: var(--bg); }
+.client-sow-root .sx-doc-body .sow-document .sd-card:last-child { margin-bottom: 0; }
+@media (max-width: 860px) { .client-sow-root .sx-doc-body { padding: 12px; } .client-sow-root .sx-doc-card .sx-doc-head { padding: 16px 20px; } }
+@media print { .client-sow-root .sx-doc-card { border: none; box-shadow: none; } .client-sow-root .sx-doc-body { padding: 0; background: none; } }
