@@ -15,7 +15,7 @@
 // Review-status চিপ (rc-review/rc-handoff/rc-draft) লিংকড টাস্কের workflow_stage
 // থেকে ডিরাইভ করা — attachments টেবিলে নিজে কোনো review_status কলাম নেই।
 
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react';
 import Link from 'next/link';
 import './files.css';
 import { supabase } from '@/lib/supabaseClient';
@@ -74,7 +74,7 @@ function Icon({ name, size = 15 }: { name: IconName; size?: number }) {
 }
 
 
-const ASSETS_PAGE_SIZE = 6;
+const ASSETS_PAGE_SIZE = 3;
 
 const FILE_TYPES = ['figma', 'pdf', 'image', 'video', 'zip', 'other'] as const;
 const FILE_TYPE_META: Record<string, { icon: IconName; label: string; bg: string; color: string }> = {
@@ -166,6 +166,7 @@ export default function FilesPage() {
   const [uploaderFilter, setUploaderFilter] = useState('');
   const [folderFilter, setFolderFilter] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -566,59 +567,179 @@ export default function FilesPage() {
             {/* folders — প্রজেক্ট অনুযায়ী গ্রুপ করা ফোল্ডার-ফাইল ট্রি */}
             {folderTree.length > 0 && (
               <section className="block">
-                <div className="section-title-row"><span className="section-title">Folders</span></div>
                 <div className="folder-tree">
-                  {folderTree.map((section) => (
-                    <div key={section.key} className="folder-tree-section">
-                      <div className="folder-tree-section-title"><Icon name="folder" size={13} /> {section.title}</div>
-                      {section.folders.map((f) => {
-                        const expanded = expandedFolders.has(f.key);
-                        const isActive = folderFilter === f.key;
-                        return (
-                          <div key={f.key}>
-                            <button
-                              type="button"
-                              className={`folder-tree-row${isActive ? ' active' : ''}`}
-                              onClick={() => {
-                                setExpandedFolders((prev) => {
-                                  const next = new Set(prev);
-                                  if (next.has(f.key)) next.delete(f.key);
-                                  else next.add(f.key);
-                                  return next;
-                                });
-                                setFolderFilter((cur) => (cur === f.key ? null : f.key));
-                                setPage(1);
-                              }}
-                            >
-                              <span className={`folder-tree-chevron${expanded ? ' open' : ''}`}><Icon name="chevron" size={12} /></span>
-                              <Icon name={f.icon} size={14} />
-                              <span className="folder-tree-name">{f.name}</span>
-                              <span className="folder-tree-count tabular">{f.files.length}</span>
-                            </button>
-                            {expanded && (
-                              <div className="folder-tree-files">
-                                {f.files.length === 0 ? (
+                  <div className="ft-frame-head">
+                    <span className="ft-frame-title">Folders</span>
+                    <span className="ft-frame-count tabular">{folderTree.reduce((n, sec) => n + sec.folders.length, 0)}</span>
+                  </div>
+                  <div className="ft-table-head" aria-hidden="true">
+                    <span>Project</span>
+                    <span>Folders</span>
+                    <span>Files</span>
+                    <span />
+                  </div>
+                  {folderTree.map((section) => {
+                    const shownFolder = section.folders.find((f) => f.key === folderFilter) ?? section.folders.find((f) => expandedFolders.has(f.key)) ?? null;
+                    return (
+                      <div key={section.key} className="folder-tree-section">
+                        <button
+                          type="button"
+                          className={`ft-head${collapsedSections.has(section.key) ? ' collapsed' : ''}`}
+                          aria-expanded={!collapsedSections.has(section.key)}
+                          onClick={() => setCollapsedSections((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(section.key)) next.delete(section.key);
+                            else next.add(section.key);
+                            return next;
+                          })}
+                        >
+                          <span className="ft-cell ft-cell-name">
+                            <span className="ft-head-icon"><Icon name="folder" size={16} /></span>
+                            <span className="ft-head-title">{section.title}</span>
+                          </span>
+                          <span className="ft-cell tabular">{section.folders.length}</span>
+                          <span className="ft-cell tabular">{section.folders.reduce((n, f) => n + f.files.length, 0)}</span>
+                          <span className="ft-collapse" aria-hidden="true"><Icon name="chevron" size={14} /></span>
+                        </button>
+                        {!collapsedSections.has(section.key) && (
+                        <div className="ft-split">
+                        <div className="ft-grid">
+                          {section.folders.map((f) => {
+                            const expanded = expandedFolders.has(f.key);
+                            const isActive = folderFilter === f.key;
+                            return (
+                              <button
+                                type="button"
+                                key={f.key}
+                                className={`ft-tile${isActive ? ' active' : ''}${expanded ? ' open' : ''}`}
+                                aria-expanded={expanded}
+                                onClick={() => {
+                                  setExpandedFolders((prev) => {
+                                    const next = new Set(prev);
+                                    if (next.has(f.key)) next.delete(f.key);
+                                    else next.add(f.key);
+                                    return next;
+                                  });
+                                  setFolderFilter((cur) => (cur === f.key ? null : f.key));
+                                  setPage(1);
+                                }}
+                              >
+                                <span className="ft-icon"><Icon name={f.icon} size={18} /></span>
+                                <span className="ft-text">
+                                  <span className="ft-name">{f.name}</span>
+                                  <span className="ft-sub tabular">{f.files.length === 0 ? 'Empty' : `${f.files.length} ${f.files.length === 1 ? 'file' : 'files'}`}</span>
+                                </span>
+                                <span className={`ft-chevron${expanded ? ' open' : ''}`}><Icon name="chevron" size={14} /></span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div className="ft-detail">
+                          {shownFolder ? (
+                            <div className="ft-detail-grid" key={shownFolder.key}>
+                              <div className="ft-panel">
+                                <div className="ft-panel-head">
+                                  <span className="ft-panel-title"><Icon name={shownFolder.icon} size={14} /> {shownFolder.name}</span>
+                                  <span className="ft-panel-tools">
+                                    <span className="ft-panel-count tabular">{shownFolder.files.length}</span>
+                                    <span className="view-toggle">
+                                      <button type="button" className={`view-toggle-btn${viewMode === 'list' ? ' active' : ''}`} onClick={() => setViewMode('list')} aria-label="List view"><Icon name="list" size={14} /></button>
+                                      <button type="button" className={`view-toggle-btn${viewMode === 'grid' ? ' active' : ''}`} onClick={() => setViewMode('grid')} aria-label="Grid view"><Icon name="grid" size={14} /></button>
+                                    </span>
+                                  </span>
+                                </div>
+                                {shownFolder.files.length === 0 ? (
                                   <div className="folder-tree-empty">কোনো ফাইল নেই</div>
+                                ) : viewMode === 'grid' ? (
+                                  <div className="ft-files grid">
+                                    {shownFolder.files.map((file) => {
+                                      const att = attachments.find((x) => x.id === file.id);
+                                      const showThumb = !!att && file.file_type === 'image';
+                                      return (
+                                        <button
+                                          type="button"
+                                          key={file.id}
+                                          className={`ft-card${selectedId === file.id ? ' selected' : ''}`}
+                                          onClick={() => setSelectedId(file.id)}
+                                        >
+                                          <span className="ft-card-thumb" style={showThumb ? undefined : { background: fileTypeMeta(file.file_type).bg }}>
+                                            {showThumb && att ? (
+                                              // eslint-disable-next-line @next/next/no-img-element
+                                              <img src={driveThumbnailUrl(att.drive_url)} alt="" />
+                                            ) : (
+                                              <Icon name={fileTypeMeta(file.file_type).icon} size={22} />
+                                            )}
+                                          </span>
+                                          <span className="ft-card-name">{file.file_name}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
                                 ) : (
-                                  f.files.map((file) => (
-                                    <button
-                                      type="button"
-                                      key={file.id}
-                                      className={`folder-tree-file${selectedId === file.id ? ' selected' : ''}`}
-                                      onClick={(e) => { e.stopPropagation(); setSelectedId(file.id); }}
-                                    >
-                                      <Icon name={fileTypeMeta(file.file_type).icon} size={12} />
-                                      <span className="folder-tree-file-name">{file.file_name}</span>
-                                    </button>
-                                  ))
+                                  <div className="ft-files">
+                                    {shownFolder.files.map((file) => (
+                                      <button
+                                        type="button"
+                                        key={file.id}
+                                        className={`ft-file${selectedId === file.id ? ' selected' : ''}`}
+                                        onClick={() => setSelectedId(file.id)}
+                                      >
+                                        <span className="ft-file-icon"><Icon name={fileTypeMeta(file.file_type).icon} size={14} /></span>
+                                        <span className="ft-file-name">{file.file_name}</span>
+                                      </button>
+                                    ))}
+                                  </div>
                                 )}
                               </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ))}
+                              <div className="ft-preview">
+                                {selected && shownFolder.files.some((file) => file.id === selected.id) ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="ft-preview-img"
+                                      style={canPreviewInline(selected.file_type, selected.drive_url) ? undefined : { background: fileTypeMeta(selected.file_type).bg }}
+                                      onClick={() => setPreviewItem({ name: selected.file_name, url: selected.drive_url, fileType: selected.file_type })}
+                                      aria-label="Open preview"
+                                    >
+                                      {canPreviewInline(selected.file_type, selected.drive_url) ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={driveThumbnailUrl(selected.drive_url)} alt={selected.file_name} />
+                                      ) : (
+                                        <Icon name={fileTypeMeta(selected.file_type).icon} size={40} />
+                                      )}
+                                    </button>
+                                    <div className="ft-preview-name">{selected.file_name}</div>
+                                    <div className="ft-preview-meta">
+                                      {[selected.profiles?.full_name, formatBnDate(selected.uploaded_at)].filter(Boolean).join(' · ')}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className="btn btn-accent btn-sm"
+                                      onClick={() => setPreviewItem({ name: selected.file_name, url: selected.drive_url, fileType: selected.file_type })}
+                                    >
+                                      Open
+                                    </button>
+                                  </>
+                                ) : (
+                                  <div className="ft-preview-empty">
+                                    <Icon name="eye" size={22} />
+                                    <span>Select a file to preview it here</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="ft-placeholder">
+                              <Icon name="folder" size={22} />
+                              <span>Select a folder to see its files</span>
+                            </div>
+                          )}
+                        </div>
+                        </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             )}
@@ -627,7 +748,10 @@ export default function FilesPage() {
             <div className="assets-layout">
               <div>
                 <section className="block">
-                  <div className="section-title-row"><span className="section-title">সব অ্যাসেট <span style={{ color: 'var(--ink-faint)', fontWeight: 500 }}>· {filtered.length}</span></span></div>
+                  <div className="assets-head">
+                    <span className="assets-title">সব অ্যাসেট</span>
+                    <span className="assets-count tabular">{filtered.length}</span>
+                  </div>
 
                   {loading ? (
                     <p style={{ fontSize: 13, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</p>
@@ -650,7 +774,7 @@ export default function FilesPage() {
                         const isFav = favorites.has(a.id);
                         return (
                           <div key={a.id} className={`asset-card${selectedId === a.id ? ' selected' : ''}`} onClick={() => setSelectedId(a.id)}>
-                            <div className="asset-thumb" style={canPreviewInline(a.file_type, a.drive_url) ? undefined : { background: meta.bg }}>
+                            <div className="asset-thumb" style={canPreviewInline(a.file_type, a.drive_url) ? ({ '--thumb': `url(${driveThumbnailUrl(a.drive_url)})` } as CSSProperties) : { background: meta.bg }}>
                               {canPreviewInline(a.file_type, a.drive_url) ? (
                                 <>
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -689,10 +813,19 @@ export default function FilesPage() {
                   )}
 
                   {!loading && filtered.length > ASSETS_PAGE_SIZE && (
-                    <div className="pagination-row">
-                      <button className="btn btn-ghost btn-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={currentPage <= 1}>আগের</button>
-                      <span className="pagination-label tabular">পেজ {currentPage} / {totalPages}</span>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>পরের</button>
+                    <div className="assets-pager">
+                      <span className="assets-pager-info tabular">
+                        {(currentPage - 1) * ASSETS_PAGE_SIZE + 1}–{Math.min(currentPage * ASSETS_PAGE_SIZE, filtered.length)} of {filtered.length}
+                      </span>
+                      <div className="assets-pager-btns">
+                        <button type="button" className="assets-pager-btn" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={currentPage <= 1} aria-label="Previous">
+                          <Icon name="chevron" size={14} />
+                        </button>
+                        <span className="assets-pager-page tabular">{currentPage} / {totalPages}</span>
+                        <button type="button" className="assets-pager-btn next" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages} aria-label="Next">
+                          <Icon name="chevron" size={14} />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </section>
@@ -781,25 +914,35 @@ export default function FilesPage() {
             </div>
 
             {/* Google Drive + AI Insights */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 6 }}>
-              <section className="block">
-                <div className="section-title-row"><span className="section-title">Google Drive</span></div>
-                <div className="integration-card">
-                  <div className="integ-top">
-                    <div className="integ-icon" style={{ background: 'var(--positive-soft)', color: 'var(--positive)' }}><Icon name="archive" /></div>
-                    <div style={{ flex: 1 }}><div className="integ-name">Studio Nine Drive</div><div className="integ-status"><span className="status-dot" style={{ background: 'var(--positive)' }}></span>Connected</div></div>
-                  </div>
-                  <div className="integ-meta">&ldquo;ফাইল যোগ করুন&rdquo; থেকে আপলোড করা ফাইল সরাসরি একটা dedicated Google অ্যাকাউন্টের Drive ফোল্ডারে জমা হয় — এই অ্যাপ নিজে কোনো ফাইল হোস্ট করে না, শুধু লিংক রাখে।</div>
-                  <div className="integ-actions">
-                    <button className="btn btn-ghost btn-sm" style={{ flex: 1, justifyContent: 'center' }} disabled title="শীঘ্রই আসছে">Auto-Sync (শীঘ্রই)</button>
+            <div className="di-row">
+              <section className="di-card">
+                <div className="di-head">
+                  <span className="di-title">Google Drive</span>
+                  <span className="di-badge ok"><i />Connected</span>
+                </div>
+                <div className="di-account">
+                  <span className="di-icon"><Icon name="archive" size={20} /></span>
+                  <div className="di-account-text">
+                    <div className="di-account-name">Studio Nine Drive</div>
+                    <div className="di-account-sub">Shared team storage</div>
                   </div>
                 </div>
+                <p className="di-note">Files you add with &ldquo;ফাইল যোগ করুন&rdquo; go straight to one shared Google Drive folder. This app does not host any files, it only keeps the links.</p>
+                <button className="btn btn-ghost btn-sm di-sync" disabled title="শীঘ্রই আসছে">Auto-Sync (শীঘ্রই)</button>
               </section>
 
-              <section className="block">
-                <div className="section-title-row"><span className="section-title">AI Asset Insights</span></div>
-                <div className="ai-card-mini">
-                  {insights.map((text, i) => (<div className="ai-item-mini" key={i}><span className="dot"></span> {text}</div>))}
+              <section className="di-card">
+                <div className="di-head">
+                  <span className="di-title">Insights</span>
+                  <span className="di-count tabular">{insights.length}</span>
+                </div>
+                <div className="di-list">
+                  {insights.map((text, i) => (
+                    <div className="di-item" key={i}>
+                      <span className="di-item-icon"><Icon name="eye" size={14} /></span>
+                      <span className="di-item-text">{text}</span>
+                    </div>
+                  ))}
                 </div>
               </section>
             </div>

@@ -264,3 +264,211 @@
   .clientslist-root .modal-box{max-width:100%;}
   .clientslist-root .modal-field-grid{grid-template-columns:1fr;}
 }
+
+/* ---- redesigned list: one panel holding the filters and the table / cards ---- */
+.clientslist-root .cl-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.clientslist-root .cl-panel .toolbar { margin: 0; padding: 16px 20px; border-bottom: 1px solid var(--border-soft); gap: 10px; }
+.clientslist-root .cl-panel .toolbar-search { max-width: 300px; padding: 9px 12px; border-radius: 10px; background: var(--surface-muted); }
+.clientslist-root .cl-panel .filter-select { min-height: 38px; padding: 0 12px; border-radius: 10px; background-color: var(--surface-muted); border-color: var(--border); font-size: 12.5px; }
+.clientslist-root .cl-panel .error-banner { margin: 16px 20px 0; }
+.clientslist-root .cl-panel .result-count { margin: 0; padding: 14px 20px 6px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+.clientslist-root .cl-panel .empty-state { padding: 56px 20px; }
+.clientslist-root .cl-view { display: inline-flex; flex-shrink: 0; padding: 3px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; }
+.clientslist-root .cl-view-btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border: none; border-radius: 8px; background: transparent; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+.clientslist-root .cl-view-btn.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(16, 16, 20, 0.08); }
+
+.clientslist-root .cl-panel .table-scroll { border: none; border-radius: 0; background: transparent; }
+.clientslist-root .cl-panel .client-table thead th { background: transparent; padding: 12px 20px; font-size: 11.5px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--ink-faint); border-bottom: 1px solid var(--border-soft); }
+.clientslist-root .cl-panel .client-table tbody td { padding: 18px 20px; font-size: 13px; }
+.clientslist-root .cl-panel .cname { font-size: 14px; font-weight: 700; }
+.clientslist-root .cl-panel .ccompany { margin-top: 2px; font-size: 12px; }
+.clientslist-root .cl-panel .proj-name { font-size: 13px; }
+.clientslist-root .cl-panel .proj-sub { margin-top: 2px; font-size: 12px; }
+.clientslist-root .cl-panel .client-cell { gap: 12px; }
+.clientslist-root .cl-panel .value-cell { font-weight: 700; }
+/* the status is a dot and a word, no filled pill */
+.clientslist-root .cl-panel .status-pill { display: inline-flex; align-items: center; gap: 7px; padding: 0; border: none; background: transparent; font-size: 12.5px; font-weight: 600; }
+.clientslist-root .cl-panel .status-pill::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.clientslist-root .cl-panel .pagination-row { margin: 0; padding: 14px 20px; border-top: 1px solid var(--border-soft); }
+
+.clientslist-root .cl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; padding: 8px 20px 20px; }
+.clientslist-root .cl-card { display: flex; flex-direction: column; gap: 16px; padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; cursor: pointer; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.clientslist-root .cl-card:hover { border-color: var(--accent-soft-2); box-shadow: 0 8px 24px rgba(16, 16, 20, 0.06); }
+.clientslist-root .cl-card-top { display: flex; align-items: center; gap: 12px; }
+.clientslist-root .cl-card-who { flex: 1; min-width: 0; }
+.clientslist-root .cl-card .cname { font-size: 15px; font-weight: 700; }
+.clientslist-root .cl-card .ccompany { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
+.clientslist-root .cl-card-project { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; background: var(--surface-muted); border: 1px solid var(--border-soft); border-radius: 12px; }
+.clientslist-root .cl-card-project .proj-name { font-size: 13.5px; }
+.clientslist-root .cl-card .status-pill { display: inline-flex; align-items: center; gap: 7px; padding: 0; background: transparent; border: none; font-size: 12.5px; font-weight: 600; }
+.clientslist-root .cl-card .status-pill::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.clientslist-root .cl-card-facts { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px dashed var(--border); }
+.clientslist-root .cl-card-facts > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12.5px; }
+.clientslist-root .cl-card-facts span { color: var(--ink-faint); }
+.clientslist-root .cl-card-facts b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--ink); }
+@media (max-width: 860px) {
+  .clientslist-root .cl-grid, .clientslist-root .cl-view { display: none; }
+  .clientslist-root .cl-panel { border: none; border-radius: 0; background: transparent; overflow: visible; }
+  .clientslist-root .cl-panel .toolbar { padding: 0 0 14px; border-bottom: none; }
+  .clientslist-root .cl-panel .result-count { padding: 0 0 10px; }
+  .clientslist-root .cl-panel .pagination-row { padding: 14px 0 0; border-top: none; }
+}
+
+/* ---- cleaner filter bar: search, sort and the view switch on the first row; the four filters on a quiet second row ---- */
+.clientslist-root .cl-panel .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 18px 20px; }
+.clientslist-root .cl-panel .toolbar::after { content: ''; order: 3; flex-basis: 100%; height: 0; }
+.clientslist-root .cl-panel .toolbar-search { order: 1; flex: 1 1 260px; max-width: none; height: 40px; padding: 0 14px; border-radius: 10px; }
+.clientslist-root .cl-panel .toolbar-spacer { display: none; }
+.clientslist-root .cl-panel .toolbar > .filter-select:nth-of-type(n+5) { order: 2; }
+.clientslist-root .cl-panel .cl-view { order: 3; margin-left: 0; }
+.clientslist-root .cl-panel .toolbar > .filter-select:nth-of-type(-n+4) { order: 4; height: 34px; min-height: 34px; border-radius: 999px; background-color: var(--surface); font-size: 12.5px; }
+.clientslist-root .cl-panel .toolbar > .filter-select:nth-of-type(n+5) { height: 40px; min-height: 40px; border-radius: 10px; }
+/* the dropdowns draw their own arrow with room on the right */
+.clientslist-root .cl-panel .filter-select { appearance: none; -webkit-appearance: none; padding: 0 34px 0 14px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236E6E7A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+@media (max-width: 860px) {
+  .clientslist-root .cl-panel .toolbar { flex-wrap: nowrap; }
+  .clientslist-root .cl-panel .toolbar::after { display: none; }
+  .clientslist-root .cl-panel .toolbar > * { order: 0 !important; }
+}
+
+/* ---- the four filters live behind one Filters button ---- */
+.clientslist-root .cl-panel .toolbar::after { display: none; }
+.clientslist-root .cl-panel .toolbar > .filter-select:nth-of-type(n) { order: 2; height: 40px; min-height: 40px; border-radius: 10px; background-color: var(--surface-muted); }
+.clientslist-root .cl-filters { order: 2; position: relative; }
+.clientslist-root .cl-filters-btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-muted); font-size: 13px; font-weight: 600; color: var(--ink); }
+.clientslist-root .cl-filters-btn:hover { border-color: var(--accent); }
+.clientslist-root .cl-filters-btn.has { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.clientslist-root .cl-filters-n { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--accent); font-size: 11.5px; font-weight: 700; color: #fff; }
+.clientslist-root .cl-filters-backdrop { position: fixed; inset: 0; z-index: 90; }
+.clientslist-root .cl-filters-pop { position: absolute; top: calc(100% + 8px); left: 0; z-index: 91; display: flex; flex-direction: column; gap: 14px; width: 300px; padding: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-lg); }
+.clientslist-root .cl-filter-field { display: flex; flex-direction: column; gap: 6px; }
+.clientslist-root .cl-filter-field > span { font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+.clientslist-root .cl-filters-pop .filter-select { width: 100%; height: 40px; min-height: 40px; border-radius: 10px; background-color: var(--surface-muted); }
+.clientslist-root .cl-filters-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 4px; }
+.clientslist-root .cl-filters-clear { border: none; background: transparent; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+.clientslist-root .cl-filters-clear:hover:not(:disabled) { color: var(--danger); }
+.clientslist-root .cl-filters-clear:disabled { opacity: 0.4; cursor: default; }
+@media (max-width: 860px) {
+  .clientslist-root .cl-filters { flex-shrink: 0; }
+  .clientslist-root .cl-filters-pop { position: fixed; top: auto; left: 16px; right: 16px; bottom: 16px; width: auto; }
+}
+
+/* the filter panel is fixed to the screen (it was cut off by the panel's rounded edge), placed under the button */
+.clientslist-root .cl-filters-pop { position: fixed; z-index: 120; }
+.clientslist-root .cl-filters-backdrop { z-index: 110; }
+@media (max-width: 860px) {
+  .clientslist-root .cl-filters-pop { top: auto !important; left: 16px !important; right: 16px; bottom: 16px; width: auto; }
+}
+
+/* ---- clients table, clearer: a stronger name line, a quiet second line, aligned columns; the status cell is unchanged ---- */
+.clientslist-root .cl-panel .client-table { min-width: 900px; }
+.clientslist-root .cl-panel .client-table thead th { padding: 14px 20px 12px; font-size: 12px; font-weight: 600; color: var(--ink-faint); }
+.clientslist-root .cl-panel .client-table tbody td { padding: 16px 20px; vertical-align: middle; }
+.clientslist-root .cl-panel .client-table tbody tr.client-row:hover { background: color-mix(in srgb, var(--accent) 3%, var(--surface)); }
+.clientslist-root .cl-panel .client-cell { gap: 14px; min-width: 220px; }
+.clientslist-root .cl-panel .cname { font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em; }
+.clientslist-root .cl-panel .ccompany { margin-top: 3px; font-size: 12.5px; color: var(--ink-faint); }
+.clientslist-root .cl-panel .proj-name { font-size: 13.5px; font-weight: 600; }
+.clientslist-root .cl-panel .proj-sub { margin-top: 3px; font-size: 12px; color: var(--ink-faint); }
+.clientslist-root .cl-panel .proj-none { font-weight: 500; font-style: italic; }
+/* project value: strong when set, a quiet dash when not */
+.clientslist-root .cl-panel .value-cell { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
+.clientslist-root .cl-panel .value-cell.notset { font-size: 13px; font-weight: 500; color: var(--ink-faint); }
+/* manager: photo and name, or a small outlined "Unassigned" tag */
+.clientslist-root .cl-panel .manager-cell { gap: 10px; font-size: 13px; font-weight: 500; color: var(--ink); }
+.clientslist-root .cl-panel .manager-unassigned { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px dashed color-mix(in srgb, var(--warning) 55%, var(--border)); border-radius: 999px; font-size: 12px; font-weight: 600; }
+.clientslist-root .cl-panel .time-cell { font-size: 12.5px; color: var(--ink-faint); }
+/* the row menu button sits in a soft square on hover */
+.clientslist-root .cl-panel .row-actions-btn { width: 32px; height: 32px; border-radius: 9px; }
+.clientslist-root .cl-panel .client-row:hover .row-actions-btn { background: var(--surface); border: 1px solid var(--border); }
+
+/* simple table: client, project, status, value, manager and an Edit button */
+.clientslist-root .cl-panel .client-table { min-width: 820px; }
+.clientslist-root .cl-panel .edit-cell { width: 1%; text-align: right; white-space: nowrap; }
+.clientslist-root .cl-panel .cl-edit-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.clientslist-root .cl-panel .cl-edit-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* "Unassigned" is plain text: no background, border or padding */
+.clientslist-root .cl-panel .manager-unassigned { background: transparent !important; border: none !important; padding: 0 !important; border-radius: 0; }
+
+/* a dot before "Unassigned", like the status */
+.clientslist-root .cl-panel .manager-unassigned { display: inline-flex; align-items: center; gap: 7px; }
+.clientslist-root .cl-panel .manager-unassigned::before { content: ''; width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: currentColor; }
+
+/* more breathing space in the clients table and filter bar */
+.clientslist-root .cl-panel .toolbar { padding: 24px 28px; gap: 14px; }
+.clientslist-root .cl-panel .result-count { padding: 20px 28px 8px; }
+.clientslist-root .cl-panel .client-table thead th { padding: 18px 28px 16px; }
+.clientslist-root .cl-panel .client-table tbody td { padding: 26px 28px; }
+.clientslist-root .cl-panel .client-cell { gap: 18px; }
+.clientslist-root .cl-panel .manager-cell { gap: 12px; }
+.clientslist-root .cl-panel .pagination-row { padding: 20px 28px; }
+.clientslist-root .cl-grid { gap: 22px; padding: 12px 28px 28px; }
+.clientslist-root .cl-card { gap: 20px; padding: 26px; }
+@media (max-width: 860px) {
+  .clientslist-root .cl-panel .toolbar { padding: 0 0 16px; }
+  .clientslist-root .cl-panel .result-count { padding: 0 0 12px; }
+  .clientslist-root .cl-panel .pagination-row { padding: 18px 0 0; }
+}
+
+/* more space at the left and right edges of the table (and the bar above it) */
+.clientslist-root .cl-panel .client-table thead th:first-child, .clientslist-root .cl-panel .client-table tbody td:first-child { padding-left: 44px; }
+.clientslist-root .cl-panel .client-table thead th:last-child, .clientslist-root .cl-panel .client-table tbody td:last-child { padding-right: 44px; }
+.clientslist-root .cl-panel .toolbar, .clientslist-root .cl-panel .result-count, .clientslist-root .cl-panel .pagination-row { padding-left: 44px; padding-right: 44px; }
+.clientslist-root .cl-grid { padding-left: 44px; padding-right: 44px; }
+@media (max-width: 860px) {
+  .clientslist-root .cl-panel .toolbar, .clientslist-root .cl-panel .result-count, .clientslist-root .cl-panel .pagination-row { padding-left: 0; padding-right: 0; }
+}
+
+/* serial number column */
+.clientslist-root .cl-panel .client-table .serial-col { width: 1%; white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--ink-faint); }
+.clientslist-root .cl-panel .client-table thead th.serial-col { font-weight: 600; }
+.clientslist-root .cl-panel .client-table thead th:nth-child(2), .clientslist-root .cl-panel .client-table tbody td:nth-child(2) { padding-left: 8px; }
+
+/* coloured heading row */
+.clientslist-root .cl-panel .client-table thead th { background: color-mix(in srgb, var(--accent) 7%, var(--surface)); color: var(--ink-soft); border-bottom: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border-soft)); }
+.clientslist-root .cl-panel .client-table thead th.serial-col { color: var(--ink-soft); }
+
+/* a border on top of the heading row */
+.clientslist-root .cl-panel .client-table thead th { border-top: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border-soft)); }
+
+/* list title with the count beside it */
+.clientslist-root .cl-panel .result-count { display: flex; align-items: center; gap: 10px; padding-top: 24px; padding-bottom: 14px; }
+.clientslist-root .cl-panel .result-title { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.clientslist-root .cl-panel .result-n { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 24px; padding: 0 8px; border-radius: 999px; background: var(--accent-soft); font-size: 12.5px; font-weight: 700; color: var(--accent); }
+
+/* ---- cards view, redesigned: who, project, value and manager, then status and Edit ---- */
+.clientslist-root .cl-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; padding: 8px 44px 40px; }
+.clientslist-root .cl-card { gap: 0; padding: 0; overflow: hidden; border-radius: 18px; }
+.clientslist-root .cl-card-top { display: flex; align-items: center; gap: 16px; padding: 24px 24px 20px; }
+.clientslist-root .cl-card .cname { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+.clientslist-root .cl-card .ccompany { margin-top: 3px; font-size: 12.5px; color: var(--ink-faint); }
+.clientslist-root .cl-card-menu { flex-shrink: 0; }
+.clientslist-root .cl-card-block { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.clientslist-root .cl-card-cap { font-size: 12px; font-weight: 600; color: var(--ink-faint); }
+.clientslist-root .cl-card > .cl-card-block { padding: 18px 24px; border-top: 1px solid var(--border-soft); }
+.clientslist-root .cl-card-pname { font-size: 14.5px; font-weight: 700; color: var(--ink); }
+.clientslist-root .cl-card-two { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border-soft); }
+.clientslist-root .cl-card-two .cl-card-block { padding: 18px 24px; }
+.clientslist-root .cl-card-two .cl-card-block + .cl-card-block { border-left: 1px solid var(--border-soft); }
+.clientslist-root .cl-card-value { font-size: 15px; font-weight: 700; color: var(--ink); }
+.clientslist-root .cl-card-value.notset { font-size: 13.5px; font-weight: 500; color: var(--ink-faint); }
+.clientslist-root .cl-card .manager-cell { font-size: 13.5px; font-weight: 600; }
+.clientslist-root .cl-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px; border-top: 1px solid var(--border-soft); background: var(--surface-muted); }
+
+/* the bottom strip: status on the left, Edit on the right */
+.clientslist-root .cl-card-foot { justify-content: space-between; }
+
+/* smaller avatar in the cards */
+.clientslist-root .cl-card-top { gap: 12px; }
+
+/* cards: a lighter, quieter type scale (smaller sizes, lighter weights, softer colours) */
+.clientslist-root .cl-card .cname { font-size: 15px; font-weight: 600; letter-spacing: -0.005em; color: var(--ink); }
+.clientslist-root .cl-card-cap { font-size: 12px; font-weight: 500; color: var(--ink-faint); }
+.clientslist-root .cl-card-pname { font-size: 14px; font-weight: 500; color: var(--ink); }
+.clientslist-root .cl-card-value { font-size: 14px; font-weight: 600; color: var(--ink); }
+.clientslist-root .cl-card-value.notset { font-size: 13px; font-weight: 400; color: var(--ink-faint); }
+.clientslist-root .cl-card .manager-cell { font-size: 13px; font-weight: 500; color: var(--ink-soft); }
+.clientslist-root .cl-card .manager-unassigned { font-size: 13px; font-weight: 500; }
+.clientslist-root .cl-card .status-pill { font-size: 12.5px; font-weight: 500; }
+.clientslist-root .cl-card .cl-edit-btn { font-size: 12.5px; font-weight: 500; color: var(--ink-soft); }

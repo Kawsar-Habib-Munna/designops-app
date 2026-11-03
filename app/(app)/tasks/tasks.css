@@ -391,3 +391,292 @@
 
 .tasklist-root .person-card-assign{display:flex;align-items:center;justify-content:center;width:28px;height:28px;margin-left:2px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink-soft);cursor:pointer;flex-shrink:0;transition:border-color .15s ease,color .15s ease,background .15s ease;}
 .tasklist-root .person-card-assign:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+
+/* ==== task list header area, redesigned: segmented view switch, KPI cards, underline smart views, one filter bar ==== */
+/* view switch: a soft pill with a white selected segment */
+.tasklist-root .main-tabs{gap:4px;padding:5px;margin-bottom:22px;background:var(--surface-muted);border:1px solid var(--border);border-radius:14px;}
+.tasklist-root .main-tab{padding:9px 18px;border:1px solid transparent;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink-soft);}
+.tasklist-root .main-tab.active{background:var(--surface);color:var(--ink);border-color:transparent;box-shadow:0 1px 3px rgba(16,16,20,.1);}
+.tasklist-root .main-tab.active svg{color:var(--accent);}
+
+
+/* smart views: plain tabs with an underline on the selected one */
+.tasklist-root .views-row{gap:4px;margin-bottom:18px;padding:0;border-bottom:1px solid var(--border);}
+.tasklist-root .view-pill{position:relative;padding:11px 14px;border:none;border-radius:0;background:transparent;font-size:13px;font-weight:500;color:var(--ink-soft);}
+.tasklist-root .view-pill:hover{background:transparent;color:var(--ink);}
+.tasklist-root .view-pill.active,.tasklist-root.dark .view-pill.active{background:transparent;color:var(--accent);font-weight:700;}
+.tasklist-root .view-pill.active::after{content:'';position:absolute;left:10px;right:10px;bottom:-1px;height:2px;border-radius:999px;background:var(--accent);}
+.tasklist-root .view-sep{height:18px;margin:0 6px;}
+
+/* filter bar: one framed row, the search first and wide, then equal-height controls */
+.tasklist-root .toolbar{gap:10px;padding:14px 16px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:16px;}
+.tasklist-root .toolbar-search{flex:1 1 260px;max-width:none;height:40px;padding:0 14px;border-radius:10px;background:var(--surface-muted);}
+.tasklist-root .toolbar-search input{font-size:13.5px;}
+.tasklist-root .filter-chip{height:40px;padding:0 14px;gap:7px;border-radius:10px;font-size:13px;font-weight:500;background:var(--surface);}
+.tasklist-root .filter-chip:disabled{background:var(--surface-muted);}
+.tasklist-root .filter-chip.applied{border-color:var(--accent);}
+@media (max-width:860px){
+  .tasklist-root .toolbar{padding:12px;}
+}
+
+/* the status tabs never scroll: no scrollbar at all, and they wrap onto a second line on narrow screens */
+.tasklist-root .views-row{overflow:visible;flex-wrap:wrap;}
+
+
+
+/* the other filters live behind one icon button */
+.tasklist-root .tf-wrap{position:relative;}
+.tasklist-root .tf-btn{width:40px;padding:0;justify-content:center;}
+.tasklist-root .tf-backdrop{position:fixed;inset:0;z-index:110;}
+.tasklist-root .tf-menu{position:fixed;z-index:120;display:flex;flex-direction:column;gap:2px;width:240px;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-lg);}
+.tasklist-root .tf-item{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:none;border-radius:9px;background:transparent;text-align:left;font-size:13px;font-weight:500;color:var(--ink);}
+.tasklist-root .tf-item:hover:not(:disabled){background:var(--surface-muted);}
+.tasklist-root .tf-item:disabled{color:var(--ink-faint);cursor:default;}
+.tasklist-root .tf-item em{margin-left:auto;font-style:normal;font-size:11px;color:var(--ink-faint);}
+.tasklist-root .tf-item.danger{color:var(--danger);}
+.tasklist-root .tf-sep{height:1px;margin:4px 6px;background:var(--border-soft);}
+
+/* the view switch and the My tasks / Team tasks switch sit together in one card */
+.tasklist-root .view-card{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:10px 12px;margin-bottom:22px;background:var(--surface);border:1px solid var(--border);border-radius:16px;}
+.tasklist-root .view-card .main-tabs{margin:0;padding:4px;border:none;background:var(--surface-muted);}
+.tasklist-root .view-card .scope-toggle{padding:4px;border:none;border-radius:14px;background:var(--surface-muted);}
+.tasklist-root .view-card .scope-btn{padding:9px 16px;border-radius:10px;font-size:13px;}
+.tasklist-root .view-card .scope-btn.active{color:var(--ink);box-shadow:0 1px 3px rgba(16,16,20,.1);}
+.tasklist-root .view-card .scope-btn.active svg{color:var(--accent);}
+@media (max-width:760px){
+  .tasklist-root .view-card{padding:8px;}
+  .tasklist-root .view-card .main-tabs,.tasklist-root .view-card .scope-toggle{width:100%;}
+}
+
+/* the right side of the card: the scope switch and the two export buttons on one line */
+.tasklist-root .view-card-right{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;}
+.tasklist-root .view-card-right .scope-actions{display:flex;align-items:center;gap:8px;}
+.tasklist-root .view-card-right .scope-actions .btn{height:42px;padding:0 16px;border-radius:12px;}
+@media (max-width:760px){
+  .tasklist-root .view-card-right{width:100%;justify-content:flex-start;}
+}
+
+/* two separate cards side by side: the view switch, and the scope switch with the export buttons */
+.tasklist-root .view-cards{display:flex;align-items:stretch;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px;}
+.tasklist-root .view-cards .view-card{margin:0;}
+.tasklist-root .view-cards .view-card-right{flex:1 1 auto;justify-content:flex-end;gap:12px;}
+@media (max-width:760px){
+  .tasklist-root .view-cards{flex-direction:column;}
+  .tasklist-root .view-cards .view-card{width:100%;}
+  .tasklist-root .view-cards .view-card-right{justify-content:flex-start;}
+}
+
+/* the Export PDF and Share to WhatsApp buttons have their own card */
+.tasklist-root .view-cards .view-card-right{flex:0 1 auto;}
+.tasklist-root .view-cards .view-card-actions{margin-left:auto;}
+.tasklist-root .view-cards{justify-content:flex-start;}
+
+/* three person cards in a row (two on tablets, one on phones) */
+.tasklist-root .person-card-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+@media (max-width:1100px){ .tasklist-root .person-card-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+@media (max-width:700px){ .tasklist-root .person-card-grid{grid-template-columns:minmax(0,1fr);} }
+
+/* ==== person cards, redesigned: clean and clear ==== */
+.tasklist-root .person-card{padding:22px;gap:18px;border-radius:18px;box-shadow:none;}
+.tasklist-root .person-card-head{gap:14px;padding-bottom:18px;border-bottom:1px solid var(--border-soft);}
+.tasklist-root .person-card-name{font-size:15px;font-weight:700;letter-spacing:-0.01em;}
+.tasklist-root .person-card-sub{margin-top:3px;font-size:12.5px;}
+.tasklist-root .person-card-count{display:flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 8px;border-radius:999px;background:var(--accent-soft);font-size:13px;font-weight:700;color:var(--accent);}
+.tasklist-root .person-card-assign{width:32px;height:32px;margin-left:0;border-radius:10px;}
+
+/* overall progress: a label, the percentage, and a thicker bar */
+.tasklist-root .person-progress-wrap{row-gap:10px;padding:14px 16px;background:var(--surface-muted);border:1px solid var(--border-soft);border-radius:12px;}
+.tasklist-root .person-progress-label{font-size:12.5px;font-weight:500;color:var(--ink-soft);}
+.tasklist-root .person-progress-pct{font-size:15px;font-weight:800;color:var(--ink);}
+.tasklist-root .person-progress-wrap .progress-track{height:8px;border-radius:999px;background:var(--border-soft);}
+.tasklist-root .person-progress-wrap .progress-fill{border-radius:999px;}
+
+/* tasks: no grey boxes; each one is a block with a thin line between them */
+.tasklist-root .person-task-list{gap:0;max-height:420px;margin-right:-6px;padding-right:6px;}
+.tasklist-root .person-task-item{padding:16px 0;background:transparent;border:none;border-bottom:1px solid var(--border-soft);border-radius:0;}
+.tasklist-root .person-task-item:first-child{padding-top:2px;}
+.tasklist-root .person-task-item:last-child{border-bottom:none;padding-bottom:2px;}
+.tasklist-root .person-task-top{gap:12px;}
+.tasklist-root .person-task-dot{width:9px;height:9px;margin-top:6px;}
+.tasklist-root .person-task-title{font-size:14px;font-weight:700;letter-spacing:-0.005em;}
+.tasklist-root .person-task-meta{margin-top:5px;font-size:12px;line-height:1.5;}
+.tasklist-root .person-task-desc{margin-top:8px;font-size:12.5px;line-height:1.6;}
+.tasklist-root .person-task-action{width:28px;height:28px;border-radius:8px;}
+
+/* checklist: clearer boxes and easier-to-read lines */
+.tasklist-root .person-task-checklist{margin-top:12px;padding:12px 14px;gap:8px;border-top:none;background:var(--surface-muted);border:1px solid var(--border-soft);border-radius:12px;}
+.tasklist-root .person-checklist-item{gap:10px;padding:0;font-size:12.5px;line-height:1.5;color:var(--ink);}
+.tasklist-root .person-checklist-item .icb{width:16px;height:16px;margin-top:1px;border-radius:5px;background:var(--surface);align-self:flex-start;}
+.tasklist-root .person-checklist-item.done{color:var(--ink-faint);}
+@media (max-width:700px){
+  .tasklist-root .person-card{padding:18px;}
+}
+
+/* each task is its own card */
+.tasklist-root .person-task-list{gap:12px;}
+.tasklist-root .person-task-item,
+.tasklist-root .person-task-item:first-child,
+.tasklist-root .person-task-item:last-child{padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 2px rgba(16,16,20,.03);}
+.tasklist-root .person-task-item:hover{border-color:var(--accent-soft-2);}
+.tasklist-root .person-task-checklist{background:var(--surface-muted);}
+
+/* ---- the task inside a person card: a round check, the title, then project, priority and checklist count; the checklist is indented under a thin line ---- */
+.tasklist-root .ptk{display:flex;align-items:flex-start;gap:14px;}
+.tasklist-root .ptk-check{display:flex;align-items:center;justify-content:center;width:26px;height:26px;flex-shrink:0;margin-top:1px;border:1.5px solid var(--border);border-radius:50%;background:var(--surface);}
+.tasklist-root .ptk-check.doing{border-color:var(--accent);}
+.tasklist-root .ptk-check.done{background:var(--positive);border-color:var(--positive);}
+.tasklist-root .ptk-body{flex:1;min-width:0;}
+.tasklist-root .ptk-top{display:flex;align-items:flex-start;gap:6px;}
+.tasklist-root .ptk-title{flex:1;min-width:0;font-size:16px;font-weight:700;line-height:1.35;letter-spacing:-0.01em;color:var(--ink);overflow-wrap:anywhere;}
+.tasklist-root .ptk-title.done{color:var(--ink-faint);text-decoration:line-through;}
+.tasklist-root .ptk-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:13px;color:var(--ink-soft);}
+.tasklist-root .ptk-project{font-weight:700;color:var(--ink-soft);}
+.tasklist-root .ptk-prio{display:inline-flex;align-items:center;gap:7px;font-weight:600;color:var(--ink-soft);}
+.tasklist-root .ptk-prio i{width:8px;height:8px;border-radius:50%;background:var(--accent);}
+.tasklist-root .ptk-prio.low i{background:var(--ink-faint);}
+.tasklist-root .ptk-prio.high i{background:var(--warning);}
+.tasklist-root .ptk-prio.urgent i{background:var(--danger);}
+.tasklist-root .ptk-count{display:inline-flex;align-items:center;gap:6px;color:var(--ink-faint);}
+.tasklist-root .ptk-due{color:var(--ink-faint);}
+.tasklist-root .ptk-checklist{display:flex;flex-direction:column;gap:12px;margin:16px 0 2px 4px;padding-left:18px;border-left:1.5px solid var(--border);}
+.tasklist-root .ptk-item{display:flex;align-items:flex-start;gap:12px;width:100%;padding:0;border:none;background:none;text-align:left;font-size:14px;line-height:1.5;color:var(--ink);overflow-wrap:anywhere;}
+.tasklist-root .ptk-item .icb{display:flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0;margin-top:1px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface);}
+.tasklist-root .ptk-item.done{color:var(--ink-faint);text-decoration:line-through;}
+.tasklist-root .ptk-item.done .icb{background:var(--positive);border-color:var(--positive);}
+.tasklist-root .person-task-item .person-task-desc{margin-top:10px;font-size:13px;}
+
+/* smaller type in the task cards */
+.tasklist-root .ptk-title{font-size:14px;}
+.tasklist-root .ptk-meta{margin-top:6px;gap:4px 12px;font-size:12px;}
+.tasklist-root .ptk-item{font-size:12.5px;gap:10px;}
+.tasklist-root .ptk-item .icb{width:17px;height:17px;border-radius:5px;}
+.tasklist-root .ptk-checklist{gap:10px;margin-top:12px;}
+.tasklist-root .ptk-check{width:22px;height:22px;}
+.tasklist-root .person-task-item .person-task-desc{font-size:12px;}
+
+/* checklist moved a little to the left */
+.tasklist-root .ptk-checklist{margin-left:-6px;padding-left:14px;}
+
+/* ---- overall progress, redesigned: a label with the task count, a thick rounded bar, and a % badge on the end of the fill ---- */
+.tasklist-root .person-progress-wrap{display:block;padding:14px 16px 16px;}
+.tasklist-root .pp-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:32px;}
+.tasklist-root .pp-top .person-progress-label{font-size:12.5px;font-weight:600;color:var(--ink-soft);}
+.tasklist-root .pp-count{font-size:12px;color:var(--ink-faint);}
+.tasklist-root .pp-bar{position:relative;height:10px;border-radius:999px;background:var(--border-soft);box-shadow:inset 0 1px 2px rgba(16,16,20,.06);}
+.tasklist-root .pp-fill{position:relative;height:100%;min-width:10px;border-radius:999px;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 70%,#fff),var(--accent));transition:width .5s cubic-bezier(.22,1,.36,1);}
+.tasklist-root .pp-fill.full{background:linear-gradient(90deg,color-mix(in srgb,var(--positive) 70%,#fff),var(--positive));}
+.tasklist-root .pp-badge{position:absolute;right:0;bottom:calc(100% + 9px);transform:translateX(50%);padding:2px 8px;border-radius:8px;background:var(--ink);font-size:11.5px;font-weight:700;line-height:1.4;color:var(--surface);white-space:nowrap;}
+.tasklist-root .pp-badge::after{content:'';position:absolute;left:50%;top:100%;width:7px;height:7px;background:inherit;border-radius:2px;transform:translate(-50%,-50%) rotate(45deg);}
+.tasklist-root .pp-badge.edge-l{right:auto;left:0;transform:none;}
+.tasklist-root .pp-badge.edge-l::after{left:12px;}
+.tasklist-root .pp-badge.edge-r{transform:none;}
+.tasklist-root .pp-badge.edge-r::after{left:auto;right:12px;transform:translate(0,-50%) rotate(45deg);}
+
+/* ---- overall progress as a ring: the ring with the percentage inside, and the label with the task count beside it ---- */
+.tasklist-root .person-progress-wrap.ring{display:flex;align-items:center;gap:18px;padding:16px 18px;}
+.tasklist-root .pp-ring{position:relative;display:flex;align-items:center;justify-content:center;width:64px;height:64px;flex-shrink:0;}
+.tasklist-root .pp-ring svg{display:block;}
+.tasklist-root .pp-ring-track{stroke:var(--border);opacity:.7;}
+.tasklist-root .pp-ring-fill{stroke:var(--accent);transition:stroke-dasharray .5s cubic-bezier(.22,1,.36,1);}
+.tasklist-root .pp-ring-fill.full{stroke:var(--positive);}
+.tasklist-root .pp-ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;letter-spacing:-0.01em;color:var(--ink);}
+.tasklist-root .pp-ring-text{display:flex;flex-direction:column;gap:5px;min-width:0;}
+.tasklist-root .pp-ring-text .person-progress-label{font-size:14px;font-weight:700;color:var(--ink);}
+.tasklist-root .pp-ring-text .pp-count{font-size:12.5px;color:var(--ink-faint);}
+
+/* the progress box has no border */
+.tasklist-root .person-progress-wrap,.tasklist-root .person-progress-wrap.ring{border:none;}
+
+/* no border on the grey boxes inside the cards (progress box, the task's checklist box) */
+.tasklist-root .person-task-checklist,.tasklist-root .person-progress-wrap{border:none;}
+
+/* the progress box: no border, outline or shadow of any kind */
+.tasklist-root .person-progress-wrap,.tasklist-root .person-progress-wrap.ring{border:0 !important;outline:0 !important;box-shadow:none !important;}
+
+/* the progress box gets a thin light-grey border */
+.tasklist-root .person-progress-wrap,.tasklist-root .person-progress-wrap.ring{border:1px solid var(--border) !important;}
+
+/* ---- modern ring: a thin gradient arc with rounded ends, a soft glow, and a white centre with the percentage ---- */
+.tasklist-root .pp-ring{width:76px;height:76px;}
+.tasklist-root .pp-ring-track{stroke:var(--border-soft);opacity:1;}
+.tasklist-root .pp-ring-fill{stroke:none;filter:drop-shadow(0 2px 4px color-mix(in srgb,var(--accent) 35%,transparent));}
+.tasklist-root .pp-ring-inner{fill:var(--surface);filter:drop-shadow(0 1px 3px rgba(16,16,20,.12));}
+.tasklist-root .pp-ring-pct{font-size:15px;font-weight:800;}
+
+/* ---- progress as a half-circle gauge: the arc over the percentage, and the label with the count beside it ---- */
+.tasklist-root .person-progress-wrap.gauge{display:flex;align-items:center;gap:20px;padding:16px 20px;}
+.tasklist-root .pg{position:relative;width:132px;height:76px;flex-shrink:0;}
+.tasklist-root .pg svg{display:block;}
+.tasklist-root .pg-track{stroke:var(--border-soft);}
+.tasklist-root .pg-fill{transition:stroke-dasharray .5s cubic-bezier(.22,1,.36,1);}
+.tasklist-root .pg-pct{position:absolute;left:0;right:0;bottom:0;text-align:center;font-size:20px;font-weight:800;letter-spacing:-0.02em;line-height:1;color:var(--ink);}
+.tasklist-root .pg-text{display:flex;flex-direction:column;gap:5px;min-width:0;}
+.tasklist-root .pg-text .person-progress-label{font-size:14px;font-weight:700;color:var(--ink);}
+.tasklist-root .pg-text .pp-count{font-size:12.5px;color:var(--ink-faint);}
+
+/* speedometer: tick marks, a needle that swings to the value, and a centre pivot */
+.tasklist-root .pg{height:80px;}
+.tasklist-root .pg svg{overflow:visible;}
+.tasklist-root .pg-tick{stroke:var(--ink-faint);opacity:.6;}
+.tasklist-root .pg-needle{stroke:var(--ink);transition:transform .7s cubic-bezier(.22,1,.36,1);}
+.tasklist-root .pg-pivot{fill:var(--ink);stroke:var(--surface);stroke-width:2;}
+.tasklist-root .pg-pct{bottom:-6px;font-size:18px;}
+
+/* ---- speedometer, second design: a red - amber - green arc (the unused part faded), a slim needle and a small hub ---- */
+.tasklist-root .pg-track{stroke:none;opacity:.2;}
+.tasklist-root .pg-fill{filter:drop-shadow(0 2px 3px rgba(16,16,20,.12));}
+.tasklist-root .pg-needle{stroke-width:2;}
+.tasklist-root .pg-pivot{r:5;}
+.tasklist-root .pg-pct{font-size:17px;}
+
+/* ---- progress, new design: a big percentage, the label and count, and ten blocks that fill up ---- */
+.tasklist-root .person-progress-wrap.seg{display:block;padding:18px 20px 20px;}
+.tasklist-root .sg-top{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
+.tasklist-root .sg-pct{display:flex;align-items:baseline;font-size:36px;font-weight:800;letter-spacing:-0.03em;line-height:1;color:var(--ink);}
+.tasklist-root .sg-pct small{margin-left:2px;font-size:16px;font-weight:700;color:var(--ink-faint);}
+.tasklist-root .sg-text{display:flex;flex-direction:column;gap:4px;min-width:0;padding-left:16px;border-left:1px solid var(--border);}
+.tasklist-root .sg-text .person-progress-label{font-size:14px;font-weight:700;color:var(--ink);}
+.tasklist-root .sg-text .pp-count{font-size:12.5px;color:var(--ink-faint);}
+.tasklist-root .sg-bar{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:5px;}
+.tasklist-root .sg-bar i{height:10px;border-radius:4px;background:var(--border-soft);transition:background .3s ease;}
+.tasklist-root .sg-bar i.on{background:var(--accent);}
+.tasklist-root .sg-bar i.on.full{background:var(--positive);}
+
+/* smaller progress box */
+.tasklist-root .person-progress-wrap.seg{padding:12px 14px 14px;}
+.tasklist-root .sg-top{gap:12px;margin-bottom:10px;}
+.tasklist-root .sg-pct{font-size:24px;}
+.tasklist-root .sg-pct small{font-size:12px;}
+.tasklist-root .sg-text{gap:2px;padding-left:12px;}
+.tasklist-root .sg-text .person-progress-label{font-size:12.5px;}
+.tasklist-root .sg-text .pp-count{font-size:11.5px;}
+.tasklist-root .sg-bar{gap:4px;}
+.tasklist-root .sg-bar i{height:7px;border-radius:3px;}
+
+/* the colour follows the percentage: 0-33% red, 34-66% amber, 67-100% green */
+.tasklist-root .person-progress-wrap.seg{--lvl:var(--accent);}
+.tasklist-root .person-progress-wrap.seg.lvl-low{--lvl:var(--danger);}
+.tasklist-root .person-progress-wrap.seg.lvl-mid{--lvl:var(--warning);}
+.tasklist-root .person-progress-wrap.seg.lvl-high{--lvl:var(--positive);}
+.tasklist-root .sg-pct{color:var(--lvl);}
+.tasklist-root .sg-bar i.on,.tasklist-root .sg-bar i.on.full{background:var(--lvl);}
+
+/* four levels: 0-33% red, 34-66% amber, 67-79% purple, 80-100% green */
+.tasklist-root .person-progress-wrap.seg.lvl-good{--lvl:var(--accent);}
+
+/* ---- share preview window ---- */
+.tasklist-root .sp-overlay{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,10,14,.6);}
+.tasklist-root .sp-box{display:flex;flex-direction:column;width:100%;max-width:720px;max-height:100%;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 24px 64px rgba(0,0,0,.3);}
+.tasklist-root .sp-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 22px;border-bottom:1px solid var(--border-soft);}
+.tasklist-root .sp-title{font-size:16px;font-weight:800;color:var(--ink);}
+.tasklist-root .sp-sub{margin-top:3px;font-size:12.5px;color:var(--ink-faint);}
+.tasklist-root .sp-close{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:none;border-radius:10px;background:transparent;color:var(--ink-soft);}
+.tasklist-root .sp-close:hover{background:var(--surface-muted);color:var(--ink);}
+.tasklist-root .sp-body{flex:1;min-height:200px;overflow:auto;padding:20px;background:var(--bg);}
+.tasklist-root .sp-img{display:block;width:100%;max-width:560px;height:auto;margin:0 auto;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(16,16,20,.08);background:#fff;}
+.tasklist-root .sp-loading{display:flex;align-items:center;justify-content:center;min-height:200px;font-size:13.5px;color:var(--ink-faint);}
+.tasklist-root .sp-foot{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:14px 22px;border-top:1px solid var(--border-soft);}
+
+/* the live sheet inside the preview window: a white page, the same width as the shared picture */
+.tasklist-root .sp-sheet{width:600px;max-width:100%;margin:0 auto;padding:32px;background:#fff;color:#14141A;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(16,16,20,.08);box-sizing:border-box;}
+@media (max-width:660px){ .tasklist-root .sp-sheet{padding:18px;} }

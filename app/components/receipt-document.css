@@ -417,3 +417,39 @@
 .receipt-document .rd3-notes { list-style: disc outside; padding-left: 20px; }
 .receipt-document .rd3-notes li { display: list-item; list-style: disc outside; padding-left: 2px; }
 .receipt-document .rd3-notes li::marker { color: var(--ink-faint); }
+
+/* ---- phone view (screen only; the PDF keeps the desktop layout) ---- */
+@media screen and (max-width: 640px) {
+  /* header: logo on the left, the receipt block on the right, each part on its own line */
+  .receipt-document:not(.rd-fixed) .rd3-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .receipt-document:not(.rd-fixed) .rd3-brand, .receipt-document:not(.rd-fixed) .rd3-ref { display: block; }
+  .receipt-document:not(.rd-fixed) .rd3-logo { width: 110px; }
+  .receipt-document:not(.rd-fixed) .rd3-ref { text-align: right; padding-left: 0; }
+  .receipt-document:not(.rd-fixed) .rd3-ref-label { margin-bottom: 2px; }
+  .receipt-document:not(.rd-fixed) .rd3-ref-number, .receipt-document:not(.rd-fixed) .rd3-ref-date { display: block; margin: 0; }
+  .receipt-document:not(.rd-fixed) .rd3-ref-number { font-size: 17px; }
+  .receipt-document:not(.rd-fixed) .rd3-ref-date { margin-top: 2px; }
+
+  /* the two detail tables: values may wrap instead of being cut off */
+  .receipt-document:not(.rd-fixed) .rd3-kv th, .receipt-document:not(.rd-fixed) .rd3-kv td { height: auto; min-height: 40px; padding: 10px 12px; line-height: 1.4; white-space: normal; overflow: visible; word-break: break-word; }
+  .receipt-document:not(.rd-fixed) .rd3-kv th { width: 38%; }
+
+  /* items table: no # column, normal line height, the amount on the right */
+  .receipt-document:not(.rd-fixed) .rd3-items th:first-child, .receipt-document:not(.rd-fixed) .rd3-items td.rd3-n { display: none; }
+  .receipt-document:not(.rd-fixed) .rd3-items th, .receipt-document:not(.rd-fixed) .rd3-items td { height: auto; padding: 12px 8px 12px 0; line-height: 1.4; vertical-align: middle; font-size: 12.5px; }
+  .receipt-document:not(.rd-fixed) .rd3-items th { padding-top: 10px; padding-bottom: 10px; white-space: nowrap; }
+  .receipt-document:not(.rd-fixed) .rd3-items .rd3-r { width: 76px; padding-right: 0; text-align: right; }
+  .receipt-document:not(.rd-fixed) .rd3-items td:nth-child(3) { width: 84px; }
+
+  /* totals use the full width */
+  .receipt-document:not(.rd-fixed) .rd3-totals-spacer { display: none; }
+  .receipt-document:not(.rd-fixed) .rd3-totals-inner th, .receipt-document:not(.rd-fixed) .rd3-totals-inner td { padding: 10px 0 4px; line-height: 1.4; height: auto; }
+}
+
+/* readable text everywhere (screen, phone and the printed PDF): a normal line height so wrapped text stays together, content
+   centred in its row, and long values wrap instead of being cut off */
+.receipt-document .rd3-kv th, .receipt-document .rd3-kv td { height: auto; min-height: 44px; padding: 12px 14px; line-height: 1.45; vertical-align: middle; white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
+.receipt-document .rd3-items th { height: auto; padding: 12px 0; line-height: 1.4; vertical-align: middle; }
+.receipt-document .rd3-items td { height: auto; padding: 16px 0; line-height: 1.45; vertical-align: middle; }
+.receipt-document .rd3-items td.rd3-desc { padding-right: 12px; }
+.receipt-document .rd3-totals-inner th, .receipt-document .rd3-totals-inner td { line-height: 1.4; }

@@ -21,6 +21,7 @@ import HeroIntro from "@/app/components/HeroIntro";
 import ScrollRevealText from "@/app/components/ScrollRevealText";
 import MouseTrail from "@/app/components/MouseTrail";
 import SlideSwapLabel from "@/app/components/SlideSwapLabel";
+import TextEffect from "@/app/components/TextEffect";
 
 // পাবলিক ল্যান্ডিং পেজ — লগইন ছাড়াই সবাই দেখে, তাই profiles টেবিলের RLS
 // (শুধু authenticated ইউজার read করতে পারে) এই পেজের জন্য প্রযোজ্য না। এটা
@@ -294,7 +295,7 @@ export default async function Home() {
               <div className="stats-top">
                 <BouncyStat {...STATS_TOP[0]} index={0} />
                 <div className="stats-heading">
-                  <h2 className="stats-title">Numbers That Speak!</h2>
+                  <TextEffect as="h2" className="stats-title" text="Numbers That Speak!" />
                   <p className="stats-desc">
                     From thoughtful product decisions to polished digital
                     experiences, here’s a quick look at what we’ve been building
@@ -320,7 +321,7 @@ export default async function Home() {
                 <span>SERVICES</span>
               </span>
               <div className="services-heading-copy">
-                <h2 className="services-title">What Can We Build Together?</h2>
+                <TextEffect as="h2" className="services-title" text="What Can We Build Together?" />
                 <ScrollRevealText
                   className="services-desc"
                   text="Whether you’re starting from an idea or improving an existing product, we help shape, design, and build experiences from strategy to launch."
@@ -343,9 +344,7 @@ export default async function Home() {
                   <span>PROJECTS</span>
                 </span>
                 <div className="projects-heading-copy">
-                  <h2 className="projects-title">
-                    Let&rsquo;s Look At What We&rsquo;ve Built!
-                  </h2>
+                  <TextEffect as="h2" className="projects-title" text="Let’s Look At What We’ve Built!" />
                 </div>
               </div>
               <div className="projects-desc-row">
@@ -398,7 +397,7 @@ export default async function Home() {
                 <span>ABOUT US</span>
               </span>
               <div className="about-heading-copy">
-                <h2 className="about-title">So, Who Are We?</h2>
+                <TextEffect as="h2" className="about-title" text="So, Who Are We?" />
                 <p className="about-desc">
                   We&rsquo;re a design and development team passionate about
                   solving complex problems, creating better experiences, and
@@ -477,7 +476,7 @@ export default async function Home() {
                 <span>WHY FLOW 53</span>
               </span>
               <div className="why-heading-copy">
-                <h2 className="why-title">Why Work With Us?</h2>
+                <TextEffect as="h2" className="why-title" text="Why Work With Us?" />
                 <p className="why-desc">
                   We look beyond the interface to understand the problem, align
                   with your goals, and create solutions that are thoughtful,
@@ -518,9 +517,7 @@ export default async function Home() {
                 <span>PROCESS</span>
               </span>
               <div className="process-heading-copy">
-                <h2 className="process-title">
-                  How Do We Bring Ideas To Life?
-                </h2>
+                <TextEffect as="h2" className="process-title" text="How Do We Bring Ideas To Life?" />
                 <p className="process-lead">
                   From problem research to design, build, test and
                   launch&mdash;we follow a clear, collaborative process.
@@ -541,9 +538,7 @@ export default async function Home() {
                   <span>TESTIMONIALS</span>
                 </span>
                 <div className="testimonials-heading-copy">
-                  <h2 className="testimonials-title">
-                    Don&rsquo;t Just Take Our Word For It!
-                  </h2>
+                  <TextEffect as="h2" className="testimonials-title" text="Don’t Just Take Our Word For It!" />
                   <p className="testimonials-lead">
                     Hear from the people we&rsquo;ve worked with and discover how
                     thoughtful collaboration, clear communication, and purposeful
@@ -573,9 +568,7 @@ export default async function Home() {
                 <span>FAQ &amp; CONTACT</span>
               </span>
               <div className="faq-heading-copy">
-                <h2 className="faq-title">
-                  Got Questions? Let&rsquo;s Find Answers.
-                </h2>
+                <TextEffect as="h2" className="faq-title" text="Got Questions? Let’s Find Answers." />
                 <p className="faq-lead">
                   Whether you&rsquo;re curious about our services, process,
                   pricing, or timelines, you&rsquo;ll find quick answers below.
@@ -721,9 +714,7 @@ export default async function Home() {
                   <span>CALL TO ACTION</span>
                 </span>
                 <div className="cta-final-heading-copy">
-                  <h2 className="cta-final-title">
-                    Have Something Worth Building?
-                  </h2>
+                  <TextEffect as="h2" className="cta-final-title" text="Have Something Worth Building?" />
                   <p className="cta-final-lead">
                     Tell us what you&rsquo;re thinking, where you&rsquo;re
                     stuck, or what you want to improve. We&rsquo;ll help you

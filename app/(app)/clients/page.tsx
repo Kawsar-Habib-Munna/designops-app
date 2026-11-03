@@ -174,11 +174,17 @@ export default function ClientsListPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
+
+  const [view, setView] = useState<'table' | 'cards'>('table');
+
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filtersPos, setFiltersPos] = useState<{ top: number; left: number } | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [projectFilter, setProjectFilter] = useState('');
   const [managerFilter, setManagerFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [sortKey, setSortKey] = useState('recent');
+  const activeFilterCount = (statusFilter !== 'all' ? 1 : 0) + (projectFilter ? 1 : 0) + (managerFilter ? 1 : 0) + (dateFilter ? 1 : 0);
   const [page, setPage] = useState(1);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -722,6 +728,7 @@ export default function ClientsListPage() {
               </div>
             </div>
 
+            <section className="cl-panel">
             <div className="toolbar">
               <div className="toolbar-search">
                 <Icon name="search" size={13} />
@@ -734,61 +741,63 @@ export default function ClientsListPage() {
                   }}
                 />
               </div>
-              <select
-                className="filter-select"
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setPage(1);
-                }}
-              >
-                {FILTER_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="filter-select"
-                value={projectFilter}
-                onChange={(e) => {
-                  setProjectFilter(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">Project: All</option>
-                <option value="active">Has Active Project</option>
-                <option value="none">No Project</option>
-                <option value="completed">Completed Project</option>
-              </select>
-              <select
-                className="filter-select"
-                value={managerFilter}
-                onChange={(e) => {
-                  setManagerFilter(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">Manager: All</option>
-                {managers.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.full_name}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="filter-select"
-                value={dateFilter}
-                onChange={(e) => {
-                  setDateFilter(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">Date Added: Any</option>
-                <option value="today">Today</option>
-                <option value="7d">Last 7 Days</option>
-                <option value="30d">Last 30 Days</option>
-              </select>
+              <div className="cl-filters">
+                <button type="button" className={`cl-filters-btn${activeFilterCount > 0 ? ' has' : ''}`} onClick={(e) => {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    setFiltersPos({ top: r.bottom + 8, left: Math.max(12, Math.min(r.left, window.innerWidth - 312)) });
+                    setFiltersOpen((o) => !o);
+                  }} aria-expanded={filtersOpen}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" /></svg>
+                  Filters
+                  {activeFilterCount > 0 && <span className="cl-filters-n tabular">{activeFilterCount}</span>}
+                </button>
+                {filtersOpen && (
+                  <>
+                    <div className="cl-filters-backdrop" onClick={() => setFiltersOpen(false)} />
+                    <div className="cl-filters-pop" role="dialog" aria-label="Filters" style={filtersPos ?? undefined}>
+                      <label className="cl-filter-field">
+                        <span>Status</span>
+                        <select className="filter-select" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
+                          {FILTER_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="cl-filter-field">
+                        <span>Project</span>
+                        <select className="filter-select" value={projectFilter} onChange={(e) => { setProjectFilter(e.target.value); setPage(1); }}>
+                          <option value="">Project: All</option>
+                          <option value="active">Has Active Project</option>
+                          <option value="none">No Project</option>
+                          <option value="completed">Completed Project</option>
+                        </select>
+                      </label>
+                      <label className="cl-filter-field">
+                        <span>Manager</span>
+                        <select className="filter-select" value={managerFilter} onChange={(e) => { setManagerFilter(e.target.value); setPage(1); }}>
+                          <option value="">Manager: All</option>
+                          {managers.map((m) => (
+                            <option key={m.id} value={m.id}>{m.full_name}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="cl-filter-field">
+                        <span>Date added</span>
+                        <select className="filter-select" value={dateFilter} onChange={(e) => { setDateFilter(e.target.value); setPage(1); }}>
+                          <option value="">Date Added: Any</option>
+                          <option value="today">Today</option>
+                          <option value="7d">Last 7 Days</option>
+                          <option value="30d">Last 30 Days</option>
+                        </select>
+                      </label>
+                      <div className="cl-filters-foot">
+                        <button type="button" className="cl-filters-clear" disabled={activeFilterCount === 0} onClick={() => { setStatusFilter('all'); setProjectFilter(''); setManagerFilter(''); setDateFilter(''); setPage(1); }}>Clear all</button>
+                        <button type="button" className="btn btn-accent btn-sm" onClick={() => setFiltersOpen(false)}>Done</button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
               <div className="toolbar-spacer"></div>
               <select className="filter-select" value={sortKey} onChange={(e) => setSortKey(e.target.value)}>
                 <option value="recent">Sort: Recently Active</option>
@@ -799,6 +808,14 @@ export default function ClientsListPage() {
                 <option value="value-high">Value: High to Low</option>
                 <option value="value-low">Value: Low to High</option>
               </select>
+              <div className="cl-view" role="group" aria-label="View">
+                <button type="button" className={`cl-view-btn${view === 'table' ? ' on' : ''}`} onClick={() => setView('table')} aria-pressed={view === 'table'}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg> Table
+                </button>
+                <button type="button" className={`cl-view-btn${view === 'cards' ? ' on' : ''}`} onClick={() => setView('cards')} aria-pressed={view === 'cards'}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg> Cards
+                </button>
+              </div>
             </div>
 
             {error && <div className="error-banner">{error}</div>}
@@ -827,23 +844,24 @@ export default function ClientsListPage() {
               </div>
             ) : (
               <>
-                <div className="result-count tabular">{filteredSorted.length} clients</div>
+                <div className="result-count"><h2 className="result-title">All clients</h2><span className="result-n tabular">{filteredSorted.length}</span></div>
 
+                {view === 'table' && (
                 <div className="table-scroll">
                   <table className="client-table">
                     <thead>
                       <tr>
+                        <th className="serial-col">#</th>
                         <th>Client</th>
                         <th>Project</th>
                         <th>Status</th>
                         <th>Project Value</th>
                         <th>Manager</th>
-                        <th>Last Activity</th>
                         <th></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {paged.map((c) => {
+                      {paged.map((c, idx) => {
                         const meta = displayStatus(c);
                         const manager = toOne(c.account_manager);
                         const requirements = toOne(c.client_requirements);
@@ -854,6 +872,7 @@ export default function ClientsListPage() {
 
                         return (
                           <tr key={c.id} className="client-row" onClick={() => goToClient(c.id)}>
+                            <td className="serial-col tabular">{(currentPage - 1) * PAGE_SIZE + idx + 1}</td>
                             <td>
                               <div className="client-cell">
                                 <Avatar person={{ full_name: c.company_name, avatar_color: 'var(--accent)' }} size={32} />
@@ -866,16 +885,12 @@ export default function ClientsListPage() {
                                       </span>
                                     )}
                                   </div>
-                                  <div className="ccompany">{c.primary_contact ?? c.contact_email ?? '—'}</div>
                                 </div>
                               </div>
                             </td>
                             <td>
                               {proj ? (
-                                <>
-                                  <div className="proj-name">{proj.name}</div>
-                                  <div className="proj-sub">{proj.status === 'completed' ? 'Completed' : proj.status === 'on_hold' ? 'On Hold' : proj.status === 'review' ? 'In Review' : 'Active'}</div>
-                                </>
+                                <div className="proj-name">{proj.name}</div>
                               ) : requirements?.project_name ? (
                                 <div className="proj-name proj-none">{requirements.project_name} (unreviewed)</div>
                               ) : (
@@ -888,14 +903,79 @@ export default function ClientsListPage() {
                             </td>
                             <td>{value > 0 ? <span className="value-cell tabular">৳{value.toLocaleString('en-US')}</span> : <span className="value-cell notset">Not set</span>}</td>
                             <td>{manager ? <div className="manager-cell"><Avatar person={manager} size={22} fontSize={9} />{manager.full_name}</div> : <span className="manager-unassigned">Unassigned</span>}</td>
-                            <td className="time-cell tabular">{relativeTimeBn(lastActivity(c))}</td>
-                            <td>{rowActionsMenu(c)}</td>
+                            <td className="edit-cell">
+                              <Link href={`/clients/${c.id}?edit=1`} className="cl-edit-btn" onClick={(e) => e.stopPropagation()}>
+                                <Icon name="edit" size={13} /> Edit
+                              </Link>
+                            </td>
                           </tr>
                         );
                       })}
                     </tbody>
                   </table>
                 </div>
+                )}
+
+                {view === 'cards' && (
+                  <div className="cl-grid">
+                    {paged.map((c) => {
+                      const meta = displayStatus(c);
+                      const manager = toOne(c.account_manager);
+                      const proj = currentProject(c);
+                      const requirements = toOne(c.client_requirements);
+                      const value = dealValue(c);
+                      const isNew = c.status === 'lead' && !c.is_archived;
+                      const attention = !c.is_archived && overdueClientIds.has(c.id) ? 'পেমেন্ট বাকি' : null;
+                      return (
+                        <div className="cl-card" key={c.id} onClick={() => goToClient(c.id)}>
+                          <div className="cl-card-top">
+                            <Avatar person={{ full_name: c.company_name, avatar_color: 'var(--accent)' }} size={36} />
+                            <div className="cl-card-who">
+                              <div className="client-name-row">
+                                <span className="cname">{c.company_name}</span>
+                                {isNew && (
+                                  <span className="new-badge">
+                                    <span className="dot"></span>New
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="cl-card-block">
+                            <span className="cl-card-cap">Project</span>
+                            <div className="cl-card-pname">{proj ? proj.name : requirements?.project_name ? `${requirements.project_name} (unreviewed)` : 'No project yet'}</div>
+                          </div>
+
+                          <div className="cl-card-two">
+                            <div className="cl-card-block">
+                              <span className="cl-card-cap">Project value</span>
+                              <div className={`cl-card-value tabular${value > 0 ? '' : ' notset'}`}>{value > 0 ? `৳${value.toLocaleString('en-US')}` : 'Not set'}</div>
+                            </div>
+                            <div className="cl-card-block">
+                              <span className="cl-card-cap">Manager</span>
+                              {manager ? (
+                                <div className="manager-cell"><Avatar person={manager} size={22} fontSize={9} />{manager.full_name}</div>
+                              ) : (
+                                <span className="manager-unassigned">Unassigned</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="cl-card-foot">
+                            <div className="cl-card-status">
+                              <span className={`status-pill ${meta.cls}`}>{meta.label}</span>
+                              {attention && <span className="attention-label">{attention}</span>}
+                            </div>
+                            <Link href={`/clients/${c.id}?edit=1`} className="cl-edit-btn" onClick={(e) => e.stopPropagation()}>
+                              <Icon name="edit" size={13} /> Edit
+                            </Link>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
                 <div className="mobile-list">
                   {paged.map((c) => {
@@ -919,7 +999,7 @@ export default function ClientsListPage() {
                                   </span>
                                 )}
                               </div>
-                              <div className="ccompany">{c.primary_contact ?? c.contact_email ?? '—'}</div>
+                              <div className="ccompany">{c.primary_contact && c.primary_contact !== c.company_name ? c.primary_contact : (c.contact_email ?? c.primary_contact ?? '—')}</div>
                             </div>
                           </div>
                           <span className={`status-pill ${meta.cls}`}>{meta.label}</span>
@@ -970,6 +1050,7 @@ export default function ClientsListPage() {
                 )}
               </>
             )}
+            </section>
           </main>
       {showCreate && (
         <div

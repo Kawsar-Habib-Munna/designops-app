@@ -209,3 +209,436 @@
   .client-detail-root .field-grid{grid-template-columns:1fr;}
   .client-detail-root .qa-grid{grid-template-columns:1fr;}
 }
+
+/* ---- page title (left) and back button (right) ---- */
+.client-detail-root .cd-topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px;}
+.client-detail-root .cd-topbar-text{min-width:0;}
+.client-detail-root .cd-topbar-title{margin:0;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.25;color:var(--ink);}
+.client-detail-root .cd-topbar-sub{margin:4px 0 0;font-size:13px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.client-detail-root .cd-back{display:inline-flex;align-items:center;gap:10px;flex-shrink:0;padding:5px 16px 5px 5px;font-size:13px;font-weight:700;color:var(--ink-soft);background:transparent;border:1px solid transparent;border-radius:999px;text-decoration:none;transition:color .15s ease;}
+.client-detail-root .cd-back-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);background:var(--surface-muted);border:1px solid var(--border);border-radius:50%;transition:background .15s ease,color .15s ease,border-color .15s ease;}
+.client-detail-root .cd-back:hover{color:var(--accent);}
+.client-detail-root .cd-back:hover .cd-back-icon{background:var(--accent);border-color:var(--accent);color:#fff;}
+@media (max-width:640px){
+  .client-detail-root .cd-topbar-title{font-size:19px;}
+  .client-detail-root .cd-topbar-sub{white-space:normal;}
+}
+
+/* ---- client header, redesigned: one card with the identity and actions on top and three facts underneath ---- */
+.client-detail-root .proj-header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:22px 24px;padding:26px 28px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow-sm);}
+.client-detail-root .proj-header>.proj-title-row{flex-wrap:nowrap;gap:18px;min-width:0;}
+.client-detail-root .proj-icon{width:60px;height:60px;border-radius:18px;font-size:22px;font-weight:800;}
+.client-detail-root .proj-title{font-size:22px;font-weight:800;letter-spacing:-0.02em;color:var(--ink);}
+.client-detail-root .ch-company{margin-top:4px;font-size:13.5px;font-weight:500;color:var(--ink-soft);}
+.client-detail-root .proj-header .header-actions{justify-content:flex-end;gap:10px;}
+.client-detail-root .ch-meta{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding-top:22px;border-top:1px dashed var(--border);}
+.client-detail-root .ch-meta-item{display:flex;align-items:center;gap:12px;min-width:0;}
+.client-detail-root .ch-meta-icon{width:38px;height:38px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--accent-soft);border:1.5px solid color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent);}
+.client-detail-root .ch-meta-item>div{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.client-detail-root .ch-meta-cap{font-size:12px;font-weight:500;color:var(--ink-faint);}
+.client-detail-root .ch-meta-item b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:600;color:var(--ink);}
+@media (max-width:860px){
+  .client-detail-root .proj-header{grid-template-columns:minmax(0,1fr);padding:20px;}
+  .client-detail-root .proj-header .header-actions{justify-content:flex-start;}
+  .client-detail-root .ch-meta{grid-template-columns:minmax(0,1fr);gap:14px;padding-top:18px;}
+}
+
+/* ---- client header, second design: avatar, name and status with the three facts as small tags under it; actions on the right ---- */
+.client-detail-root .proj-header{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:28px 32px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 6%,var(--surface)) 0%,var(--surface) 60%);border:1px solid var(--border);border-radius:20px;box-shadow:none;}
+.client-detail-root .proj-header>.proj-title-row{flex:1;gap:20px;}
+.client-detail-root .proj-icon{width:72px;height:72px;border-radius:50%;font-size:28px;background:var(--accent);color:#fff;box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 14%,transparent);}
+.client-detail-root .proj-title{font-size:24px;}
+.client-detail-root .ch-company{margin-top:3px;font-size:14px;}
+.client-detail-root .ch-meta{grid-column:auto;display:flex;flex-wrap:wrap;gap:8px;padding:0;margin-top:14px;border-top:none;}
+.client-detail-root .ch-meta-item{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:999px;}
+.client-detail-root .ch-meta-icon{width:auto;height:auto;border:none;background:transparent;border-radius:0;color:var(--ink-faint);}
+.client-detail-root .ch-meta-item>div{flex-direction:row;align-items:baseline;gap:6px;}
+.client-detail-root .ch-meta-cap{font-size:12px;font-weight:500;}
+.client-detail-root .ch-meta-item b{font-size:12.5px;font-weight:600;}
+@media (max-width:860px){
+  .client-detail-root .proj-header{flex-direction:column;align-items:flex-start;padding:22px 20px;}
+  .client-detail-root .proj-header>.proj-title-row{flex-wrap:wrap;}
+  .client-detail-root .proj-icon{width:56px;height:56px;font-size:22px;}
+  .client-detail-root .ch-meta{grid-template-columns:none;}
+}
+
+/* ---- client header, third design: flat and minimal. A plain row (small avatar, name, status, actions) with the facts as a quiet bar underneath ---- */
+.client-detail-root .proj-header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 24px;padding:0;background:transparent;border:none;border-radius:0;box-shadow:none;}
+.client-detail-root .proj-header>.proj-title-row{gap:16px;}
+.client-detail-root .proj-icon{width:52px;height:52px;border-radius:14px;font-size:20px;background:var(--accent-soft);color:var(--accent);box-shadow:none;}
+.client-detail-root .proj-title{font-size:24px;font-weight:800;}
+.client-detail-root .ch-company{margin-top:2px;font-size:13.5px;color:var(--ink-faint);}
+.client-detail-root .ch-meta{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:0;margin-top:22px;padding:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.client-detail-root .ch-meta-item{flex:1 1 0;min-width:180px;display:flex;align-items:center;gap:12px;padding:16px 4px 16px 0;background:transparent;border:none;border-radius:0;}
+.client-detail-root .ch-meta-item+.ch-meta-item{padding-left:24px;border-left:1px solid var(--border);}
+.client-detail-root .ch-meta-icon{display:flex;width:auto;height:auto;border:none;background:transparent;color:var(--ink-faint);}
+.client-detail-root .ch-meta-item>div{flex-direction:column;align-items:flex-start;gap:3px;}
+.client-detail-root .ch-meta-cap{font-size:12px;font-weight:500;color:var(--ink-faint);}
+.client-detail-root .ch-meta-item b{font-size:14px;font-weight:600;color:var(--ink);}
+@media (max-width:860px){
+  .client-detail-root .proj-header{grid-template-columns:minmax(0,1fr);gap:16px;padding:0;}
+  .client-detail-root .proj-header .header-actions{justify-content:flex-start;}
+  .client-detail-root .ch-meta{margin-top:6px;}
+  .client-detail-root .ch-meta-item{flex-basis:100%;padding:12px 0;}
+  .client-detail-root .ch-meta-item+.ch-meta-item{padding-left:0;border-left:none;border-top:1px solid var(--border-soft);}
+}
+
+/* a border around the whole header */
+.client-detail-root .proj-header{padding:24px 28px 0;background:var(--surface);border:1px solid var(--border);border-radius:18px;}
+.client-detail-root .ch-meta{margin-left:-28px;margin-right:-28px;padding:0 28px;border-bottom:none;border-radius:0 0 18px 18px;background:var(--surface-muted);}
+@media (max-width:860px){
+  .client-detail-root .proj-header{padding:20px 18px 0;}
+  .client-detail-root .ch-meta{margin-left:-18px;margin-right:-18px;padding:0 18px;}
+}
+
+/* facts: the icon and its title on one line, the value underneath */
+.client-detail-root .ch-meta-item{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:8px;row-gap:6px;align-items:center;align-content:center;}
+.client-detail-root .ch-meta-item>div{display:contents;}
+.client-detail-root .ch-meta-icon{grid-column:1;grid-row:1;}
+.client-detail-root .ch-meta-cap{grid-column:2;grid-row:1;}
+.client-detail-root .ch-meta-item b{grid-column:1/-1;grid-row:2;}
+
+/* manager: the photo sits to the left of the name */
+.client-detail-root .ch-meta-item b.ch-meta-person{display:inline-flex;align-items:center;gap:8px;}
+
+/* ---- name block, redesigned: a round avatar, the name, then the company and the status dropdown on one line ---- */
+.client-detail-root .proj-header>.proj-title-row{gap:18px;align-items:center !important;}
+.client-detail-root .proj-icon{width:64px;height:64px;border-radius:50%;font-size:24px;font-weight:800;background:var(--accent);color:#fff;box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 12%,transparent);}
+.client-detail-root .proj-title{font-size:24px;font-weight:800;letter-spacing:-0.02em;line-height:1.2;color:var(--ink);}
+.client-detail-root .ch-sub{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;margin-top:8px;}
+.client-detail-root .ch-sub .ch-company{display:inline-flex;align-items:center;gap:7px;margin:0;font-size:13.5px;font-weight:500;color:var(--ink-soft);}
+.client-detail-root .ch-sub .ch-company svg{color:var(--ink-faint);}
+.client-detail-root .ch-sub .status-dropdown-wrap{position:relative;padding-left:14px;border-left:1px solid var(--border);}
+/* status button: a quiet outlined chip with a dot in the status colour */
+.client-detail-root .ch-sub .status-pill-btn{gap:8px;padding:5px 10px 5px 10px;background:var(--surface-muted) !important;border:1px solid var(--border);font-size:12.5px;font-weight:600;color:var(--ink);}
+.client-detail-root .ch-sub .status-pill-btn::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--warning);flex-shrink:0;}
+.client-detail-root .ch-sub .status-pill-btn.s-progress::before{background:var(--accent);}
+.client-detail-root .ch-sub .status-pill-btn.s-done::before{background:var(--positive);}
+.client-detail-root .ch-sub .status-pill-btn.s-todo::before,.client-detail-root .ch-sub .status-pill-btn.s-archived::before{background:var(--ink-faint);}
+.client-detail-root .ch-sub .status-pill-btn svg{color:var(--ink-faint);}
+@media (max-width:640px){
+  .client-detail-root .proj-icon{width:52px;height:52px;font-size:20px;}
+  .client-detail-root .proj-title{font-size:20px;}
+  .client-detail-root .ch-sub .status-dropdown-wrap{padding-left:0;border-left:none;}
+}
+
+/* more space at the left of each fact in the bar */
+.client-detail-root .ch-meta{padding-left:36px;}
+.client-detail-root .ch-meta-item{padding-left:12px;}
+.client-detail-root .ch-meta-item+.ch-meta-item{padding-left:36px;}
+@media (max-width:860px){
+  .client-detail-root .ch-meta{padding-left:18px;}
+  .client-detail-root .ch-meta-item,.client-detail-root .ch-meta-item+.ch-meta-item{padding-left:0;}
+}
+
+/* more breathing space in the client header */
+.client-detail-root .proj-header{padding:34px 36px 0;gap:0 28px;}
+.client-detail-root .proj-header>.proj-title-row{gap:22px;}
+.client-detail-root .ch-sub{margin-top:12px;gap:12px 18px;}
+.client-detail-root .ch-meta{margin-left:-36px;margin-right:-36px;margin-top:34px;padding-right:36px;}
+.client-detail-root .ch-meta-item{padding-top:24px;padding-bottom:24px;row-gap:10px;}
+@media (max-width:860px){
+  .client-detail-root .proj-header{padding:24px 20px 0;gap:20px;}
+  .client-detail-root .ch-meta{margin-left:-20px;margin-right:-20px;margin-top:10px;padding-right:20px;}
+  .client-detail-root .ch-meta-item{padding-top:16px;padding-bottom:16px;}
+}
+
+/* tones for the payment cards (the card design itself is the original one) */
+.client-detail-root .summary-item.tone-paid{--tone:var(--positive);--tone-soft:var(--positive-soft);}
+.client-detail-root .summary-item.tone-due{--tone:var(--warning);--tone-soft:var(--warning-soft);}
+.client-detail-root .summary-item.tone-progress{--tone:var(--accent);--tone-soft:var(--accent-soft);}
+
+
+/* the short note at the bottom of each summary card */
+.client-detail-root .si-foot{position:relative;z-index:1;display:flex;align-items:center;gap:7px;margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);font-size:11.5px;font-weight:500;color:var(--ink-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.client-detail-root .si-foot i{width:6px;height:6px;flex-shrink:0;border-radius:50%;background:var(--tone);}
+
+/* bold values in the summary cards */
+.client-detail-root .si-value{font-weight:700;}
+.client-detail-root .si-value.muted{font-weight:600;}
+
+/* ---- client lifecycle, redesigned: a progress bar in the header and each step as its own tile ---- */
+.client-detail-root .lifecycle-card{padding:28px 32px 30px;border-radius:18px;box-shadow:none;margin-bottom:18px;}
+.client-detail-root .lc-head{align-items:center;margin-bottom:26px;}
+.client-detail-root .lc-label{font-size:16px;font-weight:800;}
+.client-detail-root .lc-sub{margin-top:5px;font-size:13px;}
+.client-detail-root .lc-progress{min-width:240px;max-width:320px;flex:1;}
+.client-detail-root .lc-progress-text{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:8px;}
+.client-detail-root .lc-progress-text b{font-size:20px;font-weight:800;letter-spacing:-0.02em;color:var(--ink);}
+.client-detail-root .lc-progress-text span{font-size:12.5px;color:var(--ink-faint);}
+.client-detail-root .lc-track{height:8px;border-radius:999px;background:var(--border-soft);overflow:hidden;}
+.client-detail-root .lc-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--positive),color-mix(in srgb,var(--positive) 70%,var(--accent)));transition:width .4s ease;}
+.client-detail-root .lc-row{gap:10px;}
+.client-detail-root .lc-step{align-items:flex-start;text-align:left;padding:16px 14px 14px;background:var(--surface-muted);border:1px solid var(--border-soft);border-radius:14px;}
+.client-detail-root .lc-step::before{display:none !important;}
+.client-detail-root .lc-step.done{background:color-mix(in srgb,var(--positive) 6%,var(--surface));border-color:color-mix(in srgb,var(--positive) 22%,var(--border-soft));}
+.client-detail-root .lc-step.current{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,var(--border-soft));}
+.client-detail-root .lc-dot{width:28px;height:28px;font-size:12px;}
+.client-detail-root .lc-step.current .lc-dot{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 18%,transparent);}
+.client-detail-root .lc-step-label{margin-top:14px;font-size:13px;font-weight:700;line-height:1.3;}
+.client-detail-root .lc-state{margin-top:4px;font-size:11.5px;font-weight:500;}
+@media (max-width:760px){
+  .client-detail-root .lifecycle-card{padding:20px 18px 22px;}
+  .client-detail-root .lc-progress{min-width:0;max-width:none;width:100%;}
+}
+
+/* ---- client lifecycle, second design: flat segments. A thin coloured bar over every step, then its number, name and state ---- */
+.client-detail-root .lifecycle-card{padding:30px 36px 32px;}
+.client-detail-root .lc-track{display:none;}
+.client-detail-root .lc-progress{min-width:0;max-width:none;flex:0 0 auto;}
+.client-detail-root .lc-progress-text{margin-bottom:0;gap:10px;}
+.client-detail-root .lc-row{gap:8px;counter-reset:lcstep;}
+.client-detail-root .lc-step{counter-increment:lcstep;align-items:flex-start;text-align:left;padding:0;background:transparent !important;border:none !important;border-radius:0;}
+.client-detail-root .lc-step::before{display:block !important;content:'';position:static;order:0;width:100%;height:6px;margin-bottom:16px;border-radius:999px;background:var(--border-soft);}
+.client-detail-root .lc-step.done::before{background:var(--positive);}
+.client-detail-root .lc-step.current::before{background:linear-gradient(90deg,var(--accent) 55%,var(--border-soft) 55%);}
+.client-detail-root .lc-dot{display:none;}
+.client-detail-root .lc-step::after{content:counter(lcstep,decimal-leading-zero);order:1;font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ink-faint);}
+.client-detail-root .lc-step.current::after{color:var(--accent);}
+.client-detail-root .lc-step.done::after{color:var(--positive);}
+.client-detail-root .lc-step-label{order:2;margin-top:6px;font-size:13.5px;font-weight:700;line-height:1.3;color:var(--ink-faint);}
+.client-detail-root .lc-step.done .lc-step-label,.client-detail-root .lc-step.current .lc-step-label{color:var(--ink);}
+.client-detail-root .lc-state{order:3;margin-top:4px;font-size:12px;font-weight:500;}
+@media (max-width:1280px){
+  .client-detail-root .lc-row{row-gap:26px;}
+  .client-detail-root .lc-step:nth-child(4n+1)::before{display:block !important;}
+}
+@media (max-width:760px){
+  .client-detail-root .lifecycle-card{padding:22px 18px 24px;}
+}
+
+/* done steps get a small green check icon at the right, level with the step number */
+.client-detail-root .lc-step{position:relative;}
+.client-detail-root .lc-step.done .lc-dot{display:flex;position:absolute;top:20px;right:4px;width:22px;height:22px;border-width:0;background:var(--positive);color:#fff;box-shadow:none;}
+.client-detail-root .lc-step.done .lc-dot svg{width:12px;height:12px;}
+
+/* the check icon sits right before the word "Done" */
+.client-detail-root .lc-step.done .lc-dot{display:none;}
+.client-detail-root .lc-state{display:inline-flex;align-items:center;gap:6px;}
+.client-detail-root .lc-state-check{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--positive);color:#fff;}
+
+/* the check icon comes after the word "Done" */
+.client-detail-root .lc-state-check{order:2;}
+
+/* the check is a plain green tick, no circle behind it */
+.client-detail-root .lc-state-check{background:transparent;color:var(--positive);width:auto;height:auto;border-radius:0;}
+.client-detail-root .lc-state-check svg{width:13px;height:13px;}
+
+/* the check icon has a thin green circle border (still no fill) */
+.client-detail-root .lc-state-check{width:18px;height:18px;border:1.5px solid var(--positive);border-radius:50%;background:transparent;}
+.client-detail-root .lc-state-check svg{width:10px;height:10px;}
+
+/* ---- the other cards, redesigned: roomier, rounder, clearer labels and values ---- */
+.client-detail-root .detail-two-col{gap:20px;}
+.client-detail-root .detail-main-col,.client-detail-root .detail-side-col{gap:20px;}
+.client-detail-root .detail-pair{gap:20px;}
+.client-detail-root .dcard{padding:26px 28px;border-radius:18px;box-shadow:none;}
+.client-detail-root .dcard-head{margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border-soft);}
+.client-detail-root .dcard-title{font-size:15px;font-weight:800;letter-spacing:-0.01em;color:var(--ink);}
+.client-detail-root .field-grid{gap:20px 28px;}
+.client-detail-root .field-label{margin-bottom:5px;font-size:12px;font-weight:500;color:var(--ink-faint);}
+.client-detail-root .field-value{font-size:14px;font-weight:600;color:var(--ink);}
+.client-detail-root .field-link{color:var(--accent);word-break:break-all;}
+.client-detail-root .field-link:hover{text-decoration:underline;}
+.client-detail-root .req-text{font-size:13.5px;line-height:1.7;}
+.client-detail-root .req-block{margin-top:18px;padding-top:18px;}
+.client-detail-root .feature-chip{padding:5px 12px;font-size:12px;font-weight:600;}
+.client-detail-root .proj-name{font-size:16px;margin-bottom:14px;}
+.client-detail-root .proj-track{height:8px;}
+.client-detail-root .proj-pct{font-size:12.5px;}
+.client-detail-root .file-row{padding:12px 4px;}
+.client-detail-root .timeline-text{font-size:13.5px;}
+.client-detail-root .timeline-time{margin-top:3px;font-size:12px;}
+.client-detail-root .timeline-dot{width:28px;height:28px;}
+.client-detail-root .note-item{padding:14px 16px;border-radius:12px;margin-bottom:10px;}
+.client-detail-root .note-text{font-size:13.5px;line-height:1.65;}
+.client-detail-root .note-meta{font-size:11.5px;}
+.client-detail-root .next-action-card{padding:26px 28px;border-radius:18px;box-shadow:none;}
+.client-detail-root .na-title{font-size:16px;}
+.client-detail-root .na-desc{font-size:13px;}
+/* reach out: four clear buttons */
+.client-detail-root .reach-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.client-detail-root .reach-btn{display:flex;align-items:center;gap:10px;padding:13px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;text-align:left;transition:border-color .15s ease,color .15s ease,background .15s ease;}
+.client-detail-root .reach-btn:hover:not(.disabled){border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+.client-detail-root .reach-btn.disabled{opacity:.45;cursor:not-allowed;}
+@media (max-width:860px){
+  .client-detail-root .dcard,.client-detail-root .next-action-card{padding:20px;}
+  .client-detail-root .reach-grid{grid-template-columns:1fr 1fr;}
+}
+
+/* ---- client overview, redesigned: two groups, each item with a round icon, a small label and the value ---- */
+.client-detail-root .ov-group+.ov-group{margin-top:26px;padding-top:24px;border-top:1px dashed var(--border);}
+.client-detail-root .ov-group-title{margin-bottom:16px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);}
+.client-detail-root .ov-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 28px;}
+.client-detail-root .ov-item{display:flex;align-items:center;gap:14px;min-width:0;}
+.client-detail-root .ov-icon{width:40px;height:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--accent-soft);border:1.5px solid color-mix(in srgb,var(--accent) 20%,transparent);color:var(--accent);}
+.client-detail-root .ov-item>div{min-width:0;}
+.client-detail-root .ov-label{margin-bottom:3px;font-size:12px;font-weight:500;color:var(--ink-faint);}
+.client-detail-root .ov-value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:600;color:var(--ink);}
+@media (max-width:640px){
+  .client-detail-root .ov-grid{grid-template-columns:minmax(0,1fr);}
+}
+
+/* ---- client overview as a table: a shaded label column with an icon, and the value ---- */
+.client-detail-root .ov-table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.client-detail-root .ov-table th,.client-detail-root .ov-table td{padding:14px 18px;text-align:left;vertical-align:middle;border-bottom:1px solid var(--border-soft);}
+.client-detail-root .ov-table tr:last-child th,.client-detail-root .ov-table tr:last-child td{border-bottom:none;}
+.client-detail-root .ov-table .ov-section th{padding:10px 18px;background:color-mix(in srgb,var(--accent) 7%,var(--surface));font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);border-bottom:1px solid color-mix(in srgb,var(--accent) 14%,var(--border-soft));}
+.client-detail-root .ov-table tbody tr:not(.ov-section) th{width:38%;background:var(--surface-muted);border-right:1px solid var(--border-soft);font-size:13px;font-weight:500;color:var(--ink-soft);}
+.client-detail-root .ov-th{display:inline-flex;align-items:center;gap:10px;}
+.client-detail-root .ov-th svg{color:var(--ink-faint);flex-shrink:0;}
+.client-detail-root .ov-table td{font-size:14px;font-weight:600;color:var(--ink);overflow-wrap:anywhere;}
+@media (max-width:640px){
+  .client-detail-root .ov-table th,.client-detail-root .ov-table td{padding:12px 14px;}
+  .client-detail-root .ov-table tbody tr:not(.ov-section) th{width:44%;}
+}
+
+/* client overview: full width, four columns (label, value, label, value) */
+.client-detail-root .ov-card{margin-bottom:20px;}
+.client-detail-root .ov-table tbody tr:not(.ov-section) th{width:20%;}
+.client-detail-root .ov-table tbody tr:not(.ov-section) th:nth-of-type(2){border-left:1px solid var(--border-soft);}
+.client-detail-root .ov-table td{width:30%;}
+@media (max-width:860px){
+  .client-detail-root .ov-table,.client-detail-root .ov-table tbody,.client-detail-root .ov-table tr{display:block;width:100%;}
+  .client-detail-root .ov-table tr{display:grid;grid-template-columns:42% 1fr;border-bottom:1px solid var(--border-soft);}
+  .client-detail-root .ov-table tr:last-child{border-bottom:none;}
+  .client-detail-root .ov-table th,.client-detail-root .ov-table td{width:auto !important;border-bottom:none;border-left:none !important;}
+  .client-detail-root .ov-table td[colspan]{display:none;}
+}
+
+/* project request: the same full-width table; long answers take the whole row */
+.client-detail-root .req-table tbody tr th{width:20%;vertical-align:top;}
+.client-detail-root .req-table td{vertical-align:top;}
+.client-detail-root .req-table td .req-text{margin:0;font-size:14px;font-weight:500;line-height:1.7;color:var(--ink);}
+.client-detail-root .req-table td .feature-chips{margin-top:0;}
+.client-detail-root .req-table td .show-more-btn{margin-top:8px;}
+/* the project card is alone in its row now */
+.client-detail-root .detail-pair{grid-template-columns:minmax(0,1fr);}
+@media (max-width:860px){
+  .client-detail-root .req-table tr{grid-template-columns:42% 1fr;}
+  .client-detail-root .req-table td[colspan="3"]{grid-column:2;}
+}
+
+/* icons in the project request labels sit at the top when the row is tall */
+.client-detail-root .req-table th .ov-th{align-items:center;}
+
+/* "Submitted by Client" tag: plain text, no background */
+.client-detail-root .dcard-title .src-tag{background:transparent !important;padding:0;border-radius:0;}
+
+/* "Submitted By Client": each word starts with a capital, not all capitals */
+.client-detail-root .dcard-title .src-tag{text-transform:capitalize;letter-spacing:0;font-size:11.5px;}
+
+/* a small dot before "Submitted By Client" */
+.client-detail-root .dcard-title .src-tag{display:inline-flex;align-items:center;gap:6px;}
+.client-detail-root .dcard-title .src-tag::before{content:'';width:6px;height:6px;flex-shrink:0;border-radius:50%;background:currentColor;}
+
+/* ---- project card, redesigned: name with an icon tile, a status dot, a clear progress bar, two facts and the buttons ---- */
+.client-detail-root .proj-card .dcard-head{margin-bottom:22px;}
+.client-detail-root .proj-state{display:inline-flex;align-items:center;gap:8px;padding:0 !important;background:transparent !important;border:none !important;font-size:13px;font-weight:600;}
+.client-detail-root .proj-state i{width:8px;height:8px;border-radius:50%;background:currentColor;}
+.client-detail-root .proj-body{display:flex;flex-direction:column;gap:22px;}
+.client-detail-root .proj-main{display:flex;align-items:center;gap:16px;}
+.client-detail-root .proj-mark{width:48px;height:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:14px;background:var(--accent-soft);color:var(--accent);}
+.client-detail-root .proj-main-text{min-width:0;}
+.client-detail-root .proj-card .proj-name{margin:0;font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--ink);}
+.client-detail-root .proj-created{margin-top:4px;font-size:12.5px;color:var(--ink-faint);}
+.client-detail-root .proj-progress-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;font-size:13px;font-weight:500;color:var(--ink-soft);}
+.client-detail-root .proj-progress-top b{font-size:15px;font-weight:800;color:var(--ink);}
+.client-detail-root .proj-card .proj-track{height:10px;}
+.client-detail-root .proj-card .proj-fill{background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 65%,var(--positive)));}
+.client-detail-root .proj-facts{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border-soft);border-radius:12px;background:var(--surface-muted);}
+.client-detail-root .proj-facts>div{display:flex;flex-direction:column;gap:5px;padding:14px 16px;min-width:0;}
+.client-detail-root .proj-facts>div+div{border-left:1px solid var(--border-soft);}
+.client-detail-root .proj-facts span{font-size:12px;font-weight:500;color:var(--ink-faint);}
+.client-detail-root .proj-facts b{font-size:14px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.client-detail-root .proj-actions{display:flex;flex-wrap:wrap;gap:8px;}
+
+/* the project and the client files sit side by side */
+.client-detail-root .detail-pair{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;}
+.client-detail-root .files-card{display:flex;flex-direction:column;}
+.client-detail-root .files-card .file-row{padding:12px 0;}
+@media (max-width:1100px){
+  .client-detail-root .detail-pair{grid-template-columns:minmax(0,1fr);}
+}
+
+/* project card, minimal: the name, one progress bar and one button */
+.client-detail-root .proj-card .proj-body{gap:26px;}
+.client-detail-root .proj-card .proj-name{font-size:19px;font-weight:800;line-height:1.3;}
+.client-detail-root .proj-card .proj-progress-top{font-size:12.5px;color:var(--ink-faint);}
+.client-detail-root .proj-card .proj-progress-top b{font-size:14px;}
+.client-detail-root .proj-card .proj-track{height:8px;}
+.client-detail-root .proj-card .proj-fill{background:var(--accent);}
+.client-detail-root .proj-card .proj-actions{margin-top:auto;padding-top:4px;}
+
+/* ---- progress bar, redesigned: a thick rounded track, a gradient fill, and a % badge riding on the end of the fill ---- */
+.client-detail-root .pgb-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:34px;font-size:13px;font-weight:500;color:var(--ink-soft);}
+.client-detail-root .pgb-count{font-size:12.5px;color:var(--ink-faint);}
+.client-detail-root .pgb{position:relative;height:12px;border-radius:999px;background:var(--border-soft);box-shadow:inset 0 1px 2px rgba(16,16,20,.06);}
+.client-detail-root .pgb-fill{position:relative;height:100%;min-width:12px;border-radius:999px;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 70%,#fff),var(--accent));background-size:100% 100%;transition:width .5s cubic-bezier(.22,1,.36,1);}
+.client-detail-root .pgb-fill::after{content:'';position:absolute;inset:0;border-radius:inherit;background:repeating-linear-gradient(135deg,rgba(255,255,255,.22) 0 6px,transparent 6px 12px);}
+.client-detail-root .pgb-badge{position:absolute;right:0;bottom:calc(100% + 10px);transform:translateX(50%);padding:3px 8px;border-radius:8px;background:var(--ink);font-size:11.5px;font-weight:700;line-height:1.3;color:var(--surface);white-space:nowrap;}
+.client-detail-root .pgb-badge::after{content:'';position:absolute;left:50%;top:100%;width:8px;height:8px;background:inherit;transform:translate(-50%,-50%) rotate(45deg);border-radius:2px;}
+.client-detail-root .pgb-badge.edge-l{right:auto;left:0;transform:none;}
+.client-detail-root .pgb-badge.edge-l::after{left:12px;}
+.client-detail-root .pgb-badge.edge-r{transform:translateX(0);}
+.client-detail-root .pgb-badge.edge-r::after{left:auto;right:12px;transform:translate(0,-50%) rotate(45deg);}
+
+/* files card: tidy rows, and a scrolling list when there are many files */
+.client-detail-root .files-card .file-list{max-height:360px;overflow-y:auto;margin-right:-8px;padding-right:8px;}
+.client-detail-root .files-card .file-row{gap:14px;padding:12px 10px;border-radius:12px;}
+.client-detail-root .files-card .file-icon{display:flex;align-items:center;justify-content:center;width:38px;height:38px;flex-shrink:0;border-radius:10px;background:var(--accent-soft);color:var(--accent);}
+.client-detail-root .files-card .file-row-name{font-size:13.5px;}
+.client-detail-root .files-card .file-row-meta{margin-top:3px;font-size:12px;}
+.client-detail-root .files-card .file-actions .icon-btn{width:32px !important;height:32px !important;border:1px solid var(--border);border-radius:9px;color:var(--ink-soft);background:var(--surface);}
+.client-detail-root .files-card .file-actions .icon-btn:hover{border-color:var(--accent);color:var(--accent);}
+.client-detail-root .files-card .side-empty{padding:28px 0;text-align:center;}
+
+.client-detail-root .files-head-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* less space at the left and right of the files card */
+.client-detail-root .files-card{padding-left:18px;padding-right:18px;}
+.client-detail-root .files-card .file-list{margin-right:-6px;padding-right:6px;}
+.client-detail-root .files-card .file-row{padding-left:0;padding-right:0;gap:12px;}
+
+/* a little more side space in the files card */
+.client-detail-root .files-card{padding-left:24px;padding-right:24px;}
+
+/* a bit more again */
+.client-detail-root .files-card{padding-left:28px;padding-right:28px;}
+
+/* the whole file row is clickable */
+.client-detail-root .file-row.clickable{cursor:pointer;}
+.client-detail-root .file-row.clickable:hover .file-row-name{color:var(--accent);}
+.client-detail-root .file-row.clickable:focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:2px;}
+
+/* ---- next action, minimal: a flat card, a small label with a dot, the action, one short line and one button ---- */
+.client-detail-root .next-action-card{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:26px 28px;background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:none;}
+.client-detail-root .na-label{display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;font-size:12.5px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink-soft);}
+.client-detail-root .na-label::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 16%,transparent);}
+.client-detail-root .na-title{margin-bottom:8px;font-size:17px;font-weight:800;line-height:1.3;letter-spacing:-0.01em;color:var(--ink);}
+.client-detail-root .na-desc{margin:0 0 22px;font-size:13px;line-height:1.6;color:var(--ink-faint);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.client-detail-root .next-action-card .btn-block{width:100%;justify-content:center;padding:11px 14px;border-radius:10px;}
+
+/* the two columns end at the same line: the Activity card (left) and the Internal Notes card (right) stretch to fill */
+.client-detail-root .detail-two-col{align-items:stretch;}
+.client-detail-root .detail-main-col>.dcard:last-child,
+.client-detail-root .detail-side-col>.dcard:last-child{flex:1 1 auto;}
+@media (max-width:1100px){
+  .client-detail-root .detail-main-col>.dcard:last-child,
+  .client-detail-root .detail-side-col>.dcard:last-child{flex:0 0 auto;}
+}
+
+/* activity: five at a time, with previous / next */
+.client-detail-root .act-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:16px;border-top:1px solid var(--border-soft);}
+.client-detail-root .act-pager-info{font-size:12.5px;color:var(--ink-faint);}
+.client-detail-root .act-pager-btns{display:flex;align-items:center;gap:8px;}
+.client-detail-root .act-pager-page{min-width:42px;text-align:center;font-size:12.5px;font-weight:600;color:var(--ink-soft);}
+.client-detail-root .act-pager-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--ink-soft);}
+.client-detail-root .act-pager-btn.next svg{transform:rotate(180deg);}
+.client-detail-root .act-pager-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+.client-detail-root .act-pager-btn:disabled{opacity:.4;cursor:default;}
+
+/* a smaller check icon next to "Done" */
+.client-detail-root .lc-state-check{width:14px;height:14px;border-width:1.2px;}
+.client-detail-root .lc-state-check svg{width:8px;height:8px;}
+.client-detail-root .lc-state{gap:5px;}

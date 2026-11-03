@@ -13,7 +13,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Manrope } from 'next/font/google';
+import { Manrope, Hind_Siliguri } from 'next/font/google';
 import './tasks.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
@@ -29,6 +29,9 @@ import RichText from '@/app/components/RichText';
 // Manrope, Bengali টেক্সট এমনিতেই ব্রাউজারের সিস্টেম ফলব্যাকে রেন্ডার হবে কারণ
 // Manrope-এ Bengali গ্লিফ নেই।
 const manrope = Manrope({ subsets: ['latin'], weight: ['400', '500', '600', '700'], display: 'swap' });
+// the shared team sheet (preview, picture and PDF): English in Manrope, Bangla letters in Hind Siliguri
+const hindSiliguri = Hind_Siliguri({ subsets: ['bengali'], weight: ['400', '500', '600', '700'], display: 'swap' });
+const SHEET_FONT = `${manrope.style.fontFamily}, ${hindSiliguri.style.fontFamily}, sans-serif`;
 
 const ICON_PATHS: Record<string, string> = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/>',
@@ -144,6 +147,20 @@ function isCompletedThisWeek(updatedAt: string) {
   return Date.now() - new Date(updatedAt).getTime() < 7 * 86400000;
 }
 
+const PRIORITY_EN: Record<string, { label: string; cls: string }> = {
+  low: { label: 'Low', cls: 'low' },
+  normal: { label: 'Normal', cls: 'normal' },
+  high: { label: 'High', cls: 'high' },
+  urgent: { label: 'Urgent', cls: 'urgent' },
+};
+
+// A task's progress follows its checklist (ticked items out of all items). Without a checklist a finished task is 100% and any
+// other task keeps its saved number. The saved number alone was never updated when checklist items were ticked, so it stayed at 0%.
+function checklistProgress(items: { is_done: boolean }[] | undefined): number | null {
+  if (!items || items.length === 0) return null;
+  return Math.round((items.filter((c) => c.is_done).length / items.length) * 100);
+}
+
 function matchesView(t: TaskRow, view: SmartView, userId: string, today: string) {
   switch (view) {
     case 'all':
@@ -223,9 +240,12 @@ function TasksPageInner() {
   const [dueDateFilter, setDueDateFilter] = useState('');
   const [assignedDateFilter, setAssignedDateFilter] = useState('');
   const [advOpen, setAdvOpen] = useState(false);
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const [filterMenuPos, setFilterMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [listScope, setListScope] = useState<WeeklyScope>('team');
   const [exportingPdf, setExportingPdf] = useState(false);
   const [sharingPdf, setSharingPdf] = useState(false);
+  const [sharePreviewOpen, setSharePreviewOpen] = useState(false);
   const teamExportRef = useRef<HTMLDivElement>(null);
 
   const [expandData, setExpandData] = useState<Record<string, ExpandData>>({});
@@ -515,11 +535,12 @@ function TasksPageInner() {
         const personTasks = tasks.filter((t) => t.assignee_id === p.id);
         const shown = filtered.filter((t) => t.assignee_id === p.id);
         const active = personTasks.filter((t) => t.status !== 'done');
-        const avgProgress = personTasks.length > 0 ? Math.round(personTasks.reduce((sum, t) => sum + (t.progress ?? 0), 0) / personTasks.length) : 0;
+        const progressOf = (t: TaskRow) => checklistProgress(checklistByTask.get(t.id)) ?? (t.status === 'done' ? 100 : t.progress ?? 0);
+        const avgProgress = personTasks.length > 0 ? Math.round(personTasks.reduce((sum, t) => sum + progressOf(t), 0) / personTasks.length) : 0;
         return { profile: p, personTasks, shown, activeCount: active.length, avgProgress };
       })
       .filter((m) => noConstraint || m.shown.length > 0);
-  }, [assigneeOptions, tasks, filtered, activeView, search, dueDateFilter, assignedDateFilter, listScope, user]);
+  }, [assigneeOptions, tasks, filtered, activeView, search, dueDateFilter, assignedDateFilter, listScope, user, checklistByTask]);
 
   // Team tasks কার্ড-গ্রিড PDF এ এক্সপোর্ট — গ্রুপে শেয়ার করার জন্য। স্ক্রিনে
   // যা দেখা যাচ্ছে (ডার্ক মোডেও) তার বদলে সবসময় লাইট/প্রিন্ট-স্টাইল একটা হিডেন
@@ -529,6 +550,7 @@ function TasksPageInner() {
     if (!node) throw new Error('Export content not ready');
     const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([import('html2canvas'), import('jspdf')]);
     await document.fonts.ready;
+    await Promise.all([document.fonts.load(`500 14px ${hindSiliguri.style.fontFamily}`, 'অআকখ'), document.fonts.load(`700 14px ${hindSiliguri.style.fontFamily}`, 'অআকখ')]).catch(() => undefined);
     const canvas = await html2canvas(node, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -577,11 +599,20 @@ function TasksPageInner() {
     if (!node) throw new Error('Export content not ready');
     const [{ default: html2canvas }] = await Promise.all([import('html2canvas')]);
     await document.fonts.ready;
+    await Promise.all([document.fonts.load(`500 14px ${hindSiliguri.style.fontFamily}`, 'অআকখ'), document.fonts.load(`700 14px ${hindSiliguri.style.fontFamily}`, 'অআকখ')]).catch(() => undefined);
     const canvas = await html2canvas(node, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
     const blob: Blob = await new Promise((resolve, reject) => {
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
     });
     return { blob, filename: `team-tasks-${todayISO()}.png` };
+  }
+
+  // Preview: the exact picture that "Share to WhatsApp" sends, shown in a window first
+  function openSharePreview() {
+    setSharePreviewOpen(true);
+  }
+  function closeSharePreview() {
+    setSharePreviewOpen(false);
   }
 
   async function handleExportTeamTasksPdf() {
@@ -820,6 +851,13 @@ function TasksPageInner() {
       return { ...prev, [taskId]: { ...cur, checklist: cur.checklist.map((c) => (c.id === item.id ? { ...c, is_done: newDone } : c)) } };
     });
     await supabase.from('checklist_items').update({ is_done: newDone }).eq('id', item.id);
+    const items = (expandData[taskId]?.checklist ?? []).map((c) => (c.id === item.id ? { ...c, is_done: newDone } : c));
+    const progress = checklistProgress(items);
+    if (progress !== null) {
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, progress } : t)));
+      setChecklistByTask((prev) => new Map(prev).set(taskId, items.map((c) => ({ ...c }))));
+      await supabase.from('tasks').update({ progress }).eq('id', taskId);
+    }
   }
 
   async function addChecklistItem(taskId: string) {
@@ -1050,10 +1088,139 @@ function TasksPageInner() {
       return next;
     });
     await supabase.from('checklist_items').update({ is_done: newDone }).eq('id', item.id);
+    const items = (checklistByTask.get(taskId) ?? []).map((c) => (c.id === item.id ? { ...c, is_done: newDone } : c));
+    const progress = checklistProgress(items);
+    if (progress !== null) {
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, progress } : t)));
+      await supabase.from('tasks').update({ progress }).eq('id', taskId);
+    }
   }
 
   if (sessionLoading) return null;
   if (!user) return <SignInScreen />;
+
+  // the team tasks sheet, drawn once: the hidden copy is captured as the picture / PDF, and the preview window shows the same thing live
+  const exportDocContent = (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, paddingBottom: 12, borderBottom: '1px solid #E8E8EC' }}>
+        <div style={{ fontSize: 14, fontWeight: 700 }}>FLOW 53</div>
+        <div style={{ fontSize: 11, color: '#6E6E7A' }}>
+          {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+        </div>
+      </div>
+      {memberTaskCards.map((m) => {
+        return (
+          <div key={m.profile.id} style={{ marginBottom: 22, padding: 18, border: '1px solid #E8E8EC', borderRadius: 16, background: '#ffffff' }}>
+            {/* the name and the task count */}
+            <div style={{ display: 'table', width: '100%', marginBottom: 14 }}>
+              <div style={{ display: 'table-cell', verticalAlign: 'middle' }}>
+                <div style={{ fontSize: 13.5, fontWeight: 800 }}>{m.profile.full_name}</div>
+                <div style={{ fontSize: 11, color: '#6E6E7A', marginTop: 3 }}>
+                  {m.activeCount === 0 ? 'No active To-Dos' : `${m.activeCount} active To-Do${m.activeCount > 1 ? 's' : ''}`}
+                </div>
+              </div>
+            </div>
+            {m.personTasks.length === 0 ? (
+              <div style={{ fontSize: 12, color: '#A3A3AE' }}>All clear</div>
+            ) : m.shown.length === 0 ? (
+              <div style={{ fontSize: 12, color: '#A3A3AE' }}>No tasks match the current filter</div>
+            ) : (
+              m.shown.map((task) => {
+                const checklist = checklistByTask.get(task.id) ?? [];
+                const checkDone = checklist.filter((c) => c.is_done).length;
+                const isDone = task.status === 'done';
+                const prio = PRIORITY_EN[task.priority] ?? PRIORITY_EN.normal;
+                const prioColor = task.priority === 'urgent' ? '#E5484D' : task.priority === 'high' ? '#F5A524' : task.priority === 'low' ? '#A3A3AE' : '#5B4FE8';
+                const metaParts = [
+                  task.projects?.name ?? null,
+                  prio.label,
+                  checklist.length > 0 ? `${checkDone}/${checklist.length}` : null,
+                  task.due_date ? `Due ${task.due_date.slice(8, 10)}/${task.due_date.slice(5, 7)}/${task.due_date.slice(0, 4)}` : null,
+                ].filter(Boolean);
+                return (
+                  <div key={task.id} style={{ marginTop: 10, padding: '12px 14px', border: '1px solid #E8E8EC', borderRadius: 12, background: '#ffffff' }}>
+                    {/* plain text characters for the round check and the boxes: they sit on the text baseline in the PDF */}
+                    <div style={{ fontSize: 12, fontWeight: 700, textDecoration: isDone ? 'line-through' : 'none', color: isDone ? '#A3A3AE' : '#14141A' }}>
+                      <span style={{ color: isDone ? '#17A34A' : task.status === 'in_progress' ? '#5B4FE8' : '#C9C9D1', fontWeight: 400 }}>{isDone ? '●' : '○'}</span> {task.title}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#6E6E7A', marginTop: 4, marginLeft: 17 }}>
+                      {metaParts.map((part, i) => (
+                        <span key={i}>
+                          {i > 0 ? '   ·   ' : ''}
+                          {part === prio.label ? <span style={{ color: prioColor }}>● <span style={{ color: '#6E6E7A' }}>{part}</span></span> : part}
+                        </span>
+                      ))}
+                    </div>
+                    {task.description && (
+                      <div style={{ fontSize: 11, color: isDone ? '#A3A3AE' : '#3A3A44', marginTop: 5, marginLeft: 17 }}><RichText text={task.description} /></div>
+                    )}
+                    {checklist.length > 0 && (
+                      <div style={{ marginLeft: 17, marginTop: 8, paddingLeft: 12, borderLeft: '1.5px solid #E8E8EC' }}>
+                        {checklist.map((item) => (
+                          <div
+                            key={item.id}
+                            style={{ fontSize: 11.5, padding: '3px 0', color: item.is_done ? '#A3A3AE' : '#14141A', textDecoration: item.is_done ? 'line-through' : 'none' }}
+                          >
+                            {item.is_done ? '☑' : '☐'} {item.label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+
+  // the view switch and the My tasks / Team tasks switch, in one card
+  const viewCard = (
+    <div className="view-cards">
+      <div className="view-card">
+      <nav className="main-tabs" aria-label="View">
+        <button className={`main-tab${mainTab === 'list' ? ' active' : ''}`} onClick={() => setMainTab('list')}>
+          <Icon name="list" size={14} /> List
+        </button>
+        <button className={`main-tab${mainTab === 'weekly-tasks' ? ' active' : ''}`} onClick={() => setMainTab('weekly-tasks')}>
+          <Icon name="calendar" size={14} /> Weekly Tasks
+        </button>
+        <button className={`main-tab${mainTab === 'weekly-plan' ? ' active' : ''}`} onClick={() => setMainTab('weekly-plan')}>
+          <Icon name="calendar" size={14} /> Weekly Plan
+        </button>
+      </nav>
+      </div>
+      {mainTab === 'list' && (
+      <div className="view-card view-card-right">
+        <div className="scope-toggle">
+            <button className={`scope-btn${listScope === 'mine' ? ' active' : ''}`} onClick={() => setListScope('mine')}>
+              <Icon name="user" size={13} /> My tasks
+            </button>
+            <button className={`scope-btn${listScope === 'team' ? ' active' : ''}`} onClick={() => setListScope('team')}>
+              <Icon name="users2" size={13} /> Team tasks
+            </button>
+          </div>
+      </div>
+    )}
+    {mainTab === 'list' && listScope === 'team' && (
+      <div className="view-card view-card-actions">
+            <div className="scope-actions">
+                    <button className="btn btn-ghost btn-sm" onClick={openSharePreview} disabled={memberTaskCards.length === 0}>
+                      <Icon name="eye" size={13} /> Preview
+                    </button>
+                    <button className="btn btn-ghost btn-sm" onClick={handleExportTeamTasksPdf} disabled={exportingPdf || memberTaskCards.length === 0}>
+                      <Icon name="export" size={13} /> {exportingPdf ? 'এক্সপোর্ট হচ্ছে…' : 'Export PDF'}
+                    </button>
+                    <button className="btn btn-ghost btn-sm" style={{ color: '#25D366' }} onClick={handleShareTeamTasksWhatsApp} disabled={sharingPdf || memberTaskCards.length === 0}>
+                      <Icon name="whatsapp" size={13} color="#25D366" /> {sharingPdf ? 'শেয়ার হচ্ছে…' : 'Share to WhatsApp'}
+                    </button>
+                  </div>
+      </div>
+    )}
+    </div>
+  );
 
   return (
     <>
@@ -1077,17 +1244,7 @@ function TasksPageInner() {
               </div>
             </div>
 
-            <nav className="main-tabs" aria-label="View">
-              <button className={`main-tab${mainTab === 'list' ? ' active' : ''}`} onClick={() => setMainTab('list')}>
-                <Icon name="list" size={14} /> List
-              </button>
-              <button className={`main-tab${mainTab === 'weekly-tasks' ? ' active' : ''}`} onClick={() => setMainTab('weekly-tasks')}>
-                <Icon name="calendar" size={14} /> Weekly Tasks
-              </button>
-              <button className={`main-tab${mainTab === 'weekly-plan' ? ' active' : ''}`} onClick={() => setMainTab('weekly-plan')}>
-                <Icon name="calendar" size={14} /> Weekly Plan
-              </button>
-            </nav>
+            {mainTab !== 'list' && viewCard}
 
             {error && (
               <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: 13 }}>
@@ -1126,9 +1283,6 @@ function TasksPageInner() {
                 <Icon name="search" size={13} />
                 <input type="text" placeholder="টাস্ক খুঁজুন..." value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
-              <button className="filter-chip" disabled title="শীঘ্রই আসছে"><Icon name="filter" size={12} /> Quick Filter</button>
-              <button className="filter-chip" disabled title="শীঘ্রই আসছে"><Icon name="sort" size={12} /> Sort</button>
-              <button className="filter-chip" disabled title="শীঘ্রই আসছে"><Icon name="layers" size={12} /> Group By</button>
               <label className={`filter-chip${assignedDateFilter ? ' applied' : ''}`} title="যেদিনের টাস্ক হিসেবে অ্যাসাইন করা হয়েছে">
                 <Icon name="calendar" size={12} /> Assigned
                 <input
@@ -1168,22 +1322,49 @@ function TasksPageInner() {
                   </button>
                 )}
               </label>
-              <button className={`filter-chip${advOpen ? ' applied' : ''}`} onClick={() => setAdvOpen((o) => !o)}>
-                <Icon name="sliders" size={12} /> Advanced Filters
-              </button>
-              <button
-                className="filter-chip"
-                onClick={() => {
-                  setSearch('');
-                  setActiveView('all');
-                  setDueDateFilter('');
-                  setAssignedDateFilter('');
-                }}
-              >
-                <Icon name="close" size={12} /> Clear Filters
-              </button>
-              <div className="toolbar-spacer"></div>
-              <button className="filter-chip" disabled title="শীঘ্রই আসছে"><Icon name="bookmark" size={12} /> Saved Views</button>
+              <div className="tf-wrap">
+                <button
+                  type="button"
+                  className={`filter-chip tf-btn${advOpen || filterMenuOpen ? ' applied' : ''}`}
+                  aria-label="Filters"
+                  aria-expanded={filterMenuOpen}
+                  onClick={(e) => {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    setFilterMenuPos({ top: r.bottom + 8, left: Math.max(12, Math.min(r.right - 240, window.innerWidth - 252)) });
+                    setFilterMenuOpen((o) => !o);
+                  }}
+                >
+                  <Icon name="sliders" size={15} />
+                </button>
+                {filterMenuOpen && (
+                  <>
+                    <div className="tf-backdrop" onClick={() => setFilterMenuOpen(false)} />
+                    <div className="tf-menu" role="menu" style={filterMenuPos ?? undefined}>
+                      <button type="button" role="menuitem" className="tf-item" onClick={() => { setAdvOpen((o) => !o); setFilterMenuOpen(false); }}>
+                        <Icon name="sliders" size={14} /> {advOpen ? 'Hide advanced filters' : 'Advanced filters'}
+                      </button>
+                      <button type="button" role="menuitem" className="tf-item" disabled title="শীঘ্রই আসছে"><Icon name="filter" size={14} /> Quick filter <em>soon</em></button>
+                      <button type="button" role="menuitem" className="tf-item" disabled title="শীঘ্রই আসছে"><Icon name="sort" size={14} /> Sort <em>soon</em></button>
+                      <button type="button" role="menuitem" className="tf-item" disabled title="শীঘ্রই আসছে"><Icon name="layers" size={14} /> Group by <em>soon</em></button>
+                      <div className="tf-sep" />
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="tf-item danger"
+                        onClick={() => {
+                          setSearch('');
+                          setActiveView('all');
+                          setDueDateFilter('');
+                          setAssignedDateFilter('');
+                          setFilterMenuOpen(false);
+                        }}
+                      >
+                        <Icon name="close" size={14} /> Clear filters
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* advanced filters (placeholder — schema-তে labels/sprint নেই) */}
@@ -1195,27 +1376,9 @@ function TasksPageInner() {
               </div>
             </div>
 
+            {viewCard}
+
             {/* per-person card list */}
-            <div className="scope-row">
-              <div className="scope-toggle">
-                <button className={`scope-btn${listScope === 'mine' ? ' active' : ''}`} onClick={() => setListScope('mine')}>
-                  <Icon name="user" size={13} /> My tasks
-                </button>
-                <button className={`scope-btn${listScope === 'team' ? ' active' : ''}`} onClick={() => setListScope('team')}>
-                  <Icon name="users2" size={13} /> Team tasks
-                </button>
-              </div>
-              {listScope === 'team' && (
-                <div className="scope-actions">
-                  <button className="btn btn-ghost btn-sm" onClick={handleExportTeamTasksPdf} disabled={exportingPdf || memberTaskCards.length === 0}>
-                    <Icon name="export" size={13} /> {exportingPdf ? 'এক্সপোর্ট হচ্ছে…' : 'Export PDF'}
-                  </button>
-                  <button className="btn btn-ghost btn-sm" style={{ color: '#25D366' }} onClick={handleShareTeamTasksWhatsApp} disabled={sharingPdf || memberTaskCards.length === 0}>
-                    <Icon name="whatsapp" size={13} color="#25D366" /> {sharingPdf ? 'শেয়ার হচ্ছে…' : 'Share to WhatsApp'}
-                  </button>
-                </div>
-              )}
-            </div>
             {loading ? (
               <div className="table-scroll">
                 <div style={{ padding: 40, textAlign: 'center', fontSize: 13, color: 'var(--ink-faint)' }}>লোড হচ্ছে…</div>
@@ -1252,10 +1415,19 @@ function TasksPageInner() {
                     </div>
 
                     {m.personTasks.length > 0 && (
-                      <div className="person-progress-wrap">
-                        <span className="person-progress-label">Overall progress</span>
-                        <span className="person-progress-pct tabular">{m.avgProgress}%</span>
-                        <div className="progress-track"><div className="progress-fill" style={{ width: `${m.avgProgress}%`, background: m.avgProgress === 100 ? 'var(--positive)' : undefined }}></div></div>
+                      <div className={`person-progress-wrap seg ${m.avgProgress <= 33 ? 'lvl-low' : m.avgProgress <= 66 ? 'lvl-mid' : m.avgProgress < 80 ? 'lvl-good' : 'lvl-high'}`}>
+                        <div className="sg-top">
+                          <div className="sg-pct tabular">{m.avgProgress}<small>%</small></div>
+                          <div className="sg-text">
+                            <span className="person-progress-label">Overall progress</span>
+                            <span className="pp-count tabular">{m.personTasks.filter((t) => t.status === 'done').length} of {m.personTasks.length} tasks done</span>
+                          </div>
+                        </div>
+                        <div className="sg-bar" role="img" aria-label={`Overall progress ${m.avgProgress}%`}>
+                          {Array.from({ length: 10 }, (_, i) => (
+                            <i key={i} className={i < Math.round(m.avgProgress / 10) ? (m.avgProgress === 100 ? 'on full' : 'on') : ''} />
+                          ))}
+                        </div>
                       </div>
                     )}
 
@@ -1269,38 +1441,47 @@ function TasksPageInner() {
                     ) : (
                       <div className="person-task-list">
                         {m.shown.map((task) => {
-                          const status = STATUS_META[task.status];
                           const checklist = checklistByTask.get(task.id) ?? [];
+                          const doneCount = checklist.filter((c) => c.is_done).length;
+                          const isDone = task.status === 'done';
+                          const prio = PRIORITY_EN[task.priority] ?? PRIORITY_EN.normal;
                           return (
                             <div className="person-task-item" key={task.id}>
-                              <div className="person-task-top">
-                                <span className={`person-task-dot ${status.cls}`}></span>
-                                <div className="person-task-main">
-                                  <div className={`person-task-title${task.status === 'done' ? ' done' : ''}`}>{task.title}</div>
-                                  <div className="person-task-meta tabular">
-                                    {task.progress ?? 0}% · {status.label}
-                                    {task.assigned_date !== today ? ` · Scheduled ${task.assigned_date.slice(8, 10)}/${task.assigned_date.slice(5, 7)}` : ''}
-                                    {task.due_date ? ` · Due ${task.due_date.slice(8, 10)}/${task.due_date.slice(5, 7)}/${task.due_date.slice(0, 4)}` : ''}
+                              <div className="ptk">
+                                <span className={`ptk-check${isDone ? ' done' : task.status === 'in_progress' ? ' doing' : ''}`} aria-hidden="true">
+                                  {isDone && <Icon name="tick" size={11} color="#fff" />}
+                                </span>
+                                <div className="ptk-body">
+                                  <div className="ptk-top">
+                                    <div className={`ptk-title${isDone ? ' done' : ''}`}>{task.title}</div>
+                                    <button className="person-task-action" onClick={() => openEditTask(task)} aria-label="এডিট করুন">
+                                      <Icon name="edit" size={13} />
+                                    </button>
+                                    <button className="person-task-action danger" onClick={() => handleDeleteSingleTask(task.id)} aria-label="ডিলিট করুন">
+                                      <Icon name="trash" size={13} />
+                                    </button>
+                                  </div>
+                                  <div className="ptk-meta">
+                                    {task.projects?.name && <b className="ptk-project">{task.projects.name}</b>}
+                                    <span className={`ptk-prio ${prio.cls}`}><i />{prio.label}</span>
+                                    {checklist.length > 0 && (
+                                      <span className="ptk-count tabular"><Icon name="checklist" size={13} />{doneCount}/{checklist.length}</span>
+                                    )}
+                                    {task.due_date && <span className="ptk-due tabular">Due {task.due_date.slice(8, 10)}/{task.due_date.slice(5, 7)}/{task.due_date.slice(0, 4)}</span>}
                                   </div>
                                   {task.description && <RichText text={task.description} className="person-task-desc" />}
+                                  {checklist.length > 0 && (
+                                    <div className="ptk-checklist">
+                                      {checklist.map((item) => (
+                                        <button key={item.id} className={`ptk-item${item.is_done ? ' done' : ''}`} onClick={() => toggleChecklistItemCard(task.id, item)}>
+                                          <span className="icb">{item.is_done && <Icon name="tick" size={9} color="#fff" />}</span>
+                                          {item.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
-                                <button className="person-task-action" onClick={() => openEditTask(task)} aria-label="এডিট করুন">
-                                  <Icon name="edit" size={13} />
-                                </button>
-                                <button className="person-task-action danger" onClick={() => handleDeleteSingleTask(task.id)} aria-label="ডিলিট করুন">
-                                  <Icon name="trash" size={13} />
-                                </button>
                               </div>
-                              {checklist.length > 0 && (
-                                <div className="person-task-checklist">
-                                  {checklist.map((item) => (
-                                    <button key={item.id} className={`person-checklist-item${item.is_done ? ' done' : ''}`} onClick={() => toggleChecklistItemCard(task.id, item)}>
-                                      <span className="icb">{item.is_done && <Icon name="tick" size={7} color="#fff" />}</span>
-                                      {item.label}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
                             </div>
                           );
                         })}
@@ -1316,72 +1497,37 @@ function TasksPageInner() {
                 থিম (dark mode) নির্বিশেষে সবসময় লাইট/হার্ডকোডেড রঙে রেন্ডার হয়। */}
             <div
               ref={teamExportRef}
-              style={{ position: 'fixed', top: 0, left: -99999, width: 600, background: '#ffffff', padding: 32, fontFamily: manrope.style.fontFamily, color: '#14141A' }}
+              style={{ position: 'fixed', top: 0, left: -99999, width: 600, background: '#ffffff', padding: 32, fontFamily: SHEET_FONT, color: '#14141A' }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '2px solid #14141A' }}>
-                <div style={{ fontSize: 20, fontWeight: 700 }}>Flow 53 - Daily Task</div>
-                <div style={{ fontSize: 12, color: '#6E6E7A' }}>
-                  {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
-                </div>
-              </div>
-              {memberTaskCards.map((m) => (
-                <div key={m.profile.id} style={{ marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #E8E8EC' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700 }}>{m.profile.full_name}</div>
-                    <div style={{ fontSize: 12, color: '#6E6E7A' }}>
-                      {m.activeCount === 0 ? 'No active To-Dos' : `${m.activeCount} active To-Do${m.activeCount > 1 ? 's' : ''}`}
+              {exportDocContent}
+            </div>
+
+            {sharePreviewOpen && (
+              <div className="sp-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) closeSharePreview(); }}>
+                <div className="sp-box" role="dialog" aria-modal="true" aria-label="Share preview">
+                  <div className="sp-head">
+                    <div className="sp-head-text">
+                      <div className="sp-title">Share preview</div>
+                      <div className="sp-sub">This is how the team tasks sheet will look when shared</div>
+                    </div>
+                    <button type="button" className="sp-close" onClick={closeSharePreview} aria-label="Close"><Icon name="close" size={16} /></button>
+                  </div>
+                  <div className="sp-body">
+                    <div className="sp-sheet" style={{ fontFamily: SHEET_FONT }}>
+                      {exportDocContent}
                     </div>
                   </div>
-                  {m.personTasks.length === 0 ? (
-                    <div style={{ fontSize: 12, color: '#A3A3AE' }}>All clear</div>
-                  ) : m.shown.length === 0 ? (
-                    <div style={{ fontSize: 12, color: '#A3A3AE' }}>No tasks match the current filter</div>
-                  ) : (
-                    m.shown.map((task) => {
-                      const status = STATUS_META[task.status];
-                      const checklist = checklistByTask.get(task.id) ?? [];
-                      return (
-                        <div key={task.id} style={{ padding: '5px 0' }}>
-                          {/* কাস্টম div/span দিয়ে আঁকা bullet/checkbox html2canvas-এ টেক্সটের
-                              সাথে উপরে-নিচে মিসঅ্যালাইন হয়ে যাচ্ছিল (flex/table কোনোটাতেই পুরো
-                              ঠিক হয়নি) — তাই এখন প্লেইন ইউনিকোড ক্যারেক্টার ব্যবহার করা হয়েছে,
-                              এগুলো টেক্সটেরই অংশ বলে লাইনের সাথে এমনিতেই নিখুঁতভাবে বেসলাইন-অ্যালাইন থাকে। */}
-                          <div style={{ display: 'table', width: '100%', fontSize: 12 }}>
-                            <div style={{ display: 'table-cell', textDecoration: task.status === 'done' ? 'line-through' : 'none', color: task.status === 'done' ? '#A3A3AE' : '#14141A' }}>
-                              • {task.title}
-                            </div>
-                            <div style={{ display: 'table-cell', textAlign: 'right', whiteSpace: 'nowrap', color: '#6E6E7A', paddingLeft: 8 }}>
-                              {task.status !== 'todo' && status.label}
-                              {task.due_date ? `${task.status !== 'todo' ? ' · ' : ''}Due ${task.due_date.slice(8, 10)}/${task.due_date.slice(5, 7)}/${task.due_date.slice(0, 4)}` : ''}
-                            </div>
-                          </div>
-                          {task.description && (
-                            <div style={{ fontSize: 11, color: task.status === 'done' ? '#A3A3AE' : '#14141A', marginTop: 2, marginLeft: 14 }}><RichText text={task.description} /></div>
-                          )}
-                          {checklist.length > 0 && (
-                            <div style={{ marginLeft: 14, marginTop: 3 }}>
-                              {checklist.map((item) => (
-                                <div
-                                  key={item.id}
-                                  style={{
-                                    fontSize: 11,
-                                    padding: '2px 0',
-                                    color: item.is_done ? '#A3A3AE' : '#14141A',
-                                    textDecoration: item.is_done ? 'line-through' : 'none',
-                                  }}
-                                >
-                                  {item.is_done ? '☑' : '☐'} {item.label}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
+                  <div className="sp-foot">
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={handleExportTeamTasksPdf} disabled={exportingPdf}>
+                      <Icon name="export" size={13} /> {exportingPdf ? 'এক্সপোর্ট হচ্ছে…' : 'Download PDF'}
+                    </button>
+                    <button type="button" className="btn btn-accent btn-sm" onClick={handleShareTeamTasksWhatsApp} disabled={sharingPdf}>
+                      <Icon name="whatsapp" size={13} color="#fff" /> {sharingPdf ? 'শেয়ার হচ্ছে…' : 'Share to WhatsApp'}
+                    </button>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
             </>
             )}
 

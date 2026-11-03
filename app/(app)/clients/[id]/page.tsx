@@ -31,8 +31,10 @@ import './client-detail.css';
 import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
 import { relativeTimeBn, formatBnDate } from '@/lib/format';
-import { driveThumbnailUrl, uploadFileToDrive, guessFileType } from '@/lib/driveUpload';
+import { uploadFileToDrive, guessFileType, driveDownloadUrl } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
+import MediaPreviewModal, { type MediaPreviewItem } from '@/app/components/MediaPreviewModal';
+import Avatar from '@/app/components/Avatar';
 import PhoneInput from '@/app/components/PhoneInput';
 import { formatMoney } from '@/lib/currency';
 import { getProjectCurrencies } from '@/lib/projectCurrency';
@@ -73,6 +75,8 @@ const ICON_PATHS: Record<string, string> = {
   'chevron-down': '<path d="M6 9l6 6 6-6"/>',
   mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/>',
   phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.4 2.1L8 10a16 16 0 0 0 6 6l1.3-1.4a2 2 0 0 1 2.1-.4c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.7 2z"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18"/><path d="M12 3a14 14 0 0 0 0 18"/>',
+  pin: '<path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
   link: '<path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><path d="M8 12h8"/>',
   trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
   eye: '<path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8z"/><circle cx="12" cy="12" r="3"/>',
@@ -159,6 +163,18 @@ function toOne<T>(v: T | T[] | null | undefined): T | null {
   if (!v) return null;
   return Array.isArray(v) ? (v[0] ?? null) : v;
 }
+// a file entry can be a pasted web link (Figma, a Google Doc, a website …) instead of an uploaded file; those open in a new tab
+function isDriveUrl(url: string): boolean {
+  return /drive\.google\.com\/(file\/d\/|open\?id=|uc\?)|googleusercontent\.com/.test(url);
+}
+function isLinkFile(f: { file_type: string | null; drive_url: string }): boolean {
+  return f.file_type === 'link' || !isDriveUrl(f.drive_url);
+}
+function withProtocol(url: string): string {
+  return /^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`;
+}
+const ACTIVITY_PAGE_SIZE = 5;
+
 function formatBytes(bytes: number | null): string {
   if (!bytes) return '';
   if (bytes < 1024) return `${bytes} B`;
@@ -195,6 +211,13 @@ export default function ClientDetailPage() {
   const [files, setFiles] = useState<FileRow[]>([]);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [projectCurrencies, setProjectCurrencies] = useState<Record<string, string>>({});
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkName, setLinkName] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkSaving, setLinkSaving] = useState(false);
+  const [activityPage, setActivityPage] = useState(1);
+  const [previewItem, setPreviewItem] = useState<MediaPreviewItem | null>(null);
+  const [taskCounts, setTaskCounts] = useState<Record<string, { done: number; total: number }>>({});
   const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [sows, setSows] = useState<SowRow[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
@@ -283,12 +306,29 @@ export default function ClientDetailPage() {
       setNotes((notesRes.data as unknown as NoteRow[]) ?? []);
 
       const projectIds = projectRows.map((p) => p.id);
-      const [sowsRes, invoicesRes] = await Promise.all([
+      const [sowsRes, invoicesRes, tasksRes] = await Promise.all([
         projectIds.length > 0 ? supabase.from('sows').select('id, project_id, status').in('project_id', projectIds) : Promise.resolve({ data: [] }),
         supabase.from('invoices').select('id, amount, currency, status').eq('client_id', clientId),
+        projectIds.length > 0 ? supabase.from('tasks').select('project_id, status').in('project_id', projectIds) : Promise.resolve({ data: [] }),
       ]);
       setSows((sowsRes.data as SowRow[]) ?? []);
       setInvoices((invoicesRes.data as InvoiceRow[]) ?? []);
+
+      // The saved projects.progress number is not kept up to date, so progress is worked out from the project's tasks
+      // (finished tasks out of all tasks), the same way the dashboard does it. A project with no tasks stays at 0%.
+      const taskStats = new Map<string, { done: number; total: number }>();
+      for (const t of (tasksRes.data as { project_id: string | null; status: string }[]) ?? []) {
+        if (!t.project_id) continue;
+        const stat = taskStats.get(t.project_id) ?? { done: 0, total: 0 };
+        stat.total += 1;
+        if (t.status === 'done') stat.done += 1;
+        taskStats.set(t.project_id, stat);
+      }
+      setTaskCounts(Object.fromEntries(taskStats));
+      setProjects(projectRows.map((p) => {
+        const stat = taskStats.get(p.id);
+        return { ...p, progress: stat && stat.total > 0 ? Math.round((stat.done / stat.total) * 100) : p.status === 'completed' ? 100 : 0 };
+      }));
 
       setLoading(false);
     }
@@ -521,6 +561,42 @@ export default function ClientDetailPage() {
     router.push('/clients');
   }
 
+  // click a file: an uploaded file opens in the viewer; a web link opens in a new tab
+  function openFileRow(f: FileRow) {
+    if (isLinkFile(f)) {
+      window.open(withProtocol(f.drive_url), '_blank', 'noopener,noreferrer');
+    } else {
+      setPreviewItem({ name: f.name, url: f.drive_url, fileType: f.file_type });
+    }
+  }
+
+  async function handleAddLink() {
+    if (!client || !linkUrl.trim()) return;
+    setLinkSaving(true);
+    setError(null);
+    const url = withProtocol(linkUrl);
+    let fallbackName = url;
+    try {
+      fallbackName = new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      // keep the address as the name
+    }
+    const { data, error: insertError } = await supabase
+      .from('client_files')
+      .insert({ client_id: client.id, name: linkName.trim() || fallbackName, file_type: 'link', size_bytes: null, drive_url: url, category: 'other', uploaded_by: 'team' })
+      .select('id, name, file_type, size_bytes, drive_url, uploaded_by, created_at')
+      .single();
+    setLinkSaving(false);
+    if (insertError || !data) {
+      setError(insertError?.message ?? 'The link could not be saved.');
+      return;
+    }
+    setFiles((prev) => [data as FileRow, ...prev]);
+    setLinkName('');
+    setLinkUrl('');
+    setShowLinkModal(false);
+  }
+
   async function handleFilesSelected(e: ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files ?? []);
     e.target.value = '';
@@ -528,13 +604,17 @@ export default function ClientDetailPage() {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const accessToken = sessionData.session?.access_token;
-    if (!accessToken) return;
+    if (!accessToken) {
+      setError('Please sign in again to upload files.');
+      return;
+    }
 
     setUploading(true);
+    setError(null);
     for (const file of selected) {
       try {
         const result = await uploadFileToDrive(file, accessToken);
-        const { data } = await supabase
+        const { data, error: insertError } = await supabase
           .from('client_files')
           .insert({
             client_id: client.id,
@@ -547,7 +627,8 @@ export default function ClientDetailPage() {
           })
           .select('id, name, file_type, size_bytes, drive_url, uploaded_by, created_at')
           .single();
-        if (data) setFiles((prev) => [data as FileRow, ...prev]);
+        if (insertError || !data) throw new Error(insertError?.message ?? 'The file was uploaded but could not be saved.');
+        setFiles((prev) => [data as FileRow, ...prev]);
         if (user) {
           await supabase.from('activity_log').insert({
             actor_id: user.id,
@@ -629,19 +710,25 @@ export default function ClientDetailPage() {
     : client.admin_request
       ? { label: 'Info Needed', cls: 's-action' }
       : (STATUS_META[client.status] ?? { label: client.status, cls: 's-todo' });
-  const source = client.user_id ? 'Client Portal (self-registered)' : 'Manually Added by Team';
   const proj = currentProject(projects);
   const dealValue = projects.reduce((sum, p) => sum + (p.budget ?? 0), 0);
   // one currency when every priced project uses the same one; null = mixed, so no misleading single total
   const pricedCurrencies = new Set(projects.filter((p) => (p.budget ?? 0) > 0).map((p) => projectCurrencies[p.id] ?? 'BDT'));
   const dealCurrency = pricedCurrencies.size <= 1 ? ([...pricedCurrencies][0] ?? 'BDT') : null;
-  const lastActivityAt = activity[0]?.created_at ?? client.created_at;
   const clientSince = new Date(client.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   const hasSignedSow = sows.some((s) => proj && s.project_id === proj.id && s.status === 'signed');
   const totalInvoiced = invoices.reduce((sum, i) => sum + i.amount, 0);
   const totalPaid = invoices.filter((i) => i.status === 'paid').reduce((sum, i) => sum + i.amount, 0);
   const paymentDone = invoices.length > 0 && totalPaid >= totalInvoiced && totalInvoiced > 0;
+  // the five summary cards: what matters most about this client
+  const activeProjects = projects.filter((p) => p.status !== 'completed');
+  const invoiceCurrencySet = new Set(invoices.map((i) => i.currency));
+  const invoiceCurrency = invoiceCurrencySet.size === 1 ? Array.from(invoiceCurrencySet)[0] : null;
+  const openInvoices = invoices.filter((i) => !['paid', 'cancelled', 'failed', 'refunded', 'draft'].includes(i.status));
+  const outstanding = openInvoices.reduce((sum, i) => sum + i.amount, 0);
+  const paidCount = invoices.filter((i) => i.status === 'paid').length;
+  const moneyText = (n: number) => (invoiceCurrency ? formatMoney(n, invoiceCurrency) : invoices.length === 0 ? '—' : 'Mixed currencies');
   const deliveryApproved = proj?.final_delivery_status === 'approved';
   const completionDone = proj?.status === 'completed';
 
@@ -708,10 +795,15 @@ export default function ClientDetailPage() {
   return (
     <>
       <main className="content">
-            <div className="breadcrumb">
-              <Link href="/clients">Clients</Link>
-              <span className="sep">/</span>
-              <span className="current">{client.company_name}</span>
+            <div className="cd-topbar">
+              <div className="cd-topbar-text">
+                <h1 className="cd-topbar-title">Client details</h1>
+                <p className="cd-topbar-sub">Everything about {client.company_name} in one place</p>
+              </div>
+              <Link href="/clients" className="cd-back">
+                <span className="cd-back-icon"><Icon name="chevron-left" size={14} /></span>
+                Back to clients
+              </Link>
             </div>
 
             {error && <div className="error-banner">{error}</div>}
@@ -722,6 +814,9 @@ export default function ClientDetailPage() {
                 <div>
                   <div className="proj-title-row">
                     <span className="proj-title">{client.primary_contact ?? client.company_name}</span>
+                  </div>
+                  <div className="ch-sub">
+                    <span className="ch-company"><Icon name="building" size={14} />{client.company_name}</span>
                     <div className="status-dropdown-wrap" onClick={(e) => e.stopPropagation()}>
                       <button
                         type="button"
@@ -740,16 +835,6 @@ export default function ClientDetailPage() {
                         ))}
                       </div>
                     </div>
-                  </div>
-                  <div className="ch-company">{client.company_name}</div>
-                  <div className="proj-sub-row">
-                    <span>Client since {clientSince}</span>
-                    <span className="dividerdot"></span>
-                    <span>
-                      Manager: <b>{manager?.full_name ?? 'Unassigned'}</b>
-                    </span>
-                    <span className="dividerdot"></span>
-                    <span>{source}</span>
                   </div>
                 </div>
               </div>
@@ -821,21 +906,27 @@ export default function ClientDetailPage() {
                   </div>
                 </div>
               </div>
+              <div className="ch-meta">
+                <div className="ch-meta-item">
+                  <span className="ch-meta-icon"><Icon name="calendar" size={15} /></span>
+                  <div><span className="ch-meta-cap">Client since</span><b>{clientSince}</b></div>
+                </div>
+                <div className="ch-meta-item">
+                  <span className="ch-meta-icon"><Icon name="users" size={15} /></span>
+                  <div><span className="ch-meta-cap">Account manager</span><b className="ch-meta-person">{manager && <Avatar person={manager} size={24} fontSize={9} />}{manager?.full_name ?? 'Unassigned'}</b></div>
+                </div>
+                <div className="ch-meta-item">
+                  <span className="ch-meta-icon"><Icon name="mail" size={15} /></span>
+                  <div><span className="ch-meta-cap">Email</span><b>{client.contact_email ?? '—'}</b></div>
+                </div>
+                <div className="ch-meta-item">
+                  <span className="ch-meta-icon"><Icon name="phone" size={15} /></span>
+                  <div><span className="ch-meta-cap">Phone</span><b>{client.contact_phone ?? '—'}</b></div>
+                </div>
+              </div>
             </div>
 
             <div className="summary-strip">
-              <div className="summary-item tone-status">
-                <div className="si-top">
-                  <div className="si-icon">
-                    <Icon name="check" size={16} />
-                  </div>
-                </div>
-                <div className="si-value tabular">{meta.label}</div>
-                <div className="si-label">Client Status</div>
-                <div className="si-deco" aria-hidden="true">
-                  <Icon name="check" size={70} />
-                </div>
-              </div>
               <div className="summary-item tone-project">
                 <div className="si-top">
                   <div className="si-icon">
@@ -847,8 +938,9 @@ export default function ClientDetailPage() {
                     </Link>
                   )}
                 </div>
-                <div className={`si-value tabular${proj ? '' : ' muted'}`}>{proj ? proj.name : 'Not created'}</div>
-                <div className="si-label">Project</div>
+                <div className={`si-value tabular${projects.length === 0 ? ' muted' : ''}`}>{activeProjects.length}</div>
+                <div className="si-label">Active Projects</div>
+                <div className="si-foot"><i />{projects.length === 0 ? 'No project yet' : `${projects.length} in total`}</div>
                 <div className="si-deco" aria-hidden="true">
                   <Icon name="folder" size={70} />
                 </div>
@@ -859,34 +951,50 @@ export default function ClientDetailPage() {
                     <Icon name="wallet" size={16} />
                   </div>
                 </div>
-                <div className={`si-value tabular${dealValue > 0 ? '' : ' muted'}`}>{dealValue > 0 ? (dealCurrency ? formatMoney(dealValue, dealCurrency) : 'Mixed currencies') : 'Not set'}</div>
+                <div className={`si-value tabular${dealValue <= 0 ? ' muted' : ''}`}>{dealValue > 0 ? (dealCurrency ? formatMoney(dealValue, dealCurrency) : 'Mixed currencies') : 'Not set'}</div>
                 <div className="si-label">Project Value</div>
+                <div className="si-foot"><i />{dealValue > 0 ? 'Across all projects' : 'Set it in the project'}</div>
                 <div className="si-deco" aria-hidden="true">
                   <Icon name="wallet" size={70} />
                 </div>
               </div>
-              <div className="summary-item tone-manager">
+              <div className="summary-item tone-paid">
                 <div className="si-top">
                   <div className="si-icon">
-                    <Icon name="user" size={16} />
+                    <Icon name="check" size={16} />
                   </div>
                 </div>
-                <div className={`si-value tabular${manager ? '' : ' muted'}`}>{manager?.full_name ?? 'Unassigned'}</div>
-                <div className="si-label">Manager</div>
+                <div className={`si-value tabular${invoices.length === 0 ? ' muted' : ''}`}>{invoices.length === 0 ? '—' : moneyText(totalPaid)}</div>
+                <div className="si-label">Payments Collected</div>
+                <div className="si-foot"><i />{invoices.length === 0 ? 'No payment requests yet' : `${paidCount} of ${invoices.length} requests paid`}</div>
                 <div className="si-deco" aria-hidden="true">
-                  <Icon name="user" size={70} />
+                  <Icon name="check" size={70} />
                 </div>
               </div>
-              <div className="summary-item tone-activity">
+              <div className="summary-item tone-due">
                 <div className="si-top">
                   <div className="si-icon">
-                    <Icon name="clock" size={16} />
+                    <Icon name="alert" size={16} />
                   </div>
                 </div>
-                <div className="si-value tabular">{relativeTimeBn(lastActivityAt)}</div>
-                <div className="si-label">Last Activity</div>
+                <div className={`si-value tabular${invoices.length === 0 || outstanding === 0 ? ' muted' : ''}`}>{invoices.length === 0 ? '—' : moneyText(outstanding)}</div>
+                <div className="si-label">Outstanding</div>
+                <div className="si-foot"><i />{invoices.length === 0 ? 'Nothing requested' : outstanding > 0 ? `${openInvoices.length} awaiting payment` : 'All clear'}</div>
                 <div className="si-deco" aria-hidden="true">
-                  <Icon name="clock" size={70} />
+                  <Icon name="alert" size={70} />
+                </div>
+              </div>
+              <div className="summary-item tone-progress">
+                <div className="si-top">
+                  <div className="si-icon">
+                    <Icon name="layers" size={16} />
+                  </div>
+                </div>
+                <div className={`si-value tabular${!proj ? ' muted' : ''}`}>{proj ? `${Math.round(proj.progress ?? 0)}%` : '—'}</div>
+                <div className="si-label">Project Progress</div>
+                <div className="si-foot"><i />{proj ? proj.name : 'No project yet'}</div>
+                <div className="si-deco" aria-hidden="true">
+                  <Icon name="layers" size={70} />
                 </div>
               </div>
             </div>
@@ -905,8 +1013,14 @@ export default function ClientDetailPage() {
                     )}
                   </div>
                 </div>
-                <div className="lc-count">
-                  <b className="tabular">{lcDoneCount}</b> of {lcStepsFinal.length} steps
+                <div className="lc-progress">
+                  <div className="lc-progress-text">
+                    <b className="tabular">{Math.round((lcDoneCount / Math.max(lcStepsFinal.length, 1)) * 100)}%</b>
+                    <span className="tabular">{lcDoneCount} of {lcStepsFinal.length} steps done</span>
+                  </div>
+                  <div className="lc-track" aria-hidden="true">
+                    <div className="lc-fill" style={{ width: `${(lcDoneCount / Math.max(lcStepsFinal.length, 1)) * 100}%` }}></div>
+                  </div>
                 </div>
               </div>
               <ol className="lc-row">
@@ -922,31 +1036,186 @@ export default function ClientDetailPage() {
                       )}
                     </span>
                     <span className="lc-step-label">{s.label}</span>
-                    <span className="lc-state">{s.done ? 'Done' : s.current ? 'In progress' : 'Upcoming'}</span>
+                    <span className="lc-state">
+                      {s.done && (
+                        <span className="lc-state-check" aria-hidden="true">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M5 12l5 5L20 7" />
+                          </svg>
+                        </span>
+                      )}
+                      {s.done ? 'Done' : s.current ? 'In progress' : 'Upcoming'}
+                    </span>
                   </li>
                 ))}
               </ol>
             </div>
 
+              <section className="dcard ov-card">
+                <div className="dcard-head">
+                  <span className="dcard-title">Client Overview</span>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => {
+                      setEditForm(client);
+                      setShowEdit(true);
+                    }}
+                  >
+                    <Icon name="edit" size={12} /> Edit Client
+                  </button>
+                </div>
+                <table className="ov-table">
+                  <tbody>
+                    <tr>
+                      <th scope="row"><span className="ov-th"><Icon name="user" size={15} />Designation</span></th>
+                      <td>{client.designation ?? '—'}</td>
+                      <th scope="row"><span className="ov-th"><Icon name="layers" size={15} />Industry</span></th>
+                      <td>{client.industry ?? '—'}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row"><span className="ov-th"><Icon name="building" size={15} />Company size</span></th>
+                      <td>{client.company_size ?? '—'}</td>
+                      <th scope="row"><span className="ov-th"><Icon name="globe" size={15} />Website</span></th>
+                      <td>{client.website ? <a href={/^https?:\/\//i.test(client.website) ? client.website : `https://${client.website}`} target="_blank" rel="noopener noreferrer" className="field-link">{client.website}</a> : '—'}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row"><span className="ov-th"><Icon name="pin" size={15} />Country</span></th>
+                      <td>{client.country ?? '—'}</td>
+                      <th scope="row"><span className="ov-th"><Icon name="clock" size={15} />Time zone</span></th>
+                      <td>{client.timezone ?? '—'}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row"><span className="ov-th"><Icon name="message" size={15} />Preferred contact</span></th>
+                      <td>{client.preferred_contact_method ?? '—'}</td>
+                      <td colSpan={2}></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+
+                <section className="dcard ov-card">
+                  <div className="dcard-head">
+                    <span className="dcard-title">
+                      Project Request{requirements && <span className="src-tag">Submitted by Client</span>}
+                    </span>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowReqEdit(true)}>
+                      <Icon name="edit" size={12} /> {requirements ? 'Edit' : 'Add details'}
+                    </button>
+                  </div>
+                  {showReqEdit && (
+                    <RequirementsEditModal clientId={client.id} initial={requirements} dark={dark} onClose={() => setShowReqEdit(false)} onSaved={(next) => setRequirements(next)} />
+                  )}
+                  {requirements ? (
+                    <table className="ov-table req-table">
+                      <tbody>
+                        <tr>
+                          <th scope="row"><span className="ov-th"><Icon name="folder" size={15} />Project name</span></th>
+                          <td>{requirements.project_name ?? '—'}</td>
+                          <th scope="row"><span className="ov-th"><Icon name="layers" size={15} />Project type</span></th>
+                          <td>{requirements.project_type ?? '—'}</td>
+                        </tr>
+                        <tr>
+                          <th scope="row"><span className="ov-th"><Icon name="calendar" size={15} />Expected timeline</span></th>
+                          <td>{requirements.expected_timeline ?? '—'}</td>
+                          <th scope="row"><span className="ov-th"><Icon name="wallet" size={15} />Estimated budget</span></th>
+                          <td><span className="tabular">{requirements.budget_range ?? '—'}</span></td>
+                        </tr>
+                        <tr>
+                          <th scope="row"><span className="ov-th"><Icon name="alert" size={15} />Priority</span></th>
+                          <td><span style={{ textTransform: 'capitalize' }}>{requirements.priority ?? '—'}</span></td>
+                          <th scope="row"><span className="ov-th"><Icon name="users" size={15} />Target audience</span></th>
+                          <td>{requirements.target_audience ?? '—'}</td>
+                        </tr>
+                        {requirements.project_description && (
+                        <tr>
+                          <th scope="row"><span className="ov-th"><Icon name="file" size={15} />Description</span></th>
+                          <td colSpan={3}><p className={`req-text${descExpanded ? '' : ' clamped'}`}>{requirements.project_description}</p>
+                            <button type="button" className="show-more-btn" onClick={() => setDescExpanded((v) => !v)}>
+                              {descExpanded ? 'Show Less' : 'Show More'}
+                            </button></td>
+                        </tr>
+                        )}
+                        {requirements.goals && (
+                        <tr>
+                          <th scope="row"><span className="ov-th"><Icon name="check" size={15} />Goals</span></th>
+                          <td colSpan={3}><p className="req-text">{requirements.goals}</p></td>
+                        </tr>
+                        )}
+                        {featureChips.length > 0 && (
+                        <tr>
+                          <th scope="row"><span className="ov-th"><Icon name="checklist" size={15} />Main features</span></th>
+                          <td colSpan={3}><div className="feature-chips">
+                              {featureChips.map((f) => (
+                                <span className="feature-chip" key={f}>
+                                  {f}
+                                </span>
+                              ))}
+                            </div></td>
+                        </tr>
+                        )}
+                        {assetChips.length > 0 && (
+                        <tr>
+                          <th scope="row"><span className="ov-th"><Icon name="upload" size={15} />Existing assets</span></th>
+                          <td colSpan={3}><div className="feature-chips">
+                              {assetChips.map((f) => (
+                                <span className="feature-chip" key={f}>
+                                  {f}
+                                </span>
+                              ))}
+                            </div></td>
+                        </tr>
+                        )}
+                        {requirements.competitors && (
+                        <tr>
+                          <th scope="row"><span className="ov-th"><Icon name="bar" size={15} />Competitors</span></th>
+                          <td colSpan={3}><p className="req-text">{requirements.competitors}</p></td>
+                        </tr>
+                        )}
+                        {requirements.reference_notes && (
+                        <tr>
+                          <th scope="row"><span className="ov-th"><Icon name="link" size={15} />References</span></th>
+                          <td colSpan={3}><p className="req-text">{requirements.reference_notes}</p></td>
+                        </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p className="side-empty">The client has not submitted any requirements yet. You can add them yourself with “Add details”.</p>
+                  )}
+                </section>
+
             <div className="detail-two-col">
               <div className="detail-main-col">
                 {/* Project and Project Request: side by side at the top of the left column */}
                 <div className="detail-pair">
-                  <section className="dcard">
+                  <section className="dcard proj-card">
                     <div className="dcard-head">
                       <span className="dcard-title">Project</span>
-                      {proj && <span className={`status-pill ${PROJECT_STATUS_META[proj.status]?.cls ?? 's-todo'}`}>{PROJECT_STATUS_META[proj.status]?.label ?? proj.status}</span>}
+                      {proj && (
+                        <span className={`proj-state ${PROJECT_STATUS_META[proj.status]?.cls ?? 's-todo'}`}>
+                          <i />
+                          {PROJECT_STATUS_META[proj.status]?.label ?? proj.status}
+                        </span>
+                      )}
                     </div>
                     {proj ? (
-                      <div>
+                      <div className="proj-body">
                         <div className="proj-name">{proj.name}</div>
-                        <div className="proj-progress-row">
-                          <div className="proj-track">
-                            <div className="proj-fill" style={{ width: `${proj.progress ?? 0}%` }}></div>
+
+                        <div className="proj-progress">
+                          <div className="pgb-top">
+                            <span>Progress</span>
+                            <span className="pgb-count tabular">{taskCounts[proj.id] ? `${taskCounts[proj.id].done} of ${taskCounts[proj.id].total} tasks done` : 'No tasks yet'}</span>
                           </div>
-                          <span className="proj-pct tabular">{proj.progress ?? 0}%</span>
+                          <div className="pgb">
+                            <div className="pgb-fill" style={{ width: `${Math.min(100, Math.max(0, proj.progress ?? 0))}%` }}>
+                              <span className={`pgb-badge${(proj.progress ?? 0) < 12 ? ' edge-l' : (proj.progress ?? 0) > 88 ? ' edge-r' : ''}`}>{Math.round(proj.progress ?? 0)}%</span>
+                            </div>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+
+                        <div className="proj-actions">
                           {proj.status === 'draft' && (
                             <Link href={`/clients/${client.id}/create-project?draft=${proj.id}`} className="btn btn-accent btn-sm">
                               <Icon name="edit" size={12} /> Continue draft
@@ -970,195 +1239,65 @@ export default function ClientDetailPage() {
                       </div>
                     )}
                   </section>
-    
-                  <section className="dcard">
-                    <div className="dcard-head">
-                      <span className="dcard-title">
-                        Project Request{requirements && <span className="src-tag">Submitted by Client</span>}
-                      </span>
-                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowReqEdit(true)}>
-                        <Icon name="edit" size={12} /> {requirements ? 'Edit' : 'Add details'}
-                      </button>
-                    </div>
-                    {showReqEdit && (
-                      <RequirementsEditModal clientId={client.id} initial={requirements} dark={dark} onClose={() => setShowReqEdit(false)} onSaved={(next) => setRequirements(next)} />
-                    )}
-                    {requirements ? (
-                      <>
-                        <div className="field-grid" style={{ marginBottom: 14 }}>
-                          <div>
-                            <div className="field-label">Project Name</div>
-                            <div className="field-value">{requirements.project_name ?? '—'}</div>
-                          </div>
-                          <div>
-                            <div className="field-label">Project Type</div>
-                            <div className="field-value">{requirements.project_type ?? '—'}</div>
-                          </div>
-                          <div>
-                            <div className="field-label">Expected Timeline</div>
-                            <div className="field-value">{requirements.expected_timeline ?? '—'}</div>
-                          </div>
-                          <div>
-                            <div className="field-label">Estimated Budget</div>
-                            <div className="field-value tabular">{requirements.budget_range ?? '—'}</div>
-                          </div>
-                          <div>
-                            <div className="field-label">Priority</div>
-                            <div className="field-value" style={{ textTransform: 'capitalize' }}>
-                              {requirements.priority ?? '—'}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="field-label">Target Audience</div>
-                            <div className="field-value">{requirements.target_audience ?? '—'}</div>
-                          </div>
-                        </div>
-                        {requirements.project_description && (
-                          <>
-                            <div className="field-label" style={{ marginBottom: 6 }}>
-                              Description
-                            </div>
-                            <p className={`req-text${descExpanded ? '' : ' clamped'}`}>{requirements.project_description}</p>
-                            <button type="button" className="show-more-btn" onClick={() => setDescExpanded((v) => !v)}>
-                              {descExpanded ? 'Show Less' : 'Show More'}
-                            </button>
-                          </>
-                        )}
-                        {requirements.goals && (
-                          <div className="req-block">
-                            <div className="field-label">Goals</div>
-                            <p className="req-text">{requirements.goals}</p>
-                          </div>
-                        )}
-                        {featureChips.length > 0 && (
-                          <div className="req-block">
-                            <div className="field-label">Main Features</div>
-                            <div className="feature-chips">
-                              {featureChips.map((f) => (
-                                <span className="feature-chip" key={f}>
-                                  {f}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {assetChips.length > 0 && (
-                          <div className="req-block">
-                            <div className="field-label">Existing Assets</div>
-                            <div className="feature-chips">
-                              {assetChips.map((f) => (
-                                <span className="feature-chip" key={f}>
-                                  {f}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {requirements.competitors && (
-                          <div className="req-block">
-                            <div className="field-label">Competitors</div>
-                            <p className="req-text">{requirements.competitors}</p>
-                          </div>
-                        )}
-                        {requirements.reference_notes && (
-                          <div className="req-block">
-                            <div className="field-label">References</div>
-                            <p className="req-text">{requirements.reference_notes}</p>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <p className="side-empty">The client has not submitted any requirements yet. You can add them yourself with “Add details”.</p>
-                    )}
-                  </section>
-                </div>
-                    <section className="dcard">
+
+                  <section className="dcard files-card">
                   <div className="dcard-head">
-                    <span className="dcard-title">Client Files</span>
-                    <input ref={fileInputRef} type="file" multiple hidden onChange={handleFilesSelected} />
+                  <span className="dcard-title">Client Files</span>
+                  <input ref={fileInputRef} type="file" multiple hidden onChange={handleFilesSelected} />
+                  <div className="files-head-actions">
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowLinkModal(true)}>
+                      <Icon name="link" size={12} /> Add link
+                    </button>
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
                       <Icon name="upload" size={12} /> {uploading ? 'আপলোড হচ্ছে…' : 'Upload File'}
                     </button>
                   </div>
+                  </div>
                   {files.length === 0 ? (
-                    <p className="side-empty">এখনো কোনো ফাইল শেয়ার করা হয়নি।</p>
+                  <p className="side-empty">এখনো কোনো ফাইল শেয়ার করা হয়নি।</p>
                   ) : (
-                    <div>
-                      {files.map((f) => (
-                        <div className="file-row" key={f.id}>
-                          <div className="file-icon">
-                            <Icon name="file" size={15} />
-                          </div>
-                          <div className="file-row-main">
-                            <div className="file-row-name">{f.name}</div>
-                            <div className="file-row-meta">
-                              {formatBytes(f.size_bytes)} · {f.uploaded_by === 'client' ? 'Client' : 'Team'} · {formatBnDate(f.created_at)}
-                            </div>
-                          </div>
-                          <div className="file-actions">
-                            <a className="icon-btn" style={{ width: 28, height: 28 }} href={driveThumbnailUrl(f.drive_url)} target="_blank" rel="noopener noreferrer">
-                              <Icon name="eye" size={13} />
-                            </a>
-                            <a className="icon-btn" style={{ width: 28, height: 28 }} href={f.drive_url} target="_blank" rel="noopener noreferrer">
-                              <Icon name="download" size={13} />
-                            </a>
+                  <div className="file-list">
+                    {files.map((f) => (
+                      <div
+                        className="file-row clickable"
+                        key={f.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => openFileRow(f)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFileRow(f); } }}
+                      >
+                        <div className="file-icon">
+                          <Icon name={isLinkFile(f) ? 'link' : 'file'} size={15} />
+                        </div>
+                        <div className="file-row-main">
+                          <div className="file-row-name">{f.name}</div>
+                          <div className="file-row-meta">
+                            {[formatBytes(f.size_bytes), f.uploaded_by === 'client' ? 'Client' : 'Team', new Date(f.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })].filter(Boolean).join(' · ')}
                           </div>
                         </div>
-                      ))}
-                    </div>
+                        <div className="file-actions" onClick={(e) => e.stopPropagation()}>
+                          {isLinkFile(f) ? (
+                            <a className="icon-btn" style={{ width: 28, height: 28 }} href={withProtocol(f.drive_url)} target="_blank" rel="noopener noreferrer" aria-label="Open link" title="Open link">
+                              <Icon name="link" size={13} />
+                            </a>
+                          ) : (
+                            <>
+                              <button type="button" className="icon-btn" style={{ width: 28, height: 28 }} aria-label="View file" title="View" onClick={() => setPreviewItem({ name: f.name, url: f.drive_url, fileType: f.file_type })}>
+                                <Icon name="eye" size={13} />
+                              </button>
+                              <a className="icon-btn" style={{ width: 28, height: 28 }} href={driveDownloadUrl(f.drive_url)} aria-label="Download file" title="Download">
+                                <Icon name="download" size={13} />
+                              </a>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                   )}
-                </section>
-
-                <section className="dcard">
-                  <div className="dcard-head">
-                    <span className="dcard-title">Client Overview</span>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => {
-                        setEditForm(client);
-                        setShowEdit(true);
-                      }}
-                    >
-                      <Icon name="edit" size={12} /> Edit Client
-                    </button>
-                  </div>
-                  <div className="field-grid">
-                    <div>
-                      <div className="field-label">Full Name</div>
-                      <div className="field-value">{client.primary_contact ?? '—'}</div>
-                    </div>
-                    <div>
-                      <div className="field-label">Company</div>
-                      <div className="field-value">{client.company_name}</div>
-                    </div>
-                    <div>
-                      <div className="field-label">Designation</div>
-                      <div className="field-value">{client.designation ?? '—'}</div>
-                    </div>
-                    <div>
-                      <div className="field-label">Industry</div>
-                      <div className="field-value">{client.industry ?? '—'}</div>
-                    </div>
-                    <div>
-                      <div className="field-label">Company Size</div>
-                      <div className="field-value">{client.company_size ?? '—'}</div>
-                    </div>
-                    <div>
-                      <div className="field-label">Country</div>
-                      <div className="field-value">{client.country ?? '—'}</div>
-                    </div>
-                    <div>
-                      <div className="field-label">Preferred Contact</div>
-                      <div className="field-value">{client.preferred_contact_method ?? '—'}</div>
-                    </div>
-                    <div>
-                      <div className="field-label">Time Zone</div>
-                      <div className="field-value">{client.timezone ?? '—'}</div>
-                    </div>
-                  </div>
-                </section>
-
+                  </section>
+    
+                </div>
                 <section className="dcard">
                   <div className="dcard-head">
                     <span className="dcard-title">Activity</span>
@@ -1166,26 +1305,100 @@ export default function ClientDetailPage() {
                   {activity.length === 0 ? (
                     <p className="empty-inline">এখনো কোনো অ্যাক্টিভিটি নেই।</p>
                   ) : (
-                    activity.slice(0, 8).map((a, i) => {
-                      const actor = toOne(a.actor);
+                    (() => {
+                      const totalPages = Math.max(1, Math.ceil(activity.length / ACTIVITY_PAGE_SIZE));
+                      const page = Math.min(activityPage, totalPages);
+                      const from = (page - 1) * ACTIVITY_PAGE_SIZE;
+                      const shown = activity.slice(from, from + ACTIVITY_PAGE_SIZE);
                       return (
-                        <div className="timeline-item" key={a.id}>
-                          <div className="timeline-dot-wrap">
-                            <div className="timeline-dot">
-                              <Icon name="check" size={12} />
+                        <>
+                          {shown.map((a, i) => {
+                            const actor = toOne(a.actor);
+                            return (
+                              <div className="timeline-item" key={a.id}>
+                                <div className="timeline-dot-wrap">
+                                  <div className="timeline-dot">
+                                    <Icon name="check" size={12} />
+                                  </div>
+                                  {i < shown.length - 1 && <div className="timeline-line"></div>}
+                                </div>
+                                <div>
+                                  <div className="timeline-text">{a.detail ?? a.action}</div>
+                                  <div className="timeline-time">
+                                    {actor?.full_name ?? 'Client'} · {relativeTimeBn(a.created_at)}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {totalPages > 1 && (
+                            <div className="act-pager">
+                              <span className="act-pager-info tabular">
+                                {from + 1}–{Math.min(from + ACTIVITY_PAGE_SIZE, activity.length)} of {activity.length}
+                              </span>
+                              <div className="act-pager-btns">
+                                <button type="button" className="act-pager-btn" disabled={page === 1} onClick={() => setActivityPage(page - 1)} aria-label="Previous activities">
+                                  <Icon name="chevron-left" size={14} />
+                                </button>
+                                <span className="act-pager-page tabular">{page} / {totalPages}</span>
+                                <button type="button" className="act-pager-btn next" disabled={page === totalPages} onClick={() => setActivityPage(page + 1)} aria-label="Next activities">
+                                  <Icon name="chevron-left" size={14} />
+                                </button>
+                              </div>
                             </div>
-                            {i < Math.min(activity.length, 8) - 1 && <div className="timeline-line"></div>}
-                          </div>
-                          <div>
-                            <div className="timeline-text">{a.detail ?? a.action}</div>
-                            <div className="timeline-time">
-                              {actor?.full_name ?? 'Client'} · {relativeTimeBn(a.created_at)}
-                            </div>
-                          </div>
-                        </div>
+                          )}
+                        </>
                       );
-                    })
+                    })()
                   )}
+                </section>
+
+              </div>
+
+              <div className="detail-side-col">
+                <section className="next-action-card">
+                  <div className="na-label">Next Action</div>
+                  <div className="na-title">{nextAction.title}</div>
+                  <p className="na-desc">{nextAction.desc}</p>
+                  <button type="button" className="btn btn-accent btn-block" onClick={nextAction.onCta}>
+                    {nextAction.ctaLabel}
+                  </button>
+                </section>
+
+                <section className="dcard">
+                  <div className="dcard-head">
+                    <span className="dcard-title">Reach out</span>
+                  </div>
+                  <div className="reach-grid">
+                    {client.contact_email ? (
+                      <a className="reach-btn" href={`mailto:${client.contact_email}`}>
+                        <Icon name="mail" size={15} /> Email
+                      </a>
+                    ) : (
+                      <span className="reach-btn disabled"><Icon name="mail" size={15} /> Email</span>
+                    )}
+                    {client.contact_phone ? (
+                      <a className="reach-btn" href={waLink(client.contact_phone)} target="_blank" rel="noopener noreferrer">
+                        <Icon name="message" size={15} /> Message
+                      </a>
+                    ) : (
+                      <span className="reach-btn disabled"><Icon name="message" size={15} /> Message</span>
+                    )}
+                    {client.contact_phone ? (
+                      <a className="reach-btn" href={`tel:${client.contact_phone}`}>
+                        <Icon name="phone" size={15} /> Call
+                      </a>
+                    ) : (
+                      <span className="reach-btn disabled"><Icon name="phone" size={15} /> Call</span>
+                    )}
+                    {client.user_id ? (
+                      <button type="button" className="reach-btn" onClick={() => setShowRequestModal(true)}>
+                        <Icon name="alert" size={15} /> Request info
+                      </button>
+                    ) : (
+                      <span className="reach-btn disabled"><Icon name="alert" size={15} /> Request info</span>
+                    )}
+                  </div>
                 </section>
 
                 <section className="dcard">
@@ -1244,157 +1457,40 @@ export default function ClientDetailPage() {
                     </button>
                   </div>
                 </section>
-              </div>
 
-              <div className="detail-side-col">
-                <section className="next-action-card">
-                  <div className="na-label">Next Action</div>
-                  <div className="na-title">{nextAction.title}</div>
-                  <p className="na-desc">{nextAction.desc}</p>
-                  <button type="button" className="btn btn-accent btn-block" onClick={nextAction.onCta}>
-                    {nextAction.ctaLabel}
-                  </button>
-                </section>
-
-                <section className="dcard">
-                  <div className="dcard-head">
-                    <span className="dcard-title">Contact</span>
-                  </div>
-                  <div className="contact-name">{client.primary_contact ?? client.company_name}</div>
-                  {client.contact_email && (
-                    <div className="contact-row">
-                      <Icon name="mail" size={13} /> {client.contact_email}
-                    </div>
-                  )}
-                  {client.contact_phone && (
-                    <div className="contact-row">
-                      <Icon name="phone" size={13} /> {client.contact_phone}
-                    </div>
-                  )}
-                  {client.website && (
-                    <div className="contact-row">
-                      <Icon name="link" size={13} /> {client.website}
-                    </div>
-                  )}
-                  {client.preferred_contact_method && (
-                    <div className="contact-row">
-                      <Icon name="message" size={13} /> Prefers {client.preferred_contact_method}
-                    </div>
-                  )}
-                  <div className="contact-actions">
-                    {client.contact_email && (
-                      <a className="btn btn-ghost btn-sm" href={`mailto:${client.contact_email}`}>
-                        <Icon name="mail" size={12} /> Email
-                      </a>
-                    )}
-                    {client.contact_phone && (
-                      <>
-                        <a className="btn btn-ghost btn-sm" href={waLink(client.contact_phone)} target="_blank" rel="noopener noreferrer">
-                          <Icon name="message" size={12} /> Message
-                        </a>
-                        <a className="btn btn-ghost btn-sm" href={`tel:${client.contact_phone}`}>
-                          <Icon name="phone" size={12} /> Call
-                        </a>
-                      </>
-                    )}
-                  </div>
-                </section>
-
-                <section className="dcard">
-                  <div className="dcard-head">
-                    <span className="dcard-title">Client Manager</span>
-                  </div>
-                  {manager ? (
-                    <div className="manager-row">
-                      <div className="avatar" style={{ width: 30, height: 30, fontSize: 11, background: manager.avatar_color ?? 'var(--accent)' }}>
-                        {manager.full_name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="manager-name">{manager.full_name}</div>
-                        <div className="manager-role">Account Manager</div>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="side-empty" style={{ marginBottom: 10 }}>
-                      কোনো ম্যানেজার অ্যাসাইন করা নেই।
-                    </p>
-                  )}
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-block btn-sm"
-                    onClick={() => {
-                      setEditForm(client);
-                      setShowEdit(true);
-                    }}
-                  >
-                    Change Manager
-                  </button>
-                </section>
-
-                <section className="dcard">
-                  <div className="dcard-head">
-                    <span className="dcard-title">Payment</span>
-                  </div>
-                  {invoices.length === 0 ? (
-                    <div className="payment-none">Payment not configured yet</div>
-                  ) : (
-                    <div>
-                      <span className={`payment-status-pill${paymentDone ? ' paid' : ''}`}>{paymentDone ? 'Fully Paid' : totalPaid > 0 ? 'Partially Paid' : 'Payment Pending'}</span>
-                      <div className="payment-row">
-                        <span>Paid</span>
-                        <b className="tabular">৳{totalPaid.toLocaleString('en-US')}</b>
-                      </div>
-                      <div className="payment-bar">
-                        <div className="payment-fill" style={{ width: `${totalInvoiced > 0 ? Math.min(100, Math.round((totalPaid / totalInvoiced) * 100)) : 0}%` }}></div>
-                      </div>
-                      <div className="payment-row">
-                        <span>Total Invoiced</span>
-                        <b className="tabular">৳{totalInvoiced.toLocaleString('en-US')}</b>
-                      </div>
-                    </div>
-                  )}
-                </section>
-
-                <section className="dcard">
-                  <div className="dcard-head">
-                    <span className="dcard-title">Quick Actions</span>
-                  </div>
-                  <div className="qa-grid">
-                    {proj ? (
-                      <Link href={`/projects/${proj.id}`} className="qa-btn">
-                        <Icon name="folder" size={14} /> View Project
-                      </Link>
-                    ) : (
-                      <Link href={`/clients/${client.id}/create-project`} className="qa-btn">
-                        <Icon name="folder-plus" size={14} /> Create Project
-                      </Link>
-                    )}
-                    {client.contact_phone ? (
-                      <a className="qa-btn" href={waLink(client.contact_phone)} target="_blank" rel="noopener noreferrer">
-                        <Icon name="message" size={14} /> Send Message
-                      </a>
-                    ) : (
-                      <button type="button" className="qa-btn" disabled>
-                        <Icon name="message" size={14} /> Send Message
-                      </button>
-                    )}
-                    {client.user_id ? (
-                      <button type="button" className="qa-btn" onClick={() => setShowRequestModal(true)}>
-                        <Icon name="alert" size={14} /> Request Info
-                      </button>
-                    ) : (
-                      <button type="button" className="qa-btn" disabled>
-                        <Icon name="alert" size={14} /> Request Info
-                      </button>
-                    )}
-                    <button type="button" className="qa-btn" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                      <Icon name="upload" size={14} /> Upload File
-                    </button>
-                  </div>
-                </section>
               </div>
             </div>
           </main>
+      <MediaPreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />
+      {showLinkModal && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowLinkModal(false); }}>
+          <div className="modal-box">
+            <div className="modal-head">
+              <div className="modal-icon"><Icon name="link" size={15} /></div>
+              <div className="modal-title">Add a link</div>
+              <button type="button" className="modal-close" aria-label="Close" onClick={() => setShowLinkModal(false)}>
+                <Icon name="close" size={14} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="modal-field">
+                <label className="modal-label">Link</label>
+                <input className="modal-input" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://" autoFocus />
+              </div>
+              <div className="modal-field">
+                <label className="modal-label">Name (optional)</label>
+                <input className="modal-input" value={linkName} onChange={(e) => setLinkName(e.target.value)} placeholder="e.g. Brand guidelines" />
+              </div>
+            </div>
+            <div className="modal-foot">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowLinkModal(false)}>Cancel</button>
+              <button type="button" className="btn btn-accent btn-sm" onClick={handleAddLink} disabled={linkSaving || !linkUrl.trim()}>
+                {linkSaving ? 'Saving…' : 'Add link'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showEdit && editForm && (
         <div
           className="modal-overlay"
