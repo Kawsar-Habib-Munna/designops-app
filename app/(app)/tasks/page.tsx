@@ -20,6 +20,7 @@ import { useSession } from '@/lib/useSession';
 import { relativeTimeBn, todayISO } from '@/lib/format';
 import { STATUS_META, PRIORITY_META, type TaskStatus, type TaskPriority } from '@/lib/taskMeta';
 import { sendNotifications } from '@/lib/notify';
+import { parseTaskText, matchMember } from '@/lib/taskImport';
 import SignInScreen from '@/app/components/SignInScreen';
 import Avatar from '@/app/components/Avatar';
 import RichTextField from '@/app/components/RichTextField';
@@ -265,6 +266,15 @@ function TasksPageInner() {
   // "আজকের টাস্ক"-এ) — ডেডলাইন (due_date) থেকে সম্পূর্ণ আলাদা, ডেডলাইন ভিন্ন ভিন্ন
   // দিন হতে পারে কিন্তু assigned date সবসময় থাকবে, ডিফল্ট আজ।
   const [newAssignedDate, setNewAssignedDate] = useState(todayISO());
+
+  // ---- Import tasks from text written by ChatGPT / Claude: each block names its member and the task goes to that person ----
+  const [showImport, setShowImport] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importMemberFor, setImportMemberFor] = useState<Record<number, string>>({});
+  const [importSkip, setImportSkip] = useState<Record<number, boolean>>({});
+  const [importProjectId, setImportProjectId] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importPromptCopied, setImportPromptCopied] = useState(false);
   const [newChecklist, setNewChecklist] = useState<string[]>(['']);
   const [creating, setCreating] = useState(false);
 
@@ -527,6 +537,15 @@ function TasksPageInner() {
   // progress/count real personTasks থেকে (সবসময়), তালিকায় দেখানো আইটেমগুলো
   // বর্তমান Smart View + সার্চ দিয়ে ফিল্টার করা (filtered থেকে) — যাতে
   // "My Tasks"/"Overdue" ইত্যাদি pill এখানেও কাজ করে। ----
+  const importRows = useMemo(() => {
+    return parseTaskText(importText).map((t, i) => {
+      const auto = matchMember(t.memberName, assigneeOptions);
+      const memberId = importMemberFor[i] !== undefined ? importMemberFor[i] : auto?.id ?? '';
+      return { ...t, index: i, memberId, autoMatched: !!auto };
+    });
+  }, [importText, importMemberFor, assigneeOptions]);
+  const importReady = importRows.filter((r) => !importSkip[r.index] && r.memberId);
+
   const memberTaskCards = useMemo(() => {
     const noConstraint = activeView === 'all' && !search.trim() && !dueDateFilter && !assignedDateFilter;
     const people = listScope === 'mine' && user ? assigneeOptions.filter((p) => p.id === user.id) : assigneeOptions;
@@ -592,22 +611,67 @@ function TasksPageInner() {
     return { blob: pdf.output('blob'), filename: `team-tasks-${todayISO()}.pdf` };
   }
 
-  // WhatsApp-এ PDF-এর বদলে PNG শেয়ার করা হয় — WhatsApp-এ ছবি সরাসরি চ্যাটে
-  // থাম্বনেইল-প্রিভিউ সহ দেখায়, PDF-এর মতো আলাদা করে খুলে দেখতে হয় না।
-  async function generateTeamTasksPngBlob(): Promise<{ blob: Blob; filename: string }> {
+  // The picture that is shared on WhatsApp. WhatsApp shrinks any picture whose longest side is over about 1600px, so one tall picture of
+  // the whole sheet (4000px high, say) was cut down to a quarter of its size and the text turned blurry. So the sheet is drawn once
+  // at 2x and then cut into pages that are at most about 1560px tall, cutting between the member cards, so every page keeps its
+  // full sharpness. One page when it is short, several when it is long.
+  async function generateTeamTasksPngPages(): Promise<{ blob: Blob; filename: string }[]> {
     const node = teamExportRef.current;
     if (!node) throw new Error('Export content not ready');
     const [{ default: html2canvas }] = await Promise.all([import('html2canvas')]);
     await document.fonts.ready;
     await Promise.all([document.fonts.load(`500 14px ${hindSiliguri.style.fontFamily}`, 'অআকখ'), document.fonts.load(`700 14px ${hindSiliguri.style.fontFamily}`, 'অআকখ')]).catch(() => undefined);
-    const canvas = await html2canvas(node, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-    const blob: Blob = await new Promise((resolve, reject) => {
-      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png');
-    });
-    return { blob, filename: `team-tasks-${todayISO()}.png` };
+    const SCALE = 2;
+    const MAX_PAGE_CSS = 780; // 780 css px x 2 = 1560px
+    const canvas = await html2canvas(node, { scale: SCALE, backgroundColor: '#ffffff', useCORS: true });
+
+    // where each page may start and end: the gaps between the header and the cards
+    const totalCss = node.offsetHeight;
+    const cuts: number[] = [];
+    const kids = Array.from(node.children) as HTMLElement[];
+    for (let i = 0; i < kids.length - 1; i++) cuts.push(kids[i].offsetTop + kids[i].offsetHeight + 11);
+    const pages: [number, number][] = [];
+    let start = 0;
+    let lastFit = -1;
+    for (const cut of cuts) {
+      if (cut - start <= MAX_PAGE_CSS) {
+        lastFit = cut;
+      } else {
+        const end = lastFit > start ? lastFit : Math.min(start + MAX_PAGE_CSS, totalCss);
+        pages.push([start, end]);
+        start = end;
+        lastFit = cut - start <= MAX_PAGE_CSS ? cut : -1;
+      }
+    }
+    // whatever is left, cut into pieces that fit when a single block is taller than a page
+    while (totalCss - start > MAX_PAGE_CSS) {
+      const end = lastFit > start ? lastFit : start + MAX_PAGE_CSS;
+      pages.push([start, end]);
+      start = end;
+      lastFit = -1;
+    }
+    pages.push([start, totalCss]);
+
+    const out: { blob: Blob; filename: string }[] = [];
+    for (let i = 0; i < pages.length; i++) {
+      const [y0, y1] = pages[i];
+      const slice = document.createElement('canvas');
+      slice.width = canvas.width;
+      slice.height = Math.max(1, Math.round((y1 - y0) * SCALE));
+      const ctx = slice.getContext('2d');
+      if (!ctx) throw new Error('canvas not available');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, slice.width, slice.height);
+      ctx.drawImage(canvas, 0, Math.round(y0 * SCALE), canvas.width, slice.height, 0, 0, slice.width, slice.height);
+      const blob: Blob = await new Promise((resolve, reject) => {
+        slice.toBlob((bl) => (bl ? resolve(bl) : reject(new Error('toBlob failed'))), 'image/png');
+      });
+      out.push({ blob, filename: `team-tasks-${todayISO()}${pages.length > 1 ? `-${i + 1}` : ''}.png` });
+    }
+    return out;
   }
 
-  // Preview: the exact picture that "Share to WhatsApp" sends, shown in a window first
+  // Preview: the team tasks sheet shown live in a window before it is shared
   function openSharePreview() {
     setSharePreviewOpen(true);
   }
@@ -655,19 +719,22 @@ function TasksPageInner() {
     const todayLabel = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
     const shareText = `Today's (${todayLabel}) team tasks`;
     try {
-      const { blob, filename } = await generateTeamTasksPngBlob();
+      const pages = await generateTeamTasksPngPages();
       if (canShareFile) {
-        const file = new File([blob], filename, { type: 'image/png' });
-        await navigator.share({ files: [file], title: 'Team Tasks', text: shareText });
+        const files = pages.map((p) => new File([p.blob], p.filename, { type: 'image/png' }));
+        await navigator.share({ files, title: 'Team Tasks', text: shareText });
         return;
       }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-      const waUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(`${shareText} — ছবি ডাউনলোড হয়ে গেছে, এটা চ্যাটে অ্যাটাচ করে পাঠান।`)}`;
+      for (const p of pages) {
+        const url = URL.createObjectURL(p.blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = p.filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        await new Promise((r) => window.setTimeout(r, 250));
+      }
+      const waUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(`${shareText} — ছবি ডাউনলোড হয়ে গেছে, এগুলো চ্যাটে অ্যাটাচ করে পাঠান।`)}`;
       if (fallbackTab) fallbackTab.location.href = waUrl;
       else window.open(waUrl, '_blank', 'noopener');
     } catch (err) {
@@ -1013,6 +1080,100 @@ function TasksPageInner() {
     setShowCreate(false);
   }
 
+  function closeImport() {
+    setShowImport(false);
+    setImportText('');
+    setImportMemberFor({});
+    setImportSkip({});
+    setImportProjectId('');
+  }
+
+  // the instruction to give ChatGPT / Claude: it lists the real team names and the exact format the importer reads
+  async function copyImportPrompt() {
+    const names = assigneeOptions.map((a) => a.full_name).join(', ');
+    const prompt = [
+      'Create tasks for my team. Use ONLY these member names, written exactly as shown: ' + names + '.',
+      'Reply in plain text only, using exactly this format, one block per task with a blank line between blocks. Do not add any other text.',
+      '',
+      'Member Name: <one name from the list>',
+      'Task Title: <short task title>',
+      'Description: <what needs to be done>',
+      'To-do:',
+      '- <step 1>',
+      '- <step 2>',
+      'Priority: <low | normal | high | urgent>   (optional)',
+      'Due: <YYYY-MM-DD>   (optional)',
+      '',
+      'Here is what I need:',
+      '',
+    ].join('\n');
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setImportPromptCopied(true);
+      window.setTimeout(() => setImportPromptCopied(false), 2000);
+    } catch {
+      // clipboard blocked: nothing to do
+    }
+  }
+
+  async function handleImportCreate() {
+    if (!user || importReady.length === 0 || importing) return;
+    setImporting(true);
+    setError(null);
+    const createdRows: (Omit<TaskRow, 'commentCount' | 'attachmentCount'> & { commentCount: 0; attachmentCount: 0 })[] = [];
+    const checklistEntries: [string, ChecklistItem[]][] = [];
+    for (const r of importReady) {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert({
+          title: r.title,
+          description: r.description || null,
+          project_id: importProjectId || null,
+          assignee_id: r.memberId,
+          priority: r.priority ?? 'normal',
+          due_date: r.dueDate,
+          assigned_date: todayISO(),
+          status: 'todo',
+          workflow_stage: 'backlog',
+          created_by: user.id,
+        })
+        .select(TASK_SELECT)
+        .single();
+      if (error || !data) {
+        setError(error?.message ?? 'A task could not be created.');
+        continue;
+      }
+      const row = data as unknown as Omit<TaskRow, 'commentCount' | 'attachmentCount'>;
+      createdRows.push({ ...row, commentCount: 0, attachmentCount: 0 });
+      await supabase.from('activity_log').insert({ actor_id: user.id, action: 'task_created', entity_type: 'task', entity_id: row.id, detail: `"${row.title}" তৈরি করা হয়েছে` });
+      if (r.todos.length > 0) {
+        const { data: items } = await supabase
+          .from('checklist_items')
+          .insert(r.todos.map((label, i) => ({ task_id: row.id, label, position: i })))
+          .select('id, label, is_done, position');
+        if (items) checklistEntries.push([row.id, items as ChecklistItem[]]);
+      }
+      sendNotifications([{
+        recipient_id: r.memberId,
+        actor_id: user.id,
+        type: 'task_assigned',
+        title: `${profile?.full_name?.trim() || user.email || 'কেউ একজন'} আপনাকে একটা টাস্ক অ্যাসাইন করেছে`,
+        subtitle: row.title,
+        link: '/tasks',
+      }]);
+    }
+    if (createdRows.length > 0) setTasks((prev) => [...createdRows, ...prev]);
+    if (checklistEntries.length > 0) {
+      setChecklistByTask((prev) => {
+        const next = new Map(prev);
+        for (const [taskId, items] of checklistEntries) next.set(taskId, items);
+        return next;
+      });
+    }
+    setImporting(false);
+    if (createdRows.length === importReady.length) closeImport();
+  }
+
   function updateNewChecklistItem(index: number, value: string) {
     setNewChecklist((prev) => prev.map((c, i) => (i === index ? value : c)));
   }
@@ -1235,7 +1396,7 @@ function TasksPageInner() {
                   <Icon name="refresh" size={13} /> {reloading ? 'রিলোড হচ্ছে…' : 'রিলোড'}
                 </button>
                 <Link className="btn btn-ghost btn-sm" href="/board"><Icon name="layers" size={13} /> বোর্ড ভিউ</Link>
-                <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="import" size={13} /> ইমপোর্ট</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setShowImport(true)} title="Paste tasks written by ChatGPT or Claude"><Icon name="import" size={13} /> Import from AI</button>
                 <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="export" size={13} /> এক্সপোর্ট</button>
                 <button className="btn btn-ghost btn-sm" disabled title="শীঘ্রই আসছে"><Icon name="bookmark" size={13} /> Saved Views</button>
                 <button className="btn btn-accent" onClick={() => openCreateTask()}>
@@ -1712,6 +1873,117 @@ function TasksPageInner() {
             )}
           </main>
       {/* create task modal */}
+      {showImport && (
+        <div className="is-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget && !importing) closeImport(); }}>
+          <div className="is-box" role="dialog" aria-modal="true" aria-label="Import tasks from AI">
+            <div className="is-head">
+              <div>
+                <div className="is-title">Import tasks from AI</div>
+                <div className="is-sub">Paste on the left. The tasks it finds, grouped by member, appear on the right.</div>
+              </div>
+              <button type="button" className="is-close" onClick={closeImport} disabled={importing} aria-label="Close"><Icon name="close" size={16} /></button>
+            </div>
+
+            <div className="is-main">
+              <div className="is-left">
+                <label className="is-label" htmlFor="is-project">Project</label>
+                <select id="is-project" className="is-select" value={importProjectId} onChange={(e) => setImportProjectId(e.target.value)}>
+                  <option value="">No project</option>
+                  {projectOptions.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <div className="is-label-row">
+                  <label className="is-label" htmlFor="is-text">Text from ChatGPT or Claude</label>
+                  <button type="button" className={`is-link${importPromptCopied ? ' done' : ''}`} onClick={copyImportPrompt}>{importPromptCopied ? 'Prompt copied ✓' : 'Copy prompt'}</button>
+                </div>
+                <textarea
+                  id="is-text"
+                  className="is-text"
+                  value={importText}
+                  onChange={(e) => { setImportText(e.target.value); setImportMemberFor({}); setImportSkip({}); }}
+                  placeholder={'Member Name: Kawsar Habib\nTask Title: Design the hero section\nDescription: Make the hero for the new landing page.\nTo-do:\n- Wireframe the layout\n- Pick the images'}
+                />
+              </div>
+
+              <div className="is-right">
+                {importRows.length === 0 ? (
+                  <div className="is-empty">
+                    <span className="is-empty-icon"><Icon name="checklist" size={22} /></span>
+                    <div className="is-empty-title">{importText.trim() ? 'No tasks found yet' : 'Tasks will appear here'}</div>
+                    <div className="is-empty-text">{importText.trim() ? 'Each task needs a "Member Name:" line and a "Task Title:" line.' : 'Paste the text on the left to see who gets what.'}</div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="is-count"><b className="tabular">{importReady.length}</b> of {importRows.length} tasks ready</div>
+                    <div className="is-groups">
+                      {Object.values(
+                        importRows.reduce<Record<string, typeof importRows>>((acc, r) => {
+                          const key = r.memberId || `name:${r.memberName}`;
+                          (acc[key] ??= []).push(r);
+                          return acc;
+                        }, {})
+                      ).map((group) => {
+                        const first = group[0];
+                        const member = assigneeOptions.find((x) => x.id === first.memberId) ?? null;
+                        return (
+                          <div key={first.memberId || `name:${first.memberName}`} className={`is-group${member ? '' : ' missing'}`}>
+                            <div className="is-group-head">
+                              {member ? <Avatar person={member} size={28} /> : <span className="is-noavatar" aria-hidden="true">?</span>}
+                              <div className="is-group-name">{member ? member.full_name : first.memberName || 'No name'}</div>
+                              {member ? (
+                                <span className="is-group-count tabular">{group.length} task{group.length === 1 ? '' : 's'}</span>
+                              ) : (
+                                <select
+                                  className="is-group-select"
+                                  value=""
+                                  onChange={(e) => {
+                                    const id = e.target.value;
+                                    setImportMemberFor((prev) => {
+                                      const next = { ...prev };
+                                      for (const g of group) next[g.index] = id;
+                                      return next;
+                                    });
+                                  }}
+                                  aria-label={`Choose the member for ${first.memberName}`}
+                                >
+                                  <option value="">Choose member…</option>
+                                  {assigneeOptions.map((x) => (
+                                    <option key={x.id} value={x.id}>{x.full_name}</option>
+                                  ))}
+                                </select>
+                              )}
+                            </div>
+                            {group.map((r) => (
+                              <label key={r.index} className={`is-task${importSkip[r.index] ? ' skipped' : ''}`}>
+                                <input type="checkbox" className="is-check" checked={!importSkip[r.index]} onChange={(e) => setImportSkip((prev) => ({ ...prev, [r.index]: !e.target.checked }))} />
+                                <span className="is-task-main">
+                                  <span className="is-task-title">{r.title}</span>
+                                  <span className="is-task-meta">
+                                    {[r.todos.length > 0 ? `${r.todos.length} to-do${r.todos.length > 1 ? 's' : ''}` : null, r.priority, r.dueDate ? `due ${r.dueDate}` : null].filter(Boolean).join(' · ') || 'No to-dos'}
+                                  </span>
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="is-foot">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={closeImport} disabled={importing}>Cancel</button>
+              <button type="button" className="btn btn-accent btn-sm" onClick={handleImportCreate} disabled={importing || importReady.length === 0}>
+                {importing ? 'Creating…' : `Create ${importReady.length} task${importReady.length === 1 ? '' : 's'}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showCreate && (
         <div
           className="modal-overlay"
