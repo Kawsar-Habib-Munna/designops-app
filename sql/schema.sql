@@ -2460,3 +2460,139 @@ create policy "team can update ai_prompts" on ai_prompts for update using (publi
 drop policy if exists "author or admin can delete ai_prompts" on ai_prompts;
 create policy "author or admin can delete ai_prompts" on ai_prompts for delete
   using (public.is_team_member() and (created_by = auth.uid() or exists (select 1 from profiles p where p.id = auth.uid() and p.is_admin)));
+
+-- ===== Accounts: expenses (the Accounts page, /accounts) =====
+create table if not exists expenses (
+  id uuid default gen_random_uuid() primary key,
+  expense_date date not null default current_date,
+  amount numeric not null check (amount >= 0),
+  currency text not null default 'BDT',
+  category text not null,
+  vendor text,
+  description text,
+  project_id uuid references projects(id) on delete set null,
+  receipt_url text,
+  created_by uuid references profiles(id),
+  created_at timestamptz default now()
+);
+alter table expenses enable row level security;
+drop policy if exists "team manages expenses" on expenses;
+create policy "team manages expenses" on expenses for all using (public.is_team_member()) with check (public.is_team_member());
+
+
+-- ===== Accounts, second tier: exchange rates, budgets, recurring expenses, audit log =====
+create table if not exists fx_rates (
+  currency text primary key,
+  rate_to_base numeric not null check (rate_to_base > 0),
+  updated_at timestamptz default now()
+);
+create table if not exists budgets (
+  id uuid default gen_random_uuid() primary key,
+  category text not null unique,
+  monthly_amount numeric not null check (monthly_amount >= 0)
+);
+create table if not exists recurring_expenses (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  category text not null,
+  vendor text,
+  amount numeric not null check (amount >= 0),
+  currency text not null default 'BDT',
+  project_id uuid references projects(id) on delete set null,
+  day_of_month int not null default 1 check (day_of_month between 1 and 28),
+  active boolean not null default true,
+  last_posted_month text,
+  created_at timestamptz default now()
+);
+create table if not exists accounts_audit (
+  id uuid default gen_random_uuid() primary key,
+  at timestamptz default now(),
+  actor_id uuid references profiles(id),
+  action text not null,
+  entity text,
+  entity_id text,
+  detail text
+);
+alter table fx_rates enable row level security;
+alter table budgets enable row level security;
+alter table recurring_expenses enable row level security;
+alter table accounts_audit enable row level security;
+drop policy if exists "team manages fx_rates" on fx_rates;
+create policy "team manages fx_rates" on fx_rates for all using (public.is_team_member()) with check (public.is_team_member());
+drop policy if exists "team manages budgets" on budgets;
+create policy "team manages budgets" on budgets for all using (public.is_team_member()) with check (public.is_team_member());
+drop policy if exists "team manages recurring_expenses" on recurring_expenses;
+create policy "team manages recurring_expenses" on recurring_expenses for all using (public.is_team_member()) with check (public.is_team_member());
+drop policy if exists "team manages accounts_audit" on accounts_audit;
+create policy "team manages accounts_audit" on accounts_audit for all using (public.is_team_member()) with check (public.is_team_member());
+
+
+-- ===== Accounts: admins only (replaces the earlier team-wide policies on the five accounts tables) =====
+create or replace function public.accounts_is_admin() returns boolean language sql stable security definer set search_path = public as $$
+  select coalesce((select is_admin from public.profiles where id = auth.uid()), false)
+$$;
+drop policy if exists "team manages expenses" on expenses;
+drop policy if exists "admins manage expenses" on expenses;
+create policy "admins manage expenses" on expenses for all using (public.accounts_is_admin()) with check (public.accounts_is_admin());
+drop policy if exists "team manages fx_rates" on fx_rates;
+drop policy if exists "admins manage fx_rates" on fx_rates;
+create policy "admins manage fx_rates" on fx_rates for all using (public.accounts_is_admin()) with check (public.accounts_is_admin());
+drop policy if exists "team manages budgets" on budgets;
+drop policy if exists "admins manage budgets" on budgets;
+create policy "admins manage budgets" on budgets for all using (public.accounts_is_admin()) with check (public.accounts_is_admin());
+drop policy if exists "team manages recurring_expenses" on recurring_expenses;
+drop policy if exists "admins manage recurring_expenses" on recurring_expenses;
+create policy "admins manage recurring_expenses" on recurring_expenses for all using (public.accounts_is_admin()) with check (public.accounts_is_admin());
+drop policy if exists "team manages accounts_audit" on accounts_audit;
+drop policy if exists "admins manage accounts_audit" on accounts_audit;
+create policy "admins manage accounts_audit" on accounts_audit for all using (public.accounts_is_admin()) with check (public.accounts_is_admin());
+
+
+-- ===== Accounts: team payroll (admins only) =====
+create table if not exists staff_salaries (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  role text,
+  base_salary numeric not null default 0 check (base_salary >= 0),
+  currency text not null default 'BDT',
+  active boolean not null default true,
+  created_at timestamptz default now()
+);
+alter table staff_salaries add column if not exists profile_id uuid unique references profiles(id) on delete cascade;
+create table if not exists payslips (
+  id uuid default gen_random_uuid() primary key,
+  staff_id uuid not null references staff_salaries(id) on delete cascade,
+  month text not null,
+  base numeric not null default 0,
+  bonus numeric not null default 0 check (bonus >= 0),
+  deduction numeric not null default 0 check (deduction >= 0),
+  status text not null default 'pending' check (status in ('pending', 'paid')),
+  paid_on date,
+  expense_id uuid,
+  created_at timestamptz default now(),
+  unique (staff_id, month)
+);
+alter table staff_salaries enable row level security;
+alter table payslips enable row level security;
+drop policy if exists "admins manage staff_salaries" on staff_salaries;
+create policy "admins manage staff_salaries" on staff_salaries for all using (public.accounts_is_admin()) with check (public.accounts_is_admin());
+drop policy if exists "admins manage payslips" on payslips;
+create policy "admins manage payslips" on payslips for all using (public.accounts_is_admin()) with check (public.accounts_is_admin());
+
+
+-- ===== Accounts: Allah / Agency fund accounts (admins only) =====
+create table if not exists fund_ledger (
+  id uuid default gen_random_uuid() primary key,
+  fund text not null check (fund in ('allah', 'agency')),
+  entry_date date not null default current_date,
+  month text,
+  kind text not null check (kind in ('deposit', 'withdrawal')),
+  source text not null default 'manual' check (source in ('distribution', 'manual')),
+  amount numeric not null check (amount >= 0),
+  note text,
+  created_at timestamptz default now()
+);
+create unique index if not exists fund_ledger_one_share_per_month on fund_ledger (fund, month) where source = 'distribution';
+alter table fund_ledger enable row level security;
+drop policy if exists "admins manage fund_ledger" on fund_ledger;
+create policy "admins manage fund_ledger" on fund_ledger for all using (public.accounts_is_admin()) with check (public.accounts_is_admin());

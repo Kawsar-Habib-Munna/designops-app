@@ -25,6 +25,7 @@ const ICON_PATHS: Record<string, string> = {
   users: '<path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"/>',
   building: '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>',
   file: '<path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2Z"/><path d="M3 7.6v12.8A1.6 1.6 0 0 0 4.6 22h9.8"/>',
+  wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
   bar: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
   bell: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
   settings: '<path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><path d="M14 2v4"/><path d="M8 10v4"/><path d="M16 18v4"/>',
@@ -41,7 +42,7 @@ function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ICON_PATHS[name] }} />;
 }
 
-const NAV_ITEMS: { icon: IconName; label: string; href: string }[] = [
+const NAV_ITEMS: { icon: IconName; label: string; href: string; adminOnly?: boolean }[] = [
   { icon: 'grid', label: 'Dashboard', href: '/dashboard' },
   { icon: 'folder', label: 'Projects', href: '/projects' },
   { icon: 'check', label: 'Tasks', href: '/tasks' },
@@ -49,6 +50,7 @@ const NAV_ITEMS: { icon: IconName; label: string; href: string }[] = [
   { icon: 'calendar', label: 'Calendar', href: '/calendar' },
   { icon: 'users', label: 'Team', href: '/team' },
   { icon: 'building', label: 'Clients', href: '/clients' },
+  { icon: 'wallet', label: 'Accounts', href: '/accounts', adminOnly: true },
   { icon: 'file', label: 'Files', href: '/files' },
   { icon: 'message', label: 'Discussions', href: '/discussions' },
   { icon: 'layers', label: 'Portfolio', href: '/portfolio' },
@@ -135,7 +137,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               </div>
               <nav className="nav-group" aria-label="Sidebar" onClick={() => setMobileNavOpen(false)}>
                 <div className="nav-label">Workspace</div>
-                {NAV_ITEMS.map((item) => {
+                {NAV_ITEMS.filter((item) => !item.adminOnly || (profile as { is_admin?: boolean } | null)?.is_admin).map((item) => {
                   const active = item.label === route.active;
                   return (
                     <Link key={item.label} href={item.href} className={`nav-item${active ? ' active' : ''}`} aria-current={active ? 'page' : undefined}>

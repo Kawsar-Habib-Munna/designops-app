@@ -1,0 +1,102 @@
+/* ==== accounts, second tier: segments, reports, settings, budgets, audit ==== */
+.accounts-root .ac-seg { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-muted); }
+.accounts-root .ac-seg button { height: 30px; padding: 0 14px; border: none; border-radius: 7px; background: transparent; font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink-faint); cursor: pointer; }
+.accounts-root .ac-seg button.on { background: var(--surface); color: var(--accent); box-shadow: 0 1px 3px rgba(16, 16, 20, .08); }
+.accounts-root .ac-warn { padding: 10px 14px; border-radius: 8px; background: var(--danger-soft); color: var(--danger); }
+.accounts-root .ac-linkbtn { border: none; background: none; padding: 0; font-family: inherit; font-size: inherit; cursor: pointer; }
+.accounts-root .ac-linkbtn.danger { color: var(--danger); margin-left: 12px; }
+.accounts-root .ac-faint { color: var(--ink-faint); font-size: 12px; }
+.accounts-root .ac-nowrap { white-space: nowrap; }
+.accounts-root .ac-off td { opacity: .55; }
+.accounts-root .ac-ico-plain { font-size: 18px; line-height: 1; }
+.accounts-root .ac-ico-plain:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.accounts-root .ac-ico-plain:disabled { opacity: .35; cursor: default; }
+.accounts-root .ac-toast { position: fixed; right: 24px; bottom: 24px; z-index: 140; padding: 12px 18px; border-radius: 10px; background: var(--ink); color: var(--surface); font-size: 13px; font-weight: 600; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); }
+
+/* inputs used on the settings tab */
+.accounts-root .ac-input { height: 40px; padding: 0 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-muted); color: var(--ink); font-family: inherit; font-size: 13px; min-width: 0; width: 100%; }
+.accounts-root .ac-input:focus, .accounts-root .ac-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); background: var(--surface); }
+.accounts-root .ac-form-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 10px; margin-top: 14px; align-items: center; }
+.accounts-root .ac-form-row .ac-select { height: 40px; }
+.accounts-root .ac-mini td { padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 13px; }
+.accounts-root .ac-mini tr:last-child td { border-bottom: none; }
+.accounts-root .ac-budget-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; margin-bottom: 16px; }
+.accounts-root .ac-budget-grid label { display: grid; gap: 5px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+.accounts-root .ac-rec-form { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, .8fr) 90px 100px minmax(0, 1fr) auto; gap: 10px; align-items: center; border-top: 1px solid var(--border-soft); }
+.accounts-root .ac-rec-form .ac-select { height: 40px; }
+.accounts-root .ac-amt { display: grid; grid-template-columns: minmax(0, 1fr) 84px; gap: 6px; }
+
+/* budget bars: amber from 80%, red from 100% */
+.accounts-root .ac-budget-bars li { grid-template-columns: 150px minmax(0, 1fr) auto; }
+.accounts-root .ac-budget-bars li.warn .ac-bar i { background: #E58A00; }
+.accounts-root .ac-budget-bars li.over .ac-bar i { background: var(--danger); }
+.accounts-root .ac-budget-bars li.over b { color: var(--danger); }
+
+/* profit & loss */
+.accounts-root .ac-report-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-bottom: 16px; margin-bottom: 6px; border-bottom: 1px solid var(--border); }
+.accounts-root .ac-report-label { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); }
+.accounts-root .ac-report-period { margin-top: 3px; font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+.accounts-root .ac-report-note { font-size: 12px; color: var(--ink-faint); }
+.accounts-root .ac-pl-line { display: grid; grid-template-columns: minmax(0, 1fr) 160px 70px; gap: 14px; align-items: baseline; padding: 11px 0; border-bottom: 1px solid var(--border-soft); font-size: 13.5px; }
+.accounts-root .ac-pl-line b { text-align: right; font-weight: 600; }
+.accounts-root .ac-pl-line em { text-align: right; font-style: normal; font-size: 12px; color: var(--ink-faint); }
+.accounts-root .ac-pl-main { font-weight: 800; font-size: 14.5px; padding-top: 18px; }
+.accounts-root .ac-pl-main b { font-weight: 800; }
+.accounts-root .ac-pl-sub { padding-left: 18px; color: var(--ink-soft); }
+.accounts-root .ac-pl-total { margin-top: 10px; padding: 16px 0; border-top: 2px solid var(--ink); border-bottom: none; font-size: 16px; font-weight: 800; }
+.accounts-root .ac-pl-total b { font-size: 18px; font-weight: 800; }
+
+@media (max-width: 1200px) {
+  .accounts-root .ac-rec-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .accounts-root .ac-form-row { grid-template-columns: minmax(0, 1fr); }
+  .accounts-root .ac-budget-grid, .accounts-root .ac-rec-form { grid-template-columns: minmax(0, 1fr); }
+  .accounts-root .ac-pl-line { grid-template-columns: minmax(0, 1fr) auto 52px; gap: 8px; }
+  .accounts-root .ac-budget-bars li { grid-template-columns: 90px minmax(0, 1fr); }
+  .accounts-root .ac-budget-bars li b { grid-column: 1 / -1; }
+}
+
+/* printing the profit and loss: only the report */
+@media print {
+  body * { visibility: hidden !important; }
+  .accounts-root .ac-report, .accounts-root .ac-report * { visibility: visible !important; }
+  .accounts-root .ac-report { position: absolute; left: 0; top: 0; width: 100%; border: none; box-shadow: none; }
+  .accounts-root .ac-noprint { display: none !important; }
+  @page { margin: 14mm; }
+}
+
+/* headline cards: a clean line icon in front of the title, no tile behind it */
+.accounts-root .ac-kpi { display: block; padding: 18px 20px; }
+.accounts-root .ac-kpi-label { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+.accounts-root .ac-kpi-label svg { flex: none; width: 16px; height: 16px; stroke-width: 1.7; color: var(--ink-faint); }
+.accounts-root .ac-kpi-label.pos svg { color: var(--positive); }
+.accounts-root .ac-kpi-label.bad svg { color: var(--danger); }
+.accounts-root .ac-kpi b { margin-top: 8px; font-size: 22px; }
+
+/* the older ".ac-kpi span" rule made the title a block, which pushed the icon onto its own line: the title is a flex row again, icon first */
+.accounts-root .ac-kpi .ac-kpi-label { display: flex; flex-direction: row; align-items: center; gap: 8px; }
+.accounts-root .ac-kpi .ac-kpi-label svg { display: inline-block; flex: none; }
+
+/* each icon sits inside a thin round border (no fill) */
+.accounts-root .ac-kpi .ac-kpi-label svg { box-sizing: content-box; width: 15px; height: 15px; padding: 6px; border: 1.5px solid color-mix(in srgb, currentColor 35%, transparent); border-radius: 50%; }
+.accounts-root .ac-kpi .ac-kpi-label { gap: 10px; }
+
+/* more room: between the round icon and its title, and between the title and the amount */
+.accounts-root .ac-kpi .ac-kpi-label { gap: 14px; }
+.accounts-root .ac-kpi b { margin-top: 16px; }
+
+/* the older ".ac-kpi span:not(...)" rule outranked the flex row above, so its gap never applied: this one is stronger */
+.accounts-root .ac-kpi span.ac-kpi-label { display: flex !important; flex-direction: row; align-items: center; gap: 16px !important; }
+
+/* payroll */
+.accounts-root .ac-kpis-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.accounts-root .ac-staff-form { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) 90px auto auto; gap: 10px; align-items: center; border-top: 1px solid var(--border-soft); }
+.accounts-root .ac-staff-form .ac-select { height: 40px; }
+@media (max-width: 760px) {
+  .accounts-root .ac-kpis-3, .accounts-root .ac-staff-form { grid-template-columns: minmax(0, 1fr); }
+}
+
+.accounts-root .ac-kpis-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) { .accounts-root .ac-kpis-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .accounts-root .ac-staff-form { grid-template-columns: minmax(0, 1fr); } }
