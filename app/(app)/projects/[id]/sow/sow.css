@@ -569,3 +569,37 @@
   .sow-document .sd-table tr, .sow-document .sd-sig-grid, .sow-document .sd-sig { break-inside: avoid; }
   .sow-document * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* percentage rows: the amount worked out from the project value sits under the field, and a running total of the percentages */
+.sow-admin-root .payment-amount-cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sow-admin-root .payment-amount-hint { padding-left: 4px; font-size: 11.5px; font-weight: 600; color: var(--accent); }
+.sow-admin-root .payment-total-hint { margin: 2px 0 10px; font-size: 12px; font-weight: 600; color: var(--warning, #b7791f); }
+.sow-admin-root .payment-total-hint.ok { color: var(--positive, #17a34a); }
+
+/* the worked-out amount sits inside the field, on its right */
+.sow-admin-root .payment-amount-cell { position: relative; display: block; }
+.sow-admin-root .payment-amount-cell.has-hint .field-input { padding-right: 104px; }
+.sow-admin-root .payment-amount-hint { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); padding: 0; max-width: 60%; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+
+/* a wider Amount column so the typed text and the worked-out amount both fit inside the field */
+.sow-admin-root .payment-row-3 { grid-template-columns: 1.1fr 1.6fr 1fr auto; }
+.sow-admin-root .se-cols-payment { grid-template-columns: 1.1fr 1.6fr 1fr 34px; }
+.sow-admin-root .payment-amount-cell .field-input { margin-bottom: 0; width: 100%; }
+.sow-admin-root .payment-amount-cell.has-hint .field-input { padding-right: 92px; }
+.sow-admin-root .payment-amount-hint { right: 12px; line-height: 1; max-width: 80px; }
+@media (max-width: 760px) {
+  .sow-admin-root .payment-row-3 { grid-template-columns: 1fr 1fr; }
+  .sow-admin-root .payment-row-3 .deliverable-remove { grid-column: 2; justify-self: end; }
+}
+
+/* payment schedule rows: every field has the same height and no bottom margin, so Description, Amount, Due date and the remove button line up */
+.sow-admin-root .payment-row-3 { align-items: center; }
+.sow-admin-root .payment-row-3 .field-input { margin-bottom: 0; height: 44px; box-sizing: border-box; }
+.sow-admin-root .payment-row-3 .payment-amount-cell { margin: 0; }
+.sow-admin-root .payment-row-3 .deliverable-remove { align-self: center; margin: 0; }
+
+/* the SOW header card has no right-hand column: its content (title row, status table, tabs line) fills the whole card width */
+.projdetail-root.sow-admin-root .sow-hero { grid-template-columns: minmax(0, 1fr); }
+.projdetail-root.sow-admin-root .sow-hero .pdh-left { width: 100%; max-width: none; }
+.projdetail-root.sow-admin-root .sow-hero .pdt,
+.projdetail-root.sow-admin-root .sow-hero .sow-toc { width: auto; max-width: none; }

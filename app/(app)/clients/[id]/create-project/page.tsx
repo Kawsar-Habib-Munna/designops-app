@@ -26,6 +26,7 @@
 //   status='draft', client_visible=false, notify বন্ধ।
 // - Duplicate-name detection client-side, বিদ্যমান projects ডেটা থেকেই।
 
+import { encodeCustomPlan, decodeCustomPlan, type CustomInstallment } from '@/lib/customPayment';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -98,7 +99,7 @@ const PAYMENT_STRUCTURES: { value: string; title: string; sub: string }[] = [
   { value: 'full', title: 'Full Payment', sub: '100% upfront' },
   { value: 'deposit_final', title: 'Deposit + Final', sub: 'e.g. 50% / 50%' },
   { value: 'milestones', title: 'Milestone Payments', sub: 'Split across milestones' },
-  { value: 'custom', title: 'Custom', sub: 'Define later' },
+  { value: 'custom', title: 'Custom', sub: 'Set your own installments' },
 ];
 
 type ProfileRow = { id: string; full_name: string; role: string | null; avatar_color: string | null; avatar_url?: string | null; behance_url?: string | null; linkedin_url?: string | null };
@@ -232,6 +233,11 @@ export default function CreateProjectPage() {
   const [currency, setCurrency] = useState('BDT');
   const [paymentStructure, setPaymentStructure] = useState('deposit_final');
   const [depositPercent, setDepositPercent] = useState(50);
+  // the installments of a custom payment plan (a name and a percentage of the project value each)
+  const [customRows, setCustomRows] = useState<{ id: string; name: string; percent: string }[]>([
+    { id: 'c1', name: 'Deposit', percent: '30' },
+    { id: 'c2', name: 'Final payment', percent: '70' },
+  ]);
 
   const [managerId, setManagerId] = useState('');
 
@@ -259,10 +265,10 @@ export default function CreateProjectPage() {
     () =>
       JSON.stringify({
         name, projectType, description, status, scopeObjectives, scopeDescription, includedWork, excludedWork, specialRequirements,
-        deliverables, startDate, dueDate, useDefaultMilestones, budgetValue, currency, paymentStructure, depositPercent, managerId,
+        deliverables, startDate, dueDate, useDefaultMilestones, budgetValue, currency, paymentStructure, depositPercent, customRows, managerId,
         clientVisible, notifyClient, internalNote,
       }),
-    [name, projectType, description, status, scopeObjectives, scopeDescription, includedWork, excludedWork, specialRequirements, deliverables, startDate, dueDate, useDefaultMilestones, budgetValue, currency, paymentStructure, depositPercent, managerId, clientVisible, notifyClient, internalNote]
+    [name, projectType, description, status, scopeObjectives, scopeDescription, includedWork, excludedWork, specialRequirements, deliverables, startDate, dueDate, useDefaultMilestones, budgetValue, currency, paymentStructure, depositPercent, customRows, managerId, clientVisible, notifyClient, internalNote]
   );
   useEffect(() => {
     if (loading || clearedRef.current) return;
@@ -347,7 +353,13 @@ export default function CreateProjectPage() {
           setDueDate(d.due_date ?? '');
           setBudgetValue(d.budget != null ? String(d.budget) : '');
           if (typeof d.currency === 'string') setCurrency(d.currency);
-          if (d.payment_structure) setPaymentStructure(d.payment_structure);
+          if (d.payment_structure) {
+            const plan = decodeCustomPlan(d.payment_structure);
+            if (plan) {
+              setPaymentStructure('custom');
+              setCustomRows(plan.map((r, i) => ({ id: `c${i + 1}`, name: r.name, percent: String(r.percent) })));
+            } else setPaymentStructure(d.payment_structure);
+          }
           if (d.project_manager_id) setManagerId(d.project_manager_id);
           setClientVisible(d.client_visible ?? true);
           const sc = parseScopeNote(d.scope_note ?? null);
@@ -390,6 +402,7 @@ export default function CreateProjectPage() {
           if (typeof d.currency === 'string') setCurrency(d.currency);
           if (typeof d.paymentStructure === 'string') setPaymentStructure(d.paymentStructure);
           if (typeof d.depositPercent === 'number') setDepositPercent(d.depositPercent);
+          if (Array.isArray(d.customRows) && d.customRows.length > 0) setCustomRows(d.customRows);
           if (typeof d.managerId === 'string' && d.managerId) setManagerId(d.managerId);
           if (typeof d.clientVisible === 'boolean') setClientVisible(d.clientVisible);
           if (typeof d.notifyClient === 'boolean') setNotifyClient(d.notifyClient);
@@ -490,6 +503,7 @@ export default function CreateProjectPage() {
     if (dueDate <= startDate) return 'Delivery date must be after the start date.';
     if (budgetValue && (Number.isNaN(Number(budgetValue)) || Number(budgetValue) <= 0)) return 'Project value must be a valid positive amount.';
     if (!managerId) return 'Select a project manager.';
+    if (paymentStructure === 'custom' && customTotal !== 100) return `The custom payment percentages must add up to 100% (now ${customTotal}%).`;
     return null;
   }
 
@@ -531,7 +545,7 @@ export default function CreateProjectPage() {
         description: description.trim() || null,
         scope_note: buildScopeNote(),
         deliverables_note: buildDeliverablesNote(),
-        payment_structure: paymentStructure || null,
+        payment_structure: paymentStructure === 'custom' ? encodeCustomPlan(customRows.map((r) => ({ name: r.name, percent: Number(r.percent) || 0 } as CustomInstallment))) : paymentStructure || null,
         client_visible: finalVisible,
     };
     const { data, error: createError } = await (draftId
@@ -633,6 +647,7 @@ export default function CreateProjectPage() {
   const selectedManager = managers.find((m) => m.id === managerId) ?? null;
   const depositAmount = budgetValue ? Math.round((Number(budgetValue) * depositPercent) / 100) : 0;
   const finalAmount = budgetValue ? Number(budgetValue) - depositAmount : 0;
+  const customTotal = Math.round(customRows.reduce((n, r) => n + (Number(r.percent) || 0), 0) * 100) / 100;
   const unlinkedFilesCount = files.filter((f) => !f.project_id).length;
 
   return (
@@ -1099,6 +1114,36 @@ export default function CreateProjectPage() {
                       <div className="payment-preview-row">
                         <span>Full Payment</span>
                         <b className="tabular">{formatMoney(Number(budgetValue), currency)}</b>
+                      </div>
+                    </div>
+                  )}
+                  {paymentStructure === 'custom' && (
+                    <div className="payment-preview-box custom-plan">
+                      <div className="custom-plan-head">
+                        <span>Installment</span>
+                        <span>Percent</span>
+                        <span>Amount</span>
+                        <span />
+                      </div>
+                      {customRows.map((r) => {
+                        const pct = Number(r.percent) || 0;
+                        return (
+                          <div className="custom-plan-row" key={r.id}>
+                            <input className="modal-input" value={r.name} placeholder="e.g. Deposit" onChange={(e) => { setCustomRows((rows) => rows.map((x) => (x.id === r.id ? { ...x, name: e.target.value } : x))); markDirty(); }} />
+                            <div className="custom-plan-pct">
+                              <input className="modal-input" type="number" min="0" max="100" step="0.5" value={r.percent} placeholder="0" onChange={(e) => { setCustomRows((rows) => rows.map((x) => (x.id === r.id ? { ...x, percent: e.target.value } : x))); markDirty(); }} />
+                              <span>%</span>
+                            </div>
+                            <b className="tabular custom-plan-amt">{budgetValue ? formatMoney(Math.round((Number(budgetValue) * pct) / 100), currency) : '—'}</b>
+                            <button type="button" className="custom-plan-x" aria-label="Remove installment" disabled={customRows.length <= 1} onClick={() => { setCustomRows((rows) => rows.filter((x) => x.id !== r.id)); markDirty(); }}>×</button>
+                          </div>
+                        );
+                      })}
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setCustomRows((rows) => [...rows, { id: `c${Date.now()}`, name: '', percent: '' }]); markDirty(); }}>+ Add installment</button>
+                      <div className={`custom-plan-total tabular${customTotal === 100 ? ' ok' : ''}`}>
+                        <span>Total</span>
+                        <b>{customTotal}%{budgetValue ? ` · ${formatMoney(Math.round((Number(budgetValue) * customTotal) / 100), currency)}` : ''}</b>
+                        {customTotal !== 100 && <em>{customTotal < 100 ? `${Math.round((100 - customTotal) * 100) / 100}% still to assign` : `${Math.round((customTotal - 100) * 100) / 100}% over`}</em>}
                       </div>
                     </div>
                   )}

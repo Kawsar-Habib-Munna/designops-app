@@ -8,6 +8,7 @@ import { driveThumbnailUrl } from '@/lib/driveUpload';
 import { formatDateLong } from '@/lib/format';
 import SowRichText from './SowRichText';
 import { CURRENCY_SYMBOL } from '@/lib/currency';
+import { parseScheduleLine, scheduleAmountText } from '@/lib/paymentSchedule';
 import './sow-document.css';
 
 export type SowDocData = {
@@ -70,10 +71,7 @@ function parsePaymentRows(paymentTerms: string | null): PaymentRow[] {
     .split('\n')
     .map((l) => l.replace(/^[•\-]\s*/, '').trim())
     .filter(Boolean)
-    .map((line) => {
-      const [description, amount, dueDate] = line.split(' || ');
-      return { description: (description ?? '').trim(), amount: (amount ?? '').trim(), dueDate: (dueDate ?? '').trim() };
-    });
+    .map((line) => parseScheduleLine(line));
 }
 function formatBytes(bytes: number | null): string {
   if (!bytes) return '0 B';
@@ -295,7 +293,7 @@ export default function SowDocument({
                   {paymentRows.map((r, i) => (
                     <tr key={i}>
                       <td>{r.description}</td>
-                      <td>{r.amount || '—'}</td>
+                      <td>{r.amount ? scheduleAmountText(r.amount, sow.project_value, sow.currency) : '—'}</td>
                       <td>{r.dueDate || '—'}</td>
                     </tr>
                   ))}

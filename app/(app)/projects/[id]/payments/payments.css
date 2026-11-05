@@ -809,3 +809,155 @@
 @media (max-width: 640px) {
   .payments-admin-root .pyx-subtable caption { display: block; width: 100%; white-space: nowrap; padding: 14px 16px 10px; }
 }
+
+/* ==== payment request editor, redesigned: numbered cards, side-by-side fields, a bar for the schedule, actions in the summary ==== */
+.payments-admin-root .pay-editor-grid { grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; }
+.payments-admin-root .pay-form-col { gap: 14px; counter-reset: payStep; }
+.payments-admin-root .pay-form-col .summary-card { border-radius: 10px; padding: 20px 22px; }
+.payments-admin-root .pay-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+.payments-admin-root .pay-pair .summary-card { display: flex; flex-direction: column; }
+.payments-admin-root .pay-form-col .dcard-title { display: flex; align-items: center; gap: 10px; margin-bottom: 16px !important; padding-bottom: 14px; border-bottom: 1px solid var(--border-soft); font-size: 14px; }
+.payments-admin-root .pay-form-col .dcard-title::before { counter-increment: payStep; content: counter(payStep); flex: none; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 11.5px; font-weight: 800; }
+.payments-admin-root .pay-form-col .field-input { border-radius: 8px; }
+.payments-admin-root .pay-form-col .field-label { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+
+/* schedule bar */
+.payments-admin-root .pay-bar { display: flex; height: 10px; margin: 2px 0 10px; border-radius: 999px; background: var(--surface-muted, #f2f1f2); border: 1px solid var(--border-soft); overflow: hidden; }
+.payments-admin-root .pay-bar-done { background: var(--positive, #17a34a); }
+.payments-admin-root .pay-bar-this { background: var(--accent); }
+.payments-admin-root .pay-bar-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 8px; font-size: 11.5px; color: var(--ink-faint); }
+.payments-admin-root .pay-bar-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.payments-admin-root .pay-bar-legend i { width: 8px; height: 8px; border-radius: 50%; }
+.payments-admin-root .pay-dot-done { background: var(--positive, #17a34a); }
+.payments-admin-root .pay-dot-this { background: var(--accent); }
+.payments-admin-root .pay-dot-left { background: var(--border); }
+
+/* summary: the actions live here */
+.payments-admin-root .pay-summary-sticky { border-radius: 10px; padding: 20px 22px; }
+.payments-admin-root .pay-sum-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-soft); }
+.payments-admin-root .pay-sum-actions .btn { width: 100%; justify-content: center; min-height: 40px; }
+@media (max-width: 1000px) {
+  .payments-admin-root .pay-editor-grid { grid-template-columns: minmax(0, 1fr); }
+  .payments-admin-root .pay-pair { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* context card: client, project value and SOW as three clear columns */
+.payments-admin-root .pay-context-card.pcx { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); gap: 0; padding: 0; border-radius: 10px; overflow: hidden; }
+.payments-admin-root .pcx-item { display: flex; align-items: center; gap: 14px; min-width: 0; padding: 18px 24px; }
+.payments-admin-root .pcx-item + .pcx-item { border-left: 1px solid var(--border-soft); }
+.payments-admin-root .pcx-avatar { flex: none; width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 16px; font-weight: 800; }
+.payments-admin-root .pcx-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.payments-admin-root .pcx-label { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); }
+.payments-admin-root .pcx-name { font-size: 15px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.payments-admin-root .pcx-value { font-size: 20px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); white-space: nowrap; }
+.payments-admin-root .pcx-sub { font-size: 12px; color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.payments-admin-root .pcx-status { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: var(--positive, #17a34a); }
+.payments-admin-root .pcx-status i { width: 9px; height: 9px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px var(--positive-soft, #e7f6ec); }
+@media (max-width: 800px) {
+  .payments-admin-root .pay-context-card.pcx { grid-template-columns: minmax(0, 1fr); }
+  .payments-admin-root .pcx-item + .pcx-item { border-left: none; border-top: 1px solid var(--border-soft); }
+}
+
+/* context card as a bordered table: labels in a header row, the details in one row below */
+.payments-admin-root .pay-context-card.pcx-table-wrap { display: block; padding: 0; border: none; background: transparent; box-shadow: none; overflow: visible; }
+.payments-admin-root .pcx-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1.5px solid #d6d6e3; border-radius: 8px; overflow: hidden; text-align: left; }
+.payments-admin-root .pcx-table th { padding: 11px 18px; border-bottom: 1.5px solid #d6d6e3; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); white-space: nowrap; }
+.payments-admin-root .pcx-table td { padding: 16px 18px; font-size: 14px; font-weight: 500; color: var(--ink); overflow-wrap: anywhere; }
+.payments-admin-root .pcx-table th:not(:last-child),
+.payments-admin-root .pcx-table td:not(:last-child) { border-right: 1px solid #d6d6e3; }
+.payments-admin-root .pcx-table .pcx-strong { font-weight: 700; }
+@media (max-width: 800px) {
+  .payments-admin-root .pcx-table thead { display: none; }
+  .payments-admin-root .pcx-table, .payments-admin-root .pcx-table tbody, .payments-admin-root .pcx-table tr { display: block; width: 100%; }
+  .payments-admin-root .pcx-table td { display: flex; justify-content: space-between; gap: 16px; padding: 11px 14px; border-right: none !important; border-bottom: 1px solid #ebebf3; text-align: right; }
+  .payments-admin-root .pcx-table td:last-child { border-bottom: none; }
+  .payments-admin-root .pcx-table td::before { content: attr(data-label); flex: none; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); text-align: left; }
+}
+
+/* context table: smaller, lighter text */
+.payments-admin-root .pcx-table th { padding: 9px 16px; font-size: 10.5px; font-weight: 600; }
+.payments-admin-root .pcx-table td { padding: 12px 16px; font-size: 13px; font-weight: 400; }
+.payments-admin-root .pcx-table .pcx-strong { font-weight: 500; }
+.payments-admin-root .pcx-status { font-size: 13px; font-weight: 500; gap: 7px; }
+.payments-admin-root .pcx-status i { width: 7px; height: 7px; box-shadow: 0 0 0 2.5px var(--positive-soft, #e7f6ec); }
+
+/* context table: a soft purple header row */
+.payments-admin-root .pcx-table thead th { background: var(--accent-soft); color: var(--accent); }
+
+/* Payment Details, Due Date and Payment Method share one row; inside the narrower cards the field pairs stack */
+.payments-admin-root .pay-trio { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: stretch; }
+.payments-admin-root .pay-trio > .summary-card { min-width: 0; display: flex; flex-direction: column; }
+.payments-admin-root .pay-trio .field-row { grid-template-columns: minmax(0, 1fr); gap: 0; }
+@media (max-width: 1250px) {
+  .payments-admin-root .pay-trio { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .payments-admin-root .pay-trio > .summary-card:first-child { grid-column: 1 / -1; }
+  .payments-admin-root .pay-trio .field-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+}
+@media (max-width: 1000px) { .payments-admin-root .pay-trio { grid-template-columns: minmax(0, 1fr); } }
+
+/* the three cards in the row are equal width */
+.payments-admin-root .pay-trio { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1250px) { .payments-admin-root .pay-trio { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1000px) { .payments-admin-root .pay-trio { grid-template-columns: minmax(0, 1fr); } }
+
+/* Internal Note sits under the Request Summary; both stay in view together while scrolling */
+.payments-admin-root .pay-summary-stack { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 14px; }
+.payments-admin-root .pay-summary-stack .pay-summary-sticky { position: static; }
+.payments-admin-root .pay-note-card { border-radius: 10px; padding: 20px 22px; }
+.payments-admin-root .pay-note-card .dcard-title { margin-bottom: 12px !important; font-size: 14px; }
+/* a pair that is left with one card (Notification) uses the full width */
+.payments-admin-root .pay-pair:has(> .summary-card:only-child) { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1000px) { .payments-admin-root .pay-summary-stack { position: static; } }
+
+/* "Signed" with a check icon on its left (context table and request summary) */
+.payments-admin-root .pcx-check { flex: none; }
+.payments-admin-root .pay-sum-row .pcx-status { font-size: inherit; font-weight: inherit; }
+
+/* full content width: the form cards span the whole area, and the Request Summary and Internal Note sit below them side by side */
+.payments-admin-root .pay-editor-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.payments-admin-root .pay-summary-col { width: 100%; }
+.payments-admin-root .pay-summary-stack { position: static; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+.payments-admin-root .pay-summary-stack .pay-summary-sticky,
+.payments-admin-root .pay-summary-stack .pay-note-card { margin: 0; height: 100%; }
+@media (max-width: 1000px) { .payments-admin-root .pay-summary-stack { grid-template-columns: minmax(0, 1fr); } }
+
+/* Payment Schedule Context and the Request Summary (with the Internal Note under it) share one row */
+.payments-admin-root .pay-ctx-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+.payments-admin-root .pay-ctx-row > .summary-card { min-width: 0; height: 100%; }
+.payments-admin-root .pay-ctx-row .pay-summary-col { min-width: 0; }
+.payments-admin-root .pay-ctx-row .pay-summary-stack { display: flex; flex-direction: column; gap: 14px; height: 100%; }
+.payments-admin-root .pay-ctx-row .pay-summary-stack .pay-summary-sticky,
+.payments-admin-root .pay-ctx-row .pay-summary-stack .pay-note-card { height: auto; }
+@media (max-width: 1000px) { .payments-admin-root .pay-ctx-row { grid-template-columns: minmax(0, 1fr); } }
+
+/* Amount and Percentage: the inputs stay level even when a label wraps, and on phones they stack, full width */
+.payments-admin-root .field-row { align-items: end; }
+.payments-admin-root .field-row > div { min-width: 0; }
+.payments-admin-root .field-row .field-label { min-height: 2.6em; display: flex; align-items: flex-end; line-height: 1.3; }
+@media (max-width: 760px) {
+  .payments-admin-root .field-row,
+  .payments-admin-root .pay-trio .field-row { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .payments-admin-root .field-row .field-label { min-height: 0; }
+}
+
+/* Payment overview is a narrower card than Payment requests (about 40 : 60); its ring and rows wrap if the card gets tight */
+@media (min-width: 1001px) {
+  .payments-admin-root .pay-split { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); }
+  .projdetail-root.payments-admin-root .pay-split .pyo-body { flex-wrap: wrap; justify-content: center; }
+  .projdetail-root.payments-admin-root .pay-split .pyo-rows { flex: 1 1 240px; }
+}
+
+/* Payment overview takes 45% of the row, Payment requests 55% */
+@media (min-width: 1001px) {
+  .payments-admin-root .pay-split { grid-template-columns: minmax(0, 45fr) minmax(0, 55fr); }
+}
+
+/* back to an even 50 / 50 split */
+@media (min-width: 1001px) {
+  .payments-admin-root .pay-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
+/* 47 / 53 split */
+@media (min-width: 1001px) {
+  .payments-admin-root .pay-split { grid-template-columns: minmax(0, 47fr) minmax(0, 53fr); }
+}

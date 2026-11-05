@@ -14,6 +14,7 @@
 // করে ডাটাবেজের আসল timestamptz দেখানো হয় (success স্ক্রিনে "Signed On" এটাই)।
 
 import ClientAvatar from '@/app/components/ClientAvatar';
+import { parseScheduleLine, scheduleAmountText } from '@/lib/paymentSchedule';
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -78,14 +79,14 @@ function parseBulletList(text: string | null): string[] {
     .filter((l) => l.trim().startsWith('•'))
     .map((l) => l.replace(/^•\s*/, '').trim().split(' || ')[0]);
 }
-function parsePaymentSummaries(paymentTerms: string | null): string[] {
+function parsePaymentSummaries(paymentTerms: string | null, projectValue?: number | null, currency?: string | null): string[] {
   if (!paymentTerms) return [];
   return paymentTerms
     .split('\n')
     .filter((l) => l.trim().startsWith('•'))
     .map((l) => {
-      const [description, amount, dueDate] = l.replace(/^•\s*/, '').trim().split(' || ');
-      return `${description ?? ''}${amount ? ` — ${amount}` : ''}${dueDate ? ` (${dueDate})` : ''}`;
+      const { description, amount, dueDate } = parseScheduleLine(l);
+      return `${description}${amount ? ` — ${scheduleAmountText(amount, projectValue, currency)}` : ''}${dueDate ? ` (${dueDate})` : ''}`;
     });
 }
 
@@ -584,7 +585,7 @@ export default function SowSignPage() {
   const manager = toOne(project.project_manager);
   const sym = CURRENCY_SYMBOL[sow.currency ?? 'BDT'] ?? sow.currency ?? '';
   const services = parseBulletList(sow.scope);
-  const paymentDescriptions = parsePaymentSummaries(sow.payment_terms);
+  const paymentDescriptions = parsePaymentSummaries(sow.payment_terms, sow.project_value, sow.currency);
 
   // ---- already signed / just signed ----
   if (sow.status === 'signed') {

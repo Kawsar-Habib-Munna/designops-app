@@ -858,27 +858,34 @@ export default function AdminPaymentsPage() {
                       </div>
                     </div>
 
-                    <div className="pay-context-card">
-                      <div className="pay-context-item">
-                        <span className="pay-context-label">Client</span>
-                        <span className="pay-context-value">
-                          {client?.primary_contact ?? client?.company_name} · {client?.company_name}
-                        </span>
-                      </div>
-                      <div className="pay-context-item">
-                        <span className="pay-context-label">Project Value</span>
-                        <span className="pay-context-value tabular">{projectValue != null ? `${currency} ${projectValue.toLocaleString('en-US')}` : '—'}</span>
-                      </div>
-                      <div className="pay-context-item">
-                        <span className="pay-context-label">SOW</span>
-                        <span className="status-pill s-done">Signed ✓</span>
-                      </div>
+                    <div className="pay-context-card pcx pcx-table-wrap">
+                      <table className="pcx-table">
+                        <thead>
+                          <tr>
+                            <th>Client</th>
+                            <th>Company</th>
+                            <th>Project</th>
+                            <th>Project value</th>
+                            <th>SOW</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td data-label="Client" className="pcx-strong">{client?.primary_contact ?? client?.company_name ?? '—'}</td>
+                            <td data-label="Company">{client?.company_name ?? '—'}</td>
+                            <td data-label="Project">{project.name}</td>
+                            <td data-label="Project value" className="pcx-strong tabular">{projectValue != null ? `${currency} ${projectValue.toLocaleString('en-US')}` : '—'}</td>
+                            <td data-label="SOW"><span className="pcx-status"><svg className="pcx-check" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m8.5 12.5 2.5 2.5 4.5-5" /></svg>Signed{signedSow?.sow_number ? ` · ${signedSow.sow_number}` : ''}</span></td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
 
                     {formError && <div style={{ marginBottom: 16, padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--danger-soft)', color: 'var(--danger)', fontSize: 13 }}>{formError}</div>}
 
                     <div className="pay-editor-grid">
                       <div className="pay-form-col">
+                        <div className="pay-trio">
                         <div className="summary-card">
                           <div className="dcard-title" style={{ marginBottom: 14 }}>
                             Payment Details
@@ -898,8 +905,25 @@ export default function AdminPaymentsPage() {
                               <input className="field-input" type="number" min="0" step="0.01" value={fAmount} onChange={(e) => setFAmount(e.target.value)} required />
                             </div>
                             <div>
-                              <label className="field-label">Percentage of Project Value</label>
-                              <input className="field-input" type="text" value={percentage != null ? `${percentage}%` : '—'} disabled />
+                              <label className="field-label">Percentage of project value (%)</label>
+                              <input
+                                className="field-input"
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                value={percentage != null ? percentage : ''}
+                                disabled={!projectValue}
+                                placeholder="—"
+                                onChange={(e) => {
+                                  if (e.target.value === '') {
+                                    setFAmount('');
+                                    return;
+                                  }
+                                  const p = Number(e.target.value);
+                                  if (projectValue && projectValue > 0 && !Number.isNaN(p)) setFAmount(String(Math.round(projectValue * p) / 100));
+                                }}
+                              />
                             </div>
                           </div>
 
@@ -907,32 +931,6 @@ export default function AdminPaymentsPage() {
                           <input className="field-input" type="text" value={fDescription} onChange={(e) => setFDescription(e.target.value)} placeholder="e.g. 50% Initial Deposit" />
 
                           {exceedsRemaining && <div className="pay-warning-box">This amount differs from the agreed SOW payment schedule — it exceeds the remaining project balance.</div>}
-                        </div>
-
-                        <div className="summary-card">
-                          <div className="dcard-title" style={{ marginBottom: 14 }}>
-                            Payment Schedule Context
-                          </div>
-                          <div className="pay-breakdown-row">
-                            <span>Project Value</span>
-                            <span className="tabular">{projectValue != null ? `${currency} ${projectValue.toLocaleString('en-US')}` : '—'}</span>
-                          </div>
-                          <div className="pay-breakdown-row">
-                            <span>Already Requested / Paid</span>
-                            <span className="tabular">
-                              {currency} {committedElsewhere.toLocaleString('en-US')}
-                            </span>
-                          </div>
-                          <div className="pay-breakdown-row">
-                            <span>This Request</span>
-                            <span className="tabular">
-                              {currency} {amountNum.toLocaleString('en-US')}
-                            </span>
-                          </div>
-                          <div className="pay-breakdown-row pay-breakdown-total">
-                            <span>Remaining After This Request</span>
-                            <span className="tabular">{remainingBalance != null ? `${currency} ${Math.max(0, remainingBalance - amountNum).toLocaleString('en-US')}` : '—'}</span>
-                          </div>
                         </div>
 
                         <div className="summary-card">
@@ -958,6 +956,102 @@ export default function AdminPaymentsPage() {
                           <RichTextField value={fClientInstructions} onChange={setFClientInstructions} textareaClassName="field-input" placeholder={fMethod === 'Bank Transfer' ? BANK_PLACEHOLDER : `How should ${client?.primary_contact ?? 'the client'} send this payment?`} rows={4} />
                         </div>
 
+                        </div>
+                        <div className="pay-ctx-row">
+                        <div className="summary-card">
+                          <div className="dcard-title" style={{ marginBottom: 14 }}>
+                            Payment Schedule Context
+                          </div>
+                          <div className="pay-bar" aria-hidden="true">
+                            <span className="pay-bar-done" style={{ width: `${(projectValue ?? 0) > 0 ? Math.min(100, (committedElsewhere / (projectValue as number)) * 100) : 0}%` }} />
+                            <span className="pay-bar-this" style={{ width: `${(projectValue ?? 0) > 0 ? Math.max(0, Math.min(100 - Math.min(100, (committedElsewhere / (projectValue as number)) * 100), (amountNum / (projectValue as number)) * 100)) : 0}%` }} />
+                          </div>
+                          <div className="pay-bar-legend">
+                            <span><i className="pay-dot-done" />Requested / paid</span>
+                            <span><i className="pay-dot-this" />This request</span>
+                            <span><i className="pay-dot-left" />Remaining</span>
+                          </div>
+                          <div className="pay-breakdown-row">
+                            <span>Project Value</span>
+                            <span className="tabular">{projectValue != null ? `${currency} ${projectValue.toLocaleString('en-US')}` : '—'}</span>
+                          </div>
+                          <div className="pay-breakdown-row">
+                            <span>Already Requested / Paid</span>
+                            <span className="tabular">
+                              {currency} {committedElsewhere.toLocaleString('en-US')}
+                            </span>
+                          </div>
+                          <div className="pay-breakdown-row">
+                            <span>This Request</span>
+                            <span className="tabular">
+                              {currency} {amountNum.toLocaleString('en-US')}
+                            </span>
+                          </div>
+                          <div className="pay-breakdown-row pay-breakdown-total">
+                            <span>Remaining After This Request</span>
+                            <span className="tabular">{remainingBalance != null ? `${currency} ${Math.max(0, remainingBalance - amountNum).toLocaleString('en-US')}` : '—'}</span>
+                          </div>
+                        </div>
+                        <aside className="pay-summary-col">
+                          <div className="pay-summary-stack">
+                          <div className="summary-card pay-summary-sticky">
+                            <div className="dcard-title" style={{ marginBottom: 12 }}>
+                              Request Summary
+                            </div>
+                            <div className="pay-sum-row">
+                              <span>Client</span>
+                              <span>{client?.primary_contact ?? client?.company_name ?? '—'}</span>
+                            </div>
+                            <div className="pay-sum-row">
+                              <span>Project</span>
+                              <span>{project.name}</span>
+                            </div>
+                            <div className="pay-sum-row">
+                              <span>Payment Type</span>
+                              <span>{fType}</span>
+                            </div>
+                            <div className="pay-sum-row">
+                              <span>Amount</span>
+                              <span className="tabular">
+                                {currency} {amountNum.toLocaleString('en-US')}
+                              </span>
+                            </div>
+                            <div className="pay-sum-row">
+                              <span>Due</span>
+                              <span>{fDueDate ? formatBnDate(fDueDate) : '—'}</span>
+                            </div>
+                            <div className="pay-sum-row">
+                              <span>Method</span>
+                              <span>{fMethod}</span>
+                            </div>
+                            <div className="pay-sum-row">
+                              <span>SOW</span>
+                              <span className="pcx-status"><svg className="pcx-check" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="m8.5 12.5 2.5 2.5 4.5-5" /></svg>Signed</span>
+                            </div>
+                            <div className="pay-sum-row">
+                              <span>Notify Client</span>
+                              <span>{fNotify ? 'ON' : 'OFF'}</span>
+                            </div>
+                            <div className="pay-sum-actions">
+                              <button className="btn btn-accent" onClick={() => handleSave(true)} disabled={saving !== null}>
+                                {saving === 'send' ? 'পাঠানো হচ্ছে…' : 'Send Payment Request'}
+                              </button>
+                              <button className="btn btn-ghost" onClick={() => handleSave(false)} disabled={saving !== null}>
+                                {saving === 'draft' ? 'সেভ হচ্ছে…' : 'Save Draft'}
+                              </button>
+                            </div>
+                          </div>
+                            <div className="summary-card pay-note-card">
+                              <div className="dcard-title" style={{ marginBottom: 14 }}>
+                                Internal Note (optional)
+                              </div>
+                              <RichTextField value={fInternalNote} onChange={setFInternalNote} textareaClassName="field-input" placeholder="Visible to team only — never shown to the client." rows={3} />
+                            </div>
+                          </div>
+                        </aside>
+                        </div>
+
+                        <div className="pay-trio">
                         <div className="summary-card">
                           <div className="dcard-title" style={{ marginBottom: 14 }}>
                             Related Milestone (optional)
@@ -1002,56 +1096,9 @@ export default function AdminPaymentsPage() {
                           </label>
                           <p className="pay-hint">Send the client a notification when this payment request is sent.</p>
                         </div>
-
-                        <div className="summary-card">
-                          <div className="dcard-title" style={{ marginBottom: 14 }}>
-                            Internal Note (optional)
-                          </div>
-                          <RichTextField value={fInternalNote} onChange={setFInternalNote} textareaClassName="field-input" placeholder="Visible to team only — never shown to the client." rows={3} />
                         </div>
                       </div>
 
-                      <aside className="pay-summary-col">
-                        <div className="summary-card pay-summary-sticky">
-                          <div className="dcard-title" style={{ marginBottom: 12 }}>
-                            Request Summary
-                          </div>
-                          <div className="pay-sum-row">
-                            <span>Client</span>
-                            <span>{client?.primary_contact ?? client?.company_name ?? '—'}</span>
-                          </div>
-                          <div className="pay-sum-row">
-                            <span>Project</span>
-                            <span>{project.name}</span>
-                          </div>
-                          <div className="pay-sum-row">
-                            <span>Payment Type</span>
-                            <span>{fType}</span>
-                          </div>
-                          <div className="pay-sum-row">
-                            <span>Amount</span>
-                            <span className="tabular">
-                              {currency} {amountNum.toLocaleString('en-US')}
-                            </span>
-                          </div>
-                          <div className="pay-sum-row">
-                            <span>Due</span>
-                            <span>{fDueDate ? formatBnDate(fDueDate) : '—'}</span>
-                          </div>
-                          <div className="pay-sum-row">
-                            <span>Method</span>
-                            <span>{fMethod}</span>
-                          </div>
-                          <div className="pay-sum-row">
-                            <span>SOW</span>
-                            <span>Signed ✓</span>
-                          </div>
-                          <div className="pay-sum-row">
-                            <span>Notify Client</span>
-                            <span>{fNotify ? 'ON' : 'OFF'}</span>
-                          </div>
-                        </div>
-                      </aside>
                     </div>
                   </>
                 )}

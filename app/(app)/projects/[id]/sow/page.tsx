@@ -44,6 +44,9 @@ import SignInScreen from '@/app/components/SignInScreen';
 import SowDocument, { type SowDocData } from '@/app/components/SowDocument';
 import RichTextField from '@/app/components/RichTextField';
 import { CURRENCIES, currencyLabel } from '@/lib/currency';
+import { parseScheduleLine, percentAmount, percentValue } from '@/lib/paymentSchedule';
+import { decodeCustomPlan, customPlanToSowTerms, type CustomInstallment } from '@/lib/customPayment';
+import { formatMoney } from '@/lib/currency';
 import { getProjectCurrency } from '@/lib/projectCurrency';
 
 const ICON_PATHS: Record<string, string> = {
@@ -104,6 +107,7 @@ type ProjectBrief = {
   id: string;
   name: string;
   description: string | null;
+  payment_structure: string | null;
   client_id: string | null;
   budget: number | null;
   clients: { company_name: string; primary_contact: string | null } | { company_name: string; primary_contact: string | null }[] | null;
@@ -213,10 +217,7 @@ function parsePaymentRows(paymentTerms: string | null): PaymentRow[] {
     .split('\n')
     .map((l) => l.replace(/^[•\-]\s*/, '').trim())
     .filter(Boolean)
-    .map((line) => {
-      const [description, amount, dueDate] = line.split(' || ');
-      return { id: newRowId(), description: (description ?? '').trim(), amount: (amount ?? '').trim(), dueDate: (dueDate ?? '').trim() };
-    });
+    .map((line) => ({ id: newRowId(), ...parseScheduleLine(line) }));
 }
 function serializePaymentRows(rows: PaymentRow[]): string {
   return rows
@@ -323,7 +324,7 @@ export default function AdminSowPage() {
 
     async function run() {
       const [projectRes, sowsRes, profileRes] = await Promise.all([
-        supabase.from('projects').select('id, name, description, client_id, budget, clients(company_name, primary_contact), project_manager:profiles!project_manager_id(full_name, role)').eq('id', projectId).maybeSingle(),
+        supabase.from('projects').select('id, name, description, client_id, budget, payment_structure, clients(company_name, primary_contact), project_manager:profiles!project_manager_id(full_name, role)').eq('id', projectId).maybeSingle(),
         supabase.from('sows').select('*').eq('project_id', projectId).order('version', { ascending: false }),
         supabase.from('profiles').select('id, full_name, role, avatar_color, avatar_url, behance_url, linkedin_url').eq('id', user!.id).single(),
       ]);
@@ -443,6 +444,7 @@ export default function AdminSowPage() {
         objectives: project.description ?? '',
         project_value: project.budget,
         currency: projectCurrency,
+        ...(decodeCustomPlan(project.payment_structure) ? { payment_terms: customPlanToSowTerms(decodeCustomPlan(project.payment_structure) as CustomInstallment[]) } : {}),
         revision_policy: DEFAULT_REVISION,
         terms: DEFAULT_TERMS,
       })
@@ -1035,13 +1037,25 @@ export default function AdminSowPage() {
                             {paymentRows.map((r) => (
                               <div className="payment-row-3" key={r.id}>
                                 <input className="field-input" value={r.description} onChange={(e) => updatePaymentRow(r.id, { description: e.target.value })} placeholder="e.g. Due upon signing" />
-                                <input className="field-input" value={r.amount} onChange={(e) => updatePaymentRow(r.id, { amount: e.target.value })} placeholder="e.g. 50% or $2,500" />
+                                <div className={`payment-amount-cell${percentValue(r.amount) != null ? ' has-hint' : ''}`}>
+                                  <input className="field-input" value={r.amount} onChange={(e) => updatePaymentRow(r.id, { amount: e.target.value })} placeholder="e.g. 50% or $2,500" />
+                                  {percentValue(r.amount) != null && (
+                                    <span className="payment-amount-hint tabular">
+                                      {percentAmount(r.amount, projectValue ? Number(projectValue) : null) != null ? formatMoney(percentAmount(r.amount, Number(projectValue)) as number, currency) : 'Set project value'}
+                                    </span>
+                                  )}
+                                </div>
                                 <input className="field-input" value={r.dueDate} onChange={(e) => updatePaymentRow(r.id, { dueDate: e.target.value })} placeholder="Due date" />
                                 <button type="button" className="deliverable-remove" onClick={() => removePaymentRow(r.id)} aria-label="বাদ দিন">
                                   <Icon name="close" size={12} />
                                 </button>
                               </div>
                             ))}
+                            {paymentRows.some((r) => percentValue(r.amount) != null) && (
+                              <div className={`payment-total-hint tabular${Math.round(paymentRows.reduce((n, r) => n + (percentValue(r.amount) ?? 0), 0) * 100) / 100 === 100 ? ' ok' : ''}`}>
+                                Percentages add up to {Math.round(paymentRows.reduce((n, r) => n + (percentValue(r.amount) ?? 0), 0) * 100) / 100}%
+                              </div>
+                            )}
                             <button type="button" className="btn btn-ghost btn-sm" onClick={addPaymentRow}>
                               <Icon name="plus" size={12} /> Add Installment
                             </button>
