@@ -24,6 +24,8 @@ import { formatDateLong, todayISO } from '@/lib/format';
 import { CURRENCY_SYMBOL, formatMoney } from '@/lib/currency';
 import ReceiptPreviewModal from '@/app/components/ReceiptPreviewModal';
 import PaymentStatement from '@/app/components/PaymentStatement';
+import { AGENCY_INFO } from '@/lib/agencyInfo';
+import { pickNextDue } from '@/lib/nextPayment';
 import { renderReceiptPdf, renderDocumentImage } from '@/lib/receiptPdf';
 import ClientBottomNav from '@/app/components/ClientBottomNav';
 import '../../../client-shared.css';
@@ -429,6 +431,8 @@ export default function ClientPaymentsPage() {
       .sort((a, b) => (a.due_date ?? '9999') .localeCompare(b.due_date ?? '9999'))[0] ??
     null;
   const nextStatus = nextPayment ? scheduleStatus(nextPayment, today) : null;
+  // no invoice is waiting, but part of the project value is still to come: show the remaining balance
+  const balanceNext = !nextPayment ? pickNextDue(invoices, null, true, { value: totalValue, currency }) : null;
   const nextDays = nextPayment?.due_date ? daysBetween(today, nextPayment.due_date) : null;
 
   const filteredInvoices = filterTab === 'all' ? invoices : invoices.filter((inv) => scheduleStatus(inv, today).key === filterTab);
@@ -436,7 +440,8 @@ export default function ClientPaymentsPage() {
 
   function handleExport() {
     if (!project) return;
-    const rows: string[][] = [['Payment', 'Description', 'Amount', 'Currency', 'Date', 'Method', 'Status', 'Receipt']];
+    // the agency details come first ("Billed by"), then a blank line, then one row per payment
+    const rows: string[][] = [['Billed by', AGENCY_INFO.name, AGENCY_INFO.address, AGENCY_INFO.email], [], ['Payment', 'Description', 'Amount', 'Currency', 'Date', 'Method', 'Status', 'Receipt']];
     invoices.forEach((inv) => {
       const pay = payments.find((p) => p.invoice_id === inv.id);
       const status = scheduleStatus(inv, today);
@@ -758,6 +763,34 @@ export default function ClientPaymentsPage() {
                     <Link href={`/client/project/${project.id}/sow`} className="dx-link">View SOW</Link>
                   )}
                 </div>
+                {nextPayment && (
+                  <div className="ps-next">
+                    <div className="ps-next-label">Next payment due</div>
+                    <div className="ps-next-row">
+                      <div className="ps-next-main">
+                        <strong className="ps-next-amount tabular">{formatMoney(nextPayment.amount, nextPayment.currency)}</strong>
+                        <span className="ps-next-for">{nextPayment.description || humanizeType(nextPayment.payment_type)}</span>
+                      </div>
+                      <span className={`ps-next-date${nextDays != null && nextDays < 0 ? ' late' : ''}`}>
+                        {nextPayment.due_date
+                          ? `Due ${formatDateLong(nextPayment.due_date)}${nextDays != null ? ` · ${nextDays < 0 ? `${-nextDays} day${-nextDays === 1 ? '' : 's'} overdue` : nextDays === 0 ? 'today' : `in ${nextDays} day${nextDays === 1 ? '' : 's'}`}` : ''}`
+                          : 'Due date to be confirmed'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {balanceNext && (
+                  <div className="ps-next">
+                    <div className="ps-next-label">Next payment due</div>
+                    <div className="ps-next-row">
+                      <div className="ps-next-main">
+                        <strong className="ps-next-amount tabular">{formatMoney(balanceNext.amount, balanceNext.currency)}</strong>
+                        <span className="ps-next-for">{balanceNext.description}</span>
+                      </div>
+                      <span className="ps-next-date">We will send a payment request</span>
+                    </div>
+                  </div>
+                )}
                 <ol className="ps-list">
                   {invoices.map((inv) => {
                     const status = scheduleStatus(inv, today);
@@ -844,6 +877,8 @@ export default function ClientPaymentsPage() {
                 dateText: st.key === 'paid' && pay?.payment_date ? formatDateLong(pay.payment_date) : inv.due_date ? formatDateLong(inv.due_date) : '—',
                 amountText: formatMoney(inv.amount, inv.currency),
                 status: st.label,
+                method: pay?.payment_method ?? inv.payment_method,
+                transactionId: pay?.transaction_id ?? null,
               };
             }),
           }}
@@ -868,6 +903,8 @@ export default function ClientPaymentsPage() {
             amount: viewingReceipt.inv.amount,
             method: viewingReceipt.pay.payment_method,
             transactionId: viewingReceipt.pay.transaction_id,
+            nextDue: pickNextDue(invoices, viewingReceipt.inv.id, true, { value: totalValue, currency }),
+            projectTotal: totalValue,
           }}
         />
       )}

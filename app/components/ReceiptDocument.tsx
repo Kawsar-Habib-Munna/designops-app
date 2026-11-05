@@ -4,6 +4,8 @@
 // Layout avoids container queries and colour-mix() so html2canvas (the PDF export) renders it faithfully.
 import type { Ref } from 'react';
 import { formatMoney } from '@/lib/currency';
+import { formatDateLong } from '@/lib/format';
+import type { NextDue } from '@/lib/nextPayment';
 import { shortReceiptNo } from '@/lib/receiptNumber';
 import './receipt-document.css';
 
@@ -22,7 +24,11 @@ export type ReceiptDocData = {
   transactionId: string | null;
   senderName?: string | null;
   notes?: string | null;
+  nextDue?: NextDue | null; // the next payment still to be made, if any
+  projectTotal?: number | null; // the whole project value (from the signed SOW), shown above this payment
 };
+
+import { AGENCY_INFO } from '@/lib/agencyInfo';
 
 export default function ReceiptDocument({ data, theme = 'light', docRef }: { data: ReceiptDocData; theme?: 'light' | 'dark'; docRef?: Ref<HTMLDivElement> }) {
   // the currency symbol (৳, $, £ …) instead of the code; codes without a symbol keep their letters
@@ -60,6 +66,18 @@ export default function ReceiptDocument({ data, theme = 'light', docRef }: { dat
                 </table>
               </td>
               <td>
+                <div className="rd3-cap">Billed by</div>
+                <table className="rd3-kv">
+                  <tbody>
+                    <tr><th>Name</th><td>{AGENCY_INFO.name}</td></tr>
+                    <tr><th>Address</th><td>{AGENCY_INFO.address}</td></tr>
+                    <tr><th>Email</th><td>{AGENCY_INFO.email}</td></tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+            <tr className="rd3-pair-row2">
+              <td colSpan={2}>
                 <div className="rd3-cap">Payment details</div>
                 <table className="rd3-kv">
                   <tbody>
@@ -101,6 +119,12 @@ export default function ReceiptDocument({ data, theme = 'light', docRef }: { dat
               <td>
                 <table className="rd3-totals-inner">
                   <tbody>
+                    {data.projectTotal != null && data.projectTotal > 0 && (
+                      <tr className="rd3-sub">
+                        <th>Project total</th>
+                        <td>{formatMoney(data.projectTotal, data.currency)}</td>
+                      </tr>
+                    )}
                     <tr className="rd3-sub">
                       <th>Subtotal</th>
                       <td>{money}</td>
@@ -116,6 +140,19 @@ export default function ReceiptDocument({ data, theme = 'light', docRef }: { dat
             </tr>
           </tbody>
         </table>
+
+        {data.nextDue && (
+          <>
+            <div className="rd3-cap rd3-cap-items">Next payment due</div>
+            <table className="rd3-kv rd3-next">
+              <tbody>
+                <tr><th>Amount</th><td className="rd3-next-amount">{formatMoney(data.nextDue.amount, data.nextDue.currency)}</td></tr>
+                <tr><th>For</th><td>{data.nextDue.description}</td></tr>
+                <tr><th>Due date</th><td>{data.nextDue.dueDate ? formatDateLong(data.nextDue.dueDate) : data.nextDue.kind === 'balance' ? 'We will send a payment request' : 'To be confirmed'}</td></tr>
+              </tbody>
+            </table>
+          </>
+        )}
 
         <div className="rd3-cap rd3-cap-items">Notes</div>
         <ul className="rd3-notes">

@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { fetchOwnClientProject, type ClientRecord } from '@/lib/clientPortal';
 import { formatDateLong } from '@/lib/format';
+import { pickNextDue, type NextDue } from '@/lib/nextPayment';
 import ReceiptDocument from '@/app/components/ReceiptDocument';
 import '../../../../../client-shared.css';
 import './receipt.css';
@@ -38,6 +39,8 @@ export default function ClientReceiptPage() {
   const [projectName, setProjectName] = useState('');
   const [payment, setPayment] = useState<Payment | null>(null);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [nextDue, setNextDue] = useState<NextDue | null>(null);
+  const [projectTotal, setProjectTotal] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -59,6 +62,10 @@ export default function ClientReceiptPage() {
 
         const { data: invoiceData } = await supabase.from('invoices').select('payment_type, currency, description, status').eq('id', (paymentData as Payment).invoice_id).maybeSingle();
         setInvoice((invoiceData as Invoice) ?? null);
+        const { data: pendingRows } = await supabase.from('invoices').select('id, status, amount, currency, due_date, description, payment_type').eq('project_id', projectId);
+        const { data: sowRow } = await supabase.from('sows').select('project_value, currency').eq('project_id', projectId).eq('status', 'signed').limit(1).maybeSingle();
+        setProjectTotal((sowRow as { project_value: number | null } | null)?.project_value ?? null);
+        setNextDue(pickNextDue((pendingRows as Parameters<typeof pickNextDue>[0]) ?? [], (paymentData as Payment).invoice_id, true, { value: (sowRow as { project_value: number | null; currency: string | null } | null)?.project_value ?? null, currency: (sowRow as { currency: string | null } | null)?.currency }));
         setLoading(false);
       } catch {
         router.replace('/client/sign-in');
@@ -114,6 +121,8 @@ export default function ClientReceiptPage() {
             amount: payment.amount,
             method: payment.payment_method,
             transactionId: payment.transaction_id,
+            nextDue,
+            projectTotal,
           }}
         />
       </div>

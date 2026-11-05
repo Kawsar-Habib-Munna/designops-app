@@ -20,6 +20,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
 import { todayISO, formatDateLong } from '@/lib/format';
 import { shortReceiptNo } from '@/lib/receiptNumber';
+import { pickNextDue } from '@/lib/nextPayment';
 
 // "29 Oct 2026"
 function formatBnDate(d: string | null | undefined): string {
@@ -1193,6 +1194,8 @@ export default function AdminPaymentsPage() {
             transactionId: viewingReceipt.submission.transaction_id,
             senderName: viewingReceipt.submission.sender_name,
             notes: viewingReceipt.submission.notes,
+            nextDue: pickNextDue(invoices, viewingReceipt.inv.id, false, { value: projectValue, currency }),
+            projectTotal: projectValue,
           }}
         />
       )}

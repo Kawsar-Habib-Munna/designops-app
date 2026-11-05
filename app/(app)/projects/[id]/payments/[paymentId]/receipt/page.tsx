@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useSession } from '@/lib/useSession';
 import { formatDateLong } from '@/lib/format';
 import SignInScreen from '@/app/components/SignInScreen';
+import { pickNextDue, type NextDue } from '@/lib/nextPayment';
 import ReceiptDocument from '@/app/components/ReceiptDocument';
 
 type Payment = { id: string; invoice_id: string; amount: number | null; payment_method: string | null; transaction_id: string | null; payment_date: string | null; receipt_number: string | null; confirmed_at: string | null };
@@ -29,6 +30,8 @@ export default function AdminReceiptPage() {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [client, setClient] = useState<ClientBrief | null>(null);
   const [projectName, setProjectName] = useState('');
+  const [nextDue, setNextDue] = useState<NextDue | null>(null);
+  const [projectTotal, setProjectTotal] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user || !paymentId) return;
@@ -51,6 +54,10 @@ export default function AdminReceiptPage() {
         ]);
         setClient((clientRes.data as ClientBrief) ?? null);
         setProjectName((projectRes.data as ProjectBrief)?.name ?? '');
+        const { data: pendingRows } = await supabase.from('invoices').select('id, status, amount, currency, due_date, description, payment_type').eq('project_id', (invoiceData as Invoice).project_id).eq('status', 'pending');
+        const { data: sowRow } = await supabase.from('sows').select('project_value, currency').eq('project_id', (invoiceData as Invoice).project_id).eq('status', 'signed').limit(1).maybeSingle();
+        setProjectTotal((sowRow as { project_value: number | null } | null)?.project_value ?? null);
+        setNextDue(pickNextDue((pendingRows as Parameters<typeof pickNextDue>[0]) ?? [], (paymentData as Payment).invoice_id, false, { value: (sowRow as { project_value: number | null; currency: string | null } | null)?.project_value ?? null, currency: (sowRow as { currency: string | null } | null)?.currency }));
       }
       setLoading(false);
     }
@@ -92,6 +99,8 @@ export default function AdminReceiptPage() {
                 amount: payment.amount,
                 method: payment.payment_method,
                 transactionId: payment.transaction_id,
+                nextDue,
+                projectTotal,
               }}
             />
           </>

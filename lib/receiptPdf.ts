@@ -27,14 +27,22 @@ async function captureDocument(node: HTMLElement): Promise<HTMLCanvasElement> {
 
 // The document laid out on real A4 sheets: every page is a full 210 x 297 mm white page (same proportions whatever the
 // content), with the page margins around it, so a short receipt is still an A4 page and a long one runs onto more pages.
-function composeA4Pages(canvas: HTMLCanvasElement): HTMLCanvasElement[] {
+function composeA4Pages(canvas: HTMLCanvasElement, breaks: number[] = []): HTMLCanvasElement[] {
   const contentW = PAGE_W - MARGIN_X * 2;
   const contentH = PAGE_H - MARGIN_Y * 2;
   const pxPerMm = canvas.width / contentW;
   const sliceH = Math.floor(contentH * pxPerMm);
   const pages: HTMLCanvasElement[] = [];
-  for (let y = 0; y < canvas.height; y += sliceH) {
-    const h = Math.min(sliceH, canvas.height - y);
+  for (let y = 0; y < canvas.height; ) {
+    // a page ends at the last safe break (the top of a table row, a heading or a block) that still fits, so nothing is cut in half;
+    // without one that fits (or when the rest fits on this page) it simply ends where the page is full
+    const limit = y + sliceH;
+    let end = Math.min(limit, canvas.height);
+    if (limit < canvas.height) {
+      const fit = breaks.filter((b) => b > y + sliceH * 0.3 && b <= limit);
+      if (fit.length > 0) end = fit[fit.length - 1];
+    }
+    const h = end - y;
     const page = document.createElement('canvas');
     page.width = Math.round(PAGE_W * pxPerMm);
     page.height = Math.round(PAGE_H * pxPerMm);
@@ -44,14 +52,29 @@ function composeA4Pages(canvas: HTMLCanvasElement): HTMLCanvasElement[] {
     ctx.fillRect(0, 0, page.width, page.height);
     ctx.drawImage(canvas, 0, y, canvas.width, h, Math.round(MARGIN_X * pxPerMm), Math.round(MARGIN_Y * pxPerMm), canvas.width, h);
     pages.push(page);
+    y = end;
   }
   return pages;
+}
+
+// where it is safe to start a new page, in canvas pixels: before a table row (not the first one under a heading, so a heading
+// never ends up alone at the bottom of a page), before a section heading, the totals, the thank-you block
+function collectBreaks(node: HTMLElement, canvas: HTMLCanvasElement): number[] {
+  const box = node.getBoundingClientRect();
+  if (!box.width) return [];
+  const ratio = canvas.width / box.width;
+  const tops = new Set<number>();
+  node.querySelectorAll('tbody tr:not(:first-child), .rd3-cap, .rd3-totals, .rd3-thanks, .rd3-pair, .rd3-notes').forEach((el) => {
+    const y = Math.round((el.getBoundingClientRect().top - box.top) * ratio);
+    if (y > 0) tops.add(y);
+  });
+  return [...tops].sort((a, b) => a - b);
 }
 
 // a PNG of the document: the first A4 page (a receipt fits on one), or the whole tall image if it runs longer
 export async function renderDocumentImage(node: HTMLElement): Promise<Blob> {
   const canvas = await captureDocument(node);
-  const pages = composeA4Pages(canvas);
+  const pages = composeA4Pages(canvas, collectBreaks(node, canvas));
   const target = pages.length === 1 ? pages[0] : canvas;
   return new Promise<Blob>((resolve, reject) => {
     target.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('image'))), 'image/png');
@@ -62,7 +85,7 @@ export async function renderReceiptPdf(node: HTMLElement): Promise<{ blob: Blob;
   const [{ default: jsPDF }, canvas] = await Promise.all([import('jspdf'), captureDocument(node)]);
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pages: string[] = [];
-  composeA4Pages(canvas).forEach((page, n) => {
+  composeA4Pages(canvas, collectBreaks(node, canvas)).forEach((page, n) => {
     const data = page.toDataURL('image/png');
     if (n > 0) pdf.addPage();
     // each image already is a whole A4 page (margins included), so it fills the sheet edge to edge

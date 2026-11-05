@@ -453,3 +453,14 @@
 .receipt-document .rd3-items td { height: auto; padding: 16px 0; line-height: 1.45; vertical-align: middle; }
 .receipt-document .rd3-items td.rd3-desc { padding-right: 12px; }
 .receipt-document .rd3-totals-inner th, .receipt-document .rd3-totals-inner td { line-height: 1.4; }
+
+/* second row of the details block: "Payment details" runs across the full width, below "Billed to" and "Billed by" */
+.receipt-document .rd3-pair > tbody > tr.rd3-pair-row2 > td { width: auto; padding: 22px 0 0; }
+
+/* "Next payment due" block */
+.receipt-document .rd3-next-amount { font-weight: 800; }
+
+/* statement: the payment details columns (method, transaction id) are a little smaller so seven columns fit on the page */
+.receipt-document .rd3-items .rd3-txn { word-break: break-all; font-size: 12px; }
+.receipt-document .rd3-items th, .receipt-document .rd3-items td { padding-right: 10px; }
+.receipt-document .rd3-items th.rd3-r, .receipt-document .rd3-items td.rd3-r { padding-right: 0; width: 120px; }
