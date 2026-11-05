@@ -334,9 +334,11 @@ export default function AdminSowPage() {
       const rows = (sowsRes.data as Sow[]) ?? [];
       setVersions(rows);
       if (rows.length > 0) {
-        setSelectedId(rows[0].id);
-        loadFormFrom(rows[0]);
-        setMode(rows[0].status === 'draft' ? 'editor' : 'preview');
+        // opening the page: show the live version (signed, sent...) rather than a draft that was only started
+        const first = reloadKey === 0 && rows[0].status === 'draft' ? rows.find((r) => r.status !== 'draft' && r.status !== 'cancelled' && r.status !== 'superseded') ?? rows[0] : rows[0];
+        setSelectedId(first.id);
+        loadFormFrom(first);
+        setMode(first.status === 'draft' ? 'editor' : 'preview');
       } else {
         setMode('overview');
       }
@@ -461,6 +463,7 @@ export default function AdminSowPage() {
 
   async function handleCreateNewVersion() {
     if (!user || !selected) return;
+    if (selected.status === 'signed' && !window.confirm('This SOW is signed. Start a new version? The signed version stays unchanged and you can come back to it from the version list.')) return;
     const nextVersion = (versions[0]?.version ?? 0) + 1;
     const { data, error: createError } = await supabase
       .from('sows')
@@ -489,7 +492,7 @@ export default function AdminSowPage() {
     }
 
     if (selected.status === 'sent') {
-      await supabase.from('sows').update({ status: 'superseded', superseded_by: (data as Sow).id }).eq('id', selected.id);
+      await supabase.from('sows').update({ status: 'superseded', superseded_by: (data as Sow).id }).eq('id', selected.id).eq('status', 'sent'); // never overwrite a signed version
     }
 
     setVersions((prev) => [data as Sow, ...prev.map((v) => (v.id === selected.id && selected.status === 'sent' ? { ...v, status: 'superseded' } : v))]);
@@ -499,6 +502,10 @@ export default function AdminSowPage() {
 
   async function handleSaveDraft() {
     if (!selected) return;
+    if (selected.status === 'signed') {
+      setError('This SOW is signed and locked. Start a new version to change it.');
+      return;
+    }
     setSaving(true);
     const { error: updateError } = await supabase
       .from('sows')
@@ -515,7 +522,8 @@ export default function AdminSowPage() {
         terms,
         document_url: attachMSA ? documentUrl : null,
       })
-      .eq('id', selected.id);
+      .eq('id', selected.id)
+      .neq('status', 'signed');
     setSaving(false);
     if (updateError) {
       setError(updateError.message);
@@ -526,12 +534,18 @@ export default function AdminSowPage() {
 
   async function handleConfirmSend() {
     if (!selected || !user) return;
+    if (selected.status === 'signed') {
+      setShowSendConfirm(false);
+      setError('This SOW is already signed. It cannot be sent again.');
+      return;
+    }
     setSending(true);
     await handleSaveDraft();
     const { error: updateError } = await supabase
       .from('sows')
       .update({ status: 'sent', sent_at: new Date().toISOString(), notify_client: notify })
-      .eq('id', selected.id);
+      .eq('id', selected.id)
+      .neq('status', 'signed');
     setSending(false);
     setShowSendConfirm(false);
     if (updateError) {
@@ -1131,6 +1145,11 @@ export default function AdminSowPage() {
                         <div className="se-actions">
                           <span className="se-actions-note">The preview updates as you type.</span>
                           <div className="se-actions-btns">
+                            {selected.status === 'draft' && versions.length > 1 ? (
+                              <button className="btn btn-ghost" onClick={() => handleDeleteVersion(selected)}>Discard draft</button>
+                            ) : selected.status !== 'draft' ? (
+                              <button className="btn btn-ghost" onClick={() => selectVersion(selected)}>Cancel</button>
+                            ) : null}
                             <button className="btn btn-ghost" onClick={handleSaveDraft} disabled={saving}>
                               {saving ? 'সেভ হচ্ছে…' : 'Save Draft'}
                             </button>
@@ -1392,7 +1411,13 @@ export default function AdminSowPage() {
                             {(selected.status === 'sent' || selected.status === 'viewed' || selected.status === 'declined') && (
                               <button
                                 className="btn btn-ghost btn-block btn-sm"
-                                onClick={() => {
+                                onClick={async () => {
+                                  const { data: live } = await supabase.from('sows').select('status').eq('id', selected.id).maybeSingle();
+                                  if ((live as { status?: string } | null)?.status === 'signed') {
+                                    setError('The client has just signed this SOW, so it is locked. Start a new version to change it.');
+                                    setReloadKey((k) => k + 1);
+                                    return;
+                                  }
                                   setMode('editor');
                                 }}
                               >
