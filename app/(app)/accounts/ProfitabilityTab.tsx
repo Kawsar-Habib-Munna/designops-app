@@ -5,8 +5,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { formatMoney } from '@/lib/currency';
 import { BASE, type Calc } from '@/lib/accountsCore';
+import { Donut, RankColumns, VizCard, VizRow } from './viz';
 
-export default function ProfitabilityTab({ calc }: { calc: Calc }) {
+export default function ProfitabilityTab({ calc, visuals = true }: { calc: Calc; visuals?: boolean }) {
   const [by, setBy] = useState<'project' | 'client'>('project');
   const money = (n: number) => formatMoney(n, BASE);
   const totalRevenue = calc.projectRows.reduce((n, r) => n + r.revenue, 0);
@@ -20,6 +21,16 @@ export default function ProfitabilityTab({ calc }: { calc: Calc }) {
         <div className="ac-age"><span>Project profit</span><b className={`tabular${totalRevenue - totalCosts < 0 ? ' red' : ''}`}>{money(totalRevenue - totalCosts)}</b><em>{totalRevenue > 0 ? `${Math.round(((totalRevenue - totalCosts) / totalRevenue) * 100)}% margin` : 'no income yet'}</em></div>
         <div className="ac-age"><span>Overhead</span><b className="tabular">{money(calc.overhead)}</b><em>costs with no project</em></div>
       </div>
+      {visuals && (
+<VizRow>
+        <VizCard title="Profit by project" sub="Income received minus the costs charged to the project">
+          <RankColumns ariaLabel="Profit or loss for each project" fmt={money} items={[...calc.projectRows].sort((a, b) => b.profit - a.profit).slice(0, 6).map((r) => ({ label: r.name, value: r.profit, note: r.profit < 0 ? 'Loss' : 'Profit', color: r.profit < 0 ? 'var(--viz-neg)' : 'var(--viz-1)' }))} />
+        </VizCard>
+        <VizCard title="Income by client" sub="Money received, biggest clients first">
+          <Donut fmt={money} empty="No payments received yet." items={calc.clientRows.map((c) => ({ label: c.name, value: c.revenue }))} />
+        </VizCard>
+      </VizRow>
+)}
       <section className="ac-card">
         <div className="ac-card-head">
           <h2>Profitability</h2>

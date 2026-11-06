@@ -2596,3 +2596,188 @@ create unique index if not exists fund_ledger_one_share_per_month on fund_ledger
 alter table fund_ledger enable row level security;
 drop policy if exists "admins manage fund_ledger" on fund_ledger;
 create policy "admins manage fund_ledger" on fund_ledger for all using (public.accounts_is_admin()) with check (public.accounts_is_admin());
+
+
+-- ===== Accounts: how each team member receives their pay =====
+alter table staff_salaries add column if not exists pay_method text;
+alter table staff_salaries add column if not exists pay_account_name text;
+alter table staff_salaries add column if not exists pay_account_no text;
+alter table staff_salaries add column if not exists pay_bank text;
+
+
+-- ===== Accounts: international payout details (sort code, SWIFT / BIC, country) =====
+alter table staff_salaries add column if not exists pay_code text;
+alter table staff_salaries add column if not exists pay_country text;
+
+
+-- ===== Accounts: accountant role and approvals =====
+-- Accountant role + approvals: an admin picks the accountant (Settings), everyone on the team can view, the admin and the accountant can edit,
+-- and what the accountant adds or changes stays "pending" until an admin approves it.
+alter table profiles add column if not exists is_accountant boolean not null default false;
+create or replace function public.accounts_is_accountant() returns boolean language sql stable security definer set search_path = public as $$
+  select coalesce((select is_accountant from public.profiles where id = auth.uid()), false)
+$$;
+create or replace function public.accounts_can_edit() returns boolean language sql stable security definer set search_path = public as $$
+  select public.accounts_is_admin() or public.accounts_is_accountant()
+$$;
+create or replace function public.accounts_protect_accountant_flag() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.is_accountant is distinct from old.is_accountant and auth.role() <> 'service_role' and not public.accounts_is_admin() then
+    raise exception 'Only an admin can choose the accountant.';
+  end if;
+  return new;
+end $$;
+drop trigger if exists accounts_protect_accountant_flag_trigger on profiles;
+create trigger accounts_protect_accountant_flag_trigger before update on profiles for each row execute procedure public.accounts_protect_accountant_flag();
+create or replace function public.set_accountant(p_profile uuid) returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.accounts_is_admin() then raise exception 'Only an admin can choose the accountant.'; end if;
+  update public.profiles set is_accountant = false where is_accountant;
+  if p_profile is not null then update public.profiles set is_accountant = true where id = p_profile; end if;
+end $$;
+alter table expenses add column if not exists approval text not null default 'approved' check (approval in ('pending', 'approved', 'rejected'));
+alter table expenses add column if not exists approved_by uuid references profiles(id);
+alter table expenses add column if not exists approved_at timestamptz;
+alter table payslips add column if not exists approval text not null default 'approved' check (approval in ('pending', 'approved', 'rejected'));
+alter table payslips add column if not exists approved_by uuid references profiles(id);
+alter table payslips add column if not exists approved_at timestamptz;
+alter table fund_ledger add column if not exists approval text not null default 'approved' check (approval in ('pending', 'approved', 'rejected'));
+alter table fund_ledger add column if not exists approved_by uuid references profiles(id);
+alter table fund_ledger add column if not exists approved_at timestamptz;
+alter table staff_salaries add column if not exists approval text not null default 'approved' check (approval in ('pending', 'approved', 'rejected'));
+alter table staff_salaries add column if not exists approved_by uuid references profiles(id);
+alter table staff_salaries add column if not exists approved_at timestamptz;
+create or replace function public.accounts_guard_approval() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null or public.accounts_is_admin() then
+    if new.approval = 'approved' and (tg_op = 'INSERT' or old.approval is distinct from 'approved') then
+      new.approved_by := auth.uid();
+      new.approved_at := now();
+    end if;
+    return new;
+  end if;
+  new.approval := 'pending';
+  new.approved_by := null;
+  new.approved_at := null;
+  return new;
+end $$;
+drop trigger if exists accounts_guard_expenses on expenses;
+create trigger accounts_guard_expenses before insert or update on expenses for each row execute procedure public.accounts_guard_approval();
+drop trigger if exists accounts_guard_payslips on payslips;
+create trigger accounts_guard_payslips before insert or update on payslips for each row execute procedure public.accounts_guard_approval();
+drop trigger if exists accounts_guard_fund_ledger on fund_ledger;
+create trigger accounts_guard_fund_ledger before insert or update on fund_ledger for each row execute procedure public.accounts_guard_approval();
+drop trigger if exists accounts_guard_staff_salaries on staff_salaries;
+create trigger accounts_guard_staff_salaries before insert or update on staff_salaries for each row execute procedure public.accounts_guard_approval();
+drop policy if exists "admins manage expenses" on expenses;
+drop policy if exists "team manages expenses" on expenses;
+drop policy if exists "accounts view expenses" on expenses;
+drop policy if exists "accounts insert expenses" on expenses;
+drop policy if exists "accounts update expenses" on expenses;
+drop policy if exists "accounts delete expenses" on expenses;
+create policy "accounts view expenses" on expenses for select using (public.is_team_member());
+create policy "accounts insert expenses" on expenses for insert with check (public.accounts_can_edit());
+create policy "accounts update expenses" on expenses for update using (public.accounts_can_edit()) with check (public.accounts_can_edit());
+create policy "accounts delete expenses" on expenses for delete using (public.accounts_is_admin() or (public.accounts_can_edit() and approval <> 'approved'));
+drop policy if exists "admins manage payslips" on payslips;
+drop policy if exists "team manages payslips" on payslips;
+drop policy if exists "accounts view payslips" on payslips;
+drop policy if exists "accounts insert payslips" on payslips;
+drop policy if exists "accounts update payslips" on payslips;
+drop policy if exists "accounts delete payslips" on payslips;
+create policy "accounts view payslips" on payslips for select using (public.is_team_member());
+create policy "accounts insert payslips" on payslips for insert with check (public.accounts_can_edit());
+create policy "accounts update payslips" on payslips for update using (public.accounts_can_edit()) with check (public.accounts_can_edit());
+create policy "accounts delete payslips" on payslips for delete using (public.accounts_is_admin() or (public.accounts_can_edit() and approval <> 'approved'));
+drop policy if exists "admins manage fund_ledger" on fund_ledger;
+drop policy if exists "team manages fund_ledger" on fund_ledger;
+drop policy if exists "accounts view fund_ledger" on fund_ledger;
+drop policy if exists "accounts insert fund_ledger" on fund_ledger;
+drop policy if exists "accounts update fund_ledger" on fund_ledger;
+drop policy if exists "accounts delete fund_ledger" on fund_ledger;
+create policy "accounts view fund_ledger" on fund_ledger for select using (public.is_team_member());
+create policy "accounts insert fund_ledger" on fund_ledger for insert with check (public.accounts_can_edit());
+create policy "accounts update fund_ledger" on fund_ledger for update using (public.accounts_can_edit()) with check (public.accounts_can_edit());
+create policy "accounts delete fund_ledger" on fund_ledger for delete using (public.accounts_is_admin() or (public.accounts_can_edit() and approval <> 'approved'));
+drop policy if exists "admins manage staff_salaries" on staff_salaries;
+drop policy if exists "team manages staff_salaries" on staff_salaries;
+drop policy if exists "accounts view staff_salaries" on staff_salaries;
+drop policy if exists "accounts insert staff_salaries" on staff_salaries;
+drop policy if exists "accounts update staff_salaries" on staff_salaries;
+drop policy if exists "accounts delete staff_salaries" on staff_salaries;
+create policy "accounts view staff_salaries" on staff_salaries for select using (public.is_team_member());
+create policy "accounts insert staff_salaries" on staff_salaries for insert with check (public.accounts_can_edit());
+create policy "accounts update staff_salaries" on staff_salaries for update using (public.accounts_can_edit()) with check (public.accounts_can_edit());
+create policy "accounts delete staff_salaries" on staff_salaries for delete using (public.accounts_is_admin() or (public.accounts_can_edit() and approval <> 'approved'));
+drop policy if exists "admins manage fx_rates" on fx_rates;
+drop policy if exists "team manages fx_rates" on fx_rates;
+drop policy if exists "accounts view fx_rates" on fx_rates;
+drop policy if exists "accounts insert fx_rates" on fx_rates;
+drop policy if exists "accounts update fx_rates" on fx_rates;
+drop policy if exists "accounts delete fx_rates" on fx_rates;
+create policy "accounts view fx_rates" on fx_rates for select using (public.is_team_member());
+create policy "accounts insert fx_rates" on fx_rates for insert with check (public.accounts_can_edit());
+create policy "accounts update fx_rates" on fx_rates for update using (public.accounts_can_edit()) with check (public.accounts_can_edit());
+create policy "accounts delete fx_rates" on fx_rates for delete using (public.accounts_can_edit());
+drop policy if exists "admins manage budgets" on budgets;
+drop policy if exists "team manages budgets" on budgets;
+drop policy if exists "accounts view budgets" on budgets;
+drop policy if exists "accounts insert budgets" on budgets;
+drop policy if exists "accounts update budgets" on budgets;
+drop policy if exists "accounts delete budgets" on budgets;
+create policy "accounts view budgets" on budgets for select using (public.is_team_member());
+create policy "accounts insert budgets" on budgets for insert with check (public.accounts_can_edit());
+create policy "accounts update budgets" on budgets for update using (public.accounts_can_edit()) with check (public.accounts_can_edit());
+create policy "accounts delete budgets" on budgets for delete using (public.accounts_can_edit());
+drop policy if exists "admins manage recurring_expenses" on recurring_expenses;
+drop policy if exists "team manages recurring_expenses" on recurring_expenses;
+drop policy if exists "accounts view recurring_expenses" on recurring_expenses;
+drop policy if exists "accounts insert recurring_expenses" on recurring_expenses;
+drop policy if exists "accounts update recurring_expenses" on recurring_expenses;
+drop policy if exists "accounts delete recurring_expenses" on recurring_expenses;
+create policy "accounts view recurring_expenses" on recurring_expenses for select using (public.is_team_member());
+create policy "accounts insert recurring_expenses" on recurring_expenses for insert with check (public.accounts_can_edit());
+create policy "accounts update recurring_expenses" on recurring_expenses for update using (public.accounts_can_edit()) with check (public.accounts_can_edit());
+create policy "accounts delete recurring_expenses" on recurring_expenses for delete using (public.accounts_can_edit());
+drop policy if exists "admins manage accounts_audit" on accounts_audit;
+drop policy if exists "team manages accounts_audit" on accounts_audit;
+drop policy if exists "accounts view accounts_audit" on accounts_audit;
+drop policy if exists "accounts insert accounts_audit" on accounts_audit;
+drop policy if exists "accounts admin change accounts_audit" on accounts_audit;
+create policy "accounts view accounts_audit" on accounts_audit for select using (public.is_team_member());
+create policy "accounts insert accounts_audit" on accounts_audit for insert with check (public.accounts_can_edit());
+create policy "accounts admin change accounts_audit" on accounts_audit for all using (public.accounts_is_admin()) with check (public.accounts_is_admin());
+
+
+-- ===== Accounts: pay rounds (minimum amount, equal split, extra to the Agency fund) =====
+-- Pay rounds: when the agency has at least the minimum (20,000) the money is split equally; the leftover goes to the Agency fund
+create table if not exists pay_rounds (
+  id uuid default gen_random_uuid() primary key,
+  round_no int not null,
+  from_date date not null,
+  round_date date not null default current_date,
+  pool numeric not null check (pool >= 0),
+  parts int not null check (parts > 0),
+  share numeric not null default 0,
+  remainder numeric not null default 0,
+  created_at timestamptz default now()
+);
+alter table pay_rounds add column if not exists approval text not null default 'approved' check (approval in ('pending', 'approved', 'rejected'));
+alter table pay_rounds add column if not exists approved_by uuid references profiles(id);
+alter table pay_rounds add column if not exists approved_at timestamptz;
+alter table pay_rounds enable row level security;
+drop trigger if exists accounts_guard_pay_rounds on pay_rounds;
+create trigger accounts_guard_pay_rounds before insert or update on pay_rounds for each row execute procedure public.accounts_guard_approval();
+drop policy if exists "accounts view pay_rounds" on pay_rounds;
+drop policy if exists "accounts insert pay_rounds" on pay_rounds;
+drop policy if exists "accounts update pay_rounds" on pay_rounds;
+drop policy if exists "accounts delete pay_rounds" on pay_rounds;
+create policy "accounts view pay_rounds" on pay_rounds for select using (public.is_team_member());
+create policy "accounts insert pay_rounds" on pay_rounds for insert with check (public.accounts_can_edit());
+create policy "accounts update pay_rounds" on pay_rounds for update using (public.accounts_can_edit()) with check (public.accounts_can_edit());
+create policy "accounts delete pay_rounds" on pay_rounds for delete using (public.accounts_is_admin() or (public.accounts_can_edit() and approval <> 'approved'));
+alter table fund_ledger add column if not exists round_id uuid references pay_rounds(id) on delete cascade;
+alter table expenses add column if not exists round_id uuid references pay_rounds(id) on delete cascade;
+alter table fund_ledger drop constraint if exists fund_ledger_source_check;
+alter table fund_ledger add constraint fund_ledger_source_check check (source in ('distribution', 'manual', 'round'));
+create unique index if not exists fund_ledger_one_share_per_round on fund_ledger (fund, round_id) where round_id is not null;

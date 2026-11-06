@@ -7,6 +7,7 @@ const RULES: { test: RegExp; route: ShellRoute | null }[] = [
   { test: /^\/dashboard\/?$/, route: { root: 'dashboard-root', active: 'Dashboard' } },
   { test: /^\/board\/?$/, route: { root: 'kanban-root', active: 'Tasks' } },
   { test: /^\/accounts\/?$/, route: { root: 'todos-root accounts-root', active: 'Accounts' } },
+  { test: /^\/accountant\/?$/, route: { root: 'todos-root accounts-root', active: 'Accountant' } },
   { test: /^\/calendar\/?$/, route: { root: 'calendar-root', active: 'Calendar' } },
   { test: /^\/clients\/[^/]+\/create-project\/?$/, route: { root: 'clientslist-root client-detail-root create-project-root', active: 'Clients' } },
   { test: /^\/clients\/[^/]+\/?$/, route: { root: 'clientslist-root client-detail-root', active: 'Clients' } },

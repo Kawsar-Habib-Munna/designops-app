@@ -51,6 +51,7 @@ const NAV_ITEMS: { icon: IconName; label: string; href: string; adminOnly?: bool
   { icon: 'users', label: 'Team', href: '/team' },
   { icon: 'building', label: 'Clients', href: '/clients' },
   { icon: 'wallet', label: 'Accounts', href: '/accounts', adminOnly: true },
+  { icon: 'bar', label: 'Accountant', href: '/accountant' },
   { icon: 'file', label: 'Files', href: '/files' },
   { icon: 'message', label: 'Discussions', href: '/discussions' },
   { icon: 'layers', label: 'Portfolio', href: '/portfolio' },
