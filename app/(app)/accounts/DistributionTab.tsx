@@ -308,8 +308,19 @@ export default function DistributionTab({ calc, today, audit, canEdit, isAdmin, 
                   <input className="ac-input" type="date" value={fromDate} max={today} onChange={(e) => setFromDate(e.target.value)} disabled={!canEdit} />
                 </label>
               )}
-              <span className="ac-bar" style={{ display: 'block' }}><i style={{ width: `${Math.min(100, (pool / MIN_ROUND) * 100)}%` }} /></span>
-              <p className="ac-note">{canRun ? `Ready. ${money(pool)} can be shared now.` : `Not yet. ${money(Math.max(MIN_ROUND - pool, 0))} more is needed (the minimum is ${money(MIN_ROUND)}).`} Money counted: everything received since {formatDateLong(startFrom)}, minus what earlier rounds already shared.</p>
+              <div className={`ac-goal${canRun ? ' ready' : ''}`}>
+                <div className="ac-goal-top">
+                  <div className="ac-goal-amt"><b className="tabular">{money(pool)}</b><span>of {money(MIN_ROUND)}</span></div>
+                  <span className="ac-goal-pill">{canRun ? 'Ready to share' : `${Math.min(100, Math.floor((pool / MIN_ROUND) * 100))}%`}</span>
+                </div>
+                <div className="ac-goal-track" role="progressbar" aria-valuemin={0} aria-valuemax={MIN_ROUND} aria-valuenow={Math.min(pool, MIN_ROUND)} aria-label="Money waiting against the minimum for a pay round">
+                  <i style={{ width: `${Math.min(100, (pool / MIN_ROUND) * 100)}%` }} />
+                  <s style={{ left: '25%' }} /><s style={{ left: '50%' }} /><s style={{ left: '75%' }} />
+                </div>
+                <div className="ac-goal-scale tabular"><span>{money(0)}</span><span>{money(MIN_ROUND / 2)}</span><span>{money(MIN_ROUND)}</span></div>
+                <p className="ac-goal-msg">{canRun ? `${money(pool)} can be shared now.` : <><b>{money(Math.max(MIN_ROUND - pool, 0))}</b> more is needed before the next round.</>}</p>
+                <p className="ac-goal-meta">Counting everything received since {formatDateLong(startFrom)}, minus what earlier rounds already shared.</p>
+              </div>
             </div>
             <div className="ac-scroll">
               <table className="ac-table">

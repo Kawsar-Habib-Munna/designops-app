@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { formatMoney } from '@/lib/currency';
 import { BASE, monthLabel, type Calc } from '@/lib/accountsCore';
+import { smoothPath } from './viz';
 
 const W = 520;
 const H = 230;
@@ -116,8 +117,7 @@ export default function OverviewCharts({ calc }: { calc: Calc }) {
 
   const barW = 20;
   const last = n - 1;
-  const linePts = running.map((v, i) => `${cx(i)},${yC(v)}`).join(' ');
-  const areaPts = n > 0 ? `${cx(0)},${yC(0)} ${linePts} ${cx(last)},${yC(0)}` : '';
+  const linePath = smoothPath(running.map((v, i): [number, number] => [cx(i), yC(v)]));
 
   return (
     <div className="ac-viz-row">
@@ -152,8 +152,8 @@ export default function OverviewCharts({ calc }: { calc: Calc }) {
         <div className="ac-viz-plot">
           <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Total money at the end of each of the last 6 months. The current total is the last point.">
             {axes(tC, yC)}
-            {n > 0 && <polygon points={areaPts} fill="var(--viz-1)" opacity="0.1" />}
-            {n > 0 && <polyline points={linePts} fill="none" stroke="var(--viz-1)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
+            {n > 0 && <path d={`${linePath} L${cx(last)},${yC(0)} L${cx(0)},${yC(0)} Z`} fill="var(--viz-1)" opacity="0.1" />}
+            {n > 0 && <path d={linePath} fill="none" stroke="var(--viz-1)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
             {tip?.chart === 'c' && <line x1={tip.t.x} x2={tip.t.x} y1={M.t} y2={M.t + PH} className="ac-viz-grid" />}
             {running.map((v, i) => (tip?.chart === 'c' && tip.t.i === i) || i === last ? <circle key={i} cx={cx(i)} cy={yC(v)} r="4.5" fill="var(--viz-1)" stroke="var(--viz-surface)" strokeWidth="2" /> : null)}
             {n > 0 && <text x={Math.min(cx(last), W - M.r)} y={yC(running[last]) - 10} textAnchor="end" className="ac-viz-value">{money(running[last])}</text>}

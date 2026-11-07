@@ -519,7 +519,7 @@ export default function AccountsApp({ variant }: { variant: 'admin' | 'desk' }) 
             {tab === 'approvals' && variant === 'admin' && <ApprovalsTab pending={data.pending} onDecide={decide} onApproveAll={approveAll} />}
             <StatementPreview doc={preview} onClose={() => setPreview(null)} />
             {tab === 'distribution' && <DistributionTab calc={calc} today={today} audit={audit} canEdit={canEdit} isAdmin={data.isAdmin} userId={user?.id ?? null} onChanged={load} visuals={showViz} />}
-            {tab === 'payroll' && <PayrollTab rates={data.rates} today={today} audit={audit} userId={user?.id ?? null} onChanged={load} canEdit={canEdit} isAdmin={data.isAdmin} visuals={showViz} />}
+            {tab === 'payroll' && <PayrollTab received={calc.received} rates={data.rates} today={today} audit={audit} userId={user?.id ?? null} onChanged={load} canEdit={canEdit} isAdmin={data.isAdmin} visuals={showViz} />}
             {tab === 'profit' && <ProfitabilityTab calc={calc} visuals={showViz} />}
             {tab === 'settings' && (
               <SettingsTab data={data} missing={[...calc.missing]} thisMonth={thisMonth} readOnly={!canEdit} accountant={variant === 'admin' && data.isAdmin ? <AccountantCard audit={audit} onChanged={load} /> : undefined} budgetChart={showViz && calc.budgetRows.length > 0 ? (

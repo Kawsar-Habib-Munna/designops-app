@@ -136,6 +136,35 @@ export function Columns({ labels, series, stacked = false, fmt, ariaLabel, tipTi
   );
 }
 
+// A smooth curve through the points (monotone cubic: it never dips below or rises above the data between points).
+export function smoothPath(pts: [number, number][]): string {
+  const n = pts.length;
+  if (n === 0) return '';
+  if (n === 1) return `M${pts[0][0]},${pts[0][1]}`;
+  const dx: number[] = [];
+  const sl: number[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    dx.push(pts[i + 1][0] - pts[i][0]);
+    sl.push((pts[i + 1][1] - pts[i][1]) / (dx[i] || 1));
+  }
+  const m: number[] = [sl[0]];
+  for (let i = 1; i < n - 1; i++) m.push(sl[i - 1] * sl[i] <= 0 ? 0 : (sl[i - 1] + sl[i]) / 2);
+  m.push(sl[n - 2]);
+  for (let i = 0; i < n - 1; i++) {
+    if (sl[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+    const a = m[i] / sl[i];
+    const b = m[i + 1] / sl[i];
+    const h = Math.hypot(a, b);
+    if (h > 3) { m[i] = (3 * a * sl[i]) / h; m[i + 1] = (3 * b * sl[i]) / h; }
+  }
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < n - 1; i++) {
+    const k = dx[i] / 3;
+    d += ` C${pts[i][0] + k},${pts[i][1] + m[i] * k} ${pts[i + 1][0] - k},${pts[i + 1][1] - m[i + 1] * k} ${pts[i + 1][0]},${pts[i + 1][1]}`;
+  }
+  return d;
+}
+
 // ---------------------------------------------------------------- lines (one or more series)
 export function MultiLine({ labels, series, fmt, ariaLabel }: { labels: string[]; series: Series[]; fmt: (n: number) => string; ariaLabel: string }) {
   const [hover, setHover] = useState<number | null>(null);
@@ -152,8 +181,8 @@ export function MultiLine({ labels, series, fmt, ariaLabel }: { labels: string[]
         {hover !== null && <line x1={cx(hover)} x2={cx(hover)} y1={M.t} y2={M.t + PH} className="ac-viz-grid" />}
         {series.map((s) => (
           <g key={s.name}>
-            {series.length === 1 && n > 0 && <polygon points={`${cx(0)},${y(0)} ${s.values.map((v, i) => `${cx(i)},${y(v)}`).join(' ')} ${cx(n - 1)},${y(0)}`} fill={s.color} opacity="0.1" />}
-            <polyline points={s.values.map((v, i) => `${cx(i)},${y(v)}`).join(' ')} fill="none" stroke={s.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+            {series.length === 1 && n > 0 && <path d={`${smoothPath(s.values.map((v, i): [number, number] => [cx(i), y(v)]))} L${cx(n - 1)},${y(0)} L${cx(0)},${y(0)} Z`} fill={s.color} opacity="0.1" />}
+            <path d={smoothPath(s.values.map((v, i): [number, number] => [cx(i), y(v)]))} fill="none" stroke={s.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
             {s.values.map((v, i) => (i === n - 1 || hover === i ? <circle key={i} cx={cx(i)} cy={y(v)} r="4.5" fill={s.color} stroke="var(--viz-surface)" strokeWidth="2" /> : null))}
           </g>
         ))}

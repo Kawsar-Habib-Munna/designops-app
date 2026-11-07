@@ -292,3 +292,19 @@
 .accounts-root .ac-drawer .ac-rec-list small { font-size: 11px; }
 .accounts-root .ac-drawer .ac-set-points { font-size: 12px; }
 .accounts-root .ac-drawer .ac-link, .accounts-root .ac-drawer .ac-linkbtn { font-size: 12px; }
+
+/* next pay round: progress toward the minimum */
+.accounts-root .ac-goal { display: grid; gap: 12px; padding: 18px 20px; border: 1px solid var(--border-soft); border-radius: 12px; background: var(--surface-muted); }
+.accounts-root .ac-goal-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.accounts-root .ac-goal-amt { display: flex; align-items: baseline; gap: 8px; }
+.accounts-root .ac-goal-amt b { font-size: 17px; font-weight: 800; letter-spacing: -.02em; color: var(--ink); }
+.accounts-root .ac-goal-amt span { font-size: 12px; color: var(--ink-faint); }
+.accounts-root .ac-goal-pill { padding: 2px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 700; }
+.accounts-root .ac-goal.ready .ac-goal-pill { background: #E3F4EA; color: #167A43; }
+.accounts-root .ac-goal-track { position: relative; height: 8px; border-radius: 999px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--border-soft); overflow: hidden; }
+.accounts-root .ac-goal-track i { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--accent); transition: width .5s ease; }
+.accounts-root .ac-goal.ready .ac-goal-track i { background: #1E9E5A; }
+.accounts-root .ac-goal-track s { position: absolute; top: 2px; bottom: 2px; width: 1.5px; margin-left: -1px; border-radius: 2px; background: rgba(255, 255, 255, .7); }
+.accounts-root .ac-goal-scale { margin-top: -4px; display: flex; justify-content: space-between; font-size: 10.5px; color: var(--ink-faint); }
+.accounts-root .ac-goal-msg { margin: 6px 0 0; font-size: 12.5px; color: var(--ink); }
+.accounts-root .ac-goal-meta { margin: 0; line-height: 1.5; font-size: 11.5px; color: var(--ink-faint); }

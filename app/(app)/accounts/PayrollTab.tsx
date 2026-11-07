@@ -18,20 +18,23 @@ import { BASE, CURRENCY_CHOICES, monthLabel, type FxRate } from '@/lib/accountsC
 
 const PAY_METHODS = ['Bank transfer', 'UK bank transfer', 'International transfer', 'Card', 'bKash', 'Nagad', 'Rocket', 'Cash', 'Cheque', 'PayPal', 'Wise', 'Other'];
 type StaffRow = { approval?: string; id: string; profile_id: string | null; name: string; role: string | null; base_salary: number; currency: string; active: boolean; pay_method: string | null; pay_account_name: string | null; pay_account_no: string | null; pay_bank: string | null; pay_code: string | null; pay_country: string | null };
-type Staff = StaffRow & { virtual?: boolean }; // virtual: a team member whose salary is not set yet
+type Staff = StaffRow & { virtual?: boolean; auto?: boolean }; // virtual: no saved row yet; auto: the pay is the member's share from Distribution
+type RoundRow = { round_date: string; share: number; approval: string };
 type Member = { id: string; full_name: string; role: string | null };
 
 async function fetchPayroll() {
-  const [st, sl, pr] = await Promise.all([
+  const [st, sl, pr, rd] = await Promise.all([
     supabase.from('staff_salaries').select('id, profile_id, name, role, base_salary, currency, active, pay_method, pay_account_name, pay_account_no, pay_bank, pay_code, pay_country, approval').order('name'),
     supabase.from('payslips').select('id, staff_id, month, base, bonus, deduction, status, paid_on, expense_id, approval'),
     supabase.from('profiles').select('id, full_name, role').order('full_name'),
+    supabase.from('pay_rounds').select('round_date, share, approval'),
   ]);
-  return { ready: !st.error && !sl.error, rows: (st.data as StaffRow[]) ?? [], slips: (sl.data as Slip[]) ?? [], members: (pr.data as Member[]) ?? [] };
+  return { ready: !st.error && !sl.error, rows: (st.data as StaffRow[]) ?? [], slips: (sl.data as Slip[]) ?? [], members: (pr.data as Member[]) ?? [], rounds: (rd.data as RoundRow[]) ?? [] };
 }
 type Slip = { id: string; staff_id: string; month: string; base: number; bonus: number; deduction: number; status: 'pending' | 'paid'; paid_on: string | null; expense_id: string | null; approval: string };
 
 type Props = {
+  received: { month: string; base: number }[]; // money received, in the base currency
   rates: FxRate[];
   today: string;
   audit: (action: string, entity: string, entityId: string | null, detail: string) => Promise<void>;
@@ -44,11 +47,12 @@ type Props = {
 
 const net = (s: Slip) => Number(s.base) + Number(s.bonus) - Number(s.deduction);
 
-export default function PayrollTab({ rates, today, audit, userId, onChanged, canEdit, isAdmin, visuals = true }: Props) {
+export default function PayrollTab({ received, rates, today, audit, userId, onChanged, canEdit, isAdmin, visuals = true }: Props) {
   const ap = isAdmin ? { approval: 'approved' } : {};
   const [rows, setRows] = useState<StaffRow[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [slips, setSlips] = useState<Slip[]>([]);
+  const [rounds, setRounds] = useState<RoundRow[]>([]);
   const [ready, setReady] = useState(true);
   const [month, setMonth] = useState(today.slice(0, 7));
   const [msg, setMsg] = useState<string | null>(null);
@@ -82,6 +86,7 @@ export default function PayrollTab({ rates, today, audit, userId, onChanged, can
     setRows(r.rows);
     setSlips(r.slips);
     setMembers(r.members);
+    setRounds(r.rounds);
   }, []);
   useEffect(() => {
     let cancelled = false;
@@ -92,26 +97,44 @@ export default function PayrollTab({ rates, today, audit, userId, onChanged, can
       setRows(r.rows);
       setSlips(r.slips);
       setMembers(r.members);
+      setRounds(r.rounds);
     })();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // every team member (profile) is listed automatically; the salary is saved the first time you set it
+  const rateMap = new Map(rates.map((r) => [r.currency, Number(r.rate_to_base)]));
+  const toBase = (amount: number, c: string) => (c === BASE ? amount : amount * (rateMap.get(c) ?? 0));
+  const fromBase = (amount: number, c: string) => (c === BASE ? amount : amount / (rateMap.get(c) || 1));
+
+  // Each team member's pay is worked out from Distribution: their equal share of the money shared in the month.
+  // Pay rounds made in the month count; if there were none, the month's received money is split equally (members + Allah + Agency fund).
+  const memberCount = members.length;
+  const shareOf = (m: string) => {
+    const done = rounds.filter((r) => r.approval !== 'rejected' && r.round_date.slice(0, 7) === m);
+    if (done.length > 0) return done.reduce((n, r) => n + Number(r.share), 0);
+    const income = received.filter((r) => r.month === m).reduce((n, r) => n + r.base, 0);
+    return Math.floor(income / (memberCount + 2));
+  };
+  const monthShare = shareOf(month);
+
+  // every team member (profile) is listed automatically with their automatic share; outside people keep a fixed salary
   const staff: Staff[] = [
     ...members.map((m): Staff => {
       const r = rows.find((x) => x.profile_id === m.id);
-      return r ? { ...r, name: m.full_name, role: m.role } : { id: 'p:' + m.id, profile_id: m.id, name: m.full_name, role: m.role, base_salary: 0, currency: BASE, active: true, pay_method: null, pay_account_name: null, pay_account_no: null, pay_bank: null, pay_code: null, pay_country: null, virtual: true };
+      return r
+        ? { ...r, name: m.full_name, role: m.role, base_salary: fromBase(monthShare, r.currency), auto: true }
+        : { id: 'p:' + m.id, profile_id: m.id, name: m.full_name, role: m.role, base_salary: monthShare, currency: BASE, active: true, pay_method: null, pay_account_name: null, pay_account_no: null, pay_bank: null, pay_code: null, pay_country: null, virtual: true, auto: true };
     }),
     ...rows.filter((r) => !r.profile_id || !members.some((m) => m.id === r.profile_id)),
   ];
-
-  const rateMap = new Map(rates.map((r) => [r.currency, Number(r.rate_to_base)]));
-  const toBase = (amount: number, c: string) => (c === BASE ? amount : amount * (rateMap.get(c) ?? 0));
   const byId = new Map(staff.map((s) => [s.id, s]));
   const monthSlips = slips.filter((s) => s.month === month && byId.has(s.staff_id)).sort((a, b) => (byId.get(a.staff_id)?.name ?? '').localeCompare(byId.get(b.staff_id)?.name ?? ''));
-  const missingSlips = staff.filter((s) => !s.virtual && s.active && (s.approval ?? 'approved') === 'approved' && !monthSlips.some((p) => p.staff_id === s.id));
+  const missingSlips = staff.filter((s) => s.active && (!s.auto || Number(s.base_salary) > 0) && (s.virtual || (s.approval ?? 'approved') === 'approved') && !monthSlips.some((p) => p.staff_id === s.id));
+  // unpaid payslips of team members follow the share, so they stay right when more money arrives
+  const staleSlips = monthSlips.filter((p) => p.status === 'pending' && byId.get(p.staff_id)?.auto && Math.abs(Number(p.base) - Number(byId.get(p.staff_id)?.base_salary ?? 0)) >= 0.01);
+  const todoCount = missingSlips.length + staleSlips.length;
   const total = monthSlips.reduce((n, p) => n + toBase(net(p), byId.get(p.staff_id)?.currency ?? BASE), 0);
   const paid = monthSlips.filter((p) => p.status === 'paid' && p.approval === 'approved').reduce((n, p) => n + toBase(net(p), byId.get(p.staff_id)?.currency ?? BASE), 0);
   const monthlyBase = staff.filter((s) => s.active).reduce((n, s) => n + toBase(Number(s.base_salary), s.currency), 0);
@@ -132,7 +155,7 @@ export default function PayrollTab({ rates, today, audit, userId, onChanged, can
     }
   })();
   const payLine = (m: string | null, no: string | null, code: string | null) => (!no ? '' : m === 'Card' ? `•••• ${no}` : m === 'UK bank transfer' && code ? `${code} · ${no}` : no);
-  const formTitle = !editTarget ? 'Add an outside person' : editTarget.virtual ? `Set salary for ${editTarget.name}` : `Edit ${editTarget.name}`;
+  const formTitle = !editTarget ? 'Add an outside person' : editTarget.virtual ? `Set pay details for ${editTarget.name}` : `Edit ${editTarget.name}`;
   const formSub = isMember ? 'Name and role come from the team profile.' : 'For freelancers or anyone without a login. Team members are added automatically.';
 
   // the six months ending at the chosen month: net pay that is paid (and approved) against what is still to pay
@@ -168,18 +191,18 @@ export default function PayrollTab({ rates, today, audit, userId, onChanged, can
     }
     if (pMethod === 'Card' && pAccNo.trim() && !/^\d{4}$/.test(pAccNo.trim())) return flash('Enter only the last 4 digits of the card.');
     const pay = { pay_method: pMethod, pay_account_name: cash ? null : pAccName.trim() || null, pay_account_no: cash || pMethod === 'Cheque' ? null : acct || null, pay_bank: spec.bank ? pBank.trim() || null : null, pay_code: uk || intl ? code || null : null, pay_country: intl ? pCountry.trim() || null : null };
-    const base = Number(salary);
-    if (!name.trim()) return flash('Enter the name.');
-    if (!salary || Number.isNaN(base) || base < 0) return flash('Enter a valid salary.');
     const target = editId ? staff.find((x) => x.id === editId) : null;
+    const base = target?.auto ? 0 : Number(salary);
+    if (!name.trim()) return flash('Enter the name.');
+    if (!target?.auto && (!salary || Number.isNaN(base) || base < 0)) return flash('Enter a valid salary.');
     if (target?.virtual) {
-      const { data: row, error } = await supabase.from('staff_salaries').insert({ profile_id: target.profile_id, name: target.name, role: target.role, base_salary: base, currency: cur, ...pay }).select('id').single();
+      const { data: row, error } = await supabase.from('staff_salaries').insert({ profile_id: target.profile_id, name: target.name, role: target.role, base_salary: 0, currency: BASE, ...pay }).select('id').single();
       if (error) return flash(error.message);
-      await audit('salary_set', 'staff', (row as { id: string }).id, `${target.name}: ${formatMoney(base, cur)} / month`);
+      await audit('salary_set', 'staff', (row as { id: string }).id, `${target.name}: pay details saved`);
     } else if (editId) {
-      const { error } = await supabase.from('staff_salaries').update({ ...(target?.profile_id ? {} : { name: name.trim(), role: role.trim() || null }), base_salary: base, currency: cur, ...pay, ...ap }).eq('id', editId);
+      const { error } = await supabase.from('staff_salaries').update({ ...(target?.profile_id ? {} : { name: name.trim(), role: role.trim() || null }), ...(target?.auto ? {} : { base_salary: base, currency: cur }), ...pay, ...ap }).eq('id', editId);
       if (error) return flash(error.message);
-      await audit('staff_updated', 'staff', editId, `${name.trim()}: ${formatMoney(base, cur)} / month`);
+      await audit('staff_updated', 'staff', editId, target?.auto ? `${name.trim()}: pay details updated` : `${name.trim()}: ${formatMoney(base, cur)} / month`);
     } else {
       const { data: row, error } = await supabase.from('staff_salaries').insert({ name: name.trim(), role: role.trim() || null, base_salary: base, currency: cur, ...pay }).select('id').single();
       if (error) return flash(error.message);
@@ -206,12 +229,25 @@ export default function PayrollTab({ rates, today, audit, userId, onChanged, can
   }
 
   async function generate() {
-    if (missingSlips.length === 0) return;
-    const rows = missingSlips.map((s) => ({ staff_id: s.id, month, base: s.base_salary, bonus: 0, deduction: 0 }));
-    const { error } = await supabase.from('payslips').insert(rows);
-    if (error) return flash(error.message);
-    await audit('payslips_generated', 'payroll', null, `${rows.length} payslip${rows.length === 1 ? '' : 's'} for ${monthLabel(month)}`);
-    flash(`${rows.length} payslip${rows.length === 1 ? '' : 's'} created.`);
+    if (todoCount === 0) return;
+    const ids = new Map<string, string>();
+    for (const s of missingSlips) {
+      if (!s.virtual) { ids.set(s.id, s.id); continue; }
+      const { data: row, error } = await supabase.from('staff_salaries').insert({ profile_id: s.profile_id, name: s.name, role: s.role, base_salary: 0, currency: BASE }).select('id').single();
+      if (error) return flash(error.message);
+      ids.set(s.id, (row as { id: string }).id);
+    }
+    const rows = missingSlips.map((s) => ({ staff_id: ids.get(s.id) as string, month, base: s.base_salary, bonus: 0, deduction: 0 }));
+    if (rows.length > 0) {
+      const { error } = await supabase.from('payslips').insert(rows);
+      if (error) return flash(error.message);
+    }
+    for (const p of staleSlips) {
+      const { error } = await supabase.from('payslips').update({ base: byId.get(p.staff_id)?.base_salary ?? p.base, ...ap }).eq('id', p.id);
+      if (error) return flash(error.message);
+    }
+    await audit('payslips_generated', 'payroll', null, `${rows.length} created, ${staleSlips.length} updated for ${monthLabel(month)} (each member ${formatMoney(monthShare, BASE)})`);
+    flash(`${rows.length} payslip${rows.length === 1 ? '' : 's'} created${staleSlips.length ? `, ${staleSlips.length} updated` : ''}.`);
     await reload();
   }
   async function saveAdjust(p: Slip) {
@@ -347,10 +383,11 @@ export default function PayrollTab({ rates, today, audit, userId, onChanged, can
           <span className="ac-right" style={{ display: 'inline-flex', gap: 8 }}>
             <button type="button" className="ac-btn" onClick={previewSheet} disabled={monthSlips.length === 0}>Preview PDF</button>
             <button type="button" className="ac-btn" onClick={exportCsv} disabled={monthSlips.length === 0}>Export CSV</button>
-            {canEdit && <button type="button" className="ac-btn" onClick={() => void generate()} disabled={missingSlips.length === 0}>Generate ({missingSlips.length})</button>}
+            {canEdit && <button type="button" className="ac-btn" onClick={() => void generate()} disabled={todoCount === 0}>{staleSlips.length > 0 && missingSlips.length === 0 ? 'Update' : 'Generate'} ({todoCount})</button>}
             {canEdit && <button type="button" className="ac-primary" onClick={() => void payAll()} disabled={!monthSlips.some((p) => p.status === 'pending')}>Pay all</button>}
           </span>
         </div>
+        {memberCount > 0 && <p className="ac-note" style={{ margin: '0 22px 12px' }}>Team pay is worked out automatically from Distribution: each of the {memberCount} members gets an equal share, <b>{formatMoney(monthShare, BASE)}</b> for {monthLabel(month)}.</p>}
         <div className="ac-scroll">
           <table className="ac-table">
             <thead><tr><th>Name</th><th className="ac-r">Base</th><th className="ac-r">Bonus</th><th className="ac-r">Deduction</th><th className="ac-r">Net</th><th>Status</th><th /></tr></thead>
@@ -371,7 +408,7 @@ export default function PayrollTab({ rates, today, audit, userId, onChanged, can
                   </tr>
                 );
               })}
-              {monthSlips.length === 0 && <tr><td colSpan={7} className="ac-empty-cell">{staff.every((x) => x.virtual) ? 'Set each team member salary below, then generate the payslips.' : `No payslips for ${monthLabel(month)} yet. Press Generate.`}</td></tr>}
+              {monthSlips.length === 0 && <tr><td colSpan={7} className="ac-empty-cell">{monthShare <= 0 && staff.every((x) => x.auto) ? `Nothing has been shared for ${monthLabel(month)} yet, so there is no pay to give.` : `No payslips for ${monthLabel(month)} yet. Press Generate.`}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -381,17 +418,17 @@ export default function PayrollTab({ rates, today, audit, userId, onChanged, can
         <div className="ac-card-head"><h2>Team salaries</h2><span className="ac-count tabular">{staff.length}</span></div>
         <div className="ac-scroll">
           <table className="ac-table">
-            <thead><tr><th>Name</th><th>Role</th><th className="ac-r">Monthly salary</th><th>Receives by</th><th>Status</th><th /></tr></thead>
+            <thead><tr><th>Name</th><th>Role</th><th className="ac-r">Pay ({monthLabel(month)})</th><th>Receives by</th><th>Status</th><th /></tr></thead>
             <tbody>
               {staff.map((s) => (
                 <tr key={s.id} className={s.active ? '' : 'ac-off'}>
                   <td className="ac-strong">{s.name}</td>
                   <td>{s.role || '-'}</td>
-                  <td className="ac-r tabular">{s.virtual ? <span className="ac-faint">Not set</span> : formatMoney(Number(s.base_salary), s.currency)}</td>
+                  <td className="ac-r tabular">{formatMoney(Number(s.base_salary), s.currency)}{s.auto && <div className="ac-faint">Automatic share</div>}</td>
                   <td>{s.pay_method ? <>{s.pay_method}{s.pay_account_no && <div className="ac-faint">{payLine(s.pay_method, s.pay_account_no, s.pay_code)}</div>}</> : <span className="ac-faint">Not set</span>}</td>
-                  <td>{s.virtual ? 'Needs salary' : s.active ? 'Active' : 'Paused'}{!s.virtual && s.approval === 'pending' && <div className="ac-faint">Awaiting approval</div>}{!s.virtual && s.approval === 'rejected' && <div className="ac-faint" style={{ color: 'var(--danger)' }}>Rejected</div>}</td>
+                  <td>{s.active ? 'Active' : 'Paused'}{!s.virtual && s.approval === 'pending' && <div className="ac-faint">Awaiting approval</div>}{!s.virtual && s.approval === 'rejected' && <div className="ac-faint" style={{ color: 'var(--danger)' }}>Rejected</div>}</td>
                   <td className="ac-r ac-nowrap">{canEdit && <>
-                    <button type="button" className="ac-link ac-linkbtn" onClick={() => { setEditId(s.id); setName(s.name); setRole(s.role ?? ''); setSalary(s.virtual ? '' : String(s.base_salary)); setCur(s.currency); setPMethod(s.pay_method ?? PAY_METHODS[0]); setPAccName(s.pay_account_name ?? ''); setPAccNo(s.pay_account_no ?? ''); setPBank(s.pay_bank ?? ''); setPCode(s.pay_code ?? ''); setPCountry(s.pay_country ?? ''); window.setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); }}>{s.virtual ? 'Set salary' : 'Edit'}</button>
+                    <button type="button" className="ac-link ac-linkbtn" onClick={() => { setEditId(s.id); setName(s.name); setRole(s.role ?? ''); setSalary(s.auto ? '' : String(s.base_salary)); setCur(s.currency); setPMethod(s.pay_method ?? PAY_METHODS[0]); setPAccName(s.pay_account_name ?? ''); setPAccNo(s.pay_account_no ?? ''); setPBank(s.pay_bank ?? ''); setPCode(s.pay_code ?? ''); setPCountry(s.pay_country ?? ''); window.setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); }}>{s.virtual ? 'Set pay details' : 'Edit'}</button>
                     {!s.virtual && <button type="button" className="ac-link ac-linkbtn danger" onClick={() => void toggleActive(s)}>{s.active ? 'Pause' : 'Resume'}</button>}
                     {!s.virtual && (isAdmin || s.approval !== 'approved') && <button type="button" className="ac-link ac-linkbtn danger" onClick={() => void removeStaff(s)}>{s.profile_id ? 'Clear' : 'Delete'}</button>}
                   </>}</td>
@@ -409,16 +446,16 @@ export default function PayrollTab({ rates, today, audit, userId, onChanged, can
           </div>
           <div className="ac-pf-grid">
             <div className="ac-pf-group">
-              <h4>Person and salary</h4>
+              <h4>{editTarget?.auto ? 'Person' : 'Person and salary'}</h4>
               <label className="ac-pf-field"><span>Full name</span><input className="ac-input" placeholder="e.g. Kawsar Habib" disabled={isMember} value={name} onChange={(e) => setName(e.target.value)} /></label>
               <label className="ac-pf-field"><span>Role</span><input className="ac-input" placeholder="e.g. Product Designer" disabled={isMember} value={role} onChange={(e) => setRole(e.target.value)} /></label>
-              <div className="ac-pf-field">
+              {editTarget?.auto ? <p className="ac-note" style={{ margin: 0 }}>Pay is automatic: an equal share of the money shared in Distribution.</p> : <div className="ac-pf-field">
                 <span>Monthly salary</span>
                 <div className="ac-pf-inline">
                   <input className="ac-input" placeholder="0" inputMode="decimal" value={salary} onChange={(e) => setSalary(e.target.value)} aria-label="Monthly salary" />
                   <select className="ac-select" value={cur} onChange={(e) => setCur(e.target.value)} aria-label="Currency">{CURRENCY_CHOICES.map((c) => <option key={c} value={c}>{c}</option>)}</select>
                 </div>
-              </div>
+              </div>}
             </div>
             <div className="ac-pf-group">
               <h4>How they receive their pay</h4>
