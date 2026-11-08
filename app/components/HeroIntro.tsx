@@ -13,6 +13,7 @@ import { markIntroSeen, readIntroSeen } from '@/lib/introSeen';
 // and home.css hides the overlay and starts the hero animations right away
 const subscribeNoop = () => () => {};
 
+const PANEL_COUNT = 4;
 const COUNT_START_MS = 250;
 const COUNT_MS = 2600;
 const HOLD_MS = 3100;
@@ -67,16 +68,22 @@ export default function HeroIntro() {
   if (!active) return null;
 
   return (
-    <motion.div
-      className="hero-intro"
-      aria-hidden="true"
-      initial={{ opacity: 1 }}
-      animate={{ opacity: wiping ? 0 : 1 }}
-      transition={{ duration: 0.7, ease: [0.76, 0, 0.24, 1] }}
-      onAnimationComplete={() => {
-        if (wiping) setRemoved(true);
-      }}
-    >
+    <div className="hero-intro" aria-hidden="true">
+      <div className="hero-intro-panels">
+        {Array.from({ length: PANEL_COUNT }, (_, i) => (
+          <motion.div
+            key={i}
+            className="hero-intro-panel"
+            initial={{ y: '0%' }}
+            animate={wiping ? { y: '-100%' } : { y: '0%' }}
+            transition={{ duration: 0.7, delay: wiping ? i * 0.08 : 0, ease: [0.76, 0, 0.24, 1] }}
+            onAnimationComplete={() => {
+              if (wiping && i === PANEL_COUNT - 1) setRemoved(true);
+            }}
+          />
+        ))}
+      </div>
+      <motion.div className="hero-intro-screen" initial={{ opacity: 1 }} animate={{ opacity: wiping ? 0 : 1 }} transition={{ duration: 0.45, ease: 'easeOut' }}>
       <div className="hero-intro-stage">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="hero-intro-bg" src="/loader/bg.webp" alt="" fetchPriority="high" />
@@ -96,6 +103,7 @@ export default function HeroIntro() {
           <span className="hero-intro-line-fill" style={{ width: `${percent}%` }} />
         </div>
       </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }

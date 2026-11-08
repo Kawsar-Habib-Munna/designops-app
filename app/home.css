@@ -532,9 +532,12 @@ html.intro-seen .home-root .hero-fig-bg {
    by width on a phone. --vw/--vh are the viewport size as plain numbers. */
 .home-root .hero-intro {
   --s: 0.7;
-  background: #010003;
   overflow: hidden;
 }
+/* four curtain panels (#0b001c) under the loader screen: when loading ends the screen fades and the panels wipe up */
+.home-root .hero-intro-panels { position: absolute; inset: 0; display: flex; }
+.home-root .hero-intro-panel { flex: 1; background: #0b001c; }
+.home-root .hero-intro-screen { position: absolute; inset: 0; background: #010003; overflow: hidden; }
 @supports (width: calc(tan(atan2(1px, 1px)) * 1px)) {
   .home-root .hero-intro {
     --vw: tan(atan2(100vw, 1px));
