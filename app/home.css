@@ -5299,3 +5299,8 @@ a.footer-contact-row:hover .footer-contact-text {
 .home-root .wa-float-icon { position: relative; display: block; flex: none; width: 60px; height: 60px; overflow: hidden; }
 .home-root .wa-float-icon img { position: absolute; display: block; max-width: none; width: 128.29%; height: 126.58%; left: -14.14%; top: -13.92%; }
 @media (max-width: 760px) { .home-root .wa-float { width: 60px; height: 60px; padding: 6px; border-radius: 16px; top: auto; bottom: 20px; } .home-root .wa-float-icon { width: 46px; height: 46px; } }
+
+/* public contact form: the country-code chip has no outline */
+.home-root .contact-form .phone-code, .home-root .contact-form .phone-code:hover, .home-root .contact-form .phone-code:focus-within { border-color: transparent; }
+.home-root .contact-form .phone-code { background: transparent; padding-left: 0; }
+.home-root .contact-form .phone-code select { color-scheme: dark; }

@@ -33,3 +33,7 @@
   cursor: pointer;
   font-size: 14px;
 }
+
+/* the open list: readable text on the list background (it used to inherit the page text colour) */
+.phone-code select option { background: Canvas; color: CanvasText; padding: 8px 18px !important; text-indent: 0; }
+.phone-code select { padding-inline: 18px; box-sizing: border-box; }
