@@ -5292,3 +5292,10 @@ a.footer-contact-row:hover .footer-contact-text {
   to { opacity: 1; translate: 0 0; scale: 1; filter: none; }
 }
 @media (prefers-reduced-motion: reduce) { .home-root .rv-item { opacity: 1; } .home-root .rv-item.rv-in { animation: none; } }
+
+/* floating WhatsApp button (Figma node 1880:1964): 76px glass tile, 8px pad, 20px radius */
+.home-root .wa-float { position: fixed; z-index: 90; right: clamp(16px, 5.55vw, 80px); top: min(754px, calc(100vh - 100px)); display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: 76px; height: 76px; padding: 8px; border-radius: 20px; border: 2px solid rgba(200, 197, 205, 0.4); background: #15121c; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); filter: drop-shadow(0 12px 20px rgba(129, 51, 241, 0.2)); transition: transform .25s ease, border-color .25s ease; }
+.home-root .wa-float:hover { transform: translateY(-3px) scale(1.04); border-color: rgba(200, 197, 205, 0.7); }
+.home-root .wa-float-icon { position: relative; display: block; flex: none; width: 60px; height: 60px; overflow: hidden; }
+.home-root .wa-float-icon img { position: absolute; display: block; max-width: none; width: 128.29%; height: 126.58%; left: -14.14%; top: -13.92%; }
+@media (max-width: 760px) { .home-root .wa-float { width: 60px; height: 60px; padding: 6px; border-radius: 16px; top: auto; bottom: 20px; } .home-root .wa-float-icon { width: 46px; height: 46px; } }

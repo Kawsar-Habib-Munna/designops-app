@@ -196,6 +196,12 @@ export default async function Home() {
       <MouseTrail />
       <JsonLd settings={settings} />
       <LandingNav bookCallUrl={bookCallUrl} />
+      <a href={bookCallUrl} target="_blank" rel="noopener noreferrer" className="wa-float" aria-label="Chat with us on WhatsApp">
+        <span className="wa-float-icon">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/hero/whatsapp-3d.png" alt="" />
+        </span>
+      </a>
 
       <div className="home-body">
         <header className="hero">
