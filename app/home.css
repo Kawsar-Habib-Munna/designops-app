@@ -519,9 +519,6 @@ html:has(.home-root) {
   inset: 0;
   height: 100dvh;
   z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   pointer-events: none;
 }
 /* repeat visit (set by the pre-paint script in HeroIntro.tsx): no loader, hero background starts at once */
@@ -531,70 +528,119 @@ html.intro-seen .home-root .hero-intro {
 html.intro-seen .home-root .hero-fig-bg {
   animation-delay: 0s;
 }
-.home-root .hero-intro-panels {
+/* the stage is the 1440x1024 Figma frame, scaled to fit: by height on desktop, and (so the 640px line stays readable)
+   by width on a phone. --vw/--vh are the viewport size as plain numbers. */
+.home-root .hero-intro {
+  --s: 0.7;
+  background: #010003;
+  overflow: hidden;
+}
+@supports (width: calc(tan(atan2(1px, 1px)) * 1px)) {
+  .home-root .hero-intro {
+    --vw: tan(atan2(100vw, 1px));
+    --vh: tan(atan2(100dvh, 1px));
+    --s: min(max(var(--vw) / 1440, var(--vw) * 0.88 / 640), var(--vh) / 1024);
+  }
+}
+.home-root .hero-intro-stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1440px;
+  height: 1024px;
+  margin: -512px 0 0 -720px;
+  transform: scale(var(--s));
+  transform-origin: center;
+}
+.home-root .hero-intro-bg {
   position: absolute;
   inset: 0;
-  display: flex;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
 }
-.home-root .hero-intro-panel {
-  flex: 1;
-  background: #ffffff;
+.home-root .hero-intro-emblem {
+  position: absolute;
+  left: 670px;
+  top: 150px;
+  width: 100px;
+  height: 108px;
+  overflow: hidden;
 }
-.home-root .hero-intro-word {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.28em;
-  font-family: var(--font-nunito), "Nunito Sans", "Inter", sans-serif;
-  font-size: clamp(14px, 3.4vw, 32px);
-  line-height: 1.2;
-  color: #0a0a0a;
+.home-root .hero-intro-emblem img {
+  position: absolute;
+  max-width: none;
+  width: 177.37%;
+  height: 113.63%;
+  left: -38.68%;
+  top: -8.67%;
 }
 .home-root .hero-intro-brand {
-  font-weight: 700;
-  white-space: nowrap;
-}
-.home-root .hero-intro-side {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 258px;
   display: flex;
-  flex-direction: column;
+  align-items: baseline;
+  justify-content: center;
   gap: 10px;
-  /* reserves the width of the longest word (Experienced) so "FLOW 53 @" does not shift when the word changes */
-  min-width: 6.6em;
-}
-/* one word at a time on the same line as "FLOW 53 @"; the next word replaces the previous one */
-.home-root .hero-intro-words {
-  display: block;
+  font-size: 60px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 2.4px;
   white-space: nowrap;
-  min-height: 1.2em;
 }
-.home-root .hero-intro-design {
-  display: block;
-  font-weight: 400;
+.home-root .hero-intro-flow,
+.home-root .hero-intro-53 {
+  background: linear-gradient(to right, #ffffff, #ceb0fa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
-.home-root .hero-intro-progress {
+.home-root .hero-intro-flow { font-family: var(--font-playfair), "Playfair Display", serif; }
+.home-root .hero-intro-53 { font-family: var(--font-nunito-bold), var(--font-nunito), "Nunito Sans", sans-serif; }
+.home-root .hero-intro-meta {
+  position: absolute;
+  left: 400px;
+  top: 375px;
+  width: 640px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-family: var(--font-playfair), "Playfair Display", serif;
-  font-size: 14px;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
+  justify-content: space-between;
+  font-family: var(--font-nunito), "Nunito Sans", "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
 }
-.home-root .hero-intro-bar {
-  position: relative;
-  display: block;
-  width: clamp(110px, 17vw, 170px);
-  height: 1px;
-  background: rgba(10, 10, 10, 0.2);
-}
-.home-root .hero-intro-bar-fill {
+.home-root .hero-intro-state { color: #ada8b4; }
+.home-root .hero-intro-pct { color: #efe6fd; text-align: right; font-variant-numeric: tabular-nums; }
+.home-root .hero-intro-line {
   position: absolute;
-  inset: 0 auto 0 0;
-  height: 100%;
-  background: #0a0a0a;
+  left: 400px;
+  top: 411px;
+  width: 640px;
+  height: 1px;
+  background: #49474c;
 }
-.home-root .hero-intro-pct {
-  min-width: 3ch;
+.home-root .hero-intro-line-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(to right, #efe6fd, #6200ee);
+}
+.home-root .hero-intro-line-fill::after {
+  content: "";
+  position: absolute;
+  right: -2.67px;
+  top: -2.17px;
+  width: 5.33px;
+  height: 5.33px;
+  border-radius: 50%;
+  background: #6200ee;
+  box-shadow: 0 0 8px rgba(98, 0, 238, 0.9);
 }
 .home-root .hero-fig {
   position: relative;

@@ -1,6 +1,6 @@
 import "./home.css";
 import Link from "next/link";
-import { interStats, nunito, playfair } from "./fonts";
+import { interStats, nunito, nunitoBold, playfair } from "./fonts";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { driveThumbnailUrl, driveFullImageUrl } from "@/lib/driveUpload";
 import LandingNav from "@/app/components/LandingNav";
@@ -191,7 +191,7 @@ export default async function Home() {
 
   return (
     <div
-      className={`home-root ${nunito.variable} ${playfair.variable} ${interStats.variable}`}
+      className={`home-root ${nunito.variable} ${nunitoBold.variable} ${playfair.variable} ${interStats.variable}`}
     >
       <MouseTrail />
       <JsonLd settings={settings} />

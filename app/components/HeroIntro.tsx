@@ -1,14 +1,12 @@
 'use client';
 
-// হিরোর লোডিং ইন্ট্রো: সাদা ৪টা panel হিরো-র ওপর বসে থাকে, মাঝখানে "FLOW 53 @ Design"
-// লেখা (কাউন্টার এগোনোর সাথে Design → Development → Experienced একটা যায়, পরেরটা আসে — একবারে
-// একটাই শব্দ) আর তার নিচে একটা চিকন progress লাইন + 0%→100% কাউন্টার। কাউন্টার শেষ হলে
-// panel চারটা বাঁ থেকে ডানে সামান্য stagger করে উপরের দিকে স্কেল-আউট হয়ে হিরো-র
-// বাকি কনটেন্ট দেখায় (ekon.framer.ai-এর curtain কৌশল)। HOLD_MS বদলালে home.css-এর
-// hero-fig-bg-reveal delay আর HeroTitleTyped.tsx-এর START_DELAY-ও একই সাথে বদলাতে
-// হবে। prefers-reduced-motion থাকলে পুরো ইন্ট্রো স্কিপ করে সরাসরি null রিটার্ন করে।
+// Loading screen (Figma "Flow 53 Web Loader", node 2810:3522): a dark 1440x1024 stage with the neon U emblem, the
+// FLOW 53 wordmark and a LOADING / LOADED + percent line above a glowing horizon and the faint service tiles
+// (the glow, tiles and corner marks are part of /loader/bg.webp). The percent counts up, then the whole screen fades
+// out and the hero animations start. HOLD_MS is tied to home.css (hero-fig-bg-reveal delay) and HeroTitleTyped.tsx
+// (START_DELAY): change them together. prefers-reduced-motion skips the intro, and a repeat visit skips it too.
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { markIntroSeen, readIntroSeen } from '@/lib/introSeen';
 
 // on a repeat visit a tiny script in app/layout.tsx adds `intro-seen` to <html> before first paint,
@@ -18,13 +16,6 @@ const subscribeNoop = () => () => {};
 const COUNT_START_MS = 250;
 const COUNT_MS = 2600;
 const HOLD_MS = 3100;
-const PANEL_COUNT = 4;
-// কাউন্টার এই percent-এ পৌঁছালে সংশ্লিষ্ট শব্দটা আসে, আগেরটা চলে যায়
-const WORDS = [
-  { text: 'Design', at: 0 },
-  { text: 'Development', at: 34 },
-  { text: 'Experienced', at: 67 },
-];
 
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
@@ -75,59 +66,36 @@ export default function HeroIntro() {
 
   if (!active) return null;
 
-  const wordIndex = percent < WORDS[1].at ? 0 : percent < WORDS[2].at ? 1 : 2;
-
   return (
-    <div className="hero-intro" aria-hidden="true">
-      <div className="hero-intro-panels">
-        {Array.from({ length: PANEL_COUNT }, (_, i) => (
-          <motion.div
-            key={i}
-            className="hero-intro-panel"
-            initial={{ y: '0%' }}
-            animate={wiping ? { y: '-100%' } : { y: '0%' }}
-            transition={{ duration: 0.7, delay: wiping ? i * 0.08 : 0, ease: [0.76, 0, 0.24, 1] }}
-            onAnimationComplete={() => {
-              if (wiping && i === PANEL_COUNT - 1) setRemoved(true);
-            }}
-          />
-        ))}
+    <motion.div
+      className="hero-intro"
+      aria-hidden="true"
+      initial={{ opacity: 1 }}
+      animate={{ opacity: wiping ? 0 : 1 }}
+      transition={{ duration: 0.7, ease: [0.76, 0, 0.24, 1] }}
+      onAnimationComplete={() => {
+        if (wiping) setRemoved(true);
+      }}
+    >
+      <div className="hero-intro-stage">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="hero-intro-bg" src="/loader/bg.webp" alt="" fetchPriority="high" />
+        <div className="hero-intro-emblem">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/loader/emblem.webp" alt="" fetchPriority="high" />
+        </div>
+        <div className="hero-intro-brand">
+          <span className="hero-intro-flow">FLOW</span>
+          <span className="hero-intro-53">53</span>
+        </div>
+        <div className="hero-intro-meta">
+          <span className="hero-intro-state">{percent >= 100 ? 'LOADED' : 'LOADING'}</span>
+          <span className="hero-intro-pct">{percent}%</span>
+        </div>
+        <div className="hero-intro-line">
+          <span className="hero-intro-line-fill" style={{ width: `${percent}%` }} />
+        </div>
       </div>
-      <AnimatePresence>
-        {!wiping && (
-          <motion.div
-            className="hero-intro-word"
-            initial={{ opacity: 0.001, y: -16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <span className="hero-intro-brand">FLOW 53 @</span>
-            <div className="hero-intro-side">
-              <div className="hero-intro-words">
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.span
-                    key={WORDS[wordIndex].text}
-                    className="hero-intro-design"
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -12 }}
-                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    {WORDS[wordIndex].text}
-                  </motion.span>
-                </AnimatePresence>
-              </div>
-              <div className="hero-intro-progress">
-                <span className="hero-intro-bar">
-                  <span className="hero-intro-bar-fill" style={{ width: `${percent}%` }} />
-                </span>
-                <span className="hero-intro-pct">{percent}%</span>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }
