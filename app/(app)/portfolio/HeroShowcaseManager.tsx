@@ -51,13 +51,13 @@ export default function HeroShowcaseManager() {
   };
   const rowItems = (no: number) => items.filter((i) => i.row_no === no).sort((a, b) => a.order_index - b.order_index);
 
-  async function addImages(no: 1 | 2, files: FileList | null) {
-    if (!files || files.length === 0) return;
+  async function addImages(no: 1 | 2, files: File[]) {
+    if (files.length === 0) return;
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) return flash('Sign in again to upload.');
     let order = rowItems(no).reduce((m, i) => Math.max(m, i.order_index), 0);
     let added = 0;
-    for (const file of Array.from(files)) {
+    for (const file of files) {
       if (!file.type.startsWith('image/')) {
         flash(`${file.name} is not an image.`);
         continue;
@@ -158,7 +158,7 @@ export default function HeroShowcaseManager() {
                 <div className="hs-sub">{row.sub}</div>
               </div>
               <button type="button" className="btn btn-accent btn-sm" disabled={!!busy} onClick={() => inputs.current[row.no]?.click()}>Add images</button>
-              <input ref={(el) => { inputs.current[row.no] = el; }} type="file" accept="image/*" multiple hidden onChange={(e) => { void addImages(row.no, e.target.files); e.target.value = ''; }} />
+              <input ref={(el) => { inputs.current[row.no] = el; }} type="file" accept="image/*" multiple hidden onChange={(e) => { const picked = Array.from(e.target.files ?? []); e.target.value = ''; void addImages(row.no, picked); }} />
             </div>
             {list.length === 0 ? (
               <p className="hs-note" style={{ margin: 0 }}>No images in this row.</p>
