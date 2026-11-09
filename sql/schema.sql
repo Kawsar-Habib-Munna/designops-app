@@ -2781,3 +2781,24 @@ alter table expenses add column if not exists round_id uuid references pay_round
 alter table fund_ledger drop constraint if exists fund_ledger_source_check;
 alter table fund_ledger add constraint fund_ledger_source_check check (source in ('distribution', 'manual', 'round'));
 create unique index if not exists fund_ledger_one_share_per_round on fund_ledger (fund, round_id) where round_id is not null;
+
+-- Homepage hero image strip (two rows under "Trusted By Partners"), managed from /portfolio > Hero Showcase.
+create table if not exists hero_showcase (
+  id uuid default gen_random_uuid() primary key,
+  row_no int not null default 1 check (row_no in (1, 2)),
+  width int not null default 284 check (width in (228, 284)),
+  image_url text not null,
+  order_index int not null default 0,
+  published boolean not null default true,
+  created_by uuid references profiles(id),
+  created_at timestamptz default now()
+);
+alter table hero_showcase enable row level security;
+drop policy if exists "team can read hero_showcase" on hero_showcase;
+create policy "team can read hero_showcase" on hero_showcase for select using (public.is_team_member());
+drop policy if exists "team can write hero_showcase" on hero_showcase;
+create policy "team can write hero_showcase" on hero_showcase for insert with check (public.is_team_member());
+drop policy if exists "team can update hero_showcase" on hero_showcase;
+create policy "team can update hero_showcase" on hero_showcase for update using (public.is_team_member());
+drop policy if exists "team can delete hero_showcase" on hero_showcase;
+create policy "team can delete hero_showcase" on hero_showcase for delete using (public.is_team_member());

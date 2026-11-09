@@ -24,6 +24,7 @@ import SettingsTab from './SettingsTab';
 import ApprovalsTab, { type DecideKind } from './ApprovalsTab';
 import AccountantCard from './AccountantCard';
 import OverviewCharts from './OverviewCharts';
+import SourceOfMoney from './SourceOfMoney';
 import { Columns, Donut, OTHER, RankColumns, SLOT, VizCard, VizRow } from './viz';
 import PayrollTab from './PayrollTab';
 import StatementPreview, { type StatementDoc } from './StatementPreview';
@@ -314,6 +315,7 @@ export default function AccountsApp({ variant }: { variant: 'admin' | 'desk' }) 
             {tab === 'overview' && (
               <>
                 {showViz && <OverviewCharts calc={calc} />}
+                <SourceOfMoney calc={calc} />
                 <div className="ac-pair">
                   <section className="ac-card">
                     <div className="ac-card-head"><h2>Last 6 months</h2><button type="button" className="ac-btn ac-right" onClick={() => setPreview({

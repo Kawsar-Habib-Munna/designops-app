@@ -16,6 +16,7 @@ import { uploadFileToDrive, driveThumbnailUrl } from '@/lib/driveUpload';
 import SignInScreen from '@/app/components/SignInScreen';
 import Avatar from '@/app/components/Avatar';
 import PhoneInput from '@/app/components/PhoneInput';
+import HeroShowcaseManager from './HeroShowcaseManager';
 import { TopbarActions } from '@/app/components/appShellContext';
 
 const ICON_PATHS: Record<string, string> = {
@@ -974,6 +975,13 @@ export default function PortfolioPage() {
                   </div>
                 );
               })()}
+            </section>
+
+            <section className="block">
+              <div className="section-title-row">
+                <span className="section-title">Hero Showcase</span>
+              </div>
+              <HeroShowcaseManager />
             </section>
 
             <section className="block">

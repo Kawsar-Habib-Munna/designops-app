@@ -5353,3 +5353,25 @@ a.footer-contact-row:hover .footer-contact-text {
 .home-root .contact-form .phone-code, .home-root .contact-form .phone-code:hover, .home-root .contact-form .phone-code:focus-within { border-color: transparent; }
 .home-root .contact-form .phone-code { background: transparent; padding-left: 0; }
 .home-root .contact-form .phone-code select { color-scheme: dark; }
+
+/* hero showcase strip (Figma node 3102:2197): two offset rows of project cards drifting in opposite directions */
+.home-root .showcase { position: relative; z-index: 0; margin-top: 120px; padding-bottom: 0; overflow: hidden; display: grid; gap: 18px; }
+.home-root .showcase-row { position: relative; overflow: hidden; }
+.home-root .showcase-track { display: flex; width: max-content; gap: 18px; padding-right: 18px; animation: showcase-left 70s linear infinite; }
+.home-root .showcase-track.reverse { animation-name: showcase-right; animation-duration: 80s; }
+.home-root .showcase-row:nth-of-type(2) .showcase-track { margin-left: -178px; }
+.home-root .showcase-card { position: relative; flex: none; height: 192px; border-radius: 16px; overflow: hidden; background: #d9d9d9; }
+.home-root .showcase-card.w228 { width: 228px; }
+.home-root .showcase-card.w284 { width: 284px; }
+.home-root .showcase-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; max-width: none; }
+.home-root .showcase-card img.cropped { inset: auto; object-fit: fill; }
+@keyframes showcase-left { from { transform: translateX(0); } to { transform: translateX(-33.3333%); } }
+@keyframes showcase-right { from { transform: translateX(-33.3333%); } to { transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .home-root .showcase-track { animation: none; } }
+@media (max-width: 760px) {
+  .home-root .showcase { margin-top: 72px; gap: 12px; }
+  .home-root .showcase-track { gap: 12px; padding-right: 12px; }
+  .home-root .showcase-card { height: 132px; border-radius: 12px; }
+  .home-root .showcase-card.w228 { width: 157px; }
+  .home-root .showcase-card.w284 { width: 195px; }
+}

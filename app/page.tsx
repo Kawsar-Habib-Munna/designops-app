@@ -18,6 +18,8 @@ import BouncyStat from "@/app/components/BouncyStat";
 import TestimonialsGrid from "@/app/components/TestimonialsGrid";
 import WhyCardsGrid from "@/app/components/WhyCardsGrid";
 import HeroIntro from "@/app/components/HeroIntro";
+import ShowcaseStrip from "@/app/components/ShowcaseStrip";
+import { DEFAULT_SHOWCASE, showcaseImageSrc, type ShowcaseRows } from "@/lib/heroShowcase";
 import ScrollRevealText from "@/app/components/ScrollRevealText";
 import MouseTrail from "@/app/components/MouseTrail";
 import SlideSwapLabel from "@/app/components/SlideSwapLabel";
@@ -180,12 +182,28 @@ async function fetchTeam(): Promise<TeamMember[]> {
   }
 }
 
+// the hero image strip is managed from the dashboard (/portfolio > Hero Showcase). Nothing set up yet (or the table is
+// missing): show the built-in images. Everything hidden on purpose: show nothing.
+async function fetchShowcase(): Promise<ShowcaseRows> {
+  try {
+    const admin = getSupabaseAdmin();
+    const { data, error } = await admin.from("hero_showcase").select("image_url, row_no, width, order_index, published").order("order_index");
+    if (error || !data || data.length === 0) return DEFAULT_SHOWCASE;
+    const live = data.filter((r) => r.published);
+    const row = (n: number) => live.filter((r) => r.row_no === n).map((r) => ({ src: showcaseImageSrc(r.image_url as string), w: (r.width === 228 ? 228 : 284) as 228 | 284 }));
+    return [row(1), row(2)];
+  } catch {
+    return DEFAULT_SHOWCASE;
+  }
+}
+
 export default async function Home() {
-  const [team, caseStudies, testimonials, settings] = await Promise.all([
+  const [team, caseStudies, testimonials, settings, showcase] = await Promise.all([
     fetchTeam(),
     fetchCaseStudies(),
     fetchTestimonials(),
     fetchSiteSettings(),
+    fetchShowcase(),
   ]);
   const bookCallUrl = buildWhatsappUrl(settings.bookCallPhone, BOOK_CALL_MESSAGE);
 
@@ -287,6 +305,7 @@ export default async function Home() {
               </div>
               <div className="hero-partners-fade"></div>
             </div>
+            <ShowcaseStrip rows={showcase} />
           </div>
         </header>
 

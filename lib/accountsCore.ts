@@ -20,7 +20,7 @@ export type InvoiceRow = {
   projects: { name: string } | { name: string }[] | null;
   clients: { company_name: string; primary_contact: string | null } | { company_name: string; primary_contact: string | null }[] | null;
 };
-export type PaymentRow = { id: string; invoice_id: string; amount: number | null; payment_date: string | null; confirmed_at: string | null };
+export type PaymentRow = { id: string; invoice_id: string; amount: number | null; payment_date: string | null; confirmed_at: string | null; payment_method?: string | null; transaction_id?: string | null };
 export type ExpenseRow = { round_id?: string | null; approval?: string; id: string; expense_date: string; amount: number; currency: string; category: string; vendor: string | null; description: string | null; project_id: string | null; receipt_url: string | null };
 export type ProjectOpt = { id: string; name: string };
 export type FxRate = { currency: string; rate_to_base: number };
@@ -362,7 +362,7 @@ export async function fetchAccounts(): Promise<AccountsData> {
   const isAccountant = !!prof.is_accountant;
   const [inv, pay, exp, prj, fx, bud, rec, aud, pSlip, pLed, pStaff, pRound] = await Promise.all([
     supabase.from('invoices').select('id, request_number, amount, currency, status, due_date, description, payment_type, project_id, projects(name), clients(company_name, primary_contact)'),
-    supabase.from('payments').select('id, invoice_id, amount, payment_date, confirmed_at'),
+    supabase.from('payments').select('id, invoice_id, amount, payment_date, confirmed_at, payment_method, transaction_id'),
     supabase.from('expenses').select(EXP_COLS + ', approval, round_id').order('expense_date', { ascending: false }),
     supabase.from('projects').select('id, name').order('name'),
     supabase.from('fx_rates').select('currency, rate_to_base'),
@@ -432,7 +432,7 @@ export function buildCalc(data: AccountsData, today: string) {
     .map((p) => {
       const inv = invById.get(p.invoice_id) as InvoiceRow;
       const date = (p.payment_date ?? p.confirmed_at ?? '').slice(0, 10);
-      return { date, month: date.slice(0, 7), base: conv(p.amount ?? inv.amount, inv.currency), projectId: inv.project_id, client: one(inv.clients)?.company_name ?? 'Unknown' };
+      return { id: p.id, date, month: date.slice(0, 7), base: conv(p.amount ?? inv.amount, inv.currency), amount: p.amount ?? inv.amount, currency: inv.currency, projectId: inv.project_id, project: one(inv.projects)?.name ?? '-', invoiceNo: inv.request_number ?? '-', method: p.payment_method?.trim() || 'Not recorded', ref: p.transaction_id?.trim() || '', client: one(inv.clients)?.company_name ?? 'Unknown' };
     });
   // money out
   const exp = data.expenses.map((e) => ({ ...e, base: conv(e.amount, e.currency) }));
